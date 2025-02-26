@@ -1,2 +1,1 @@
-# cabal build
 # cabal run
