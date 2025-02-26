@@ -1,1 +1,6 @@
-# cabal run
+## For now
+#  Empty
+
+```haskell
+-- | \_ -> ()
+``
