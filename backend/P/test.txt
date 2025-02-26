@@ -1,0 +1,5 @@
+if all x bot |- some y bot;
+all x bot: Prem;
+some y bot: Prem;
+{x: Assumed;};
+some y bot: (1;);
