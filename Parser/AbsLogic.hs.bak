@@ -13,22 +13,28 @@ import qualified Data.String
 data Sequent = Seq [Form] Form [Step]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
+data TermType = TermType_var | TermType1
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
 data Step
     = StepPrem Form
-    | StepFree Var
+    | StepTerm TermType Term
     | StepAssume Form
     | StepScope [Step]
-    | StepForm Form Ident [Arg]
+    | StepForm RuleId [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Arg = ArgLit ArgId
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
+data SymBot = SymBot_bot | SymBot_somesymbol
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
 data Form
-    = FormBot
+    = FormBot SymBot
     | FormEq Term Term
-    | FormAll Var Form
-    | FormSome Var Form
+    | FormAll Term Form
+    | FormSome Term Form
     | FormNot Form
     | FormAnd Form Form
     | FormOr Form Form
@@ -36,20 +42,11 @@ data Form
     | FormPred Pred
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Pred = PredN PredId [Term] | Pred0 PredId
+data Pred = Pred0 PredId | PredN PredId [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Var = VarLit VarId
+data Term = TermVar TermId | TermFun TermId [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data Fun = FunLit VarId [Term]
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data Term = TermVar Var | TermFun Fun
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-newtype Ident = Ident String
-  deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
 
 newtype ArgId = ArgId String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
@@ -57,9 +54,9 @@ newtype ArgId = ArgId String
 newtype PredId = PredId String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
 
-newtype VarId = VarId String
+newtype TermId = TermId String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
 
-newtype Ident = Ident String
+newtype RuleId = RuleId String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
 

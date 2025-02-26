@@ -28,7 +28,7 @@ $u = [. \n]          -- universal: any character
 
 -- Symbols and non-identifier-like reserved words
 
-@rsyms = \| \- | \; | \: | \{ | \} | \( | \) | \, | \= | \! | \& | \| | \- \>
+@rsyms = \| \- | \; | \: | \{ | \} | \[ | \] | \, | \= | \! | \& | \| | \- \> | \( | \)
 
 :-
 
@@ -50,13 +50,13 @@ $d +
 $c (\_ | ($d | $l)) *
     { tok (eitherResIdent T_PredId) }
 
--- token VarId
+-- token TermId
 $s (\_ | ($d | $l)) *
-    { tok (eitherResIdent T_VarId) }
+    { tok (eitherResIdent T_TermId) }
 
--- token Ident
+-- token RuleId
 $c (\_ | ($d | $l)) *
-    { tok (eitherResIdent T_Ident) }
+    { tok (eitherResIdent T_RuleId) }
 
 -- Keywords and Ident
 $l $i*
@@ -77,8 +77,8 @@ data Tok
   | TC !String                    -- ^ Character literal.
   | T_ArgId !String
   | T_PredId !String
-  | T_VarId !String
-  | T_Ident !String
+  | T_TermId !String
+  | T_RuleId !String
   deriving (Eq, Show, Ord)
 
 -- | Smart constructor for 'Tok' for the sake of backwards compatibility.
@@ -143,8 +143,8 @@ tokenText t = case t of
   Err _         -> "#error"
   PT _ (T_ArgId s) -> s
   PT _ (T_PredId s) -> s
-  PT _ (T_VarId s) -> s
-  PT _ (T_Ident s) -> s
+  PT _ (T_TermId s) -> s
+  PT _ (T_RuleId s) -> s
 
 -- | Convert a token to a string.
 prToken :: Token -> String
@@ -171,13 +171,16 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b "Assumed" 10
-    (b "," 5
-       (b "(" 3 (b "&" 2 (b "!" 1 N N) N) (b ")" 4 N N))
-       (b ";" 8 (b ":" 7 (b "->" 6 N N) N) (b "=" 9 N N)))
-    (b "some" 15
-       (b "bot" 13 (b "all" 12 (b "Prem" 11 N N) N) (b "if" 14 N N))
-       (b "|-" 18 (b "|" 17 (b "{" 16 N N) N) (b "}" 19 N N)))
+  b "[" 12
+    (b "->" 6
+       (b "(" 3 (b "&" 2 (b "!" 1 N N) N) (b "," 5 (b ")" 4 N N) N))
+       (b "=" 9
+          (b ";" 8 (b ":" 7 N N) N) (b "Prem" 11 (b "Assume" 10 N N) N)))
+    (b "somesymbol" 18
+       (b "bot" 15
+          (b "all" 14 (b "]" 13 N N) N) (b "some" 17 (b "if" 16 N N) N))
+       (b "|" 21
+          (b "{" 20 (b "var" 19 N N) N) (b "}" 23 (b "|-" 22 N N) N)))
   where
   b s n = B bs (TS bs n)
     where

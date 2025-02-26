@@ -15,48 +15,51 @@ type Result = Err String
 failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transArgId :: AbsLogic.ArgId -> Result
-transArgId x = case x of
-  AbsLogic.ArgId string -> failure x
-
 transPredId :: AbsLogic.PredId -> Result
 transPredId x = case x of
   AbsLogic.PredId string -> failure x
 
-transVarId :: AbsLogic.VarId -> Result
-transVarId x = case x of
-  AbsLogic.VarId string -> failure x
+transTermId :: AbsLogic.TermId -> Result
+transTermId x = case x of
+  AbsLogic.TermId string -> failure x
 
-transIdent :: AbsLogic.Ident -> Result
-transIdent x = case x of
-  AbsLogic.Ident string -> failure x
-
-transPIdent :: AbsLogic.PIdent -> Result
-transPIdent x = case x of
-  AbsLogic.PIdent string -> failure x
+transRuleId :: AbsLogic.RuleId -> Result
+transRuleId x = case x of
+  AbsLogic.RuleId string -> failure x
 
 transSequent :: AbsLogic.Sequent -> Result
 transSequent x = case x of
   AbsLogic.Seq forms form steps -> failure x
 
+transTermType :: AbsLogic.TermType -> Result
+transTermType x = case x of
+  AbsLogic.TermType_var -> failure x
+  AbsLogic.TermType_const -> failure x
+
 transStep :: AbsLogic.Step -> Result
 transStep x = case x of
   AbsLogic.StepPrem form -> failure x
-  AbsLogic.StepFree var -> failure x
+  AbsLogic.StepTerm termtype term -> failure x
   AbsLogic.StepAssume form -> failure x
   AbsLogic.StepScope steps -> failure x
-  AbsLogic.StepForm form args -> failure x
+  AbsLogic.StepForm ruleid args form -> failure x
 
 transArg :: AbsLogic.Arg -> Result
 transArg x = case x of
-  AbsLogic.ArgLit argid -> failure x
+  AbsLogic.ArgStep step -> failure x
+  AbsLogic.ArgLit integer -> failure x
+
+transSymBot :: AbsLogic.SymBot -> Result
+transSymBot x = case x of
+  AbsLogic.SymBot_bot -> failure x
+  AbsLogic.SymBot_somesymbol -> failure x
 
 transForm :: AbsLogic.Form -> Result
 transForm x = case x of
-  AbsLogic.FormBot -> failure x
+  AbsLogic.FormBot symbot -> failure x
   AbsLogic.FormEq term1 term2 -> failure x
-  AbsLogic.FormAll var form -> failure x
-  AbsLogic.FormSome var form -> failure x
+  AbsLogic.FormAll term form -> failure x
+  AbsLogic.FormSome term form -> failure x
   AbsLogic.FormNot form -> failure x
   AbsLogic.FormAnd form1 form2 -> failure x
   AbsLogic.FormOr form1 form2 -> failure x
@@ -65,18 +68,10 @@ transForm x = case x of
 
 transPred :: AbsLogic.Pred -> Result
 transPred x = case x of
-  AbsLogic.PredN predid terms -> failure x
   AbsLogic.Pred0 predid -> failure x
-
-transVar :: AbsLogic.Var -> Result
-transVar x = case x of
-  AbsLogic.VarLit varid -> failure x
-
-transFun :: AbsLogic.Fun -> Result
-transFun x = case x of
-  AbsLogic.FunLit varid terms -> failure x
+  AbsLogic.PredN predid terms -> failure x
 
 transTerm :: AbsLogic.Term -> Result
 transTerm x = case x of
-  AbsLogic.TermVar var -> failure x
-  AbsLogic.TermFun fun -> failure x
+  AbsLogic.TermVar termid -> failure x
+  AbsLogic.TermFun termid terms -> failure x

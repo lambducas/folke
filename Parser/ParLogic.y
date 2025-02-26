@@ -9,10 +9,12 @@ module ParLogic
   ( happyError
   , myLexer
   , pSequent
+  , pTermType
   , pStep
   , pListStep
   , pArg
   , pListArg
+  , pSymBot
   , pForm4
   , pForm3
   , pForm2
@@ -20,8 +22,6 @@ module ParLogic
   , pForm
   , pListForm
   , pPred
-  , pVar
-  , pFun
   , pTerm
   , pListTerm
   ) where
@@ -34,10 +34,12 @@ import LexLogic
 }
 
 %name pSequent Sequent
+%name pTermType TermType
 %name pStep Step
 %name pListStep ListStep
 %name pArg Arg
 %name pListArg ListArg
+%name pSymBot SymBot
 %name pForm4 Form4
 %name pForm3 Form3
 %name pForm2 Form2
@@ -45,73 +47,76 @@ import LexLogic
 %name pForm Form
 %name pListForm ListForm
 %name pPred Pred
-%name pVar Var
-%name pFun Fun
 %name pTerm Term
 %name pListTerm ListTerm
 -- no lexer declaration
 %monad { Err } { (>>=) } { return }
 %tokentype {Token}
 %token
-  '!'       { PT _ (TS _ 1)      }
-  '&'       { PT _ (TS _ 2)      }
-  '('       { PT _ (TS _ 3)      }
-  ')'       { PT _ (TS _ 4)      }
-  ','       { PT _ (TS _ 5)      }
-  '->'      { PT _ (TS _ 6)      }
-  ':'       { PT _ (TS _ 7)      }
-  ';'       { PT _ (TS _ 8)      }
-  '='       { PT _ (TS _ 9)      }
-  'Assumed' { PT _ (TS _ 10)     }
-  'Prem'    { PT _ (TS _ 11)     }
-  'all'     { PT _ (TS _ 12)     }
-  'bot'     { PT _ (TS _ 13)     }
-  'if'      { PT _ (TS _ 14)     }
-  'some'    { PT _ (TS _ 15)     }
-  '{'       { PT _ (TS _ 16)     }
-  '|'       { PT _ (TS _ 17)     }
-  '|-'      { PT _ (TS _ 18)     }
-  '}'       { PT _ (TS _ 19)     }
-  L_ArgId   { PT _ (T_ArgId $$)  }
-  L_PredId  { PT _ (T_PredId $$) }
-  L_VarId   { PT _ (T_VarId $$)  }
-  L_Ident   { PT _ (TV $$)       }
-  L_PIdent  { PT _ (T_PIdent _)  }
+  '!'          { PT _ (TS _ 1)      }
+  '&'          { PT _ (TS _ 2)      }
+  '('          { PT _ (TS _ 3)      }
+  ')'          { PT _ (TS _ 4)      }
+  ','          { PT _ (TS _ 5)      }
+  '->'         { PT _ (TS _ 6)      }
+  ';'          { PT _ (TS _ 7)      }
+  '='          { PT _ (TS _ 8)      }
+  '['          { PT _ (TS _ 9)      }
+  ']'          { PT _ (TS _ 10)     }
+  'all'        { PT _ (TS _ 11)     }
+  'assume'     { PT _ (TS _ 12)     }
+  'bot'        { PT _ (TS _ 13)     }
+  'const'      { PT _ (TS _ 14)     }
+  'if'         { PT _ (TS _ 15)     }
+  'prem'       { PT _ (TS _ 16)     }
+  'some'       { PT _ (TS _ 17)     }
+  'somesymbol' { PT _ (TS _ 18)     }
+  'var'        { PT _ (TS _ 19)     }
+  '{'          { PT _ (TS _ 20)     }
+  '|'          { PT _ (TS _ 21)     }
+  '|-'         { PT _ (TS _ 22)     }
+  '}'          { PT _ (TS _ 23)     }
+  L_integ      { PT _ (TI $$)       }
+  L_PredId     { PT _ (T_PredId $$) }
+  L_TermId     { PT _ (T_TermId $$) }
+  L_RuleId     { PT _ (T_RuleId $$) }
 
 %%
 
-ArgId :: { AbsLogic.ArgId }
-ArgId  : L_ArgId { AbsLogic.ArgId $1 }
+Integer :: { Integer }
+Integer  : L_integ  { (read $1) :: Integer }
 
 PredId :: { AbsLogic.PredId }
 PredId  : L_PredId { AbsLogic.PredId $1 }
 
-VarId :: { AbsLogic.VarId }
-VarId  : L_VarId { AbsLogic.VarId $1 }
+TermId :: { AbsLogic.TermId }
+TermId  : L_TermId { AbsLogic.TermId $1 }
 
-Ident :: { AbsLogic.Ident }
-Ident  : L_Ident { AbsLogic.Ident $1 }
-
-PIdent :: { AbsLogic.PIdent }
-PIdent  : L_PIdent { AbsLogic.PIdent (mkPosToken $1) }
+RuleId :: { AbsLogic.RuleId }
+RuleId  : L_RuleId { AbsLogic.RuleId $1 }
 
 Sequent :: { AbsLogic.Sequent }
 Sequent
-  : 'if' ListForm '|-' Form ';' ListStep { AbsLogic.Seq $2 $4 $6 }
+  : 'if' ListForm '|-' Form '{' ListStep '}' { AbsLogic.Seq $2 $4 $6 }
+
+TermType :: { AbsLogic.TermType }
+TermType
+  : 'var' { AbsLogic.TermType_var }
+  | 'const' { AbsLogic.TermType_const }
 
 Step :: { AbsLogic.Step }
 Step
-  : Form ':' 'Prem' ';' { AbsLogic.StepPrem $1 }
-  | Var ':' 'Assumed' ';' { AbsLogic.StepFree $1 }
-  | Form ':' 'Assumed' ';' { AbsLogic.StepAssume $1 }
-  | '{' ListStep '}' ';' { AbsLogic.StepScope $2 }
-  | Form ':' '(' ListArg ')' ';' { AbsLogic.StepForm $1 $4 }
+  : 'prem' Form ';' { AbsLogic.StepPrem $2 }
+  | TermType Term ';' { AbsLogic.StepTerm $1 $2 }
+  | 'assume' Form ';' { AbsLogic.StepAssume $2 }
+  | '{' ListStep '}' { AbsLogic.StepScope $2 }
+  | RuleId '[' ListArg ']' Form ';' { AbsLogic.StepForm $1 $3 $5 }
 
 ListStep :: { [AbsLogic.Step] }
 ListStep : {- empty -} { [] } | Step ListStep { (:) $1 $2 }
 
 Arg :: { AbsLogic.Arg }
-Arg : ArgId { AbsLogic.ArgLit $1 }
+Arg : Step { AbsLogic.ArgStep $1 } | Integer { AbsLogic.ArgLit $1 }
 
 ListArg :: { [AbsLogic.Arg] }
 ListArg
@@ -119,16 +124,21 @@ ListArg
   | Arg { (:[]) $1 }
   | Arg ',' ListArg { (:) $1 $3 }
 
+SymBot :: { AbsLogic.SymBot }
+SymBot
+  : 'bot' { AbsLogic.SymBot_bot }
+  | 'somesymbol' { AbsLogic.SymBot_somesymbol }
+
 Form4 :: { AbsLogic.Form }
 Form4
-  : 'bot' { AbsLogic.FormBot }
+  : SymBot { AbsLogic.FormBot $1 }
   | Term '=' Term { AbsLogic.FormEq $1 $3 }
   | '(' Form ')' { $2 }
 
 Form3 :: { AbsLogic.Form }
 Form3
-  : 'all' Var Form { AbsLogic.FormAll $2 $3 }
-  | 'some' Var Form { AbsLogic.FormSome $2 $3 }
+  : 'all' Term Form { AbsLogic.FormAll $2 $3 }
+  | 'some' Term Form { AbsLogic.FormSome $2 $3 }
   | '!' Form { AbsLogic.FormNot $2 }
   | Form4 { $1 }
 
@@ -152,23 +162,16 @@ ListForm
 
 Pred :: { AbsLogic.Pred }
 Pred
-  : PredId '(' ListTerm ')' { AbsLogic.PredN $1 $3 }
-  | PredId { AbsLogic.Pred0 $1 }
-
-Var :: { AbsLogic.Var }
-Var : VarId { AbsLogic.VarLit $1 }
-
-Fun :: { AbsLogic.Fun }
-Fun : VarId '(' ListTerm ')' { AbsLogic.FunLit $1 $3 }
+  : PredId { AbsLogic.Pred0 $1 }
+  | PredId '(' ListTerm ')' { AbsLogic.PredN $1 $3 }
 
 Term :: { AbsLogic.Term }
-Term : Var { AbsLogic.TermVar $1 } | Fun { AbsLogic.TermFun $1 }
+Term
+  : TermId { AbsLogic.TermVar $1 }
+  | TermId '(' ListTerm ')' { AbsLogic.TermFun $1 $3 }
 
 ListTerm :: { [AbsLogic.Term] }
-ListTerm
-  : {- empty -} { [] }
-  | Term { (:[]) $1 }
-  | Term ',' ListTerm { (:) $1 $3 }
+ListTerm : Term { (:[]) $1 } | Term ',' ListTerm { (:) $1 $3 }
 
 {
 

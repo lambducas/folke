@@ -137,27 +137,28 @@ instance Print Integer where
 instance Print Double where
   prt _ x = doc (shows x)
 
-instance Print AbsLogic.ArgId where
-  prt _ (AbsLogic.ArgId i) = doc $ showString i
 instance Print AbsLogic.PredId where
   prt _ (AbsLogic.PredId i) = doc $ showString i
-instance Print AbsLogic.VarId where
-  prt _ (AbsLogic.VarId i) = doc $ showString i
-instance Print AbsLogic.Ident where
-  prt _ (AbsLogic.Ident i) = doc $ showString i
-instance Print AbsLogic.PIdent where
-  prt _ (AbsLogic.PIdent (_,i)) = doc $ showString i
+instance Print AbsLogic.TermId where
+  prt _ (AbsLogic.TermId i) = doc $ showString i
+instance Print AbsLogic.RuleId where
+  prt _ (AbsLogic.RuleId i) = doc $ showString i
 instance Print AbsLogic.Sequent where
   prt i = \case
-    AbsLogic.Seq forms form steps -> prPrec i 0 (concatD [doc (showString "if"), prt 0 forms, doc (showString "|-"), prt 0 form, doc (showString ";"), prt 0 steps])
+    AbsLogic.Seq forms form steps -> prPrec i 0 (concatD [doc (showString "if"), prt 0 forms, doc (showString "|-"), prt 0 form, doc (showString "{"), prt 0 steps, doc (showString "}")])
+
+instance Print AbsLogic.TermType where
+  prt i = \case
+    AbsLogic.TermType_var -> prPrec i 0 (concatD [doc (showString "var")])
+    AbsLogic.TermType_const -> prPrec i 0 (concatD [doc (showString "const")])
 
 instance Print AbsLogic.Step where
   prt i = \case
-    AbsLogic.StepPrem form -> prPrec i 0 (concatD [prt 0 form, doc (showString ":"), doc (showString "Prem"), doc (showString ";")])
-    AbsLogic.StepFree var -> prPrec i 0 (concatD [prt 0 var, doc (showString ":"), doc (showString "Assumed"), doc (showString ";")])
-    AbsLogic.StepAssume form -> prPrec i 0 (concatD [prt 0 form, doc (showString ":"), doc (showString "Assumed"), doc (showString ";")])
-    AbsLogic.StepScope steps -> prPrec i 0 (concatD [doc (showString "{"), prt 0 steps, doc (showString "}"), doc (showString ";")])
-    AbsLogic.StepForm form args -> prPrec i 0 (concatD [prt 0 form, doc (showString ":"), doc (showString "("), prt 0 args, doc (showString ")"), doc (showString ";")])
+    AbsLogic.StepPrem form -> prPrec i 0 (concatD [doc (showString "prem"), prt 0 form, doc (showString ";")])
+    AbsLogic.StepTerm termtype term -> prPrec i 0 (concatD [prt 0 termtype, prt 0 term, doc (showString ";")])
+    AbsLogic.StepAssume form -> prPrec i 0 (concatD [doc (showString "assume"), prt 0 form, doc (showString ";")])
+    AbsLogic.StepScope steps -> prPrec i 0 (concatD [doc (showString "{"), prt 0 steps, doc (showString "}")])
+    AbsLogic.StepForm ruleid args form -> prPrec i 0 (concatD [prt 0 ruleid, doc (showString "["), prt 0 args, doc (showString "]"), prt 0 form, doc (showString ";")])
 
 instance Print [AbsLogic.Step] where
   prt _ [] = concatD []
@@ -165,19 +166,25 @@ instance Print [AbsLogic.Step] where
 
 instance Print AbsLogic.Arg where
   prt i = \case
-    AbsLogic.ArgLit argid -> prPrec i 0 (concatD [prt 0 argid])
+    AbsLogic.ArgStep step -> prPrec i 0 (concatD [prt 0 step])
+    AbsLogic.ArgLit n -> prPrec i 0 (concatD [prt 0 n])
 
 instance Print [AbsLogic.Arg] where
   prt _ [] = concatD []
   prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
+instance Print AbsLogic.SymBot where
+  prt i = \case
+    AbsLogic.SymBot_bot -> prPrec i 0 (concatD [doc (showString "bot")])
+    AbsLogic.SymBot_somesymbol -> prPrec i 0 (concatD [doc (showString "somesymbol")])
+
 instance Print AbsLogic.Form where
   prt i = \case
-    AbsLogic.FormBot -> prPrec i 4 (concatD [doc (showString "bot")])
+    AbsLogic.FormBot symbot -> prPrec i 4 (concatD [prt 0 symbot])
     AbsLogic.FormEq term1 term2 -> prPrec i 4 (concatD [prt 0 term1, doc (showString "="), prt 0 term2])
-    AbsLogic.FormAll var form -> prPrec i 3 (concatD [doc (showString "all"), prt 0 var, prt 0 form])
-    AbsLogic.FormSome var form -> prPrec i 3 (concatD [doc (showString "some"), prt 0 var, prt 0 form])
+    AbsLogic.FormAll term form -> prPrec i 3 (concatD [doc (showString "all"), prt 0 term, prt 0 form])
+    AbsLogic.FormSome term form -> prPrec i 3 (concatD [doc (showString "some"), prt 0 term, prt 0 form])
     AbsLogic.FormNot form -> prPrec i 3 (concatD [doc (showString "!"), prt 0 form])
     AbsLogic.FormAnd form1 form2 -> prPrec i 2 (concatD [prt 0 form1, doc (showString "&"), prt 0 form2])
     AbsLogic.FormOr form1 form2 -> prPrec i 2 (concatD [prt 0 form1, doc (showString "|"), prt 0 form2])
@@ -191,21 +198,13 @@ instance Print [AbsLogic.Form] where
 
 instance Print AbsLogic.Pred where
   prt i = \case
-    AbsLogic.PredN predid terms -> prPrec i 0 (concatD [prt 0 predid, doc (showString "("), prt 0 terms, doc (showString ")")])
     AbsLogic.Pred0 predid -> prPrec i 0 (concatD [prt 0 predid])
-
-instance Print AbsLogic.Var where
-  prt i = \case
-    AbsLogic.VarLit varid -> prPrec i 0 (concatD [prt 0 varid])
-
-instance Print AbsLogic.Fun where
-  prt i = \case
-    AbsLogic.FunLit varid terms -> prPrec i 0 (concatD [prt 0 varid, doc (showString "("), prt 0 terms, doc (showString ")")])
+    AbsLogic.PredN predid terms -> prPrec i 0 (concatD [prt 0 predid, doc (showString "("), prt 0 terms, doc (showString ")")])
 
 instance Print AbsLogic.Term where
   prt i = \case
-    AbsLogic.TermVar var -> prPrec i 0 (concatD [prt 0 var])
-    AbsLogic.TermFun fun -> prPrec i 0 (concatD [prt 0 fun])
+    AbsLogic.TermVar termid -> prPrec i 0 (concatD [prt 0 termid])
+    AbsLogic.TermFun termid terms -> prPrec i 0 (concatD [prt 0 termid, doc (showString "("), prt 0 terms, doc (showString ")")])
 
 instance Print [AbsLogic.Term] where
   prt _ [] = concatD []

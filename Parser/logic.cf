@@ -1,21 +1,33 @@
 --Grammar for logic
-Seq. Sequent ::= "if" [Form] "|-" Form ";" [Step];
+Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 
-StepPrem. Step ::= Form ":" "Prem" ";";
-StepFree. Step ::= Var ":" "Assumed" ";"; 
-StepAssume. Step ::= Form ":" "Assumed" ";";
-StepScope. Step ::= "{" [Step] "}" ";";
-StepForm. Step ::= Form ":" Ident "(" [ListArg] ")" ";";
-terminator Step "" ;
+-- var form;
+-- const form;
 
-ArgLit. Arg ::= ArgId;
+rules TermType ::= "var" | "const";
+
+StepPrem.   Step ::= "prem" Form ";"; -- OK
+StepTerm.   Step ::= TermType Term ";"; -- TODO: FIX
+-- StepTerm.   Step ::= Term "Assumed" ";";  
+StepAssume. Step ::= "assume" Form ";"; -- OK
+StepScope.  Step ::= "{"[Step]"}"; 
+StepForm.   Step ::= RuleId "[" [Arg] "]" Form ";";
+terminator  Step "" ;
+
+--var x
+--const x
+ArgStep. Arg ::= Step;
+ArgLit. Arg ::= Integer;
 separator Arg ",";
 
-FormBot.  Form4  ::= "bot";
+-- Add rules for every symbol
+rules SymBot ::= "bot" | "somesymbol";
+
+FormBot.  Form4  ::= SymBot;
 FormEq.   Form4  ::= Term "=" Term;
 
-FormAll.  Form3 ::= "all" Var Form;
-FormSome. Form3 ::= "some" Var Form;
+FormAll.  Form3 ::= "all" Term Form;
+FormSome. Form3 ::= "some" Term Form;
 FormNot.  Form3 ::= "!" Form;
 
 FormAnd.  Form2 ::= Form "&" Form;
@@ -27,19 +39,15 @@ FormPred. Form ::= Pred;
 coercions Form 4;
 separator Form ",";
 
-PredN. Pred ::= PredId "(" [Term] ")";
 Pred0. Pred ::= PredId;
+PredN. Pred ::= PredId "(" [Term] ")";
 
-VarLit. Var ::= VarId;
-FunLit. Fun ::= VarId "(" [Term] ")";
+TermVar. Term ::= TermId;
+TermFun. Term ::= TermId "(" [Term] ")";
+separator nonempty Term ",";
 
-TermVar.   Term ::= Var;
-TermFun.   Term ::= Fun;
-separator Term ",";
-
-token ArgId  digit digit*;
 token PredId (upper (letter | digit | '_' )*);
-token VarId  (lower (letter | digit | '_' )*);
-token Ident  (upper (letter | digit | '_' )*);
+token TermId (lower (letter | digit | '_' )*);
+token RuleId (upper (letter | digit | '_' )*);
 
 comment "#" ;

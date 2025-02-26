@@ -1,4 +1,4 @@
 if all x bot |- some y bot;
-all x bot: Prem;
-some y bot: Prem;
-{x: Assumed;};
+prem all x bot;
+prem some y bot;
+{assume all x;}
