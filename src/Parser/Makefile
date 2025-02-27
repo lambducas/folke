@@ -14,12 +14,12 @@ ALEX_OPTS  = --ghc
 
 # Default goal.
 
-all : TestLogic
+all : Logic/Test
 
 # Rules for building the parser.
 
-AbsLogic.hs LexLogic.x ParLogic.y PrintLogic.hs TestLogic.hs : logic.cf
-	bnfc --haskell logic.cf
+Logic/Abs.hs Logic/Lex.x Logic/Par.y Logic/Print.hs Logic/Test.hs : logic.cf
+	bnfc --haskell -d logic.cf
 
 %.hs : %.y
 	${HAPPY} ${HAPPY_OPTS} $<
@@ -27,16 +27,16 @@ AbsLogic.hs LexLogic.x ParLogic.y PrintLogic.hs TestLogic.hs : logic.cf
 %.hs : %.x
 	${ALEX} ${ALEX_OPTS} $<
 
-TestLogic : AbsLogic.hs LexLogic.hs ParLogic.hs PrintLogic.hs TestLogic.hs
+Logic/Test : Logic/Abs.hs Logic/Lex.hs Logic/Par.hs Logic/Print.hs Logic/Test.hs
 	${GHC} ${GHC_OPTS} $@
 
 # Rules for cleaning generated files.
 
 clean :
-	-rm -f *.hi *.o *.log *.aux *.dvi
+	-rm -f Logic/*.hi Logic/*.o Logic/*.log Logic/*.aux Logic/*.dvi
 
 distclean : clean
-	-rm -f AbsLogic.hs AbsLogic.hs.bak ComposOp.hs ComposOp.hs.bak DocLogic.txt DocLogic.txt.bak ErrM.hs ErrM.hs.bak LayoutLogic.hs LayoutLogic.hs.bak LexLogic.x LexLogic.x.bak ParLogic.y ParLogic.y.bak PrintLogic.hs PrintLogic.hs.bak SkelLogic.hs SkelLogic.hs.bak TestLogic.hs TestLogic.hs.bak XMLLogic.hs XMLLogic.hs.bak ASTLogic.agda ASTLogic.agda.bak ParserLogic.agda ParserLogic.agda.bak IOLib.agda IOLib.agda.bak Main.agda Main.agda.bak logic.dtd logic.dtd.bak TestLogic LexLogic.hs ParLogic.hs ParLogic.info ParDataLogic.hs Makefile
-
+	-rm -f Logic/Abs.hs Logic/Abs.hs.bak Logic/ComposOp.hs Logic/ComposOp.hs.bak Logic/Doc.txt Logic/Doc.txt.bak Logic/ErrM.hs Logic/ErrM.hs.bak Logic/Layout.hs Logic/Layout.hs.bak Logic/Lex.x Logic/Lex.x.bak Logic/Par.y Logic/Par.y.bak Logic/Print.hs Logic/Print.hs.bak Logic/Skel.hs Logic/Skel.hs.bak Logic/Test.hs Logic/Test.hs.bak Logic/XML.hs Logic/XML.hs.bak Logic/AST.agda Logic/AST.agda.bak Logic/Parser.agda Logic/Parser.agda.bak Logic/IOLib.agda Logic/IOLib.agda.bak Logic/Main.agda Logic/Main.agda.bak Logic/logic.dtd Logic/logic.dtd.bak Logic/Test Logic/Lex.hs Logic/Par.hs Logic/Par.info Logic/ParData.hs Makefile
+	-rmdir -p Logic/
 
 # EOF

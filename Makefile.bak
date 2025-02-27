@@ -1,0 +1,8 @@
+all: parser
+
+parser:
+	bnfc -d -m ./src/Parser/logic.cf  &&  make
+
+clean: 
+	$(MAKE) -C src/Parser clean
+	$(MAKE) -C src/Parser distclean
