@@ -39,7 +39,7 @@ transTermType x = case x of
 transStep :: Logic.Abs.Step -> Result
 transStep x = case x of
   Logic.Abs.StepPrem form -> failure x
-  Logic.Abs.StepTerm termtype term -> failure x
+  Logic.Abs.StepTerm termtype termid -> failure x
   Logic.Abs.StepAssume form -> failure x
   Logic.Abs.StepScope steps -> failure x
   Logic.Abs.StepForm ruleid args form -> failure x
@@ -49,22 +49,17 @@ transArg x = case x of
   Logic.Abs.ArgStep step -> failure x
   Logic.Abs.ArgLit integer -> failure x
 
-transSymBot :: Logic.Abs.SymBot -> Result
-transSymBot x = case x of
-  Logic.Abs.SymBot_bot -> failure x
-  Logic.Abs.SymBot_somesymbol -> failure x
-
 transForm :: Logic.Abs.Form -> Result
 transForm x = case x of
-  Logic.Abs.FormBot symbot -> failure x
+  Logic.Abs.FormBot -> failure x
   Logic.Abs.FormEq term1 term2 -> failure x
-  Logic.Abs.FormAll term form -> failure x
-  Logic.Abs.FormSome term form -> failure x
+  Logic.Abs.FormPred pred -> failure x
+  Logic.Abs.FormAll termid form -> failure x
+  Logic.Abs.FormSome termid form -> failure x
   Logic.Abs.FormNot form -> failure x
   Logic.Abs.FormAnd form1 form2 -> failure x
   Logic.Abs.FormOr form1 form2 -> failure x
   Logic.Abs.FormIf form1 form2 -> failure x
-  Logic.Abs.FormPred pred -> failure x
 
 transPred :: Logic.Abs.Pred -> Result
 transPred x = case x of

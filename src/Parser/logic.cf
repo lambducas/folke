@@ -7,7 +7,7 @@ Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 rules TermType ::= "var" | "const";
 
 StepPrem.   Step ::= "prem" Form ";"; -- OK
-StepTerm.   Step ::= TermType Term ";"; -- TODO: FIX
+StepTerm.   Step ::= TermType TermId ";"; -- TODO: FIX
 -- StepTerm.   Step ::= Term "Assumed" ";";  
 StepAssume. Step ::= "assume" Form ";"; -- OK
 StepScope.  Step ::= "{"[Step]"}"; 
@@ -20,22 +20,18 @@ ArgStep. Arg ::= Step;
 ArgLit. Arg ::= Integer;
 separator Arg ",";
 
--- Add rules for every symbol
-rules SymBot ::= "bot" | "somesymbol";
+FormBot.  Form4 ::= "bot";
+FormEq.   Form4 ::= Term "=" Term;
+FormPred. Form4 ::= Pred;
 
-FormBot.  Form4  ::= SymBot;
-FormEq.   Form4  ::= Term "=" Term;
+FormAll.  Form3 ::= "all" TermId Form3;
+FormSome. Form3 ::= "some" TermId Form3;
+FormNot.  Form3 ::= "!" Form4;
 
-FormAll.  Form3 ::= "all" Term Form;
-FormSome. Form3 ::= "some" Term Form;
-FormNot.  Form3 ::= "!" Form;
+FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
+FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
-FormAnd.  Form2 ::= Form "&" Form;
-FormOr.   Form2 ::= Form "|" Form;
-
-FormIf.   Form1 ::= Form "->" Form;
-
-FormPred. Form ::= Pred;
+FormIf.   Form1 ::= Form1 "->" Form2; --right-associative(book)
 coercions Form 4;
 separator Form ",";
 

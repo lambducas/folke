@@ -18,7 +18,7 @@ data TermType = TermType_var | TermType_const
 
 data Step
     = StepPrem Form
-    | StepTerm TermType Term
+    | StepTerm TermType TermId
     | StepAssume Form
     | StepScope [Step]
     | StepForm RuleId [Arg] Form
@@ -27,19 +27,16 @@ data Step
 data Arg = ArgStep Step | ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data SymBot = SymBot_bot | SymBot_somesymbol
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Form
-    = FormBot SymBot
+    = FormBot
     | FormEq Term Term
-    | FormAll Term Form
-    | FormSome Term Form
+    | FormPred Pred
+    | FormAll TermId Form
+    | FormSome TermId Form
     | FormNot Form
     | FormAnd Form Form
     | FormOr Form Form
     | FormIf Form Form
-    | FormPred Pred
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Pred = Pred0 PredId | PredN PredId [Term]

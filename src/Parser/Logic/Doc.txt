@@ -33,8 +33,7 @@ The set of reserved words is the set of terminals appearing in the grammar. Thos
 
 The reserved words used in logic are the following:
   | ``all`` | ``assume`` | ``bot`` | ``const``
-  | ``if`` | ``prem`` | ``some`` | ``somesymbol``
-  | ``var`` |  |  |
+  | ``if`` | ``prem`` | ``some`` | ``var``
 
 The symbols used in logic are the following:
   | |- | { | } | ;
@@ -55,7 +54,7 @@ All other symbols are terminals.
   | //TermType// | -> | ``var``
   |  |  **|**  | ``const``
   | //Step// | -> | ``prem`` //Form// ``;``
-  |  |  **|**  | //TermType// //Term// ``;``
+  |  |  **|**  | //TermType// //TermId// ``;``
   |  |  **|**  | ``assume`` //Form// ``;``
   |  |  **|**  | ``{`` //[Step]// ``}``
   |  |  **|**  | //RuleId// ``[`` //[Arg]// ``]`` //Form// ``;``
@@ -66,22 +65,20 @@ All other symbols are terminals.
   | //[Arg]// | -> | **eps**
   |  |  **|**  | //Arg//
   |  |  **|**  | //Arg// ``,`` //[Arg]//
-  | //SymBot// | -> | ``bot``
-  |  |  **|**  | ``somesymbol``
-  | //Form4// | -> | //SymBot//
+  | //Form4// | -> | ``bot``
   |  |  **|**  | //Term// ``=`` //Term//
+  |  |  **|**  | //Pred//
   |  |  **|**  | ``(`` //Form// ``)``
-  | //Form3// | -> | ``all`` //Term// //Form//
-  |  |  **|**  | ``some`` //Term// //Form//
-  |  |  **|**  | ``!`` //Form//
+  | //Form3// | -> | ``all`` //TermId// //Form3//
+  |  |  **|**  | ``some`` //TermId// //Form3//
+  |  |  **|**  | ``!`` //Form4//
   |  |  **|**  | //Form4//
-  | //Form2// | -> | //Form// ``&`` //Form//
-  |  |  **|**  | //Form// ``|`` //Form//
+  | //Form2// | -> | //Form2// ``&`` //Form3//
+  |  |  **|**  | //Form2// ``|`` //Form3//
   |  |  **|**  | //Form3//
-  | //Form1// | -> | //Form// ``->`` //Form//
+  | //Form1// | -> | //Form1// ``->`` //Form2//
   |  |  **|**  | //Form2//
-  | //Form// | -> | //Pred//
-  |  |  **|**  | //Form1//
+  | //Form// | -> | //Form1//
   | //[Form]// | -> | **eps**
   |  |  **|**  | //Form//
   |  |  **|**  | //Form// ``,`` //[Form]//

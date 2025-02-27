@@ -14,7 +14,6 @@ module Logic.Par
   , pListStep
   , pArg
   , pListArg
-  , pSymBot
   , pForm4
   , pForm3
   , pForm2
@@ -39,7 +38,6 @@ import Logic.Lex
 %name pListStep ListStep
 %name pArg Arg
 %name pListArg ListArg
-%name pSymBot SymBot
 %name pForm4 Form4
 %name pForm3 Form3
 %name pForm2 Form2
@@ -53,33 +51,32 @@ import Logic.Lex
 %monad { Err } { (>>=) } { return }
 %tokentype {Token}
 %token
-  '!'          { PT _ (TS _ 1)      }
-  '&'          { PT _ (TS _ 2)      }
-  '('          { PT _ (TS _ 3)      }
-  ')'          { PT _ (TS _ 4)      }
-  ','          { PT _ (TS _ 5)      }
-  '->'         { PT _ (TS _ 6)      }
-  ';'          { PT _ (TS _ 7)      }
-  '='          { PT _ (TS _ 8)      }
-  '['          { PT _ (TS _ 9)      }
-  ']'          { PT _ (TS _ 10)     }
-  'all'        { PT _ (TS _ 11)     }
-  'assume'     { PT _ (TS _ 12)     }
-  'bot'        { PT _ (TS _ 13)     }
-  'const'      { PT _ (TS _ 14)     }
-  'if'         { PT _ (TS _ 15)     }
-  'prem'       { PT _ (TS _ 16)     }
-  'some'       { PT _ (TS _ 17)     }
-  'somesymbol' { PT _ (TS _ 18)     }
-  'var'        { PT _ (TS _ 19)     }
-  '{'          { PT _ (TS _ 20)     }
-  '|'          { PT _ (TS _ 21)     }
-  '|-'         { PT _ (TS _ 22)     }
-  '}'          { PT _ (TS _ 23)     }
-  L_integ      { PT _ (TI $$)       }
-  L_PredId     { PT _ (T_PredId $$) }
-  L_TermId     { PT _ (T_TermId $$) }
-  L_RuleId     { PT _ (T_RuleId $$) }
+  '!'      { PT _ (TS _ 1)      }
+  '&'      { PT _ (TS _ 2)      }
+  '('      { PT _ (TS _ 3)      }
+  ')'      { PT _ (TS _ 4)      }
+  ','      { PT _ (TS _ 5)      }
+  '->'     { PT _ (TS _ 6)      }
+  ';'      { PT _ (TS _ 7)      }
+  '='      { PT _ (TS _ 8)      }
+  '['      { PT _ (TS _ 9)      }
+  ']'      { PT _ (TS _ 10)     }
+  'all'    { PT _ (TS _ 11)     }
+  'assume' { PT _ (TS _ 12)     }
+  'bot'    { PT _ (TS _ 13)     }
+  'const'  { PT _ (TS _ 14)     }
+  'if'     { PT _ (TS _ 15)     }
+  'prem'   { PT _ (TS _ 16)     }
+  'some'   { PT _ (TS _ 17)     }
+  'var'    { PT _ (TS _ 18)     }
+  '{'      { PT _ (TS _ 19)     }
+  '|'      { PT _ (TS _ 20)     }
+  '|-'     { PT _ (TS _ 21)     }
+  '}'      { PT _ (TS _ 22)     }
+  L_integ  { PT _ (TI $$)       }
+  L_PredId { PT _ (T_PredId $$) }
+  L_TermId { PT _ (T_TermId $$) }
+  L_RuleId { PT _ (T_RuleId $$) }
 
 %%
 
@@ -107,7 +104,7 @@ TermType
 Step :: { Logic.Abs.Step }
 Step
   : 'prem' Form ';' { Logic.Abs.StepPrem $2 }
-  | TermType Term ';' { Logic.Abs.StepTerm $1 $2 }
+  | TermType TermId ';' { Logic.Abs.StepTerm $1 $2 }
   | 'assume' Form ';' { Logic.Abs.StepAssume $2 }
   | '{' ListStep '}' { Logic.Abs.StepScope $2 }
   | RuleId '[' ListArg ']' Form ';' { Logic.Abs.StepForm $1 $3 $5 }
@@ -125,35 +122,31 @@ ListArg
   | Arg { (:[]) $1 }
   | Arg ',' ListArg { (:) $1 $3 }
 
-SymBot :: { Logic.Abs.SymBot }
-SymBot
-  : 'bot' { Logic.Abs.SymBot_bot }
-  | 'somesymbol' { Logic.Abs.SymBot_somesymbol }
-
 Form4 :: { Logic.Abs.Form }
 Form4
-  : SymBot { Logic.Abs.FormBot $1 }
+  : 'bot' { Logic.Abs.FormBot }
   | Term '=' Term { Logic.Abs.FormEq $1 $3 }
+  | Pred { Logic.Abs.FormPred $1 }
   | '(' Form ')' { $2 }
 
 Form3 :: { Logic.Abs.Form }
 Form3
-  : 'all' Term Form { Logic.Abs.FormAll $2 $3 }
-  | 'some' Term Form { Logic.Abs.FormSome $2 $3 }
-  | '!' Form { Logic.Abs.FormNot $2 }
+  : 'all' TermId Form3 { Logic.Abs.FormAll $2 $3 }
+  | 'some' TermId Form3 { Logic.Abs.FormSome $2 $3 }
+  | '!' Form4 { Logic.Abs.FormNot $2 }
   | Form4 { $1 }
 
 Form2 :: { Logic.Abs.Form }
 Form2
-  : Form '&' Form { Logic.Abs.FormAnd $1 $3 }
-  | Form '|' Form { Logic.Abs.FormOr $1 $3 }
+  : Form2 '&' Form3 { Logic.Abs.FormAnd $1 $3 }
+  | Form2 '|' Form3 { Logic.Abs.FormOr $1 $3 }
   | Form3 { $1 }
 
 Form1 :: { Logic.Abs.Form }
-Form1 : Form '->' Form { Logic.Abs.FormIf $1 $3 } | Form2 { $1 }
+Form1 : Form1 '->' Form2 { Logic.Abs.FormIf $1 $3 } | Form2 { $1 }
 
 Form :: { Logic.Abs.Form }
-Form : Pred { Logic.Abs.FormPred $1 } | Form1 { $1 }
+Form : Form1 { $1 }
 
 ListForm :: { [Logic.Abs.Form] }
 ListForm

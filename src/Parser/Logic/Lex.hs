@@ -443,12 +443,11 @@ resWords =
     (b "->" 6
        (b "(" 3 (b "&" 2 (b "!" 1 N N) N) (b "," 5 (b ")" 4 N N) N))
        (b "[" 9 (b "=" 8 (b ";" 7 N N) N) (b "all" 11 (b "]" 10 N N) N)))
-    (b "somesymbol" 18
+    (b "var" 18
        (b "if" 15
           (b "const" 14 (b "bot" 13 N N) N)
           (b "some" 17 (b "prem" 16 N N) N))
-       (b "|" 21
-          (b "{" 20 (b "var" 19 N N) N) (b "}" 23 (b "|-" 22 N N) N)))
+       (b "|-" 21 (b "|" 20 (b "{" 19 N N) N) (b "}" 22 N N)))
   where
   b s n = B bs (TS bs n)
     where
