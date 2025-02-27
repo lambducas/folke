@@ -1,2 +1,4 @@
-#Gitinore file, add files/patterns that should be ignored by git 
-*.o
+##Gitinore file, add files/patterns that should be ignored by git 
+
+#Ignore all object files
+**/*.o
