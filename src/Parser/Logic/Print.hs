@@ -155,7 +155,7 @@ instance Print Logic.Abs.TermType where
 instance Print Logic.Abs.Step where
   prt i = \case
     Logic.Abs.StepPrem form -> prPrec i 0 (concatD [doc (showString "prem"), prt 0 form, doc (showString ";")])
-    Logic.Abs.StepTerm termtype term -> prPrec i 0 (concatD [prt 0 termtype, prt 0 term, doc (showString ";")])
+    Logic.Abs.StepTerm termtype termid -> prPrec i 0 (concatD [prt 0 termtype, prt 0 termid, doc (showString ";")])
     Logic.Abs.StepAssume form -> prPrec i 0 (concatD [doc (showString "assume"), prt 0 form, doc (showString ";")])
     Logic.Abs.StepScope steps -> prPrec i 0 (concatD [doc (showString "{"), prt 0 steps, doc (showString "}")])
     Logic.Abs.StepForm ruleid args form -> prPrec i 0 (concatD [prt 0 ruleid, doc (showString "["), prt 0 args, doc (showString "]"), prt 0 form, doc (showString ";")])
@@ -174,16 +174,47 @@ instance Print [Logic.Abs.Arg] where
   prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
+instance Print Logic.Abs.SymBot where
+  prt i = \case
+    Logic.Abs.SymBot_Bot -> prPrec i 0 (concatD [doc (showString "Bot")])
+
+instance Print Logic.Abs.SymEq where
+  prt i = \case
+    Logic.Abs.SymEq1 -> prPrec i 0 (concatD [doc (showString "=")])
+
+instance Print Logic.Abs.SymAll where
+  prt i = \case
+    Logic.Abs.SymAll_all -> prPrec i 0 (concatD [doc (showString "all")])
+
+instance Print Logic.Abs.SymSome where
+  prt i = \case
+    Logic.Abs.SymSome_some -> prPrec i 0 (concatD [doc (showString "some")])
+
+instance Print Logic.Abs.SymNot where
+  prt i = \case
+    Logic.Abs.SymNot_not -> prPrec i 0 (concatD [doc (showString "not")])
+    Logic.Abs.SymNot1 -> prPrec i 0 (concatD [doc (showString "!")])
+
+instance Print Logic.Abs.SymAnd where
+  prt i = \case
+    Logic.Abs.SymAnd_and -> prPrec i 0 (concatD [doc (showString "and")])
+    Logic.Abs.SymAnd1 -> prPrec i 0 (concatD [doc (showString "&")])
+
+instance Print Logic.Abs.SymOr where
+  prt i = \case
+    Logic.Abs.SymOr_or -> prPrec i 0 (concatD [doc (showString "or")])
+    Logic.Abs.SymOr1 -> prPrec i 0 (concatD [doc (showString "|")])
+
 instance Print Logic.Abs.Form where
   prt i = \case
-    Logic.Abs.FormBot -> prPrec i 4 (concatD [doc (showString "bot")])
-    Logic.Abs.FormEq term1 term2 -> prPrec i 4 (concatD [prt 0 term1, doc (showString "="), prt 0 term2])
+    Logic.Abs.FormBot symbot -> prPrec i 4 (concatD [prt 0 symbot])
+    Logic.Abs.FormEq term1 symeq term2 -> prPrec i 4 (concatD [prt 0 term1, prt 0 symeq, prt 0 term2])
     Logic.Abs.FormPred pred -> prPrec i 4 (concatD [prt 0 pred])
-    Logic.Abs.FormAll termid form -> prPrec i 3 (concatD [doc (showString "all"), prt 0 termid, prt 3 form])
-    Logic.Abs.FormSome termid form -> prPrec i 3 (concatD [doc (showString "some"), prt 0 termid, prt 3 form])
-    Logic.Abs.FormNot form -> prPrec i 3 (concatD [doc (showString "!"), prt 4 form])
-    Logic.Abs.FormAnd form1 form2 -> prPrec i 2 (concatD [prt 2 form1, doc (showString "&"), prt 3 form2])
-    Logic.Abs.FormOr form1 form2 -> prPrec i 2 (concatD [prt 2 form1, doc (showString "|"), prt 3 form2])
+    Logic.Abs.FormAll symall termid form -> prPrec i 3 (concatD [prt 0 symall, prt 0 termid, prt 3 form])
+    Logic.Abs.FormSome symsome termid form -> prPrec i 3 (concatD [prt 0 symsome, prt 0 termid, prt 3 form])
+    Logic.Abs.FormNot symnot form -> prPrec i 3 (concatD [prt 0 symnot, prt 3 form])
+    Logic.Abs.FormAnd form1 symand form2 -> prPrec i 2 (concatD [prt 2 form1, prt 0 symand, prt 3 form2])
+    Logic.Abs.FormOr form1 symor form2 -> prPrec i 2 (concatD [prt 2 form1, prt 0 symor, prt 3 form2])
     Logic.Abs.FormIf form1 form2 -> prPrec i 1 (concatD [prt 1 form1, doc (showString "->"), prt 2 form2])
 
 instance Print [Logic.Abs.Form] where

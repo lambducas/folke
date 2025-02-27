@@ -14,6 +14,13 @@ module Logic.Par
   , pListStep
   , pArg
   , pListArg
+  , pSymBot
+  , pSymEq
+  , pSymAll
+  , pSymSome
+  , pSymNot
+  , pSymAnd
+  , pSymOr
   , pForm4
   , pForm3
   , pForm2
@@ -38,6 +45,13 @@ import Logic.Lex
 %name pListStep ListStep
 %name pArg Arg
 %name pListArg ListArg
+%name pSymBot SymBot
+%name pSymEq SymEq
+%name pSymAll SymAll
+%name pSymSome SymSome
+%name pSymNot SymNot
+%name pSymAnd SymAnd
+%name pSymOr SymOr
 %name pForm4 Form4
 %name pForm3 Form3
 %name pForm2 Form2
@@ -59,20 +73,23 @@ import Logic.Lex
   '->'     { PT _ (TS _ 6)      }
   ';'      { PT _ (TS _ 7)      }
   '='      { PT _ (TS _ 8)      }
-  '['      { PT _ (TS _ 9)      }
-  ']'      { PT _ (TS _ 10)     }
-  'all'    { PT _ (TS _ 11)     }
-  'assume' { PT _ (TS _ 12)     }
-  'bot'    { PT _ (TS _ 13)     }
-  'const'  { PT _ (TS _ 14)     }
-  'if'     { PT _ (TS _ 15)     }
-  'prem'   { PT _ (TS _ 16)     }
-  'some'   { PT _ (TS _ 17)     }
-  'var'    { PT _ (TS _ 18)     }
-  '{'      { PT _ (TS _ 19)     }
-  '|'      { PT _ (TS _ 20)     }
-  '|-'     { PT _ (TS _ 21)     }
-  '}'      { PT _ (TS _ 22)     }
+  'Bot'    { PT _ (TS _ 9)      }
+  '['      { PT _ (TS _ 10)     }
+  ']'      { PT _ (TS _ 11)     }
+  'all'    { PT _ (TS _ 12)     }
+  'and'    { PT _ (TS _ 13)     }
+  'assume' { PT _ (TS _ 14)     }
+  'const'  { PT _ (TS _ 15)     }
+  'if'     { PT _ (TS _ 16)     }
+  'not'    { PT _ (TS _ 17)     }
+  'or'     { PT _ (TS _ 18)     }
+  'prem'   { PT _ (TS _ 19)     }
+  'some'   { PT _ (TS _ 20)     }
+  'var'    { PT _ (TS _ 21)     }
+  '{'      { PT _ (TS _ 22)     }
+  '|'      { PT _ (TS _ 23)     }
+  '|-'     { PT _ (TS _ 24)     }
+  '}'      { PT _ (TS _ 25)     }
   L_integ  { PT _ (TI $$)       }
   L_PredId { PT _ (T_PredId $$) }
   L_TermId { PT _ (T_TermId $$) }
@@ -104,7 +121,7 @@ TermType
 Step :: { Logic.Abs.Step }
 Step
   : 'prem' Form ';' { Logic.Abs.StepPrem $2 }
-  | TermType Term ';' { Logic.Abs.StepTerm $1 $2 }
+  | TermType TermId ';' { Logic.Abs.StepTerm $1 $2 }
   | 'assume' Form ';' { Logic.Abs.StepAssume $2 }
   | '{' ListStep '}' { Logic.Abs.StepScope $2 }
   | RuleId '[' ListArg ']' Form ';' { Logic.Abs.StepForm $1 $3 $5 }
@@ -122,24 +139,45 @@ ListArg
   | Arg { (:[]) $1 }
   | Arg ',' ListArg { (:) $1 $3 }
 
+SymBot :: { Logic.Abs.SymBot }
+SymBot : 'Bot' { Logic.Abs.SymBot_Bot }
+
+SymEq :: { Logic.Abs.SymEq }
+SymEq : '=' { Logic.Abs.SymEq1 }
+
+SymAll :: { Logic.Abs.SymAll }
+SymAll : 'all' { Logic.Abs.SymAll_all }
+
+SymSome :: { Logic.Abs.SymSome }
+SymSome : 'some' { Logic.Abs.SymSome_some }
+
+SymNot :: { Logic.Abs.SymNot }
+SymNot : 'not' { Logic.Abs.SymNot_not } | '!' { Logic.Abs.SymNot1 }
+
+SymAnd :: { Logic.Abs.SymAnd }
+SymAnd : 'and' { Logic.Abs.SymAnd_and } | '&' { Logic.Abs.SymAnd1 }
+
+SymOr :: { Logic.Abs.SymOr }
+SymOr : 'or' { Logic.Abs.SymOr_or } | '|' { Logic.Abs.SymOr1 }
+
 Form4 :: { Logic.Abs.Form }
 Form4
-  : 'bot' { Logic.Abs.FormBot }
-  | Term '=' Term { Logic.Abs.FormEq $1 $3 }
+  : SymBot { Logic.Abs.FormBot $1 }
+  | Term SymEq Term { Logic.Abs.FormEq $1 $2 $3 }
   | Pred { Logic.Abs.FormPred $1 }
   | '(' Form ')' { $2 }
 
 Form3 :: { Logic.Abs.Form }
 Form3
-  : 'all' TermId Form3 { Logic.Abs.FormAll $2 $3 }
-  | 'some' TermId Form3 { Logic.Abs.FormSome $2 $3 }
-  | '!' Form4 { Logic.Abs.FormNot $2 }
+  : SymAll TermId Form3 { Logic.Abs.FormAll $1 $2 $3 }
+  | SymSome TermId Form3 { Logic.Abs.FormSome $1 $2 $3 }
+  | SymNot Form3 { Logic.Abs.FormNot $1 $2 }
   | Form4 { $1 }
 
 Form2 :: { Logic.Abs.Form }
 Form2
-  : Form2 '&' Form3 { Logic.Abs.FormAnd $1 $3 }
-  | Form2 '|' Form3 { Logic.Abs.FormOr $1 $3 }
+  : Form2 SymAnd Form3 { Logic.Abs.FormAnd $1 $2 $3 }
+  | Form2 SymOr Form3 { Logic.Abs.FormOr $1 $2 $3 }
   | Form3 { $1 }
 
 Form1 :: { Logic.Abs.Form }

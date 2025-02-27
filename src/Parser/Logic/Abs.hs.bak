@@ -18,7 +18,7 @@ data TermType = TermType_var | TermType_const
 
 data Step
     = StepPrem Form
-    | StepTerm TermType TermId
+    | StepTerm TermType Term
     | StepAssume Form
     | StepScope [Step]
     | StepForm RuleId [Arg] Form

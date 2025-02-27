@@ -18,7 +18,7 @@ data TermType = TermType_var | TermType_const
 
 data Step
     = StepPrem Form
-    | StepTerm TermType Term
+    | StepTerm TermType TermId
     | StepAssume Form
     | StepScope [Step]
     | StepForm RuleId [Arg] Form
@@ -27,15 +27,36 @@ data Step
 data Arg = ArgStep Step | ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
+data SymBot = SymBot_Bot
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymEq = SymEq1
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymAll = SymAll_all
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymSome = SymSome_some
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymNot = SymNot_not | SymNot1
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymAnd = SymAnd_and | SymAnd1
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data SymOr = SymOr_or | SymOr1
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
 data Form
-    = FormBot
-    | FormEq Term Term
+    = FormBot SymBot
+    | FormEq Term SymEq Term
     | FormPred Pred
-    | FormAll TermId Form
-    | FormSome TermId Form
-    | FormNot Form
-    | FormAnd Form Form
-    | FormOr Form Form
+    | FormAll SymAll TermId Form
+    | FormSome SymSome TermId Form
+    | FormNot SymNot Form
+    | FormAnd Form SymAnd Form
+    | FormOr Form SymOr Form
     | FormIf Form Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 

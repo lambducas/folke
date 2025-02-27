@@ -32,8 +32,9 @@ RuleId literals are recognized by the regular expression
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in logic are the following:
-  | ``all`` | ``assume`` | ``bot`` | ``const``
-  | ``if`` | ``prem`` | ``some`` | ``var``
+  | ``Bot`` | ``all`` | ``and`` | ``assume``
+  | ``const`` | ``if`` | ``not`` | ``or``
+  | ``prem`` | ``some`` | ``var`` |
 
 The symbols used in logic are the following:
   | |- | { | } | ;
@@ -54,7 +55,7 @@ All other symbols are terminals.
   | //TermType// | -> | ``var``
   |  |  **|**  | ``const``
   | //Step// | -> | ``prem`` //Form// ``;``
-  |  |  **|**  | //TermType// //Term// ``;``
+  |  |  **|**  | //TermType// //TermId// ``;``
   |  |  **|**  | ``assume`` //Form// ``;``
   |  |  **|**  | ``{`` //[Step]// ``}``
   |  |  **|**  | //RuleId// ``[`` //[Arg]// ``]`` //Form// ``;``
@@ -65,16 +66,26 @@ All other symbols are terminals.
   | //[Arg]// | -> | **eps**
   |  |  **|**  | //Arg//
   |  |  **|**  | //Arg// ``,`` //[Arg]//
-  | //Form4// | -> | ``bot``
-  |  |  **|**  | //Term// ``=`` //Term//
+  | //SymBot// | -> | ``Bot``
+  | //SymEq// | -> | ``=``
+  | //SymAll// | -> | ``all``
+  | //SymSome// | -> | ``some``
+  | //SymNot// | -> | ``not``
+  |  |  **|**  | ``!``
+  | //SymAnd// | -> | ``and``
+  |  |  **|**  | ``&``
+  | //SymOr// | -> | ``or``
+  |  |  **|**  | ``|``
+  | //Form4// | -> | //SymBot//
+  |  |  **|**  | //Term// //SymEq// //Term//
   |  |  **|**  | //Pred//
   |  |  **|**  | ``(`` //Form// ``)``
-  | //Form3// | -> | ``all`` //TermId// //Form3//
-  |  |  **|**  | ``some`` //TermId// //Form3//
-  |  |  **|**  | ``!`` //Form4//
+  | //Form3// | -> | //SymAll// //TermId// //Form3//
+  |  |  **|**  | //SymSome// //TermId// //Form3//
+  |  |  **|**  | //SymNot// //Form3//
   |  |  **|**  | //Form4//
-  | //Form2// | -> | //Form2// ``&`` //Form3//
-  |  |  **|**  | //Form2// ``|`` //Form3//
+  | //Form2// | -> | //Form2// //SymAnd// //Form3//
+  |  |  **|**  | //Form2// //SymOr// //Form3//
   |  |  **|**  | //Form3//
   | //Form1// | -> | //Form1// ``->`` //Form2//
   |  |  **|**  | //Form2//

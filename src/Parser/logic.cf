@@ -6,30 +6,37 @@ Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 
 rules TermType ::= "var" | "const";
 
-StepPrem.   Step ::= "prem" Form ";"; -- OK
-StepTerm.   Step ::= TermType Term ";"; -- TODO: FIX
--- StepTerm.   Step ::= Term "Assumed" ";";  
-StepAssume. Step ::= "assume" Form ";"; -- OK
+StepPrem.   Step ::= "prem" Form ";";
+StepTerm.   Step ::= TermType TermId";";--Only for declaring var/const not functions
+StepAssume. Step ::= "assume" Form ";";
 StepScope.  Step ::= "{"[Step]"}"; 
 StepForm.   Step ::= RuleId "[" [Arg] "]" Form ";";
 terminator  Step "" ;
 
 --var x
 --const x
-ArgStep. Arg ::= Step;
-ArgLit. Arg ::= Integer;
+ArgStep.  Arg   ::= Step;
+ArgLit.   Arg   ::= Integer;
 separator Arg ",";
 
-FormBot.  Form4 ::= "bot";
-FormEq.   Form4 ::= Term "=" Term;
+rules SymBot    ::= "Bot";
+rules SymEq     ::= "=";
+rules SymAll    ::= "all";
+rules SymSome   ::= "some";
+rules SymNot    ::= "not" | "!";
+rules SymAnd    ::= "and" | "&";
+rules SymOr     ::= "or"  | "|";
+
+FormBot.  Form4 ::= SymBot;
+FormEq.   Form4 ::= Term SymEq Term;
 FormPred. Form4 ::= Pred;
 
-FormAll.  Form3 ::= "all" TermId Form3;
-FormSome. Form3 ::= "some" TermId Form3;
-FormNot.  Form3 ::= "!" Form3;
+FormAll.  Form3 ::= SymAll TermId Form3;
+FormSome. Form3 ::= SymSome TermId Form3;
+FormNot.  Form3 ::= SymNot Form3;
 
-FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
-FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
+FormAnd.  Form2 ::= Form2 SymAnd Form3; --left-associative(c convention)
+FormOr.   Form2 ::= Form2 SymOr Form3; --left-associative(c convention)
 
 FormIf.   Form1 ::= Form1 "->" Form2; --right-associative(book)
 coercions Form 4;

@@ -39,7 +39,7 @@ transTermType x = case x of
 transStep :: Logic.Abs.Step -> Result
 transStep x = case x of
   Logic.Abs.StepPrem form -> failure x
-  Logic.Abs.StepTerm termtype term -> failure x
+  Logic.Abs.StepTerm termtype termid -> failure x
   Logic.Abs.StepAssume form -> failure x
   Logic.Abs.StepScope steps -> failure x
   Logic.Abs.StepForm ruleid args form -> failure x
@@ -49,16 +49,47 @@ transArg x = case x of
   Logic.Abs.ArgStep step -> failure x
   Logic.Abs.ArgLit integer -> failure x
 
+transSymBot :: Logic.Abs.SymBot -> Result
+transSymBot x = case x of
+  Logic.Abs.SymBot_Bot -> failure x
+
+transSymEq :: Logic.Abs.SymEq -> Result
+transSymEq x = case x of
+  Logic.Abs.SymEq1 -> failure x
+
+transSymAll :: Logic.Abs.SymAll -> Result
+transSymAll x = case x of
+  Logic.Abs.SymAll_all -> failure x
+
+transSymSome :: Logic.Abs.SymSome -> Result
+transSymSome x = case x of
+  Logic.Abs.SymSome_some -> failure x
+
+transSymNot :: Logic.Abs.SymNot -> Result
+transSymNot x = case x of
+  Logic.Abs.SymNot_not -> failure x
+  Logic.Abs.SymNot1 -> failure x
+
+transSymAnd :: Logic.Abs.SymAnd -> Result
+transSymAnd x = case x of
+  Logic.Abs.SymAnd_and -> failure x
+  Logic.Abs.SymAnd1 -> failure x
+
+transSymOr :: Logic.Abs.SymOr -> Result
+transSymOr x = case x of
+  Logic.Abs.SymOr_or -> failure x
+  Logic.Abs.SymOr1 -> failure x
+
 transForm :: Logic.Abs.Form -> Result
 transForm x = case x of
-  Logic.Abs.FormBot -> failure x
-  Logic.Abs.FormEq term1 term2 -> failure x
+  Logic.Abs.FormBot symbot -> failure x
+  Logic.Abs.FormEq term1 symeq term2 -> failure x
   Logic.Abs.FormPred pred -> failure x
-  Logic.Abs.FormAll termid form -> failure x
-  Logic.Abs.FormSome termid form -> failure x
-  Logic.Abs.FormNot form -> failure x
-  Logic.Abs.FormAnd form1 form2 -> failure x
-  Logic.Abs.FormOr form1 form2 -> failure x
+  Logic.Abs.FormAll symall termid form -> failure x
+  Logic.Abs.FormSome symsome termid form -> failure x
+  Logic.Abs.FormNot symnot form -> failure x
+  Logic.Abs.FormAnd form1 symand form2 -> failure x
+  Logic.Abs.FormOr form1 symor form2 -> failure x
   Logic.Abs.FormIf form1 form2 -> failure x
 
 transPred :: Logic.Abs.Pred -> Result
