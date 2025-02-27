@@ -26,7 +26,7 @@ FormPred. Form4 ::= Pred;
 
 FormAll.  Form3 ::= "all" TermId Form3;
 FormSome. Form3 ::= "some" TermId Form3;
-FormNot.  Form3 ::= "!" Form4;
+FormNot.  Form3 ::= "!" Form3;
 
 FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
 FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
