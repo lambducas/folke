@@ -7,7 +7,7 @@ Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 rules TermType ::= "var" | "const";
 
 StepPrem.   Step ::= "prem" Form ";"; -- OK
-StepTerm.   Step ::= TermType TermId ";"; -- TODO: FIX
+StepTerm.   Step ::= TermType Term ";"; -- TODO: FIX
 -- StepTerm.   Step ::= Term "Assumed" ";";  
 StepAssume. Step ::= "assume" Form ";"; -- OK
 StepScope.  Step ::= "{"[Step]"}"; 

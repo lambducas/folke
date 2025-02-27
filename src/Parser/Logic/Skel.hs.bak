@@ -49,14 +49,9 @@ transArg x = case x of
   Logic.Abs.ArgStep step -> failure x
   Logic.Abs.ArgLit integer -> failure x
 
-transSymBot :: Logic.Abs.SymBot -> Result
-transSymBot x = case x of
-  Logic.Abs.SymBot_bot -> failure x
-  Logic.Abs.SymBot_somesymbol -> failure x
-
 transForm :: Logic.Abs.Form -> Result
 transForm x = case x of
-  Logic.Abs.FormBot symbot -> failure x
+  Logic.Abs.FormBot -> failure x
   Logic.Abs.FormEq term1 term2 -> failure x
   Logic.Abs.FormPred pred -> failure x
   Logic.Abs.FormAll termid form -> failure x

@@ -39,7 +39,7 @@ transTermType x = case x of
 transStep :: Logic.Abs.Step -> Result
 transStep x = case x of
   Logic.Abs.StepPrem form -> failure x
-  Logic.Abs.StepTerm termtype termid -> failure x
+  Logic.Abs.StepTerm termtype term -> failure x
   Logic.Abs.StepAssume form -> failure x
   Logic.Abs.StepScope steps -> failure x
   Logic.Abs.StepForm ruleid args form -> failure x

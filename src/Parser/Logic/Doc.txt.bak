@@ -33,8 +33,7 @@ The set of reserved words is the set of terminals appearing in the grammar. Thos
 
 The reserved words used in logic are the following:
   | ``all`` | ``assume`` | ``bot`` | ``const``
-  | ``if`` | ``prem`` | ``some`` | ``somesymbol``
-  | ``var`` |  |  |
+  | ``if`` | ``prem`` | ``some`` | ``var``
 
 The symbols used in logic are the following:
   | |- | { | } | ;
@@ -66,9 +65,7 @@ All other symbols are terminals.
   | //[Arg]// | -> | **eps**
   |  |  **|**  | //Arg//
   |  |  **|**  | //Arg// ``,`` //[Arg]//
-  | //SymBot// | -> | ``bot``
-  |  |  **|**  | ``somesymbol``
-  | //Form4// | -> | //SymBot//
+  | //Form4// | -> | ``bot``
   |  |  **|**  | //Term// ``=`` //Term//
   |  |  **|**  | //Pred//
   |  |  **|**  | ``(`` //Form// ``)``

@@ -174,14 +174,9 @@ instance Print [Logic.Abs.Arg] where
   prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
-instance Print Logic.Abs.SymBot where
-  prt i = \case
-    Logic.Abs.SymBot_bot -> prPrec i 0 (concatD [doc (showString "bot")])
-    Logic.Abs.SymBot_somesymbol -> prPrec i 0 (concatD [doc (showString "somesymbol")])
-
 instance Print Logic.Abs.Form where
   prt i = \case
-    Logic.Abs.FormBot symbot -> prPrec i 4 (concatD [prt 0 symbot])
+    Logic.Abs.FormBot -> prPrec i 4 (concatD [doc (showString "bot")])
     Logic.Abs.FormEq term1 term2 -> prPrec i 4 (concatD [prt 0 term1, doc (showString "="), prt 0 term2])
     Logic.Abs.FormPred pred -> prPrec i 4 (concatD [prt 0 pred])
     Logic.Abs.FormAll termid form -> prPrec i 3 (concatD [doc (showString "all"), prt 0 termid, prt 3 form])

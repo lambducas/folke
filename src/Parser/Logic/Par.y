@@ -104,7 +104,7 @@ TermType
 Step :: { Logic.Abs.Step }
 Step
   : 'prem' Form ';' { Logic.Abs.StepPrem $2 }
-  | TermType TermId ';' { Logic.Abs.StepTerm $1 $2 }
+  | TermType Term ';' { Logic.Abs.StepTerm $1 $2 }
   | 'assume' Form ';' { Logic.Abs.StepAssume $2 }
   | '{' ListStep '}' { Logic.Abs.StepScope $2 }
   | RuleId '[' ListArg ']' Form ';' { Logic.Abs.StepForm $1 $3 $5 }

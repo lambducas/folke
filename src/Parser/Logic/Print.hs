@@ -155,7 +155,7 @@ instance Print Logic.Abs.TermType where
 instance Print Logic.Abs.Step where
   prt i = \case
     Logic.Abs.StepPrem form -> prPrec i 0 (concatD [doc (showString "prem"), prt 0 form, doc (showString ";")])
-    Logic.Abs.StepTerm termtype termid -> prPrec i 0 (concatD [prt 0 termtype, prt 0 termid, doc (showString ";")])
+    Logic.Abs.StepTerm termtype term -> prPrec i 0 (concatD [prt 0 termtype, prt 0 term, doc (showString ";")])
     Logic.Abs.StepAssume form -> prPrec i 0 (concatD [doc (showString "assume"), prt 0 form, doc (showString ";")])
     Logic.Abs.StepScope steps -> prPrec i 0 (concatD [doc (showString "{"), prt 0 steps, doc (showString "}")])
     Logic.Abs.StepForm ruleid args form -> prPrec i 0 (concatD [prt 0 ruleid, doc (showString "["), prt 0 args, doc (showString "]"), prt 0 form, doc (showString ";")])

@@ -29,7 +29,7 @@ Grammar
 	TermType -> 'var'                                  (20)
 	TermType -> 'const'                                (21)
 	Step -> 'prem' Form ';'                            (22)
-	Step -> TermType TermId ';'                        (23)
+	Step -> TermType Term ';'                          (23)
 	Step -> 'assume' Form ';'                          (24)
 	Step -> '{' ListStep '}'                           (25)
 	Step -> RuleId '[' ListArg ']' Form ';'            (26)
@@ -719,11 +719,12 @@ State 44
 
 State 45
 
-	Step -> TermType . TermId ';'                       (rule 23)
+	Step -> TermType . Term ';'                         (rule 23)
 
 	L_TermId       shift, and enter state 20
 
-	TermId         goto state 68
+	TermId         goto state 17
+	Term           goto state 68
 
 State 46
 
@@ -971,7 +972,7 @@ State 67
 
 State 68
 
-	Step -> TermType TermId . ';'                       (rule 23)
+	Step -> TermType Term . ';'                         (rule 23)
 
 	';'            shift, and enter state 94
 
@@ -1324,7 +1325,7 @@ State 93
 
 State 94
 
-	Step -> TermType TermId ';' .                       (rule 23)
+	Step -> TermType Term ';' .                         (rule 23)
 
 	','            reduce using rule 23
 	']'            reduce using rule 23

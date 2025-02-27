@@ -54,7 +54,7 @@ All other symbols are terminals.
   | //TermType// | -> | ``var``
   |  |  **|**  | ``const``
   | //Step// | -> | ``prem`` //Form// ``;``
-  |  |  **|**  | //TermType// //TermId// ``;``
+  |  |  **|**  | //TermType// //Term// ``;``
   |  |  **|**  | ``assume`` //Form// ``;``
   |  |  **|**  | ``{`` //[Step]// ``}``
   |  |  **|**  | //RuleId// ``[`` //[Arg]// ``]`` //Form// ``;``

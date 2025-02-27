@@ -27,11 +27,8 @@ data Step
 data Arg = ArgStep Step | ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data SymBot = SymBot_bot | SymBot_somesymbol
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Form
-    = FormBot SymBot
+    = FormBot
     | FormEq Term Term
     | FormPred Pred
     | FormAll TermId Form
