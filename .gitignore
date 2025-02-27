@@ -2,3 +2,8 @@
 
 #Ignore all object files
 **/*.o
+
+#Ignore all BNFC generated files
+src/Parser/Makefile
+src/Parser/Logic/*
+!src/Parser/Logic/Abs.hs

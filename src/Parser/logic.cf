@@ -7,19 +7,20 @@ Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 rules TermType ::= "var" | "const";
 
 StepPrem.   Step ::= "prem" Form ";";
-StepTerm.   Step ::= TermType TermId";";--Only for declaring var/const not functions
-StepAssume. Step ::= "assume" Form ";";
-StepScope.  Step ::= "{"[Step]"}"; 
+StepDecVar. Step ::= TermType TermId";";
+StepDecFun. Step ::= TermId "(" [TermId] ")" ";";
+StepAssume. Step ::= "assume" Form ";"; --"isent premise and assume same only for proof/subproof?"
+StepProof.  Step ::= "{"[Step]"}"; 
 StepForm.   Step ::= RuleId "[" [Arg] "]" Form ";";
 terminator  Step "" ;
 
 --var x
 --const x
-ArgStep.  Arg   ::= Step;
+ArgSub.   Arg   ::= Step;
 ArgLit.   Arg   ::= Integer;
 separator Arg ",";
 
-rules SymBot    ::= "Bot";
+rules SymBot    ::= "bot" | "_|_";
 rules SymEq     ::= "=";
 rules SymAll    ::= "all";
 rules SymSome   ::= "some";
@@ -42,15 +43,16 @@ FormIf.   Form1 ::= Form1 "->" Form2; --right-associative(book)
 coercions Form 4;
 separator Form ",";
 
-Pred0. Pred ::= PredId;
-PredN. Pred ::= PredId "(" [Term] ")";
+Pred. Pred ::= PredId Params;
+Term. Term ::= TermId Params;
 
-TermVar. Term ::= TermId;
-TermFun. Term ::= TermId "(" [Term] ")";
+rules Params  ::= "(" [Term] ")" | ;
 separator nonempty Term ",";
 
 token PredId (upper (letter | digit | '_' )*);
 token TermId (lower (letter | digit | '_' )*);
 token RuleId (upper (letter | digit | '_' )*);
+
+separator nonempty TermId ",";
 
 comment "#" ;
