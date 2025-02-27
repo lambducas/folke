@@ -13,12 +13,10 @@ import qualified Data.String
 data Sequent = Seq [Form] Form [Step]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data TermType = TermType_var | TermType_const
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Step
     = StepPrem Form
-    | StepDecVar TermType TermId
+    | StepDecConst TermId
+    | StepDecVar TermId
     | StepDecFun TermId [TermId]
     | StepAssume Form
     | StepProof [Step]
@@ -28,36 +26,15 @@ data Step
 data Arg = ArgSub Step | ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data SymBot = SymBot_bot | SymBot1
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymEq = SymEq1
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymAll = SymAll_all
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymSome = SymSome_some
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymNot = SymNot_not | SymNot1
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymAnd = SymAnd_and | SymAnd1
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data SymOr = SymOr_or | SymOr1
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Form
-    = FormBot SymBot
-    | FormEq Term SymEq Term
+    = FormBot
+    | FormEq Term Term
     | FormPred Pred
-    | FormAll SymAll TermId Form
-    | FormSome SymSome TermId Form
-    | FormNot SymNot Form
-    | FormAnd Form SymAnd Form
-    | FormOr Form SymOr Form
+    | FormAll TermId Form
+    | FormSome TermId Form
+    | FormNot Form
+    | FormAnd Form Form
+    | FormOr Form Form
     | FormIf Form Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
@@ -67,8 +44,14 @@ data Pred = Pred PredId Params
 data Term = Term TermId Params
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Params = Params1 [Term] | Params2
+data Params = Params [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data Nil = Nil
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+params :: Nil -> Params
+params = \ n -> Params []
 
 newtype PredId = PredId String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)

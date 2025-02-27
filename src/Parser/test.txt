@@ -2,6 +2,8 @@ if all x bot |- some y bot{
     prem all x bot;
     prem some y bot;
     {
+        assume P & Q;
         assume all x P;
+        assume all x P(a, b);
     }
 }

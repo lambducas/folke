@@ -1,43 +1,36 @@
 --Grammar for logic
+entrypoints Sequent ;
+
 Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 
 -- var form;
 -- const form;
 
-rules TermType ::= "var" | "const";
-
-StepPrem.   Step ::= "prem" Form ";";
-StepDecVar. Step ::= TermType TermId";";
-StepDecFun. Step ::= TermId "(" [TermId] ")" ";";
-StepAssume. Step ::= "assume" Form ";"; --"isent premise and assume same only for proof/subproof?"
-StepProof.  Step ::= "{"[Step]"}"; 
-StepForm.   Step ::= RuleId "[" [Arg] "]" Form ";";
-terminator  Step "" ;
+StepPrem.       Step ::= "prem" Form ";";
+StepDecConst.   Step ::= "const" TermId ";";
+StepDecVar.     Step ::= "var" TermId";";
+StepDecFun.     Step ::= TermId "(" [TermId] ")" ";";
+StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
+StepProof.      Step ::= "{"[Step]"}"; 
+StepForm.       Step ::= RuleId "[" [Arg] "]" Form ";";
+terminator      Step "" ;
 
 --var x
 --const x
 ArgSub.   Arg   ::= Step;
 ArgLit.   Arg   ::= Integer;
-separator Arg ",";
+separator Arg   ",";
 
-rules SymBot    ::= "bot" | "_|_";
-rules SymEq     ::= "=";
-rules SymAll    ::= "all";
-rules SymSome   ::= "some";
-rules SymNot    ::= "not" | "!";
-rules SymAnd    ::= "and" | "&";
-rules SymOr     ::= "or"  | "|";
-
-FormBot.  Form4 ::= SymBot;
-FormEq.   Form4 ::= Term SymEq Term;
+FormBot.  Form4 ::= "bot";
+FormEq.   Form4 ::= Term "=" Term;
 FormPred. Form4 ::= Pred;
 
-FormAll.  Form3 ::= SymAll TermId Form3;
-FormSome. Form3 ::= SymSome TermId Form3;
-FormNot.  Form3 ::= SymNot Form3;
+FormAll.  Form3 ::= "all" TermId Form3;
+FormSome. Form3 ::= "some" TermId Form3;
+FormNot.  Form3 ::= "!" Form3;
 
-FormAnd.  Form2 ::= Form2 SymAnd Form3; --left-associative(c convention)
-FormOr.   Form2 ::= Form2 SymOr Form3; --left-associative(c convention)
+FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
+FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
 FormIf.   Form1 ::= Form1 "->" Form2; --right-associative(book)
 coercions Form 4;
@@ -46,7 +39,15 @@ separator Form ",";
 Pred. Pred ::= PredId Params;
 Term. Term ::= TermId Params;
 
-rules Params  ::= "(" [Term] ")" | ;
+Params. Params ::= "(" [Term] ")";
+params. Params ::= Nil;
+
+define params n = Params [];
+
+--Ugly but works?
+Nil. Nil ::= "";
+
+--ParamsOne. Params  ::= "(" Term ")";
 separator nonempty Term ",";
 
 token PredId (upper (letter | digit | '_' )*);
