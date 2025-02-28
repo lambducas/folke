@@ -59,7 +59,7 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  Backend.MyLib
+    exposed-modules:  Backend.TypeChecker
                     , Backend.AuxiliaryTypes
 
     -- Modules included in this library but not exported.

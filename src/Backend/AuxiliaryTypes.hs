@@ -1,4 +1,7 @@
-Module AuxiliaryTypes where
+module Backend.AuxiliaryTypes where
+
+-- | DEFINITELY DOES NOT COMPILE
+
 
 -- | Types for typechecker
 newtype TypeException e m a = TypeException 

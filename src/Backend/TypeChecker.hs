@@ -1,4 +1,4 @@
-module Backend.MyLib (someFunc) where
+module Backend.TypeChecker where
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
