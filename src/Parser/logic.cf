@@ -1,5 +1,5 @@
 --Grammar for logic
-entrypoints Sequent ;
+entrypoints Sequent;
 
 Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
 
@@ -32,7 +32,7 @@ FormNot.  Form3 ::= "!" Form3;
 FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
 FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
-FormIf.   Form1 ::= Form1 "->" Form2; --right-associative(book)
+FormIf.   Form1 ::= Form2 "->" Form1; --right-associative(book)
 coercions Form 4;
 separator Form ",";
 
