@@ -1,7 +1,7 @@
 --Grammar for logic
 entrypoints Sequent;
 
-Seq. Sequent ::= "if" [Form] "|-" Form "{" [Step] "}";
+Seq. Sequent ::= [Form] "|-" Form "{" [Step] "}";
 
 -- var form;
 -- const form;
@@ -47,7 +47,6 @@ define params n = Params [];
 --Ugly but works?
 Nil. Nil ::= "";
 
---ParamsOne. Params  ::= "(" Term ")";
 separator nonempty Term ",";
 
 token PredId (upper (letter | digit | '_' )*);
@@ -56,4 +55,4 @@ token RuleId (upper (letter | digit | '_' )*);
 
 separator nonempty TermId ",";
 
-comment "#" ;
+comment "#";

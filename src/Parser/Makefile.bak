@@ -19,7 +19,7 @@ all : Logic/Test
 # Rules for building the parser.
 
 Logic/Abs.hs Logic/Lex.x Logic/Par.y Logic/Print.hs Logic/Test.hs : logic.cf
-	bnfc --haskell -d logic.cf
+	bnfc --haskell-gadt -d logic.cf
 
 %.hs : %.y
 	${HAPPY} ${HAPPY_OPTS} $<
