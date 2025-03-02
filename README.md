@@ -1,9 +1,9 @@
 ## For now very empty ->
 ```haskell
--- | \_ -> ()
+\_ -> undefined
 ```
 ## Start monomer view which does nothing at the moment ->
-```fish
+```bash
 cabal build
 cabal run monomergui
 ```
