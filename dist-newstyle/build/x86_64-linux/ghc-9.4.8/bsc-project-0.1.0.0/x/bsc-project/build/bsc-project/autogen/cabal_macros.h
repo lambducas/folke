@@ -30,6 +30,56 @@
   (major1) == 0 && (major2) <  1 || \
   (major1) == 0 && (major2) == 1 && (minor) <= 0)
 #endif /* MIN_VERSION_bsc_project */
+/* package data-default-0.8.0.0 */
+#ifndef VERSION_data_default
+#define VERSION_data_default "0.8.0.0"
+#endif /* VERSION_data_default */
+#ifndef MIN_VERSION_data_default
+#define MIN_VERSION_data_default(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  8 || \
+  (major1) == 0 && (major2) == 8 && (minor) <= 0)
+#endif /* MIN_VERSION_data_default */
+/* package lens-5.3.3 */
+#ifndef VERSION_lens
+#define VERSION_lens "5.3.3"
+#endif /* VERSION_lens */
+#ifndef MIN_VERSION_lens
+#define MIN_VERSION_lens(major1,major2,minor) (\
+  (major1) <  5 || \
+  (major1) == 5 && (major2) <  3 || \
+  (major1) == 5 && (major2) == 3 && (minor) <= 3)
+#endif /* MIN_VERSION_lens */
+/* package monomer-1.6.0.1 */
+#ifndef VERSION_monomer
+#define VERSION_monomer "1.6.0.1"
+#endif /* VERSION_monomer */
+#ifndef MIN_VERSION_monomer
+#define MIN_VERSION_monomer(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  6 || \
+  (major1) == 1 && (major2) == 6 && (minor) <= 0)
+#endif /* MIN_VERSION_monomer */
+/* package text-2.0.2 */
+#ifndef VERSION_text
+#define VERSION_text "2.0.2"
+#endif /* VERSION_text */
+#ifndef MIN_VERSION_text
+#define MIN_VERSION_text(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  0 || \
+  (major1) == 2 && (major2) == 0 && (minor) <= 2)
+#endif /* MIN_VERSION_text */
+/* package text-show-3.11.1 */
+#ifndef VERSION_text_show
+#define VERSION_text_show "3.11.1"
+#endif /* VERSION_text_show */
+#ifndef MIN_VERSION_text_show
+#define MIN_VERSION_text_show(major1,major2,minor) (\
+  (major1) <  3 || \
+  (major1) == 3 && (major2) <  11 || \
+  (major1) == 3 && (major2) == 11 && (minor) <= 1)
+#endif /* MIN_VERSION_text_show */
 
 /* tool alex-3.5.2.0 */
 #ifndef TOOL_VERSION_alex
@@ -41,15 +91,15 @@
   (major1) == 3 && (major2) <  5 || \
   (major1) == 3 && (major2) == 5 && (minor) <= 2)
 #endif /* MIN_TOOL_VERSION_alex */
-/* tool gcc-11 */
+/* tool gcc-13 */
 #ifndef TOOL_VERSION_gcc
-#define TOOL_VERSION_gcc "11"
+#define TOOL_VERSION_gcc "13"
 #endif /* TOOL_VERSION_gcc */
 #ifndef MIN_TOOL_VERSION_gcc
 #define MIN_TOOL_VERSION_gcc(major1,major2,minor) (\
-  (major1) <  11 || \
-  (major1) == 11 && (major2) <  0 || \
-  (major1) == 11 && (major2) == 0 && (minor) <= 0)
+  (major1) <  13 || \
+  (major1) == 13 && (major2) <  0 || \
+  (major1) == 13 && (major2) == 0 && (minor) <= 0)
 #endif /* MIN_TOOL_VERSION_gcc */
 /* tool ghc-9.4.8 */
 #ifndef TOOL_VERSION_ghc
@@ -111,6 +161,16 @@
   (major1) == 0 && (major2) <  68 || \
   (major1) == 0 && (major2) == 68 && (minor) <= 8)
 #endif /* MIN_TOOL_VERSION_hsc2hs */
+/* tool pkg-config-1.8.1 */
+#ifndef TOOL_VERSION_pkg_config
+#define TOOL_VERSION_pkg_config "1.8.1"
+#endif /* TOOL_VERSION_pkg_config */
+#ifndef MIN_TOOL_VERSION_pkg_config
+#define MIN_TOOL_VERSION_pkg_config(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  8 || \
+  (major1) == 1 && (major2) == 8 && (minor) <= 1)
+#endif /* MIN_TOOL_VERSION_pkg_config */
 /* tool runghc-9.4.8 */
 #ifndef TOOL_VERSION_runghc
 #define TOOL_VERSION_runghc "9.4.8"
@@ -121,15 +181,15 @@
   (major1) == 9 && (major2) <  4 || \
   (major1) == 9 && (major2) == 4 && (minor) <= 8)
 #endif /* MIN_TOOL_VERSION_runghc */
-/* tool strip-2.38 */
+/* tool strip-2.42 */
 #ifndef TOOL_VERSION_strip
-#define TOOL_VERSION_strip "2.38"
+#define TOOL_VERSION_strip "2.42"
 #endif /* TOOL_VERSION_strip */
 #ifndef MIN_TOOL_VERSION_strip
 #define MIN_TOOL_VERSION_strip(major1,major2,minor) (\
   (major1) <  2 || \
-  (major1) == 2 && (major2) <  38 || \
-  (major1) == 2 && (major2) == 38 && (minor) <= 0)
+  (major1) == 2 && (major2) <  42 || \
+  (major1) == 2 && (major2) == 42 && (minor) <= 0)
 #endif /* MIN_TOOL_VERSION_strip */
 
 #ifndef CURRENT_COMPONENT_ID

@@ -1,5 +1,7 @@
 module Backend.AuxiliaryTypes where
 
+import Control.Monad.State
+
 -- | DEFINITELY DOES NOT COMPILE
 
 
@@ -11,20 +13,21 @@ newtype TypeException e m a = TypeException
 
 newtype Err = Err String
 
+type Env = String
+
 type Result a = TypeException Err (State Env) a
 
 -- | IDEA
 -- 
 --   For all possible datatypes
 --   check well-formedness with this type:
-checkTYPE :: Parser.Abs.TYPE -> Result ()
+-- checkTYPE :: Parser.Abs.TYPE -> Result ()
 
 -- | Make Result a monad so we can chain like this:
 --   Example with FORM
-
+{-}
 checkForm :: Parser.Abs.Form-> Result ()
-checkForm f -> \case
-  (Form t1 t2) -> checkTerm t1 >> checkTerm t2
+checkForm (Form t1 t2) = checkTerm t1 >> checkTerm t2
   -- .........
   -- .........
 
@@ -38,9 +41,10 @@ checkTerm = Result $ error "Not implemented"
 
 
 instance Applicative (TypeException e a) where
-instance Functor ... where -- implement
+instance Functor (TypeException e) where
+  fmap f (TypeException ma) = TypeException $ fmap (fmap f) ma
 
 instance Monad (TypeException e a) where
     return x = TypeException $ Right x
      
-    (TypeException e a) >>= f = undefined
+    (TypeException e a) >>= f = undefined -}

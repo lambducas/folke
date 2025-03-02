@@ -1,0 +1,4 @@
+packages: .
+
+package bsc-project
+  flags: +stb_truetype
