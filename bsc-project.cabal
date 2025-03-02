@@ -79,7 +79,7 @@ executable bsc-project
     ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings
 
-executable monomer-starter
+executable monomergui
     import:           warnings
     main-is:          Frontend/Monomer/src/Main.hs
     hs-source-dirs:   src
