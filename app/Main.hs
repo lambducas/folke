@@ -1,8 +1,8 @@
-module Main where
+module Main (
+    main
+) where
 
-import qualified Backend.MyLib (someFunc)
+import Example (example)
 
 main :: IO ()
-main = do
-  putStrLn "Hello, Haskell!"
-  Backend.MyLib.someFunc
+main = example

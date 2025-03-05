@@ -58,16 +58,18 @@ library
     import:           warnings
     exposed-modules:  Backend.TypeChecker
                     , Backend.AuxiliaryTypes
+                    , Parser.Logic.Abs
     build-depends:    base ^>=4.17.2.1
                     , mtl
+                    , containers
     hs-source-dirs:   src
     default-language: Haskell2010
 
 executable bsc-project
     import:           warnings
-    main-is:          Frontend/Monomer/src/Main.hs
-    hs-source-dirs:   src
-                    , src/Frontend/Monomer/src
+    main-is:          Main.hs
+    hs-source-dirs:   app
+                    
     build-depends:    base ^>=4.17.2.1
                     , bsc-project
                     , data-default
@@ -75,13 +77,14 @@ executable bsc-project
                     , monomer
                     , text
                     , text-show
+                    , containers
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings
 
 executable monomergui
     import:           warnings
-    main-is:          Frontend/Monomer/src/Main.hs
+    main-is:          Frontend/Monomer/Main.hs
     hs-source-dirs:   src
                     , src/Frontend/Monomer/src
     build-depends:    base ^>=4.17.2.1
@@ -91,6 +94,7 @@ executable monomergui
                     , text
                     , text-show
                     , bsc-project
+                    , directory
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings

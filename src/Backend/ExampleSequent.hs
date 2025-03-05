@@ -1,4 +1,6 @@
-module Backend.ExampleSequent where
+module Backend.ExampleSequent (
+    exampleSequent
+) where
 
 import Parser.Logic.Abs
 

@@ -40,6 +40,16 @@
   (major1) == 0 && (major2) <  8 || \
   (major1) == 0 && (major2) == 8 && (minor) <= 0)
 #endif /* MIN_VERSION_data_default */
+/* package directory-1.3.7.1 */
+#ifndef VERSION_directory
+#define VERSION_directory "1.3.7.1"
+#endif /* VERSION_directory */
+#ifndef MIN_VERSION_directory
+#define MIN_VERSION_directory(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  3 || \
+  (major1) == 1 && (major2) == 3 && (minor) <= 7)
+#endif /* MIN_VERSION_directory */
 /* package lens-5.3.3 */
 #ifndef VERSION_lens
 #define VERSION_lens "5.3.3"
