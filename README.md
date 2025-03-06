@@ -1,36 +1,7 @@
-
-# Proof Editor using Monomer & BNFC with Haskell
-
-## Overview
-
-This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
-
-## Haskell
-
-```haskell
-\_ -> undefined
-```
-
-## Building the Project
-
-To build the library and executable, run the following command:
-
-```bash
-cabal build
-```
-
-## Running the Project
-
-To run the backend (standard output) and frontend GUI, use the following command:
-
-```bash
-cabal run bsc
-```
-
 ## TODO
 
 - Improve the semantics of the TypeChecker module (environment handling, form checking, non-exhaustiveness).
-- Add an assets folder in the `Frontend/` directory.
+- Add an assets folder in `Frontend/` and remove `assets/` in root directory.
 - Write examples of backend-frontend communication.
 
 ## Directory Structure
@@ -61,4 +32,35 @@ bsc-project/
 ├── bsc-project.cabal
 ```
 
+
+# Proof Editor using Monomer & BNFC with Haskell
+
+## Overview
+
+This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
+
+## Haskell
+
+```haskell
+\_ -> undefined
+```
+
+## Building the Project
+
+To build the library and executable, run the following command:
+
+```bash
+cabal build
+```
+
+## Running the Project
+
+To run the backend (standard output) and frontend GUI, use the following command:
+
+```bash
+cabal run bsc
+```
+
+
 ## License?
+
