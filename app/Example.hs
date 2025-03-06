@@ -11,20 +11,20 @@ example = do
     let env = Map.empty
         termX = Term (TermId "x") (Params [])
         termY = Term (TermId "y") (Params [])
-        termA = Term (TermId "a") (Params [])
-        termB = Term (TermId "b") (Params [])
+        termZ = Term (TermId "z") (Params [])
         
         -- Statements
         form1 = FormEq termX termY
-        form2 = FormNot (FormEq termA termB)
+        form2 = FormEq termY termZ
+        form3 = FormEq termX termZ
         
         -- Conclusion
-        conclusion = FormAnd form1 form2
+        conclusion = form3
         
         -- Steps
         steps = [ StepPrem form1
-                , StepAssume form2
-                , StepForm (RuleId "someRule") [ArgLit 1] conclusion
+                , StepPrem form2
+                , StepForm (RuleId "equalityElim") [ArgLit 1, ArgLit 2] conclusion
                 ]
         
         -- Sequent
@@ -38,3 +38,6 @@ example = do
         Right (checkedSequent, newEnv) -> do
             putStrLn $ "Checked Sequent: " ++ show checkedSequent
             putStrLn $ "New Environment: " ++ show newEnv
+            if isProofCorrect checkedSequent
+                then putStrLn "Proof is correct!"
+                else putStrLn "Proof is incorrect!"

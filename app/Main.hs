@@ -8,5 +8,5 @@ import Control.Concurrent (forkIO)
 
 main :: IO ()
 main = do
-    _ <- forkIO Frontend.main
-    example
+    _ <- forkIO example
+    Frontend.main
