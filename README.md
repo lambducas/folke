@@ -5,7 +5,7 @@
 
 This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
 
-## Haskell Code Example
+## Haskell
 
 ```haskell
 \_ -> undefined
