@@ -11,16 +11,23 @@ import Monomer
 import TextShow
 import Data.Text (Text, replace, unpack, pack, intercalate)
 import qualified Data.Maybe
+
 import Shared.Messages
-import Backend.TypeChecker (handleFrontendMessage, isProofCorrect)  -- Import isProofCorrect
-import Parser.Logic.Abs (Sequent(..), Step(..), Form(..), Pred(..), PredId(..), Params(..), RuleId(..))  -- Add missing imports
+import Backend.TypeChecker (handleFrontendMessage, isProofCorrect)
+import Parser.Logic.Abs (Sequent(..), Step(..), Form(..), Pred(..), PredId(..), Params(..), RuleId(..))
 import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofStep)
 
-data ProofLine = ProofLine {
-  _indentLevel :: Int,
-  _statement :: Text,
-  _rule :: Text
-} deriving (Eq, Show)
+type FormulaPath = [Int]
+
+data ProofFormula
+  = MainProof [ProofFormula]
+  | Formula {
+    _statement :: Text,
+    _rule :: Text
+  }
+  | SubProof [ProofFormula]
+  | Removed
+  deriving (Eq, Show)
 
 data File = File {
   _path :: FilePath,
@@ -38,11 +45,12 @@ data AppModel = AppModel {
   _openFiles :: [File],
   _currentFile :: Maybe File,
 
-  _conclusion :: Text,  -- Change type to Text
-  _proofLines :: [ProofLine],
+  _conclusion :: Text,
+  _proofFormulas :: ProofFormula,
+
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
-  _proofStatus :: Maybe Bool  -- Add proof status field
+  _proofStatus :: Maybe Bool
 } deriving (Eq)
 
 instance Show AppModel where
@@ -53,7 +61,7 @@ instance Show AppModel where
                ", _openFiles = " ++ show (_openFiles model) ++
                ", _currentFile = " ++ show (_currentFile model) ++
                ", _conclusion = " ++ show (_conclusion model) ++
-               ", _proofLines = " ++ show (_proofLines model) ++
+               ", _proofFormulas = " ++ show (_proofFormulas model) ++
                ", _proofStatus = " ++ show (_proofStatus model) ++ " }"
 
 data AppEvent
@@ -61,7 +69,8 @@ data AppEvent
   | AppIncrease
   | NextFocus Int
   | AddLine
-  | RemoveLine Int
+  | RemoveLine FormulaPath
+  | EditLine FormulaPath Int Text
   | OutdentLine Int
   | IndentLine Int
   | SetLoadedFiles [File]
@@ -70,11 +79,11 @@ data AppEvent
   | SetCurrentFile File
   | OpenCreateProofPopup
   | CreateEmptyProof Text
+
   | CheckProof
   | BackendResponse BackendMessage
   deriving (Eq, Show)
 
-makeLenses 'ProofLine
 makeLenses 'File
 makeLenses 'AppModel
 
@@ -90,12 +99,13 @@ type SymbolDict = [(Text, Text)]
 
 symbolLookup :: SymbolDict
 symbolLookup = [
-  ("->", "→"),
-  ("!", "¬"),
   ("-", "¬"),
+  ("!", "¬"),
+  ("->", "→"),
   ("&&", "∧"),
   ("||", "∨"),
   ("bot", "⊥"),
+  ("#", "⊥"),
   ("forall", "∀"),
   ("exists", "∃"),
   ("|-/", "⊬"),
@@ -109,11 +119,29 @@ replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s 
 replaceSpecialSymbols :: Text -> Text
 replaceSpecialSymbols s = replaceFromLookup s symbolLookup
 
-exportProof :: AppModel -> Sequent
-exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
+tabs :: Int -> Text
+tabs n = pack $ replicate n '\t'
 
-toStep :: ProofLine -> Step
-toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
+-- Empty for now
+exportProof :: AppModel -> Sequent
+exportProof = const $ Seq [] FormBot []
+
+-- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
+
+-- toStep :: ProofLine -> Step
+-- toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
+
+
+-- exportProof :: AppModel -> Text
+-- exportProof model = "conclusion: " <> model ^. conclusion <> "\n" <> exportProofHelper (model ^. proofFormulas) 0
+
+-- exportProofHelper :: ProofFormula -> Int -> Text
+-- exportProofHelper (MainProof p) indent = exportProofHelper (SubProof p) indent
+-- exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
+-- exportProofHelper (Formula statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
+
+-- isProofCorrect :: Text -> Bool
+-- isProofCorrect p = True
 
 buildUI
   :: WidgetEnv AppModel AppEvent
@@ -167,69 +195,66 @@ buildUI wenv model = widgetTree where
       spacer,
       -- label "→ ¬ ∧ ∨ ⊕ ⊥ ∀ ∃ ⊢ ⊬ ⟛",
       -- label $ replaceSpecialSymbols "P -> Q && L",
-      -- vscroll $ label_ (exportProof $ model ^. proofLines) [multiline],
-      -- label "Hello world will you update? 99 :))))",
-      -- spacer,
-      -- hstack [
-      --   label $ "Click count: " <> showt (model ^. clickCount),
-      --   spacer,
-      --   button "Increase count" AppIncrease
-      -- ],
-      -- spacer,
-
-      -- vstack (map myLabel labelContents),
-      -- spacer,
-
-      -- label_ "Save plz\nTest ruh\nbruh\nwhriahh\ttest" [ multiline ],
-      -- spacer,
-
-      -- textField (fieldInputs . singular (ix 0)),
-      -- textField (fieldInputs . singular (ix 1)),
+      -- vscroll $ label_ (exportProof model) [multiline],
 
       hstack [
         label "Conclusion",
         spacer,
-        textField conclusion  -- Use textField for Text type
+        textField conclusion
       ] `styleBasic` [paddingV 8],
       spacer,
 
       vscroll $ vstack [
-        vstack (zipWith proofLineUI [0..] (model ^. proofLines)),
+        fst $ proofTreeUI (model ^. proofFormulas),
         spacer,
         button "+ New line" AddLine `styleBasic` [ maxWidth 150 ]
       ],
-
       spacer,
 
       hstack [
         widgetIf (model ^. proofStatus == Just True) (label "Proof is correct :)" `styleBasic` [textColor lime]),
-        widgetIf (model ^. proofStatus == Just False) (label "Proof is not correct!" `styleBasic` [textColor pink])
+        widgetIf (model ^. proofStatus == Just False) (label "Proof is not correct!" `styleBasic` [textColor pink]),
+        widgetIf (model ^. proofStatus == Nothing) (label "Checking proof..." `styleBasic` [textColor orange])
       ]
     ] `styleBasic` [padding 10]
 
-  proofLineUI idx line = stack
+  proofTreeUI :: ProofFormula -> (WidgetNode AppModel AppEvent, Integer)
+  proofTreeUI formulas = pf formulas 1 []
     where
-      stack = hstack [
-        label_ (showt $ idx + 1) [ellipsis] `styleBasic` [textSize 12, paddingH 8, width 50],
+      pf :: ProofFormula -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
+      pf (MainProof formulas) index path = (ui, lastIndex)
+        where
+          ui = vstack_ [childSpacing] (map fst s)
+          lastIndex = if null s then index else snd $ last s
+          s = getSubProof formulas path 0 index
 
-        label $ pack $ take (2 * (line ^. indentLevel)) (cycle "|\t"),
+      pf (SubProof p) index path = (ui, lastIndex)
+        where
+          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 white, paddingV 8, paddingL 24]
+          lastIndex = if null s then index else snd $ last s
+          s = getSubProof p path 0 index
 
-        keystroke [("Enter", NextFocus 1)] $ textField (proofLines . singular (ix idx) . statement),
-        spacer,
+      pf (Formula statement rule) index path = (ui, lastIndex)
+        where
+          ui = hstack [
+              label $ showt index <> ".",
+              spacer,
 
-        keystroke (if isLastLine then [("Enter", AddLine), ("Enter", NextFocus 4)] else [("Enter", NextFocus 4)]) $ textField (proofLines . singular (ix idx) . rule) `styleBasic` [width 175],
-        spacer,
+              textFieldV (replaceSpecialSymbols statement) (EditLine path 0) `styleBasic` [textFont "Symbol_Regular"],
+              spacer,
 
-        trashButton (RemoveLine idx),
+              textFieldV (replaceSpecialSymbols rule) (EditLine path 1) `styleBasic` [textFont "Symbol_Regular", width 175],
+              spacer,
 
-        button "<-" (OutdentLine idx),
-        spacer,
-        button "->" (IndentLine idx)
-        ]
-          `nodeKey` showt idx
-          `styleBasic` [paddingT 10]
+              trashButton (RemoveLine path)
+              -- label $ showt index <> ".  " <> statement <> " : " <> rule
+            ]
+          lastIndex = index + 1
 
-      isLastLine = idx == length (model ^. proofLines) - 1
+      getSubProof p path arrayIndex visualIndex
+        | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
+        | otherwise = []
+          where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do
@@ -279,29 +304,40 @@ handleEvent wenv node model evt = case evt of
     ]
 
   AddLine -> [
-      Model $ model & proofLines .~ (model ^. proofLines ++ [newLine]),
-      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
-      ]
+      Model $ model & proofFormulas .~ addLine (model ^. proofFormulas)
+    ]
     where
-      newLine = ProofLine lastLineIndent "" ""
-      lastLineIndent = model ^. proofLines . singular (ix lastIndex) . indentLevel
-      lastIndex = length (model ^. proofLines) - 1
+      addLine (MainProof p) = MainProof $ p ++ [newLine]
+      newLine = Formula "" ""
 
-  RemoveLine idx -> [
-      Model $ model & proofLines .~ removeIdx idx (model ^. proofLines),
-      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
+  RemoveLine path -> [
+      Model $ model & proofFormulas .~ removeLine path (model ^. proofFormulas)
     ]
+    where
+      removeLine removePath p = rl removePath [] p
+      rl removePath currentPath (MainProof p)
+        | removePath == currentPath = Removed
+        | otherwise = MainProof $ filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+      rl removePath currentPath (SubProof p)
+        | removePath == currentPath = Removed
+        | otherwise = SubProof $ filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+      rl removePath currentPath f@(Formula _ _)
+        | removePath == currentPath = Removed
+        | otherwise = f
+      filterRemoved p = filter (/=Removed) p
 
-  OutdentLine idx -> [
-      Model $ model & proofLines . singular (ix idx) . indentLevel .~  max 0 (currentIndent - 1),
-      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
+  EditLine path arg newText -> [
+      Model $ model & proofFormulas .~ editLine path arg newText (model ^. proofFormulas)
     ]
-    where currentIndent = model ^. proofLines . singular (ix idx) . indentLevel
-  IndentLine idx -> [
-      Model $ model & proofLines . singular (ix idx) . indentLevel .~ currentIndent + 1,
-      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
-    ]
-    where currentIndent = model ^. proofLines . singular (ix idx) . indentLevel
+    where
+      editLine editPath arg newText formulas = el editPath arg newText [] formulas
+      el editPath arg newText currentPath (MainProof p) = MainProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
+      el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
+      el editPath arg newText currentPath f@(Formula statement rule)
+        | editPath == currentPath = case arg of
+          0 -> Formula newText rule
+          1 -> Formula statement newText
+        | otherwise = f
 
   OpenCreateProofPopup -> [
       Model $ model & newFilePopupOpen .~ True
@@ -321,7 +357,8 @@ handleEvent wenv node model evt = case evt of
   OpenFile f -> [
       Model $ model
         & openFiles .~ (model ^. openFiles ++ [f | f `notElem` model ^. openFiles])
-        & (currentFile ?~ f)
+        & currentFile ?~ f
+        -- & proofFormulas .~ MainProof []
     ]
 
   CloseFile f -> [
@@ -341,53 +378,66 @@ handleEvent wenv node model evt = case evt of
     Left err -> [Message "Error" (pack err)]  -- Add type annotation
     Right step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
 
-  _ -> [] 
+  f@_ -> [
+      Producer $ (\_ -> print f)
+    ]
 
 main :: IO ()
 main = do
   frontendChan <- newChan
   backendChan <- newChan
   startCommunication frontendChan backendChan
-  startApp (initialModel frontendChan backendChan) handleEvent buildUI config
+  startApp (model frontendChan backendChan) handleEvent buildUI config
   where
     config = [
       appWindowTitle "● proof.logic - Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appTheme darkTheme,
-      -- appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf",
-      -- appFontDef "Medium" "./assets/fonts/Roboto-Medium.ttf",
-      -- appFontDef "Bold" "./assets/fonts/Roboto-Bold.ttf",
-      appFontDef "Regular" "./assets/fonts/MPLUS1p-Regular.ttf",
-      appFontDef "Medium" "./assets/fonts/MPLUS1p-Medium.ttf",
-      appFontDef "Bold" "./assets/fonts/MPLUS1p-Bold.ttf",
+
+      appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
+      appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
+      appFontDef "Bold" "./assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf",
+
+      appFontDef "Symbol_Regular" "./assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
+      appFontDef "Symbol_ Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
+      appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
+
       appFontDef "Remix" "./assets/fonts/remixicon.ttf",
+
       appInitEvent AppInit,
       appModelFingerprint show
       ]
-    initialModel frontendChan backendChan = AppModel {
+    model frontendChan backendChan = AppModel {
       _clickCount = 0,
       _newFileName = "",
       _newFilePopupOpen = False,
       _loadedFiles = [],
       _openFiles = [],
       _currentFile = Nothing,
-      _conclusion = "((P -> Q) && (!R -> !Q)) -> (P -> R)",  -- Example conclusion
-      _proofLines = [
-        ProofLine 1 "(P -> Q) && (!R -> !Q)" "Assumption",
-        ProofLine 2 "p" "Assumption",
-        ProofLine 2 "(P -> Q) && (!R -> !Q)" "1, Reiteration",
-        ProofLine 2 "P -> Q" "3, ||E",
-        ProofLine 2 "Q" "2, 4, ->E",
-        ProofLine 2 "!R -> !Q" "3, &&E",
-        ProofLine 3 "!R" "Assumption",
-        ProofLine 3 "!R -> !Q" "6, Reiteration",
-        ProofLine 3 "!Q" "7, 8, ->E",
-        ProofLine 3 "Q" "5, Reiteration",
-        ProofLine 2 "!!R" "7-10, !I",
-        ProofLine 2 "R" "11, !!E",
-        ProofLine 1 "P -> R" "2-12, ->I",
-        ProofLine 0 "((P -> Q) && (!R -> !Q)) -> (P -> R)" "1-13, ->I"
+      _conclusion = "((P -> Q) && (!R -> !Q)) -> (P -> R)",
+      _proofFormulas = MainProof [
+        SubProof [
+          Formula "(P -> Q) && (!R -> !Q)" "Assumption",
+          SubProof [
+            Formula "P" "Assumption",
+            Formula "(P -> Q) && (!R -> !Q)" "1, Reiteration",
+            Formula "P -> Q" "3, ||E",
+            Formula "Q" "2, 4, ->E",
+            Formula "!R -> !Q" "3, &&E",
+            SubProof [
+              Formula "!R" "Assumption",
+              Formula "!R -> !Q" "6, Reiteration",
+              Formula "!Q" "7, 8, ->E",
+              Formula "Q" "5, Reiteration"
+            ],
+            Formula "!!R" "7-10, !I",
+            Formula "R" "11, !!E"
+          ],
+          Formula "P -> R" "2-12, ->I"
+        ],
+        Formula "((P -> Q) && (!R -> !Q)) -> (P -> R)" "1-13, ->I"
       ],
+
       _frontendChan = frontendChan,
       _backendChan = backendChan,
       _proofStatus = Nothing  -- Initialize proof status
