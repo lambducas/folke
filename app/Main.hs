@@ -3,10 +3,10 @@ module Main (
 ) where
 
 import Example (example)
--- import qualified Frontend.Main as Frontend
+import qualified Frontend.Main as Frontend
 import Control.Concurrent (forkIO)
 
 main :: IO ()
 main = do
-    -- _ <- forkIO Frontend.main
-    example
+    _ <- forkIO example
+    Frontend.main

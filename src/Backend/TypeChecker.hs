@@ -7,12 +7,14 @@ module Backend.TypeChecker (
     checkSteps,
     ruleIdToString,
     termIdToString,
-    isProofCorrect
+    isProofCorrect,
+    handleFrontendMessage
 ) where
 
 import Parser.Logic.Abs
 import qualified Data.Map as Map
-import Backend.Rules
+import Shared.Messages
+import Backend.Rules (applyRule, Rule(..))
 
 type Environment = Map.Map String Term
 type LineMap = Map.Map Integer Form
@@ -63,26 +65,26 @@ checkStep env lineMap lineNum step = case step of
     StepPrem form -> do
         (checkedForm, newEnv) <- checkForm env form
         let newLineMap = Map.insert lineNum checkedForm lineMap
-        Right (StepPrem checkedForm, newEnv, newLineMap, lineNum + 1)
+        Right ((StepPrem checkedForm, newEnv, newLineMap, lineNum + 1), newEnv)
     StepDecConst termId ->
         if Map.member (termIdToString termId) env
             then Left "Constant already declared"
-            else Right (step, env, lineMap, lineNum + 1)
+            else Right ((step, env, lineMap, lineNum + 1), env)
     StepDecVar termId ->
         if Map.member (termIdToString termId) env
             then Left "Variable already declared"
-            else Right (step, env, lineMap, lineNum + 1)
+            else Right ((step, env, lineMap, lineNum + 1), env)
     StepDecFun termId termIds ->
         if Map.member (termIdToString termId) env
             then Left "Function already declared"
-            else Right (step, env, lineMap, lineNum + 1)
+            else Right ((step, env, lineMap, lineNum + 1), env)
     StepAssume form -> do
         (checkedForm, newEnv) <- checkForm env form
         let newLineMap = Map.insert lineNum checkedForm lineMap
-        Right (StepAssume checkedForm, newEnv, newLineMap, lineNum + 1)
+        Right ((StepAssume checkedForm, newEnv, newLineMap, lineNum + 1), newEnv)
     StepProof steps -> do
-        (checkedSteps, newEnv, newLineMap, newLineNum) <- checkSteps env lineMap lineNum steps
-        Right (StepProof checkedSteps, newEnv, newLineMap, newLineNum)
+        ((checkedSteps, newEnv, newLineMap, newLineNum), newEnv') <- checkSteps env lineMap lineNum steps
+        Right ((StepProof checkedSteps, newEnv, newLineMap, newLineNum), newEnv')
     StepForm ruleId args form -> do
         (checkedForm, newEnv) <- checkForm env form
         let rule = case ruleIdToString ruleId of
@@ -96,7 +98,7 @@ checkStep env lineMap lineNum step = case step of
             Right forms -> case applyRule rule forms of
                 Left err -> Left err
                 Right resultForm -> if resultForm == form
-                    then Right (StepForm ruleId args checkedForm, newEnv, Map.insert lineNum checkedForm lineMap, lineNum + 1)
+                    then Right ((StepForm ruleId args checkedForm, newEnv, Map.insert lineNum checkedForm lineMap, lineNum + 1), newEnv)
                     else Left "Resulting form does not match the expected form"
 
 getFormFromArg :: LineMap -> Arg -> Either String Form
@@ -107,14 +109,14 @@ getFormFromArg lineMap (ArgSub step) = Left "Sub-steps not supported yet"
 
 checkSequent :: Environment -> Sequent -> Result Sequent
 checkSequent env (Seq forms form steps) = do
-    (checkedSteps, newEnv, _, _) <- checkSteps env Map.empty 1 steps
-    Right (Seq forms form checkedSteps, newEnv)
+    ((checkedSteps, newEnv, _, _), newEnv') <- checkSteps env Map.empty 1 steps
+    Right (Seq forms form checkedSteps, newEnv')
 
 checkSteps :: Environment -> LineMap -> Integer -> [Step] -> Result ([Step], Environment, LineMap, Integer)
-checkSteps env lineMap lineNum steps = foldl (\acc s -> acc >>= \(sts, e, lm, ln) ->
-     checkStep e lm ln s >>= \(st, ne, nlm, nln) ->
-        Right (st : sts, ne, nlm, nln)) (Right ([], env, lineMap, lineNum)) steps >>= \(sts, e, lm, ln) ->
-            Right (reverse sts, e, lm, ln)
+checkSteps env lineMap lineNum steps = foldl (\acc s -> acc >>= \((sts, e, lm, ln), _) ->
+     checkStep e lm ln s >>= \((st, ne, nlm, nln), ne') ->
+        Right ((st : sts, ne, nlm, nln), ne')) (Right (([], env, lineMap, lineNum), env)) steps >>= \((sts, e, lm, ln), _) ->
+            Right ((reverse sts, e, lm, ln), e)
 
 isProofCorrect :: Sequent -> Bool
 isProofCorrect (Seq _ conclusion steps) =
@@ -127,3 +129,13 @@ ruleIdToString (RuleId str) = str
 
 termIdToString :: TermId -> String
 termIdToString (TermId str) = str
+
+handleFrontendMessage :: FrontendMessage -> BackendMessage
+handleFrontendMessage (CheckSequent sequent) =
+    let env = Map.empty
+        result = checkSequent env sequent
+    in case result of
+        Left err -> SequentChecked (Left err)
+        Right (checkedSequent, _) -> SequentChecked (Right checkedSequent)
+handleFrontendMessage (OtherFrontendMessage text) =
+    OtherBackendMessage text

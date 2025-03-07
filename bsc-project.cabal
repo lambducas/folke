@@ -58,17 +58,22 @@ library
     import:           warnings
     exposed-modules:  Backend.TypeChecker
                     , Backend.AuxiliaryTypes
+                    , Backend.Rules
                     , Parser.Logic.Abs
+                    , Shared.Messages
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
+                    , text
+
     hs-source-dirs:   src
     default-language: Haskell2010
 
-executable bsc-project
+executable bsc
     import:           warnings
     main-is:          Main.hs
     hs-source-dirs:   app
+                    , src
                     
     build-depends:    base ^>=4.17.2.1
                     , bsc-project
@@ -77,24 +82,16 @@ executable bsc-project
                     , monomer
                     , text
                     , text-show
-                    , containers
-    default-language: Haskell2010
-    ghc-options: -fwarn-incomplete-patterns -threaded
-    default-extensions: OverloadedStrings
-
-executable monomergui
-    import:           warnings
-    main-is:          Frontend/Main.hs
-    hs-source-dirs:   src
-                    , src/Frontend
-    build-depends:    base ^>=4.17.2.1
-                    , data-default
-                    , lens
-                    , monomer
-                    , text
-                    , text-show
-                    , bsc-project
                     , directory
+                    , containers
+    other-modules:
+                      Backend.TypeChecker
+                    , Backend.Rules
+                    , Shared.Messages
+                    , Example
+                    , Parser.Logic.Abs
+                    , Frontend.Main
+                    , Shared.Messages
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings

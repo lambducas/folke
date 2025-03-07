@@ -2,15 +2,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Main where
+module Frontend.Main where
 
 import System.Directory
-import Control.Concurrent (threadDelay)
+import Control.Concurrent (threadDelay, Chan, newChan, writeChan, readChan)
 import Control.Lens
 import Monomer
 import TextShow
 import Data.Text (Text, replace, unpack, pack, intercalate)
 import qualified Data.Maybe
+import Shared.Messages
+import Backend.TypeChecker (handleFrontendMessage, isProofCorrect)  -- Import isProofCorrect
+import Parser.Logic.Abs (Sequent(..), Step(..), Form(..), Pred(..), PredId(..), Params(..), RuleId(..))  -- Add missing imports
+import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofStep)
 
 data ProofLine = ProofLine {
   _indentLevel :: Int,
@@ -34,9 +38,23 @@ data AppModel = AppModel {
   _openFiles :: [File],
   _currentFile :: Maybe File,
 
-  _conclusion :: Text,
-  _proofLines :: [ProofLine]
-} deriving (Eq, Show)
+  _conclusion :: Text,  -- Change type to Text
+  _proofLines :: [ProofLine],
+  _frontendChan :: Chan FrontendMessage,
+  _backendChan :: Chan BackendMessage,
+  _proofStatus :: Maybe Bool  -- Add proof status field
+} deriving (Eq)
+
+instance Show AppModel where
+  show model = "AppModel { _clickCount = " ++ show (_clickCount model) ++
+               ", _newFilePopupOpen = " ++ show (_newFilePopupOpen model) ++
+               ", _newFileName = " ++ show (_newFileName model) ++
+               ", _loadedFiles = " ++ show (_loadedFiles model) ++
+               ", _openFiles = " ++ show (_openFiles model) ++
+               ", _currentFile = " ++ show (_currentFile model) ++
+               ", _conclusion = " ++ show (_conclusion model) ++
+               ", _proofLines = " ++ show (_proofLines model) ++
+               ", _proofStatus = " ++ show (_proofStatus model) ++ " }"
 
 data AppEvent
   = AppInit
@@ -52,6 +70,8 @@ data AppEvent
   | SetCurrentFile File
   | OpenCreateProofPopup
   | CreateEmptyProof Text
+  | CheckProof
+  | BackendResponse BackendMessage
   deriving (Eq, Show)
 
 makeLenses 'ProofLine
@@ -89,24 +109,11 @@ replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s 
 replaceSpecialSymbols :: Text -> Text
 replaceSpecialSymbols s = replaceFromLookup s symbolLookup
 
-exportProof :: AppModel -> Text
-exportProof model = "conclusion: " <> model ^. conclusion <> "\n" <> exportProofHelper (model ^. proofLines) 0
+exportProof :: AppModel -> Sequent
+exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
 
-tabs :: Int -> Text
-tabs n = pack $ replicate n '\t'
-
-exportProofHelper :: [ProofLine] -> Int -> Text
-exportProofHelper [] lastIndex = intercalate "" (map (\n -> tabs n <> "}\n") (reverse [0..lastIndex-1]))
-exportProofHelper (line:rest) lastIndex
-  | ind > lastIndex = intercalate "" (map (\n -> tabs n <> "{\n") [lastIndex..ind-1]) <> l
-  | ind < lastIndex = intercalate "" (map (\n -> tabs n <> "}\n") (reverse [ind..lastIndex-1])) <> l
-  | otherwise = l
-  where
-    l = tabs ind <> _statement line <> " : " <> _rule line <> ";\n" <> exportProofHelper rest ind
-    ind = _indentLevel line
-
-isProofCorrect :: Text -> Bool
-isProofCorrect p = True
+toStep :: ProofLine -> Step
+toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
 
 buildUI
   :: WidgetEnv AppModel AppEvent
@@ -182,7 +189,7 @@ buildUI wenv model = widgetTree where
       hstack [
         label "Conclusion",
         spacer,
-        textField conclusion
+        textField conclusion  -- Use textField for Text type
       ] `styleBasic` [paddingV 8],
       spacer,
 
@@ -195,8 +202,8 @@ buildUI wenv model = widgetTree where
       spacer,
 
       hstack [
-        widgetIf (isProofCorrect (exportProof model)) (label "Proof is correct :)" `styleBasic` [textColor lime]),
-        widgetIf (not $ isProofCorrect (exportProof model)) (label "Proof is not correct!" `styleBasic` [textColor pink])
+        widgetIf (model ^. proofStatus == Just True) (label "Proof is correct :)" `styleBasic` [textColor lime]),
+        widgetIf (model ^. proofStatus == Just False) (label "Proof is not correct!" `styleBasic` [textColor pink])
       ]
     ] `styleBasic` [padding 10]
 
@@ -238,6 +245,10 @@ directoryFilesProducer sendMsg = do
           subname = "subname"
           content = "This is the content"
 
+evaluateCurrentProof :: AppModel -> IO (Either String Sequent)
+evaluateCurrentProof model = do
+    let sequent = exportProof model
+    evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -247,7 +258,12 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
   AppInit -> [
-      Producer directoryFilesProducer
+      Producer directoryFilesProducer,
+      Task $ do
+        frontendChan <- newChan
+        backendChan <- newChan
+        startCommunication frontendChan backendChan
+        return $ BackendResponse (OtherBackendMessage "Initialized")
     ]
   AppIncrease -> [Model (model & clickCount +~ 1)]
 
@@ -263,20 +279,28 @@ handleEvent wenv node model evt = case evt of
     ]
 
   AddLine -> [
-      Model $ model & proofLines .~ (model ^. proofLines ++ [newLine])
-      -- SetFocusOnKey "Last"
+      Model $ model & proofLines .~ (model ^. proofLines ++ [newLine]),
+      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
       ]
     where
       newLine = ProofLine lastLineIndent "" ""
       lastLineIndent = model ^. proofLines . singular (ix lastIndex) . indentLevel
       lastIndex = length (model ^. proofLines) - 1
 
-  RemoveLine idx -> [Model $ model
-    & proofLines .~ removeIdx idx (model ^. proofLines)]
+  RemoveLine idx -> [
+      Model $ model & proofLines .~ removeIdx idx (model ^. proofLines),
+      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
+    ]
 
-  OutdentLine idx -> [Model $ model & proofLines . singular (ix idx) . indentLevel .~  max 0 (currentIndent - 1)]
+  OutdentLine idx -> [
+      Model $ model & proofLines . singular (ix idx) . indentLevel .~  max 0 (currentIndent - 1),
+      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
+    ]
     where currentIndent = model ^. proofLines . singular (ix idx) . indentLevel
-  IndentLine idx -> [Model $ model & proofLines . singular (ix idx) . indentLevel .~ currentIndent + 1]
+  IndentLine idx -> [
+      Model $ model & proofLines . singular (ix idx) . indentLevel .~ currentIndent + 1,
+      Task $ evaluateCurrentProof model >>= \result -> return $ BackendResponse (SequentChecked result)
+    ]
     where currentIndent = model ^. proofLines . singular (ix idx) . indentLevel
 
   OpenCreateProofPopup -> [
@@ -309,9 +333,22 @@ handleEvent wenv node model evt = case evt of
 
   SetCurrentFile f -> [ Model $ model & (currentFile ?~ f) ]
 
+  BackendResponse (SequentChecked result) -> case result of
+    Left err -> [Message "Error" (pack err)]  -- Add type annotation
+    Right sequent -> [Model $ model & proofStatus .~ Just (isProofCorrect sequent)]
+
+  BackendResponse (StepChecked result) -> case result of
+    Left err -> [Message "Error" (pack err)]  -- Add type annotation
+    Right step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
+
+  _ -> [] 
+
 main :: IO ()
 main = do
-  startApp model handleEvent buildUI config
+  frontendChan <- newChan
+  backendChan <- newChan
+  startCommunication frontendChan backendChan
+  startApp (initialModel frontendChan backendChan) handleEvent buildUI config
   where
     config = [
       appWindowTitle "● proof.logic - Proof Editor",
@@ -327,14 +364,14 @@ main = do
       appInitEvent AppInit,
       appModelFingerprint show
       ]
-    model = AppModel {
+    initialModel frontendChan backendChan = AppModel {
       _clickCount = 0,
       _newFileName = "",
       _newFilePopupOpen = False,
       _loadedFiles = [],
       _openFiles = [],
       _currentFile = Nothing,
-      _conclusion = "((P -> Q) && (!R -> !Q)) -> (P -> R)",
+      _conclusion = "((P -> Q) && (!R -> !Q)) -> (P -> R)",  -- Example conclusion
       _proofLines = [
         ProofLine 1 "(P -> Q) && (!R -> !Q)" "Assumption",
         ProofLine 2 "p" "Assumption",
@@ -350,7 +387,10 @@ main = do
         ProofLine 2 "R" "11, !!E",
         ProofLine 1 "P -> R" "2-12, ->I",
         ProofLine 0 "((P -> Q) && (!R -> !Q)) -> (P -> R)" "1-13, ->I"
-      ]
+      ],
+      _frontendChan = frontendChan,
+      _backendChan = backendChan,
+      _proofStatus = Nothing  -- Initialize proof status
     }
 
 removeIdx :: Int -> [a] -> [a]
