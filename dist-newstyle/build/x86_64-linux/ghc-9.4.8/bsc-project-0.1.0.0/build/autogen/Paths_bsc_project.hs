@@ -46,12 +46,21 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
+<<<<<<< HEAD
 bindir     = "/home/alfons/.cabal/bin"
 libdir     = "/home/alfons/.cabal/lib/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0-inplace"
 dynlibdir  = "/home/alfons/.cabal/lib/x86_64-linux-ghc-9.4.8"
 datadir    = "/home/alfons/.cabal/share/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
 libexecdir = "/home/alfons/.cabal/libexec/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
 sysconfdir = "/home/alfons/.cabal/etc"
+=======
+bindir     = "/home/anton/.cabal/bin"
+libdir     = "/home/anton/.cabal/lib/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0-inplace"
+dynlibdir  = "/home/anton/.cabal/lib/x86_64-linux-ghc-9.4.8"
+datadir    = "/home/anton/.cabal/share/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
+libexecdir = "/home/anton/.cabal/libexec/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
+sysconfdir = "/home/anton/.cabal/etc"
+>>>>>>> refs/remotes/origin/main
 
 getBinDir     = catchIO (getEnv "bsc_project_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "bsc_project_libdir")     (\_ -> return libdir)

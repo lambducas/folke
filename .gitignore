@@ -9,4 +9,4 @@ src/Parser/Logic/*
 !src/Parser/Logic/Abs.hs
 
 # Ignore dist-newstyle because merge conflict in this dir are not fun
-dist-newstyle
+dist-newstyle/
