@@ -193,7 +193,7 @@ buildUI wenv model = widgetTree where
       label $ _subname file,
       spacer,
       -- label "→ ¬ ∧ ∨ ⊕ ⊥ ∀ ∃ ⊢ ⊬ ⟛",
-      -- label $ replaceSpecialSymbols "P -> Q && L",
+      -- label $ replaceSpecialSymbols "P -> Q & L",
       -- vscroll $ label_ (exportProof model) [multiline],
 
       hstack [
@@ -413,16 +413,16 @@ main = do
       _loadedFiles = [],
       _openFiles = [],
       _currentFile = Nothing,
-      _conclusion = "((P -> Q) && (!R -> !Q)) -> (P -> R)",
+      _conclusion = "((P -> Q) & (!R -> !Q)) -> (P -> R)",
       _proofFormulas = MainProof [
         SubProof [
-          Formula "(P -> Q) && (!R -> !Q)" "Assumption",
+          Formula "(P -> Q) & (!R -> !Q)" "Assumption",
           SubProof [
             Formula "P" "Assumption",
-            Formula "(P -> Q) && (!R -> !Q)" "1, Reiteration",
-            Formula "P -> Q" "3, ||E",
+            Formula "(P -> Q) & (!R -> !Q)" "1, Reiteration",
+            Formula "P -> Q" "3, |E",
             Formula "Q" "2, 4, ->E",
-            Formula "!R -> !Q" "3, &&E",
+            Formula "!R -> !Q" "3, &E",
             SubProof [
               Formula "!R" "Assumption",
               Formula "!R -> !Q" "6, Reiteration",
@@ -434,7 +434,7 @@ main = do
           ],
           Formula "P -> R" "2-12, ->I"
         ],
-        Formula "((P -> Q) && (!R -> !Q)) -> (P -> R)" "1-13, ->I"
+        Formula "((P -> Q) & (!R -> !Q)) -> (P -> R)" "1-13, ->I"
       ],
 
       _frontendChan = frontendChan,
