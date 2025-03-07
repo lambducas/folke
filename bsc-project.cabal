@@ -84,9 +84,9 @@ executable bsc-project
 
 executable monomergui
     import:           warnings
-    main-is:          Frontend/Monomer/Main.hs
+    main-is:          Frontend/Main.hs
     hs-source-dirs:   src
-                    , src/Frontend/Monomer/src
+                    , src/Frontend
     build-depends:    base ^>=4.17.2.1
                     , data-default
                     , lens
