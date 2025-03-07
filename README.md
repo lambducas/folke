@@ -50,15 +50,15 @@ This project is a proof editor built using the Monomer library for the frontend 
 To build the library and executable, run the following command:
 
 ```bash
-$ ~> cabal build
+$ cabal build
 ```
 
 ## Running the Project
 
-To run the backend (standard output) and frontend GUI, use the following command:
+To run the backend (standard output) and frontend GUI, use the following command to run the executable:
 
 ```bash
-$ -> cabal run bsc
+$ cabal run bsc
 ```
 
 
