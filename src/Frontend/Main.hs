@@ -99,17 +99,16 @@ type SymbolDict = [(Text, Text)]
 
 symbolLookup :: SymbolDict
 symbolLookup = [
-  ("-", "¬"),
   ("!", "¬"),
   ("->", "→"),
-  ("&&", "∧"),
-  ("||", "∨"),
+  ("&", "∧"),
+  ("|", "∨"),
   ("bot", "⊥"),
   ("#", "⊥"),
   ("forall", "∀"),
   ("exists", "∃"),
-  ("|-/", "⊬"),
-  ("|-", "⊢")
+  ("=/>", "⊬"),
+  ("=>", "⊢")
   ]
 
 replaceFromLookup :: Text -> SymbolDict -> Text
