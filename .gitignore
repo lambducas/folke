@@ -9,4 +9,4 @@ src/Parser/Logic/*
 !src/Parser/Logic/Abs.hs
 
 #
-dist-newstyle/*
+dist-newstyle/
