@@ -7,3 +7,6 @@
 src/Parser/Makefile
 src/Parser/Logic/*
 !src/Parser/Logic/Abs.hs
+
+#
+dist-newstyle/*
