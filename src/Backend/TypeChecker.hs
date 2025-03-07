@@ -137,12 +137,5 @@ handleFrontendMessage (CheckSequent sequent) =
     in case result of
         Left err -> SequentChecked (Left err)
         Right (checkedSequent, _) -> SequentChecked (Right checkedSequent)
-handleFrontendMessage (CheckStep step) =
-    let env = Map.empty
-        lineMap = Map.empty
-        result = checkStep env lineMap 1 step
-    in case result of
-        Left err -> StepChecked (Left err)
-        Right ((checkedStep, _, _, _), _) -> StepChecked (Right checkedStep)
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
