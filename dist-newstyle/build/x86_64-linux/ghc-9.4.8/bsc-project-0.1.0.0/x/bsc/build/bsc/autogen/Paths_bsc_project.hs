@@ -46,12 +46,12 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "/home/lucas/.cabal/bin"
-libdir     = "/home/lucas/.cabal/lib/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0-inplace-bsc"
-dynlibdir  = "/home/lucas/.cabal/lib/x86_64-linux-ghc-9.4.8"
-datadir    = "/home/lucas/.cabal/share/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
-libexecdir = "/home/lucas/.cabal/libexec/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
-sysconfdir = "/home/lucas/.cabal/etc"
+bindir     = "/home/anton/.cabal/bin"
+libdir     = "/home/anton/.cabal/lib/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0-inplace-bsc"
+dynlibdir  = "/home/anton/.cabal/lib/x86_64-linux-ghc-9.4.8"
+datadir    = "/home/anton/.cabal/share/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
+libexecdir = "/home/anton/.cabal/libexec/x86_64-linux-ghc-9.4.8/bsc-project-0.1.0.0"
+sysconfdir = "/home/anton/.cabal/etc"
 
 getBinDir     = catchIO (getEnv "bsc_project_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "bsc_project_libdir")     (\_ -> return libdir)
