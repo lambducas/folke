@@ -2,6 +2,10 @@ module Example (
     example
 ) where
 
+import Backend.TypeChecker
+import Parser.Logic.Abs
+import qualified Data.Map as Map
+
 example :: IO ()
 example = do
     let env = Map.empty
