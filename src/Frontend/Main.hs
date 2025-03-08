@@ -7,19 +7,21 @@
 module Frontend.Main where
 
 import System.Directory
-import Control.Concurrent (threadDelay, Chan, newChan, writeChan, readChan)
+import Control.Concurrent (threadDelay, Chan, newChan)
 import Control.Lens
 import Monomer
 import TextShow
-import Data.Text (Text, replace, unpack, pack)
-import Data.List (find)
+import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
+import Data.List (find, dropWhileEnd)
 import qualified Data.Maybe
 
 import Shared.Messages
 import Backend.TypeChecker (handleFrontendMessage, isProofCorrect)
 import Parser.Logic.Abs (Sequent(..), Step(..), Form(..), Pred(..), PredId(..), Params(..), RuleId(..))
 import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofStep)
+import Data.Char (isSpace)
 
+type SymbolDict = [(Text, Text)]
 type FormulaPath = [Int]
 
 data ProofFormula
@@ -86,16 +88,6 @@ data AppEvent
 makeLenses 'File
 makeLenses 'AppModel
 
-h1 :: Text -> WidgetNode s e
-h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
-
-iconButton iconIdent action = button iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
-
-trashButton action = iconButton remixDeleteBinFill action
-
-type SymbolDict = [(Text, Text)]
-
 symbolLookup :: SymbolDict
 symbolLookup = [
   ("!", "¬"),
@@ -109,47 +101,6 @@ symbolLookup = [
   ("=/>", "⊬"),
   ("=>", "⊢")
   ]
-
-replaceFromLookup :: Text -> SymbolDict -> Text
-replaceFromLookup s [] = s
-replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s ls
-
-replaceSpecialSymbols :: Text -> Text
-replaceSpecialSymbols s = replaceFromLookup s symbolLookup
-
-tabs :: Int -> Text
-tabs n = pack $ replicate n '\t'
-
--- Empty for now
-exportProof :: AppModel -> Sequent
-exportProof = const $ Seq [] FormBot []
-
--- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
-
--- toStep :: ProofLine -> Step
--- toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
-
-
--- exportProof :: AppModel -> Text
--- exportProof model = "conclusion: " <> model ^. conclusion <> "\n" <> exportProofHelper (model ^. proofFormulas) 0
-
--- exportProofHelper :: ProofFormula -> Int -> Text
--- exportProofHelper (MainProof p) indent = exportProofHelper (SubProof p) indent
--- exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
--- exportProofHelper (Formula statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
-
--- isProofCorrect :: Text -> Bool
--- isProofCorrect p = True
-
--- Placeholder
-parseProofFromFile :: Text -> ProofFormula
-parseProofFromFile p = MainProof [Formula p ""]
-
--- Placeholder
-parseProofToFile :: ProofFormula -> Text
-parseProofToFile (MainProof [Formula p _]) = p
-
-getProofFileByPath model filePath = find (\f -> _path f == filePath) (model ^. loadedFiles)
 
 buildUI
   :: WidgetEnv AppModel AppEvent
@@ -184,7 +135,7 @@ buildUI _wenv model = widgetTree where
     ] `styleBasic` [borderB 1 gray, padding 8, bgColor darkGray, cursorHand]
 
   fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
-    `styleBasic` [bgColor black, maxHeight 50, minHeight 50]
+    `styleBasic` [bgColor black, maxHeight 50, minHeight 50, height 50]
     where
       boxedLabel filePath = hstack [
           button (showt filePath) (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
@@ -381,8 +332,8 @@ handleEvent _wenv _node model evt = case evt of
   SetLoadedFiles fs -> [
       Model $ model
         & loadedFiles .~ fs
-        & tmpLoadedFiles .~ fs,
-      Producer (\_ -> print fs)
+        & tmpLoadedFiles .~ fs
+      -- , Producer (\_ -> print fs)
     ]
 
   OpenFile f -> Model newModel : handleEvent _wenv _node newModel (SetCurrentFile fileName)
@@ -428,6 +379,29 @@ handleEvent _wenv _node model evt = case evt of
 
 main :: IO ()
 main = do
+  print $ parseProofToFile $ MainProof [
+        SubProof [
+          Formula "(P -> Q) & (!R -> !Q)" "Assumption",
+          SubProof [
+            Formula "P" "Assumption",
+            Formula "(P -> Q) & (!R -> !Q)" "1, Reiteration",
+            Formula "P -> Q" "3, |E",
+            Formula "Q" "2, 4, ->E",
+            Formula "!R -> !Q" "3, &E",
+            SubProof [
+              Formula "!R" "Assumption",
+              Formula "!R -> !Q" "6, Reiteration",
+              Formula "!Q" "7, 8, ->E",
+              Formula "Q" "5, Reiteration"
+            ],
+            Formula "!!R" "7-10, !I",
+            Formula "R" "11, !!E"
+          ],
+          Formula "P -> R" "2-12, ->I"
+        ],
+        Formula "((P -> Q) & (!R -> !Q)) -> (P -> R)" "1-13, ->I"
+      ]
+
   frontendChan <- newChan
   backendChan <- newChan
   startCommunication frontendChan backendChan
@@ -488,6 +462,90 @@ main = do
       _proofStatus = Nothing  -- Initialize proof status
     }
 
+h1 :: Text -> WidgetNode s e
+h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
+
+iconButton iconIdent action = button iconIdent action
+  `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
+
+trashButton action = iconButton remixDeleteBinFill action
+
+getProofFileByPath :: AppModel -> FilePath -> Maybe File
+getProofFileByPath model filePath = find (\f -> _path f == filePath) (model ^. loadedFiles)
+
+-- Empty for now
+exportProof :: AppModel -> Sequent
+exportProof = const $ Seq [] FormBot []
+
+-- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
+
+-- toStep :: ProofLine -> Step
+-- toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
+
+-- Placeholder
+parseProofFromFile :: Text -> ProofFormula
+parseProofFromFile p = case proof of
+  [SubProof p] -> MainProof p
+  [Removed] -> MainProof []
+  _ -> error "Invalid proof from `parseText`"
+  where
+    proof = [parseText (unpack p) 0 []]
+
+    parseText :: String -> Int -> [ProofFormula] -> ProofFormula
+    parseText text ptr formulas = case nextSpecialChar of
+      Just (char, idx) -> case char of
+        ';' -> parseText text idx (formulas ++ [parseFormula $ pack $ slice (ptr + 1) idx text])
+        '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
+        '}' -> SubProof formulas
+        _ -> error "Invalid special char"
+      Nothing -> Removed
+      where
+        nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
+
+    parseFormula :: Text -> ProofFormula
+    parseFormula text = Formula statement rule
+      where
+        statement = (pack . trim . unpack) $ head parts
+        rule = (pack . trim . unpack) $ parts !! 1
+        parts = splitOn ":" text
+
+    gotoNextChar text ptr chars
+      | ptr >= len - 1 = Nothing
+      | currentChar `elem` chars = Just (currentChar, ptr + 1)
+      | otherwise = gotoNextChar text (ptr + 1) chars
+      where
+        len = length text
+        currentChar = text !! (ptr + 1)
+
+    findClosingBracket :: [Char] -> Int -> Int -> Int -> Int
+    findClosingBracket text nestedLevel idx cnl
+      | idx >= length text - 1 = error "No closing bracket found"
+      | otherwise = case char of
+      '{' -> findClosingBracket text nestedLevel (idx + 1) (cnl + 1)
+      '}' -> if nestedLevel == cnl then idx + 1 else findClosingBracket text nestedLevel (idx + 1) (cnl - 1)
+      _ -> findClosingBracket text nestedLevel (idx + 1) cnl
+      where char = text !! (idx + 1)
+
+-- Placeholder
+parseProofToFile :: ProofFormula -> Text
+parseProofToFile p = exportProofHelper p 0
+  where
+    exportProofHelper :: ProofFormula -> Int -> Text
+    exportProofHelper (MainProof p) indent = exportProofHelper (SubProof p) indent
+    exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
+    exportProofHelper (Formula statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
+    exportProofHelper Removed _ = ""
+
+    tabs :: Int -> Text
+    tabs n = pack $ replicate n '\t'
+
+replaceFromLookup :: Text -> SymbolDict -> Text
+replaceFromLookup s [] = s
+replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s ls
+
+replaceSpecialSymbols :: Text -> Text
+replaceSpecialSymbols s = replaceFromLookup s symbolLookup
+
 removeIdx :: Int -> [a] -> [a]
 removeIdx idx lst = part1 ++ drop 1 part2 where
   (part1, part2) = splitAt idx lst
@@ -496,3 +554,9 @@ removeIdx idx lst = part1 ++ drop 1 part2 where
 maybeHead :: [a] -> Maybe a
 maybeHead [] = Nothing
 maybeHead (h:_) = Just h
+
+slice :: Int -> Int -> [a] -> [a]
+slice from to xs = take (to - from) (drop from xs)
+
+trim :: [Char] -> [Char]
+trim = dropWhileEnd isSpace . dropWhile isSpace
