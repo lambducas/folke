@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Frontend.Main where
 
@@ -16,9 +17,9 @@ import Data.List (find, dropWhileEnd)
 import qualified Data.Maybe
 
 import Shared.Messages
-import Backend.TypeChecker (handleFrontendMessage, isProofCorrect)
-import Parser.Logic.Abs (Sequent(..), Step(..), Form(..), Pred(..), PredId(..), Params(..), RuleId(..))
-import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofStep)
+import Backend.TypeChecker (isProofCorrect)
+import Parser.Logic.Abs (Sequent(..), Form(..))
+import Frontend.Communication (startCommunication, evaluateProofSegment)
 import Data.Char (isSpace)
 
 type SymbolDict = [(Text, Text)]
@@ -379,29 +380,6 @@ handleEvent _wenv _node model evt = case evt of
 
 main :: IO ()
 main = do
-  print $ parseProofToFile $ MainProof [
-        SubProof [
-          Formula "(P -> Q) & (!R -> !Q)" "Assumption",
-          SubProof [
-            Formula "P" "Assumption",
-            Formula "(P -> Q) & (!R -> !Q)" "1, Reiteration",
-            Formula "P -> Q" "3, |E",
-            Formula "Q" "2, 4, ->E",
-            Formula "!R -> !Q" "3, &E",
-            SubProof [
-              Formula "!R" "Assumption",
-              Formula "!R -> !Q" "6, Reiteration",
-              Formula "!Q" "7, 8, ->E",
-              Formula "Q" "5, Reiteration"
-            ],
-            Formula "!!R" "7-10, !I",
-            Formula "R" "11, !!E"
-          ],
-          Formula "P -> R" "2-12, ->I"
-        ],
-        Formula "((P -> Q) & (!R -> !Q)) -> (P -> R)" "1-13, ->I"
-      ]
-
   frontendChan <- newChan
   backendChan <- newChan
   startCommunication frontendChan backendChan
@@ -434,28 +412,7 @@ main = do
       _openFiles = [],
       _currentFile = Nothing,
       _conclusion = "((P -> Q) & (!R -> !Q)) -> (P -> R)",
-      _proofFormulas = MainProof [
-        SubProof [
-          Formula "(P -> Q) & (!R -> !Q)" "Assumption",
-          SubProof [
-            Formula "P" "Assumption",
-            Formula "(P -> Q) & (!R -> !Q)" "1, Reiteration",
-            Formula "P -> Q" "3, |E",
-            Formula "Q" "2, 4, ->E",
-            Formula "!R -> !Q" "3, &E",
-            SubProof [
-              Formula "!R" "Assumption",
-              Formula "!R -> !Q" "6, Reiteration",
-              Formula "!Q" "7, 8, ->E",
-              Formula "Q" "5, Reiteration"
-            ],
-            Formula "!!R" "7-10, !I",
-            Formula "R" "11, !!E"
-          ],
-          Formula "P -> R" "2-12, ->I"
-        ],
-        Formula "((P -> Q) & (!R -> !Q)) -> (P -> R)" "1-13, ->I"
-      ],
+      _proofFormulas = MainProof [],
 
       _frontendChan = frontendChan,
       _backendChan = backendChan,
@@ -465,10 +422,12 @@ main = do
 h1 :: Text -> WidgetNode s e
 h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
 
+iconButton :: Text -> AppEvent -> WidgetNode AppModel AppEvent
 iconButton iconIdent action = button iconIdent action
   `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
 
-trashButton action = iconButton remixDeleteBinFill action
+trashButton :: AppEvent -> WidgetNode AppModel AppEvent
+trashButton = iconButton remixDeleteBinFill
 
 getProofFileByPath :: AppModel -> FilePath -> Maybe File
 getProofFileByPath model filePath = find (\f -> _path f == filePath) (model ^. loadedFiles)
