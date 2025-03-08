@@ -91,6 +91,7 @@ executable bsc
                     , Example
                     , Parser.Logic.Abs
                     , Frontend.Main
+                    , Frontend.Communication
                     , Shared.Messages
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
