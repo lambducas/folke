@@ -2,8 +2,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
+
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Frontend.Main where
 
@@ -70,6 +72,7 @@ data AppEvent
   | AppIncrease
   | NextFocus Int
   | AddLine
+  | AddSubProof
   | RemoveLine FormulaPath
   | EditLine FormulaPath Int Text
   | OutdentLine Int
@@ -136,29 +139,31 @@ buildUI _wenv model = widgetTree where
     ] `styleBasic` [borderB 1 gray, padding 8, bgColor darkGray, cursorHand]
 
   fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
-    `styleBasic` [bgColor black, maxHeight 50, minHeight 50, height 50]
+    `styleBasic` [bgColor $ rgb 100 100 100, maxHeight 50, minHeight 50, height 50]
     where
       boxedLabel filePath = hstack [
-          button (showt filePath) (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-          button "x" (CloseFile filePath) `styleBasic` [textColor white, bgColor transparent, radius 0, border 0 transparent]
-        ] `styleBasic` [bgColor darkGray, border 1 gray, styleIf isCurrent (bgColor darkSlateGray), styleIf isCurrent (borderB 0 transparent)]
+          button (pack filePath) (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
+           box (button "⨯" (CloseFile filePath)
+            `styleBasic` [textFont "Symbol_Regular", textSize 24, textColor white, bgColor transparent, radius 8, border 0 transparent]
+            `styleHover` [bgColor $ rgba 255 0 0 0.5])
+        ]
+          `styleBasic` [bgColor darkGray, borderL 1 gray, borderR 1 gray, styleIf isCurrent (bgColor darkSlateGray)]
+          `styleHover` [styleIf (not isCurrent) (bgColor gray)]
           where isCurrent = (model ^. currentFile) == Just filePath
 
   editWindow = vstack [
       fileNavBar (model ^. openFiles),
-      widgetIf (Data.Maybe.isJust (model ^. currentFile)) (proofWindow $ model ^. currentFile)
+      proofWindow (model ^. currentFile)
     ]
 
-  proofWindow Nothing = label "No proof selected"
+  proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
     Nothing -> label "Filepath not loaded"
     Just file -> vstack [
         h1 $ _name file,
         label $ _subname file,
+        label $ pack $ _path file,
         spacer,
-        -- label "→ ¬ ∧ ∨ ⊕ ⊥ ∀ ∃ ⊢ ⊬ ⟛",
-        -- label $ replaceSpecialSymbols "P -> Q & L",
-        -- vscroll $ label_ (exportProof model) [multiline],
 
         hstack [
           label "Conclusion",
@@ -170,13 +175,16 @@ buildUI _wenv model = widgetTree where
         vscroll $ vstack [
           fst $ proofTreeUI (model ^. proofFormulas),
           spacer,
-          button "+ New line" AddLine `styleBasic` [ maxWidth 150 ]
+          hstack_ [childSpacing] [
+            button "+ New line" AddLine,
+            button "+-> New sub proof" AddSubProof
+          ]
         ],
         spacer,
 
         hstack [
           proofStatusLabel,
-          spacer,
+          filler,
           button "Save proof" (SaveProof file)
         ]
       ] `styleBasic` [padding 10]
@@ -200,7 +208,7 @@ buildUI _wenv model = widgetTree where
 
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 white, paddingV 8, paddingL 24]
+          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 white, borderR 0 transparent, paddingV 8, paddingL 24]
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
@@ -217,7 +225,6 @@ buildUI _wenv model = widgetTree where
               spacer,
 
               trashButton (RemoveLine path)
-              -- label $ showt index <> ".  " <> statement <> " : " <> rule
             ]
           lastIndex = index + 1
 
@@ -228,28 +235,6 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
-directoryFilesProducer sendMsg = do
-  allFileNames <- listDirectory "./myProofs"
-  allFiles <- traverse readProofFile allFileNames
-  sendMsg (SetLoadedFiles allFiles)
-
-  threadDelay $ 2 * seconds
-  directoryFilesProducer sendMsg
-    where
-      seconds = 1000 * 1000
-      readProofFile path = do
-        let pName = pack path
-            pSubname = "subname"
-        pContent <- readFile ("./myProofs/" <> path)
-        let pContentText = pack pContent
-            parsedContent = parseProofFromFile pContentText
-        return $ File path pName pSubname pContentText parsedContent
-
-evaluateCurrentProof :: AppModel -> IO (Either String Sequent)
-evaluateCurrentProof model = do
-    let sequent = exportProof model
-    evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -286,6 +271,14 @@ handleEvent _wenv _node model evt = case evt of
       addLine (MainProof p) = MainProof $ p ++ [newLine]
       addLine _ = error "Root must be a `MainProof`"
       newLine = Formula "" ""
+
+  AddSubProof -> [
+      Model $ model & proofFormulas .~ addSubProof (model ^. proofFormulas)
+    ]
+    where
+      addSubProof (MainProof p) = MainProof $ p ++ [newSubProof]
+      addSubProof _ = error "Root must be a `MainProof`"
+      newSubProof = SubProof [Formula "" ""]
 
   RemoveLine path -> [
       Model $ model & proofFormulas .~ removeLine path (model ^. proofFormulas)
@@ -324,11 +317,15 @@ handleEvent _wenv _node model evt = case evt of
     ]
 
   CreateEmptyProof fileName -> [
-      Producer (\_ -> writeFile ("./myProofs/" <> unpack fileName <> ".logic") ""),
+      Producer (\_ -> do
+        exists <- doesFileExist filePath
+        if exists then return () else writeFile filePath ""
+      ),
       Model $ model
         & newFilePopupOpen .~ False
         & newFileName .~ ""
     ]
+    where filePath = "./myProofs/" <> unpack fileName <> ".logic"
 
   SetLoadedFiles fs -> [
       Model $ model
@@ -344,11 +341,12 @@ handleEvent _wenv _node model evt = case evt of
         & openFiles .~ (model ^. openFiles ++ [fileName | fileName `notElem` model ^. openFiles])
 
   CloseFile fileName -> [
-      Model $ model
-        & openFiles .~ filter (fileName/=) (model ^. openFiles)
-        & currentFile .~ (if c == Just fileName then maybeHead (model ^. openFiles) else c)
+      Model $ modelWithClosedFile
+        & currentFile .~ (if c == Just fileName then maybeHead (modelWithClosedFile ^. openFiles) else c)
     ]
-    where c = model ^. currentFile
+    where
+      modelWithClosedFile = model & openFiles .~ filter (fileName/=) (model ^. openFiles)
+      c = model ^. currentFile
 
   SaveProof f -> [
       Producer (\_ -> writeFile ("./myProofs/" <> fileName) content)
@@ -419,6 +417,24 @@ main = do
       _proofStatus = Nothing  -- Initialize proof status
     }
 
+directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
+directoryFilesProducer sendMsg = do
+  allFileNames <- listDirectory "./myProofs"
+  allFiles <- traverse readProofFile allFileNames
+  sendMsg (SetLoadedFiles allFiles)
+
+  threadDelay $ 2 * seconds
+  directoryFilesProducer sendMsg
+    where
+      seconds = 1000 * 1000
+      readProofFile path = do
+        let pName = pack path
+            pSubname = "subname"
+        pContent <- readFile ("./myProofs/" <> path)
+        let pContentText = pack pContent
+            parsedContent = parseProofFromFile pContentText
+        return $ File path pName pSubname pContentText parsedContent
+
 h1 :: Text -> WidgetNode s e
 h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
 
@@ -435,6 +451,11 @@ getProofFileByPath model filePath = find (\f -> _path f == filePath) (model ^. l
 -- Empty for now
 exportProof :: AppModel -> Sequent
 exportProof = const $ Seq [] FormBot []
+
+-- evaluateCurrentProof :: AppModel -> IO (Either String Sequent)
+-- evaluateCurrentProof model = do
+--     let sequent = exportProof model
+--     evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
 
 -- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
 

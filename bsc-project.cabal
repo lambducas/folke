@@ -87,6 +87,7 @@ executable bsc
     other-modules:
                       Backend.TypeChecker
                     , Backend.Rules
+                    , Backend.ExampleSequent
                     , Shared.Messages
                     , Example
                     , Parser.Logic.Abs
