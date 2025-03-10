@@ -5,6 +5,8 @@
 
 #Ignore all BNFC generated files
 src/Parser/Makefile
+src/Parser/Makefile.bak
+
 src/Parser/Logic/*
 !src/Parser/Logic/Abs.hs
 
