@@ -53,6 +53,15 @@ To build the library and executable, run the following command:
 $ cabal build
 ```
 
+### Set up BNFC
+To install BNFC and generate files, run:
+```bash
+$ cabal install BNFC
+$ cabal install alex
+$ cabal install happy
+$ make
+```
+
 ### Fix freetype2 not found
 On Ubuntu, to fix `rejecting: nanovg:-stb_truetype (conflict: pkg-config package
 freetype2-any, not found in the pkg-config database)` when building, run
