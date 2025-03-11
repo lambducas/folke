@@ -15,20 +15,21 @@ import Control.Lens
 import Monomer
 import TextShow
 import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
-import Data.List (find, dropWhileEnd)
-import qualified Data.Maybe
+import Data.List (find, dropWhileEnd, findIndex)
+import Data.Char (isSpace)
+import Data.Maybe (fromMaybe, isNothing)
+import Control.Exception (try, SomeException (SomeException))
 
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
 import Parser.Logic.Abs (Sequent(..), Form(..))
 import Frontend.Communication (startCommunication, evaluateProofSegment)
-import Data.Char (isSpace)
 
 type SymbolDict = [(Text, Text)]
 type FormulaPath = [Int]
 
 data ProofFormula
-  = MainProof [ProofFormula]
+  = MainProof Text [ProofFormula]
   | Formula {
     _statement :: Text,
     _rule :: Text
@@ -42,7 +43,8 @@ data File = File {
   _name :: Text,
   _subname :: Text,
   _content :: Text,
-  _parsedContent :: ProofFormula
+  _parsedContent :: ProofFormula,
+  _isEdited :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
@@ -50,13 +52,10 @@ data AppModel = AppModel {
 
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
-  _loadedFiles :: [File],
+  _filesInDirectory :: [FilePath],
   _tmpLoadedFiles :: [File],
   _openFiles :: [FilePath],
   _currentFile :: Maybe FilePath,
-
-  _conclusion :: Text,
-  _proofFormulas :: ProofFormula,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
@@ -77,10 +76,13 @@ data AppEvent
   | EditLine FormulaPath Int Text
   | OutdentLine Int
   | IndentLine Int
-  | SetLoadedFiles [File]
-  | OpenFile File
+  | SetFilesInDirectory [FilePath]
+  | OpenFile FilePath
+  | OpenFileSuccess File
   | CloseFile FilePath
+  | CloseCurrentFile
   | SaveProof File
+  | SaveProofSuccess File
   | SetCurrentFile FilePath
   | OpenCreateProofPopup
   | CreateEmptyProof Text
@@ -118,7 +120,7 @@ buildUI _wenv model = widgetTree where
 
   fileWindow = vstack [
       box (label "Manage proofs") `styleBasic` [padding 10],
-      vstack $ map fileItem (model ^. loadedFiles),
+      vstack $ map fileItem (model ^. filesInDirectory),
       spacer,
 
       box $ button "+ New proof" OpenCreateProofPopup `styleBasic` [padding 10],
@@ -132,24 +134,28 @@ buildUI _wenv model = widgetTree where
       ] `styleBasic` [bgColor gray, padding 10])
     ] `styleBasic` [ width 250, borderR 1 gray ]
 
-  fileItem file = box_ [expandContent, onClick (OpenFile file)] $ vstack [
-      label $ _name file,
-      label $ _subname file,
-      label $ "Path: " <> pack (_path file)
-    ] `styleBasic` [borderB 1 gray, padding 8, bgColor darkGray, cursorHand]
+  fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
+      label $ pack filePath
+    ] `styleBasic` [borderB 1 gray, padding 8, bgColor darkGray, cursorHand, styleIf isCurrent (bgColor darkSlateGray)]
+    where isCurrent = (model ^. currentFile) == Just filePath
 
   fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
     `styleBasic` [bgColor $ rgb 100 100 100, maxHeight 50, minHeight 50, height 50]
     where
       boxedLabel filePath = hstack [
-          button (pack filePath) (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-           box (button "⨯" (CloseFile filePath)
+          button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
+           box (button closeText (CloseFile filePath)
             `styleBasic` [textFont "Symbol_Regular", textSize 24, textColor white, bgColor transparent, radius 8, border 0 transparent]
             `styleHover` [bgColor $ rgba 255 0 0 0.5])
         ]
           `styleBasic` [bgColor darkGray, borderL 1 gray, borderR 1 gray, styleIf isCurrent (bgColor darkSlateGray)]
           `styleHover` [styleIf (not isCurrent) (bgColor gray)]
-          where isCurrent = (model ^. currentFile) == Just filePath
+          where
+            displayName = pack filePath
+            closeText = if isEdited then "●" else "⨯"
+            isEdited = fromMaybe False (file >>= Just . _isEdited)
+            file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+            isCurrent = (model ^. currentFile) == Just filePath
 
   editWindow = vstack [
       fileNavBar (model ^. openFiles),
@@ -159,7 +165,7 @@ buildUI _wenv model = widgetTree where
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
     Nothing -> label "Filepath not loaded"
-    Just file -> vstack [
+    Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
         h1 $ _name file,
         label $ _subname file,
         label $ pack $ _path file,
@@ -167,17 +173,17 @@ buildUI _wenv model = widgetTree where
 
         hstack [
           label "Conclusion",
-          spacer,
-          textField conclusion
+          spacer
+          -- textField conclusion
         ] `styleBasic` [paddingV 8],
         spacer,
 
         vscroll $ vstack [
-          fst $ proofTreeUI (model ^. proofFormulas),
+          fst $ proofTreeUI parsedContent,
           spacer,
           hstack_ [childSpacing] [
             button "+ New line" AddLine,
-            button "+-> New sub proof" AddSubProof
+            button "+→ New sub proof" AddSubProof
           ]
         ],
         spacer,
@@ -188,7 +194,8 @@ buildUI _wenv model = widgetTree where
           button "Save proof" (SaveProof file)
         ]
       ] `styleBasic` [padding 10]
-    where file = getProofFileByPath model fileName
+      where parsedContent = _parsedContent file
+    where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = hstack [
       widgetIf (model ^. proofStatus == Just True) (label "Proof is correct :)" `styleBasic` [textColor lime]),
@@ -200,7 +207,7 @@ buildUI _wenv model = widgetTree where
   proofTreeUI formulas = pf formulas 1 []
     where
       pf :: ProofFormula -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
-      pf (MainProof formulas) index path = (ui, lastIndex)
+      pf (MainProof _ formulas) index path = (ui, lastIndex)
         where
           ui = vstack_ [childSpacing] (map fst s)
           lastIndex = if null s then index else snd $ last s
@@ -242,7 +249,7 @@ handleEvent
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent _wenv _node model evt = case evt of
+handleEvent wenv node model evt = case evt of
   AppInit -> [
       Producer directoryFilesProducer,
       Task $ do
@@ -264,30 +271,51 @@ handleEvent _wenv _node model evt = case evt of
       MoveFocusFromKey Nothing FocusFwd
     ]
 
-  AddLine -> [
-      Model $ model & proofFormulas .~ addLine (model ^. proofFormulas)
-    ]
+  AddLine -> actions
     where
-      addLine (MainProof p) = MainProof $ p ++ [newLine]
+      actions = fromMaybe [] (fileIndex >>= Just . getActions)
+      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+      cf = model ^. currentFile
+
+      getActions fileIndex = [
+          Model $ model
+            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ addLine
+            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+        ]
+      addLine (MainProof conc proof) = MainProof conc (proof ++ [Formula "" ""])
       addLine _ = error "Root must be a `MainProof`"
-      newLine = Formula "" ""
 
-  AddSubProof -> [
-      Model $ model & proofFormulas .~ addSubProof (model ^. proofFormulas)
-    ]
+  AddSubProof -> actions
     where
-      addSubProof (MainProof p) = MainProof $ p ++ [newSubProof]
+      actions = fromMaybe [] (fileIndex >>= Just . getActions)
+      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+      cf = model ^. currentFile
+
+      getActions fileIndex = [
+          Model $ model
+            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ addSubProof
+            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+        ]
+      addSubProof (MainProof conc proof) = MainProof conc (proof ++ [newSubProof])
+        where newSubProof = SubProof [Formula "" ""]
       addSubProof _ = error "Root must be a `MainProof`"
-      newSubProof = SubProof [Formula "" ""]
 
-  RemoveLine path -> [
-      Model $ model & proofFormulas .~ removeLine path (model ^. proofFormulas)
-    ]
+  RemoveLine path -> actions
     where
+      actions = fromMaybe [] (fileIndex >>= Just . getActions)
+      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+      cf = model ^. currentFile
+
+      getActions fileIndex = [
+          Model $ model
+            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ removeLine path
+            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+        ]
+
       removeLine removePath = rl removePath []
-      rl removePath currentPath (MainProof p)
+      rl removePath currentPath (MainProof f p)
         | removePath == currentPath = Removed
-        | otherwise = MainProof $ filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+        | otherwise = MainProof f (filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..])
       rl removePath currentPath (SubProof p)
         | removePath == currentPath = Removed
         | otherwise = SubProof $ filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
@@ -297,12 +325,20 @@ handleEvent _wenv _node model evt = case evt of
       rl _ _ p = p
       filterRemoved = filter (/=Removed)
 
-  EditLine path arg newText -> [
-      Model $ model & proofFormulas .~ editLine path arg newText (model ^. proofFormulas)
-    ]
+  EditLine path arg newText -> actions
     where
+      actions = fromMaybe [] (fileIndex >>= Just . getActions)
+      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+      cf = model ^. currentFile
+
+      getActions fileIndex = [
+          Model $ model
+            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ editLine path arg newText
+            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+        ]
+
       editLine editPath arg newText = el editPath arg newText []
-      el editPath arg newText currentPath (MainProof p) = MainProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
+      el editPath arg newText currentPath (MainProof f p) = MainProof f (zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..])
       el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
       el editPath arg newText currentPath f@(Formula statement rule)
         | editPath == currentPath = case arg of
@@ -327,42 +363,59 @@ handleEvent _wenv _node model evt = case evt of
     ]
     where filePath = "./myProofs/" <> unpack fileName <> ".logic"
 
-  SetLoadedFiles fs -> [
-      Model $ model
-        & loadedFiles .~ fs
-        & tmpLoadedFiles .~ fs
-      -- , Producer (\_ -> print fs)
+  SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
+
+  OpenFile filePath -> [
+      Producer (\sendMsg -> do
+        pContent <- readFile ("./myProofs/" <> filePath)
+        let pName = pack filePath
+            pSubname = "subname"
+            pContentText = pack pContent
+            pParsedContent = parseProofFromFile pContentText
+            pIsEdited = False
+        sendMsg (OpenFileSuccess $ File filePath pName pSubname pContentText pParsedContent pIsEdited)
+      )
     ]
 
-  OpenFile f -> Model newModel : handleEvent _wenv _node newModel (SetCurrentFile fileName)
+  OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
-      fileName = _path f
       newModel = model
-        & openFiles .~ (model ^. openFiles ++ [fileName | fileName `notElem` model ^. openFiles])
+        & openFiles %~ doOpenFile
+        & tmpLoadedFiles %~ createNew file
 
-  CloseFile fileName -> [
-      Model $ modelWithClosedFile
-        & currentFile .~ (if c == Just fileName then maybeHead (modelWithClosedFile ^. openFiles) else c)
-    ]
+      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. openFiles]
+      createNew newFile oldFiles = filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
+      filePath = _path file
+
+  CloseCurrentFile -> case model ^. currentFile of
+    Nothing -> []
+    Just filePath -> handleEvent wenv node model (CloseFile filePath)
+
+  CloseFile filePath -> [ Model finalModel ]
     where
-      modelWithClosedFile = model & openFiles .~ filter (fileName/=) (model ^. openFiles)
-      c = model ^. currentFile
+      finalModel = modelWithClosedFile & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. openFiles) else cf)
+      modelWithClosedFile = model & openFiles %~ filter (filePath/=)
+      cf = model ^. currentFile
 
   SaveProof f -> [
-      Producer (\_ -> writeFile ("./myProofs/" <> fileName) content)
+      Producer (\sendMsg -> do
+        result <- try (writeFile ("./myProofs/" <> fileName) content) :: IO (Either SomeException ())
+        case result of
+          Left _ -> return ()
+          Right _ -> sendMsg (SaveProofSuccess f)
+      )
     ]
     where
-      content = unpack $ parseProofToFile $ model ^. proofFormulas
+      content = unpack $ parseProofToFile $ _parsedContent f
       fileName = _path f
 
-  SetCurrentFile filePath -> case file of
-    Nothing -> []
-    Just file -> [
-        Model $ model
-          & (currentFile ?~ filePath)
-          & proofFormulas .~ _parsedContent file
-      ]
-    where file = getProofFileByPath model filePath
+  SaveProofSuccess f -> actions
+    where
+      actions = fromMaybe [] (fileIndex >>= Just . getActions)
+      getActions fileIndex = [ Model $ model & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
+      fileIndex = getProofFileIndexByPath (model ^. tmpLoadedFiles) (_path f)
+
+  SetCurrentFile filePath -> [ Model $ model & currentFile ?~ filePath ]
 
   BackendResponse (SequentChecked result) -> case result of
     Left err -> [Message "Error" (pack err)]  -- Add type annotation
@@ -372,9 +425,8 @@ handleEvent _wenv _node model evt = case evt of
     Left err -> [Message "Error" (pack err)]  -- Add type annotation
     Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
 
-  f -> [
-      Producer (\_ -> print f)
-    ]
+  -- Log unhandled events instead of crashing
+  f -> [ Producer (\_ -> print f) ]
 
 main :: IO ()
 main = do
@@ -405,12 +457,10 @@ main = do
       _clickCount = 0,
       _newFileName = "",
       _newFilePopupOpen = False,
-      _loadedFiles = [],
+      _filesInDirectory = [],
       _tmpLoadedFiles = [],
       _openFiles = [],
       _currentFile = Nothing,
-      _conclusion = "((P -> Q) & (!R -> !Q)) -> (P -> R)",
-      _proofFormulas = MainProof [],
 
       _frontendChan = frontendChan,
       _backendChan = backendChan,
@@ -420,20 +470,21 @@ main = do
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do
   allFileNames <- listDirectory "./myProofs"
-  allFiles <- traverse readProofFile allFileNames
-  sendMsg (SetLoadedFiles allFiles)
+  -- allFiles <- traverse readProofFile allFileNames
+  sendMsg (SetFilesInDirectory allFileNames)
 
   threadDelay $ 2 * seconds
   directoryFilesProducer sendMsg
     where
       seconds = 1000 * 1000
-      readProofFile path = do
-        let pName = pack path
-            pSubname = "subname"
-        pContent <- readFile ("./myProofs/" <> path)
-        let pContentText = pack pContent
-            parsedContent = parseProofFromFile pContentText
-        return $ File path pName pSubname pContentText parsedContent
+      -- readProofFile path = do
+      --   let pName = pack path
+      --       pSubname = "subname"
+      --   pContent <- readFile ("./myProofs/" <> path)
+      --   let pContentText = pack pContent
+      --       parsedContent = parseProofFromFile pContentText
+      --       isEdited = False
+      --   return $ File path pName pSubname pContentText parsedContent isEdited
 
 h1 :: Text -> WidgetNode s e
 h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
@@ -445,8 +496,11 @@ iconButton iconIdent action = button iconIdent action
 trashButton :: AppEvent -> WidgetNode AppModel AppEvent
 trashButton = iconButton remixDeleteBinFill
 
-getProofFileByPath :: AppModel -> FilePath -> Maybe File
-getProofFileByPath model filePath = find (\f -> _path f == filePath) (model ^. loadedFiles)
+getProofFileByPath :: [File] -> FilePath -> Maybe File
+getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
+
+getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
+getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
 
 -- Empty for now
 exportProof :: AppModel -> Sequent
@@ -465,8 +519,8 @@ exportProof = const $ Seq [] FormBot []
 -- Placeholder
 parseProofFromFile :: Text -> ProofFormula
 parseProofFromFile p = case proof of
-  [SubProof p] -> MainProof p
-  [Removed] -> MainProof []
+  [SubProof p] -> MainProof "" p
+  [Removed] -> MainProof "" []
   _ -> error "Invalid proof from `parseText`"
   where
     proof = [parseText (unpack p) 0 []]
@@ -511,7 +565,7 @@ parseProofToFile :: ProofFormula -> Text
 parseProofToFile p = exportProofHelper p 0
   where
     exportProofHelper :: ProofFormula -> Int -> Text
-    exportProofHelper (MainProof p) indent = exportProofHelper (SubProof p) indent
+    exportProofHelper (MainProof _ p) indent = exportProofHelper (SubProof p) indent
     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
     exportProofHelper (Formula statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
     exportProofHelper Removed _ = ""
