@@ -63,6 +63,7 @@ data AppEvent
   | RemoveLine FormulaPath
   | EditLine FormulaPath Int Text
   | SwitchLineToSubProof FormulaPath
+  | SwitchSubProofToLine FormulaPath
 
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath

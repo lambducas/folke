@@ -3,6 +3,7 @@
 
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Frontend.Main where
 
@@ -121,12 +122,12 @@ buildUI wenv model = widgetTree where
         spacer,
 
         vscroll $ vstack [
-          fst $ proofTreeUI parsedContent,
-          spacer,
-          hstack_ [childSpacing] [
-            button "+ New line" AddLine,
-            button "+→ New sub proof" AddSubProof
-          ]
+          fst $ proofTreeUI parsedContent
+          -- spacer,
+          -- hstack_ [childSpacing] [
+          --   button "+ New line" AddLine,
+          --   button "+→ New sub proof" AddSubProof
+          -- ]
         ],
         spacer,
 
@@ -177,8 +178,9 @@ buildUI wenv model = widgetTree where
               trashButton (RemoveLine path),
 
               button "->[]" (SwitchLineToSubProof path),
-              button "\\+" (InsertLineAfter path),
-              button "\\[]+" (InsertSubProofAfter path),
+              button "<-[]" (SwitchSubProofToLine pathToParentSubProof),
+              button "|+" (InsertLineAfter path),
+              button "|[]+" (InsertSubProofAfter path),
               button "/+" (InsertLineAfter pathToParentSubProof),
               button "/[]+" (InsertSubProofAfter pathToParentSubProof)
             ]
@@ -214,11 +216,20 @@ handleEvent wenv node model evt = case evt of
   SwitchLineToSubProof path -> applyOnCurrentProof model switch
     where switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
+  SwitchSubProofToLine path -> applyOnCurrentProof model switch
+    where
+      switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
+        SubProof p -> head p
+        _ -> error ""
+        ) p
+      isSingleton (SubProof p) = length p == 1
+      isSingleton _ = False
+
   InsertLineAfter path -> applyOnCurrentProof model insertLine
-    where insertLine = insertInProof path (Formula "" "")
+    where insertLine = insertAfterProof path (Formula "" "")
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertInProof path (SubProof [Formula "" ""])
+    where insertSubProof = insertAfterProof path (SubProof [Formula "" ""])
 
   AddLine -> applyOnCurrentProof model addLine
     where
@@ -383,21 +394,11 @@ customLightTheme = baseTheme lightThemeColors {
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do
   allFileNames <- listDirectory "./myProofs"
-  -- allFiles <- traverse readProofFile allFileNames
   sendMsg (SetFilesInDirectory allFileNames)
 
   threadDelay $ 2 * seconds
   directoryFilesProducer sendMsg
-    where
-      seconds = 1000 * 1000
-      -- readProofFile path = do
-      --   let pName = pack path
-      --       pSubname = "subname"
-      --   pContent <- readFile ("./myProofs/" <> path)
-      --   let pContentText = pack pContent
-      --       parsedContent = parseProofFromFile pContentText
-      --       isEdited = False
-      --   return $ File path pName pSubname pContentText parsedContent isEdited
+    where seconds = 1000 * 1000
 
 h1 :: Text -> WidgetNode s e
 h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
@@ -508,8 +509,32 @@ slice from to xs = take (to - from) (drop from xs)
 trim :: [Char] -> [Char]
 trim = dropWhileEnd isSpace . dropWhile isSpace
 
-insertInProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
-insertInProof path insertThis oldProof = head (rl [] oldProof)
+evalPath :: ProofFormula -> FormulaPath -> ProofFormula
+evalPath proof path = ep path proof
+  where
+    ep (idx:tail) currentProof = case currentProof of
+      MainProof _ p -> ep tail $ p !! idx
+      SubProof p -> ep tail $ p !! idx
+      Formula _ _ -> error "Tried to index into `Formula` (not an array)"
+      Removed -> error "Tried to index into `Removed` (not an array)"
+    ep [] p = p
+    -- ep [] f@(Formula _ _) = f
+
+insertBeforeProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
+insertBeforeProof path insertThis oldProof = head (rl [] oldProof)
+  where
+    rl currentPath (MainProof f p) = [ MainProof f (concat (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])) ]
+    rl currentPath (SubProof p)
+      | path == currentPath = [insertThis, res]
+      | otherwise = [res]
+        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Formula _ _)
+      | path == currentPath = [insertThis, f]
+      | otherwise = [f]
+    rl _ p = [p]
+
+insertAfterProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
+insertAfterProof path insertThis oldProof = head (rl [] oldProof)
   where
     rl currentPath (MainProof f p) = [ MainProof f (concat (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])) ]
     rl currentPath (SubProof p)
