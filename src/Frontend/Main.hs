@@ -9,6 +9,8 @@ module Frontend.Main where
 import Frontend.Types
 
 import Monomer
+import qualified Monomer.Lens as L
+import Monomer.Core.Themes.BaseTheme
 import Control.Lens
 import Control.Concurrent (threadDelay, Chan, newChan)
 import Control.Exception (try, SomeException (SomeException))
@@ -18,6 +20,7 @@ import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, findIndex)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe, isNothing)
+import Data.Default ( Default(def) )
 
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
@@ -42,8 +45,8 @@ buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI _wenv model = widgetTree where
-  widgetTree = hstack [
+buildUI wenv model = widgetTree where
+  widgetTree = themeSwitch_ customLightTheme [themeClearBg] $ hstack [
       fileWindow,
       editWindow
     ]
@@ -66,31 +69,40 @@ buildUI _wenv model = widgetTree where
 
   fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
       label $ pack filePath
-    ] `styleBasic` [borderB 1 gray, padding 8, bgColor darkGray, cursorHand, styleIf isCurrent (bgColor darkSlateGray)]
-    where isCurrent = (model ^. currentFile) == Just filePath
-
-  fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
-    `styleBasic` [bgColor $ rgb 100 100 100, maxHeight 50, minHeight 50, height 50]
+    ]
+      `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
+      `styleBasic` [borderB 1 gray, padding 8, cursorHand, styleIf isCurrent (bgColor isCurrentColor)]
     where
-      boxedLabel filePath = hstack [
-          button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-           box (button closeText (CloseFile filePath)
-            `styleBasic` [textFont "Symbol_Regular", textSize 24, textColor white, bgColor transparent, radius 8, border 0 transparent]
-            `styleHover` [bgColor $ rgba 255 0 0 0.5])
-        ]
-          `styleBasic` [bgColor darkGray, borderL 1 gray, borderR 1 gray, styleIf isCurrent (bgColor darkSlateGray)]
-          `styleHover` [styleIf (not isCurrent) (bgColor gray)]
-          where
-            displayName = pack filePath
-            closeText = if isEdited then "●" else "⨯"
-            isEdited = fromMaybe False (file >>= Just . _isEdited)
-            file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
-            isCurrent = (model ^. currentFile) == Just filePath
+      hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
+      isCurrentColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
+      isCurrent = (model ^. currentFile) == Just filePath
 
   editWindow = vstack [
       fileNavBar (model ^. openFiles),
       proofWindow (model ^. currentFile)
     ]
+
+  fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
+    `styleBasic` [bgColor selectedColor, maxHeight 50, minHeight 50, height 50]
+    where
+      selectedColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
+      boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
+          spacer,
+          label displayName,
+          -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
+          box (button closeText (CloseFile filePath)
+            `styleBasic` [textFont "Symbol_Regular", textSize 24, bgColor transparent, radius 8, border 0 transparent]
+            `styleHover` [bgColor $ rgba 255 0 0 0.1])
+        ]
+          `styleBasic` [borderR 1 gray, styleIf isCurrent (bgColor white)]
+          `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
+          where
+            displayName = pack filePath
+            closeText = if isEdited then "●" else "⨯"
+            isEdited = fromMaybe False (file >>= Just . _isEdited)
+            file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+            hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
+            isCurrent = (model ^. currentFile) == Just filePath
 
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
@@ -145,7 +157,8 @@ buildUI _wenv model = widgetTree where
 
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 white, borderR 0 transparent, paddingV 8, paddingL 24]
+          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 borderColor, borderR 0 transparent, paddingV 8, paddingL 24]
+          borderColor = wenv ^. L.theme . L.userColorMap . at "proofBoxColor" . non def
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
@@ -368,7 +381,8 @@ main = do
     config = [
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
-      appTheme darkTheme,
+      appTheme customLightTheme,
+      -- appTheme darkTheme,
 
       appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
       appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
@@ -383,6 +397,7 @@ main = do
       appInitEvent AppInit,
       appModelFingerprint show
       ]
+    -- Initial states
     model frontendChan backendChan = AppModel {
       _clickCount = 0,
       _newFileName = "",
@@ -394,8 +409,32 @@ main = do
 
       _frontendChan = frontendChan,
       _backendChan = backendChan,
-      _proofStatus = Nothing  -- Initialize proof status
+      _proofStatus = Nothing
     }
+
+-- customTheme :: Theme
+-- customTheme = baseTheme lightThemeColors {
+--   btnMainBgBasic = rgbHex "#EE9000",
+--   btnMainBgHover = rgbHex "#FFB522",
+--   btnMainBgFocus = rgbHex "#FFA500",
+--   btnMainBgActive = rgbHex "#DD8000",
+--   btnMainBgDisabled = rgbHex "#BB8800",
+--   btnMainText = rgbHex "000000"
+-- }
+
+customLightTheme :: Theme
+customLightTheme = baseTheme lightThemeColors {
+  btnMainBgBasic = rgbHex "#EE9000",
+  btnMainBgHover = rgbHex "#FFB522",
+  btnMainBgFocus = rgbHex "#FFA500",
+  btnMainBgActive = rgbHex "#DD8000",
+  btnMainBgDisabled = rgbHex "#BB8800",
+  btnMainText = rgbHex "#FF0000",
+  labelText = rgbHex "000000"
+}
+  & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
+  & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
+  & L.userColorMap . at "proofBoxColor" ?~ rgbHex "000000"
 
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do
