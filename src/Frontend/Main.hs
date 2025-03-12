@@ -48,14 +48,29 @@ buildUI
   -> WidgetNode AppModel AppEvent
 buildUI wenv model = widgetTree where
   selectedColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
+  dividerColor = wenv ^. L.theme . L.userColorMap . at "dividerColor" . non def
 
-  widgetTree = themeSwitch_ customLightTheme [themeClearBg] $ hstack [
-      fileWindow,
-      editWindow
+  widgetTree = themeSwitch_ customLightTheme [themeClearBg] $ vstack [
+      menuBar,
+      mainContent
     ]
 
+  menuBar = hstack (map menuBarButton ["File", "Edit", "View", "Help"])
+    `styleBasic` [borderB 1 dividerColor, padding 5]
+    where
+      menuBarButton text = box (
+          label text
+            `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
+            `styleHover` [bgColor selectedColor]
+        )
+
+  mainContent = hstack [
+      fileWindow,
+      editWindow
+    ] `styleBasic` [expandHeight 1000]
+
   fileWindow = vstack [
-      box (label "Manage proofs") `styleBasic` [padding 10],
+      box_ [expandContent] (label "Manage proofs" `styleBasic` [padding 10, textFont "Bold", borderB 1 dividerColor]),
       vstack $ map fileItem (model ^. filesInDirectory),
       spacer,
 
@@ -68,13 +83,13 @@ buildUI wenv model = widgetTree where
         let cep = (CreateEmptyProof $ model ^. newFileName) in
           keystroke [("Enter", cep)] $ button "Create proof" cep
       ] `styleBasic` [bgColor selectedColor, padding 10])
-    ] `styleBasic` [ width 250, borderR 1 gray ]
+    ] `styleBasic` [ width 250, borderR 1 dividerColor ]
 
   fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
       label $ pack filePath
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 gray, padding 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
+      `styleBasic` [borderB 1 dividerColor, paddingH 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
       hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
       isCurrent = (model ^. currentFile) == Just filePath
@@ -95,7 +110,7 @@ buildUI wenv model = widgetTree where
             `styleBasic` [textFont "Symbol_Regular", textSize 24, bgColor transparent, radius 8, border 0 transparent]
             `styleHover` [bgColor $ rgba 255 0 0 0.1])
         ]
-          `styleBasic` [borderR 1 gray, styleIf isCurrent (bgColor white)]
+          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor white)]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
             displayName = pack filePath
@@ -282,7 +297,9 @@ handleEvent wenv node model evt = case evt of
         & tmpLoadedFiles %~ createNew file
 
       doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. openFiles]
-      createNew newFile oldFiles = filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
+      createNew newFile oldFiles = if _path newFile `elem` (model ^. openFiles) then
+          oldFiles else
+          filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
       filePath = _path file
 
   CloseCurrentFile -> case model ^. currentFile of
@@ -344,7 +361,7 @@ main = do
       appFontDef "Bold" "./assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf",
 
       appFontDef "Symbol_Regular" "./assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
-      appFontDef "Symbol_ Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
+      appFontDef "Symbol_Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
       appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
 
       appFontDef "Remix" "./assets/fonts/remixicon.ttf",
@@ -389,6 +406,7 @@ customLightTheme = baseTheme lightThemeColors {
 }
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
+  & L.userColorMap . at "dividerColor" ?~ rgba 0 0 0 0.1
   & L.userColorMap . at "proofBoxColor" ?~ rgbHex "000000"
 
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
