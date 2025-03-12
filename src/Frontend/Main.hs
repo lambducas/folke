@@ -46,6 +46,8 @@ buildUI
   -> AppModel
   -> WidgetNode AppModel AppEvent
 buildUI wenv model = widgetTree where
+  selectedColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
+
   widgetTree = themeSwitch_ customLightTheme [themeClearBg] $ hstack [
       fileWindow,
       editWindow
@@ -58,23 +60,22 @@ buildUI wenv model = widgetTree where
 
       box $ button "+ New proof" OpenCreateProofPopup `styleBasic` [padding 10],
       popup newFilePopupOpen (vstack [
-        label "This will appear on top of the widget tree",
+        label "Enter the name of your proof",
         spacer,
-        textField newFileName,
+        textField_ newFileName [placeholder "my_proof"],
         spacer,
         let cep = (CreateEmptyProof $ model ^. newFileName) in
           keystroke [("Enter", cep)] $ button "Create proof" cep
-      ] `styleBasic` [bgColor gray, padding 10])
+      ] `styleBasic` [bgColor selectedColor, padding 10])
     ] `styleBasic` [ width 250, borderR 1 gray ]
 
   fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
       label $ pack filePath
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 gray, padding 8, cursorHand, styleIf isCurrent (bgColor isCurrentColor)]
+      `styleBasic` [borderB 1 gray, padding 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
       hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
-      isCurrentColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
       isCurrent = (model ^. currentFile) == Just filePath
 
   editWindow = vstack [
@@ -85,7 +86,6 @@ buildUI wenv model = widgetTree where
   fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
     `styleBasic` [bgColor selectedColor, maxHeight 50, minHeight 50, height 50]
     where
-      selectedColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
           label displayName,
@@ -174,8 +174,15 @@ buildUI wenv model = widgetTree where
               textFieldV (replaceSpecialSymbols rule) (EditLine path 1) `styleBasic` [textFont "Symbol_Regular", width 175],
               spacer,
 
-              trashButton (RemoveLine path)
+              trashButton (RemoveLine path),
+
+              button "->[]" (SwitchLineToSubProof path),
+              button "\\+" (InsertLineAfter path),
+              button "\\[]+" (InsertSubProofAfter path),
+              button "/+" (InsertLineAfter pathToParentSubProof),
+              button "/[]+" (InsertSubProofAfter pathToParentSubProof)
             ]
+          pathToParentSubProof = init path
           lastIndex = index + 1
 
       pf Removed index _ = (label "`Removed` should not appear", index)
@@ -201,99 +208,36 @@ handleEvent wenv node model evt = case evt of
         startCommunication frontendChan backendChan
         return $ BackendResponse (OtherBackendMessage "Initialized")
     ]
-  AppIncrease -> [Model (model & clickCount +~ 1)]
 
-  -- Bruh
-  NextFocus 1 -> [
-      MoveFocusFromKey Nothing FocusFwd
-    ]
-  NextFocus 4 -> [
-      MoveFocusFromKey Nothing FocusFwd,
-      MoveFocusFromKey Nothing FocusFwd,
-      MoveFocusFromKey Nothing FocusFwd,
-      MoveFocusFromKey Nothing FocusFwd
-    ]
+  NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddLine -> actions
+  SwitchLineToSubProof path -> applyOnCurrentProof model switch
+    where switch = replaceInProof path (\oldLine -> SubProof [oldLine])
+
+  InsertLineAfter path -> applyOnCurrentProof model insertLine
+    where insertLine = insertInProof path (Formula "" "")
+
+  InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
+    where insertSubProof = insertInProof path (SubProof [Formula "" ""])
+
+  AddLine -> applyOnCurrentProof model addLine
     where
-      actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
-      cf = model ^. currentFile
-
-      getActions fileIndex = [
-          Model $ model
-            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ addLine
-            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
-        ]
       addLine (MainProof conc proof) = MainProof conc (proof ++ [Formula "" ""])
       addLine _ = error "Root must be a `MainProof`"
 
-  AddSubProof -> actions
+  AddSubProof -> applyOnCurrentProof model addSubProof
     where
-      actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
-      cf = model ^. currentFile
-
-      getActions fileIndex = [
-          Model $ model
-            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ addSubProof
-            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
-        ]
       addSubProof (MainProof conc proof) = MainProof conc (proof ++ [newSubProof])
         where newSubProof = SubProof [Formula "" ""]
       addSubProof _ = error "Root must be a `MainProof`"
 
-  RemoveLine path -> actions
-    where
-      actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
-      cf = model ^. currentFile
+  RemoveLine path -> applyOnCurrentProof model removeLine
+    where removeLine = removeFromProof path
 
-      getActions fileIndex = [
-          Model $ model
-            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ removeLine path
-            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
-        ]
+  EditLine path arg newText -> applyOnCurrentProof model editLine
+    where editLine = editFormulaInProof path arg newText
 
-      removeLine removePath = rl removePath []
-      rl removePath currentPath (MainProof f p)
-        | removePath == currentPath = Removed
-        | otherwise = MainProof f (filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..])
-      rl removePath currentPath (SubProof p)
-        | removePath == currentPath = Removed
-        | otherwise = SubProof $ filterRemoved $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-      rl removePath currentPath f@(Formula _ _)
-        | removePath == currentPath = Removed
-        | otherwise = f
-      rl _ _ p = p
-      filterRemoved = filter (/=Removed)
-
-  EditLine path arg newText -> actions
-    where
-      actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
-      cf = model ^. currentFile
-
-      getActions fileIndex = [
-          Model $ model
-            & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ editLine path arg newText
-            & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
-        ]
-
-      editLine editPath arg newText = el editPath arg newText []
-      el editPath arg newText currentPath (MainProof f p) = MainProof f (zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..])
-      el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
-      el editPath arg newText currentPath f@(Formula statement rule)
-        | editPath == currentPath = case arg of
-          0 -> Formula newText rule
-          1 -> Formula statement newText
-          _ -> error "Invalid field, should be 0 or 1"
-        | otherwise = f
-      el _ _ _ _ p = p
-
-  OpenCreateProofPopup -> [
-      Model $ model & newFilePopupOpen .~ True
-    ]
+  OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
   CreateEmptyProof fileName -> [
       Producer (\_ -> do
@@ -563,3 +507,74 @@ slice from to xs = take (to - from) (drop from xs)
 
 trim :: [Char] -> [Char]
 trim = dropWhileEnd isSpace . dropWhile isSpace
+
+insertInProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
+insertInProof path insertThis oldProof = head (rl [] oldProof)
+  where
+    rl currentPath (MainProof f p) = [ MainProof f (concat (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])) ]
+    rl currentPath (SubProof p)
+      | path == currentPath = [res, insertThis]
+      | otherwise = [res]
+        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Formula _ _)
+      | path == currentPath = [f, insertThis]
+      | otherwise = [f]
+    rl _ p = [p]
+  
+removeFromProof :: FormulaPath -> ProofFormula -> ProofFormula
+removeFromProof path = rl path []
+  where
+    rl removePath currentPath (MainProof f p)
+      | removePath == currentPath = Removed
+      | otherwise = MainProof f (filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..])
+    rl removePath currentPath (SubProof p)
+      | removePath == currentPath = Removed
+      | otherwise = SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+    rl removePath currentPath f@(Formula _ _)
+      | removePath == currentPath = Removed
+      | otherwise = f
+    rl _ _ p = p
+    filterValid = filter validateProof
+    validateProof Removed = False
+    validateProof (SubProof []) = False
+    validateProof _ = True
+
+editFormulaInProof :: FormulaPath -> Int -> Text -> ProofFormula -> ProofFormula
+editFormulaInProof path arg newText = el path arg newText []
+  where
+    el editPath arg newText currentPath (MainProof f p) = MainProof f (zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..])
+    el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
+    el editPath arg newText currentPath f@(Formula statement rule)
+      | editPath == currentPath = case arg of
+        0 -> Formula newText rule
+        1 -> Formula statement newText
+        _ -> error "Invalid field, should be 0 or 1"
+      | otherwise = f
+    el _ _ _ _ p = p
+
+replaceInProof :: FormulaPath -> (ProofFormula -> ProofFormula) -> ProofFormula -> ProofFormula
+replaceInProof path replaceWith = rl []
+  where
+    rl currentPath f@(MainProof c p)
+      | path == currentPath = replaceWith f
+      | otherwise = MainProof c (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])
+    rl currentPath f@(SubProof p)
+      | path == currentPath = replaceWith f
+      | otherwise = SubProof $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Formula _ _)
+      | path == currentPath = replaceWith f
+      | otherwise = f
+    rl _ p = p
+
+applyOnCurrentProof :: AppModel -> (ProofFormula -> ProofFormula) -> [EventResponse AppModel e sp ep]
+applyOnCurrentProof model f = actions
+  where
+    actions = fromMaybe [] (fileIndex >>= Just . getActions)
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+    cf = model ^. currentFile
+
+    getActions fileIndex = [
+        Model $ model
+          & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ f
+          & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+      ]

@@ -54,14 +54,16 @@ instance Show (Chan a) where
 
 data AppEvent
   = AppInit
-  | AppIncrease
   | NextFocus Int
+
   | AddLine
   | AddSubProof
+  | InsertLineAfter FormulaPath
+  | InsertSubProofAfter FormulaPath
   | RemoveLine FormulaPath
   | EditLine FormulaPath Int Text
-  | OutdentLine Int
-  | IndentLine Int
+  | SwitchLineToSubProof FormulaPath
+
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
   | OpenFileSuccess File
@@ -70,6 +72,7 @@ data AppEvent
   | SaveProof File
   | SaveProofSuccess File
   | SetCurrentFile FilePath
+
   | OpenCreateProofPopup
   | CreateEmptyProof Text
 
