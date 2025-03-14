@@ -47,10 +47,13 @@ buildUI
   -> AppModel
   -> WidgetNode AppModel AppEvent
 buildUI wenv model = widgetTree where
-  selectedColor = wenv ^. L.theme . L.userColorMap . at "selectedFileBg" . non def
-  dividerColor = wenv ^. L.theme . L.userColorMap . at "dividerColor" . non def
+  selTheme = model ^. selectedTheme
+  selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
+  dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
+  hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+  proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
-  widgetTree = themeSwitch_ customLightTheme [themeClearBg] $ vstack [
+  widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
       menuBar,
       mainContent
     ]
@@ -58,7 +61,7 @@ buildUI wenv model = widgetTree where
   menuBar = hstack (map menuBarButton ["File", "Edit", "View", "Help"])
     `styleBasic` [borderB 1 dividerColor, padding 5]
     where
-      menuBarButton text = box (
+      menuBarButton text = box_ [onClick SwitchTheme] (
           label text
             `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
             `styleHover` [bgColor selectedColor]
@@ -93,7 +96,6 @@ buildUI wenv model = widgetTree where
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingH 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
-      hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
       isCurrent = (model ^. currentFile) == Just filePath
 
   editWindow = vstack [
@@ -108,18 +110,17 @@ buildUI wenv model = widgetTree where
           spacer,
           label displayName,
           -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-          box (button closeText (CloseFile filePath)
-            `styleBasic` [textFont "Symbol_Regular", textSize 24, bgColor transparent, radius 8, border 0 transparent]
-            `styleHover` [bgColor $ rgba 255 0 0 0.1])
+          box_ [onClick (CloseFile filePath)] (label closeText
+            `styleBasic` [textFont "Symbol_Regular", textSize 24, radius 8, padding 4]
+            `styleHover` [bgColor hoverColor]) `styleBasic` [padding 4]
         ]
-          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor white)]
+          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor red), cursorHand]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
             displayName = pack filePath
             closeText = if isEdited then "●" else "⨯"
             isEdited = fromMaybe False (file >>= Just . _isEdited)
             file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
-            hoverColor = wenv ^. L.theme . L.userColorMap . at "hoverColor" . non def
             isCurrent = (model ^. currentFile) == Just filePath
 
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
@@ -181,8 +182,7 @@ buildUI wenv model = widgetTree where
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 borderColor, borderR 0 transparent, paddingV 8, paddingL 24]
-          borderColor = wenv ^. L.theme . L.userColorMap . at "proofBoxColor" . non def
+          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 proofBoxColor, borderR 0 transparent, paddingV 8, paddingL 24]
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
@@ -351,6 +351,15 @@ handleEvent wenv node model evt = case evt of
     Left err -> [Message "Error" (pack err)]  -- Add type annotation
     Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
 
+  SwitchTheme -> [
+      Model $ model & selectedTheme %~ switchTheme
+    ]
+    where
+      switchTheme oldTheme
+        | oldTheme == customLightTheme = customDarkTheme
+        | oldTheme == customDarkTheme = customLightTheme
+        | otherwise = customLightTheme
+
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]
 
@@ -391,7 +400,9 @@ main = do
 
       _frontendChan = frontendChan,
       _backendChan = backendChan,
-      _proofStatus = Nothing
+      _proofStatus = Nothing,
+
+      _selectedTheme = customDarkTheme
     }
 
 -- customTheme :: Theme
@@ -417,7 +428,23 @@ customLightTheme = baseTheme lightThemeColors {
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 0 0 0 0.1
-  & L.userColorMap . at "proofBoxColor" ?~ rgbHex "000000"
+  & L.userColorMap . at "proofBoxColor" ?~ rgba 0 0 0 0.3
+
+customDarkTheme :: Theme
+customDarkTheme = baseTheme darkThemeColors {
+  clearColor = rgb 30 30 30,
+  btnMainBgBasic = rgbHex "#EE9000",
+  btnMainBgHover = rgbHex "#FFB522",
+  btnMainBgFocus = rgbHex "#FFA500",
+  btnMainBgActive = rgbHex "#DD8000",
+  btnMainBgDisabled = rgbHex "#BB8800",
+  btnMainText = rgbHex "#FF0000",
+  labelText = rgbHex "#FFFFFF"
+}
+  & L.userColorMap . at "hoverColor" ?~ rgba 255 255 255 0.05
+  & L.userColorMap . at "selectedFileBg" ?~ rgba 255 255 255 0.1
+  & L.userColorMap . at "dividerColor" ?~ rgba 255 255 255 0.1
+  & L.userColorMap . at "proofBoxColor" ?~ rgba 255 255 255 0.3
 
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do

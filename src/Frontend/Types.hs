@@ -6,6 +6,7 @@
 
 module Frontend.Types where
 
+import Monomer
 import Data.Text (Text)
 import Control.Concurrent (Chan)
 import Control.Lens ( makeLenses )
@@ -49,7 +50,9 @@ data AppModel = AppModel {
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
-  _proofStatus :: Maybe Bool
+  _proofStatus :: Maybe Bool,
+
+  _selectedTheme :: Theme
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -83,6 +86,8 @@ data AppEvent
 
   | CheckProof
   | BackendResponse BackendMessage
+
+  | SwitchTheme
   deriving (Eq, Show)
 
 makeLenses 'File
