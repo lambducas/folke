@@ -1,81 +1,22 @@
-## TODO
-
-- Improve the semantics of the TypeChecker module (environment handling, form checking, non-exhaustiveness).
-- Add an assets folder in `Frontend/` and remove `assets/` in root directory.
-- Write examples of backend-frontend communication.
-
-## Directory Structure
-
-```
-bsc-project/
-├── app/
-│   ├── Example.hs
-│   ├── Main.hs
-├── src/
-│   ├── Backend/
-│   │   ├── ExampleSequent.hs
-│   │   ├── Rules.hs
-│   │   ├── TypeChecker.hs
-│   ├── Frontend/
-│   │   ├── Communication.hs
-│   │   ├── Main.hs
-│   ├── Parser/
-│   │   ├── Logic/
-│   │   │   ├── Abs.hs
-│   ├── Shared/
-│   │   ├── Messages.hs
-├── test/
-│   ├── Main.hs
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
-├── bsc-project.cabal
-```
-
-
-# Proof Editor using Monomer & BNFC with Haskell
-
-## Overview
-
-This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
-
-## Haskell
-
-```haskell
-\_ -> undefined
-```
-
-## Building the Project
-
-To build the library and executable, run the following command:
-
+## Funkar inte :(
+Detta funkar för mig
 ```bash
-$ cabal build
+~/bsc-project$ cd custom-monomer
+~/bsc-project/custom-monomer$ cabal build
 ```
+Det slutar fungera om man tar bort `custom-monomer/cabal.project`
 
-### Set up BNFC
-To install BNFC and generate files, run:
+Detta funkar inte alls oberoende om det finns två `cabal.project` filer eller inte:
 ```bash
-$ cabal install BNFC
-$ cabal install alex
-$ cabal install happy
-$ make
+~/bsc-project$ cabal build
 ```
 
-### Fix freetype2 not found
-On Ubuntu, to fix `rejecting: nanovg:-stb_truetype (conflict: pkg-config package
-freetype2-any, not found in the pkg-config database)` when building, run
-```bash
-sudo apt-get install libfreetype6-dev
+Ger felet:
+```
+<no location info>: error:
+    module ‘Monomer.Graphics.FFI’ cannot be found locally
 ```
 
-## Running the Project
+Det borde bara finnas en `.project` fil antar jag, men hur får man det att funka?
 
-To run the backend (standard output) and frontend GUI, use the following command to run the executable:
-
-```bash
-$ cabal run bsc
-```
-
-
-## License?
+Jag vet inte hur cabal funkar :(

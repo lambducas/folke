@@ -67,6 +67,7 @@ library
                     , text
 
     hs-source-dirs:   src
+                    , custom-monomer/src
     default-language: Haskell2010
 
 executable bsc
@@ -74,12 +75,14 @@ executable bsc
     main-is:          Main.hs
     hs-source-dirs:   app
                     , src
+                    , custom-monomer/src
                     
     build-depends:    base ^>=4.17.2.1
                     , bsc-project
                     , data-default
                     , lens
-                    , monomer
+                    -- , monomer
+                    , custom-monomer
                     , text
                     , text-show
                     , directory
