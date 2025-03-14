@@ -695,6 +695,7 @@ addFocusReq (KeyAction mod code KeyPressed) reqs = newReqs where
   focusReqNeeded = isTabPressed && not stopProcessing && not focusReqExists
   direction
     | mod ^. L.leftShift = FocusBwd
+    | mod ^. L.rightShift = FocusBwd
     | otherwise = FocusFwd
   newReqs
     | focusReqNeeded = reqs |> MoveFocus Nothing direction

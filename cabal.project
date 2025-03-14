@@ -1,5 +1,4 @@
-packages: .
-          custom-monomer/
+packages: . ./custom-monomer
 
 package sdl2
   flags: -recent-ish
@@ -8,7 +7,4 @@ package bsc-project
   flags: +stb_truetype
 
 package nanovg
-  flags: +stb_truetype
-
-package custom-monomer
   flags: +stb_truetype

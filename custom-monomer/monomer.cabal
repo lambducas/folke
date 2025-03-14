@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           custom-monomer
+name:           monomer
 version:        1.6.0.1
 synopsis:       A GUI library for writing native Haskell applications.
 description:    Monomer is an easy to use, cross platform, GUI library for writing native
@@ -27,9 +27,9 @@ extra-source-files:
     README.md
     ChangeLog.md
 
-source-repository head
-  type: git
-  location: https://github.com/fjvallarino/monomer
+-- source-repository head
+--   type: git
+--   location: https://github.com/fjvallarino/monomer
 
 library
   exposed-modules:
@@ -146,7 +146,6 @@ library
   other-modules:
       Paths_monomer
   hs-source-dirs:
-    -- custom-monomer/src
       src
   default-extensions:
       OverloadedStrings
@@ -279,7 +278,7 @@ library
 --     , hspec >=2.4 && <3.0
 --     , http-client >=0.6 && <0.9
 --     , lens >=4.16 && <6
---     , custom-monomer
+--     , monomer
 --     , mtl >=2.1 && <2.4
 --     , nanovg >=0.8.1 && <1.0
 --     , process >=1.6 && <1.8
