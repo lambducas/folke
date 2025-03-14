@@ -20,7 +20,7 @@ import System.Directory ( doesFileExist, listDirectory )
 import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, findIndex)
 import Data.Char (isSpace)
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, catMaybes)
 import Data.Default ( Default(def) )
 
 import Shared.Messages
@@ -70,19 +70,21 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [expandHeight 1000]
 
   fileWindow = vstack [
-      box_ [expandContent] (label "Manage proofs" `styleBasic` [padding 10, textFont "Bold", borderB 1 dividerColor]),
-      vstack $ map fileItem (model ^. filesInDirectory),
-      spacer,
+      box_ [expandContent] (hstack [
+          label "Manage proofs" `styleBasic` [padding 10, textFont "Bold"],
+          filler,
+          box (button "+" OpenCreateProofPopup) `styleBasic` [bgColor transparent, padding 4],
 
-      box $ button "+ New proof" OpenCreateProofPopup `styleBasic` [padding 10],
-      popup newFilePopupOpen (vstack [
-        label "Enter the name of your proof",
-        spacer,
-        textField_ newFileName [placeholder "my_proof"],
-        spacer,
-        let cep = (CreateEmptyProof $ model ^. newFileName) in
-          keystroke [("Enter", cep)] $ button "Create proof" cep
-      ] `styleBasic` [bgColor selectedColor, padding 10])
+          popup newFilePopupOpen (vstack [
+            label "Enter the name of your proof",
+            spacer,
+            textField_ newFileName [placeholder "my_proof"],
+            spacer,
+            let cep = (CreateEmptyProof $ model ^. newFileName) in
+              keystroke [("Enter", cep)] $ button "Create proof" cep
+          ] `styleBasic` [bgColor $ rgb 230 230 230, padding 10])
+        ]) `styleBasic` [borderB 1 dividerColor],
+      vstack $ map fileItem (model ^. filesInDirectory)
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
 
   fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
@@ -129,15 +131,8 @@ buildUI wenv model = widgetTree where
         label $ pack $ _path file,
         spacer,
 
-        hstack [
-          label "Conclusion",
-          spacer
-          -- textField conclusion
-        ] `styleBasic` [paddingV 8],
-        spacer,
-
         vscroll $ vstack [
-          fst $ proofTreeUI parsedContent
+          proofTreeUI parsedSequent
           -- spacer,
           -- hstack_ [childSpacing] [
           --   button "+ New line" AddLine,
@@ -152,7 +147,7 @@ buildUI wenv model = widgetTree where
           button "Save proof" (SaveProof file)
         ]
       ] `styleBasic` [padding 10]
-      where parsedContent = _parsedContent file
+      where parsedSequent = _parsedSequent file
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = hstack [
@@ -161,16 +156,29 @@ buildUI wenv model = widgetTree where
       widgetIf (model ^. proofStatus == Nothing) (label "Checking proof..." `styleBasic` [textColor orange])
     ]
 
-  proofTreeUI :: ProofFormula -> (WidgetNode AppModel AppEvent, Integer)
-  proofTreeUI formulas = pf formulas 1 []
+  proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
+  proofTreeUI sequent = vstack [
+      vstack_ [childSpacing] $ label "Premises" : map premiseLine (_premises sequent),
+      spacer, spacer,
+
+      label "Conclusion",
+      spacer,
+      textFieldV (_conclusion sequent) (const AddLine),
+      spacer, spacer,
+
+      label "Proof",
+      spacer,
+      tree
+    ]
     where
-      pf :: ProofFormula -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
-      pf (MainProof _ formulas) index path = (ui, lastIndex)
+      premiseLine premise = textFieldV premise (const AddLine)
+
+      tree = ui
         where
           ui = vstack_ [childSpacing] (map fst s)
-          lastIndex = if null s then index else snd $ last s
-          s = getSubProof formulas path 0 index
+          s = getSubProof (_steps sequent) [] 0 1
 
+      pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
         where
           ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 borderColor, borderR 0 transparent, paddingV 8, paddingL 24]
@@ -178,7 +186,7 @@ buildUI wenv model = widgetTree where
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
-      pf (Formula statement rule) index path = (ui, lastIndex)
+      pf (Line statement rule) index path = (ui, lastIndex)
         where
           ui = hstack [
               label $ showt index <> ".",
@@ -201,8 +209,6 @@ buildUI wenv model = widgetTree where
             ]
           pathToParentSubProof = init path
           lastIndex = index + 1
-
-      pf Removed index _ = (label "`Removed` should not appear", index)
 
       getSubProof p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
@@ -241,21 +247,26 @@ handleEvent wenv node model evt = case evt of
       isSingleton _ = False
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine
-    where insertLine = insertAfterProof path (Formula "" "")
+    where insertLine = insertAfterProof path (Line "" "")
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertAfterProof path (SubProof [Formula "" ""])
+    where insertSubProof = insertAfterProof path (SubProof [Line "" ""])
 
   AddLine -> applyOnCurrentProof model addLine
     where
-      addLine (MainProof conc proof) = MainProof conc (proof ++ [Formula "" ""])
-      addLine _ = error "Root must be a `MainProof`"
+      addLine sequent = FESequent premises conclusion steps
+        where
+          premises = _premises sequent
+          conclusion = _conclusion sequent
+          steps = _steps sequent ++ [Line "" ""]
 
   AddSubProof -> applyOnCurrentProof model addSubProof
     where
-      addSubProof (MainProof conc proof) = MainProof conc (proof ++ [newSubProof])
-        where newSubProof = SubProof [Formula "" ""]
-      addSubProof _ = error "Root must be a `MainProof`"
+      addSubProof sequent = FESequent premises conclusion steps
+        where
+          premises = _premises sequent
+          conclusion = _conclusion sequent
+          steps = _steps sequent ++ [SubProof [Line "" ""]]
 
   RemoveLine path -> applyOnCurrentProof model removeLine
     where removeLine = removeFromProof path
@@ -321,7 +332,7 @@ handleEvent wenv node model evt = case evt of
       )
     ]
     where
-      content = unpack $ parseProofToFile $ _parsedContent f
+      content = unpack $ parseProofToFile $ _parsedSequent f
       fileName = _path f
 
   SaveProofSuccess f -> actions
@@ -371,7 +382,6 @@ main = do
       ]
     -- Initial states
     model frontendChan backendChan = AppModel {
-      _clickCount = 0,
       _newFileName = "",
       _newFilePopupOpen = False,
       _filesInDirectory = [],
@@ -449,27 +459,26 @@ exportProof = const $ Seq [] FormBot []
 -- toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
 
 -- Placeholder
-parseProofFromFile :: Text -> ProofFormula
+parseProofFromFile :: Text -> FESequent
 parseProofFromFile p = case proof of
-  [SubProof p] -> MainProof "" p
-  [Removed] -> MainProof "" []
+  [SubProof p] -> FESequent [] "" p
   _ -> error "Invalid proof from `parseText`"
   where
     proof = [parseText (unpack p) 0 []]
 
-    parseText :: String -> Int -> [ProofFormula] -> ProofFormula
+    parseText :: String -> Int -> [FEStep] -> FEStep
     parseText text ptr formulas = case nextSpecialChar of
       Just (char, idx) -> case char of
         ';' -> parseText text idx (formulas ++ [parseFormula $ pack $ slice (ptr + 1) idx text])
         '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
         '}' -> SubProof formulas
         _ -> error "Invalid special char"
-      Nothing -> Removed
+      Nothing -> error "Removed?"
       where
         nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
 
-    parseFormula :: Text -> ProofFormula
-    parseFormula text = Formula statement rule
+    parseFormula :: Text -> FEStep
+    parseFormula text = Line statement rule
       where
         statement = (pack . trim . unpack) $ head parts
         rule = (pack . trim . unpack) $ parts !! 1
@@ -493,14 +502,12 @@ parseProofFromFile p = case proof of
       where char = text !! (idx + 1)
 
 -- Placeholder
-parseProofToFile :: ProofFormula -> Text
-parseProofToFile p = exportProofHelper p 0
+parseProofToFile :: FESequent -> Text
+parseProofToFile sequent = exportProofHelper (SubProof (_steps sequent)) 0
   where
-    exportProofHelper :: ProofFormula -> Int -> Text
-    exportProofHelper (MainProof _ p) indent = exportProofHelper (SubProof p) indent
+    exportProofHelper :: FEStep -> Int -> Text
     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
-    exportProofHelper (Formula statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
-    exportProofHelper Removed _ = ""
+    exportProofHelper (Line statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
 
     tabs :: Int -> Text
     tabs n = pack $ replicate n '\t'
@@ -527,89 +534,87 @@ slice from to xs = take (to - from) (drop from xs)
 trim :: [Char] -> [Char]
 trim = dropWhileEnd isSpace . dropWhile isSpace
 
-evalPath :: ProofFormula -> FormulaPath -> ProofFormula
-evalPath proof path = ep path proof
+evalPath :: FESequent -> FormulaPath -> FEStep
+evalPath sequent path = ep path (SubProof $ _steps sequent)
   where
     ep (idx:tail) currentProof = case currentProof of
-      MainProof _ p -> ep tail $ p !! idx
       SubProof p -> ep tail $ p !! idx
-      Formula _ _ -> error "Tried to index into `Formula` (not an array)"
-      Removed -> error "Tried to index into `Removed` (not an array)"
+      Line _ _ -> error "Tried to index into `Formula` (not an array)"
     ep [] p = p
-    -- ep [] f@(Formula _ _) = f
 
-insertBeforeProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
-insertBeforeProof path insertThis oldProof = head (rl [] oldProof)
+insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
+insertBeforeProof path insertThis = replaceSteps f
   where
-    rl currentPath (MainProof f p) = [ MainProof f (concat (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])) ]
-    rl currentPath (SubProof p)
-      | path == currentPath = [insertThis, res]
-      | otherwise = [res]
-        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Formula _ _)
-      | path == currentPath = [insertThis, f]
-      | otherwise = [f]
-    rl _ p = [p]
+    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
 
-insertAfterProof :: FormulaPath -> ProofFormula -> ProofFormula -> ProofFormula
-insertAfterProof path insertThis oldProof = head (rl [] oldProof)
-  where
-    rl currentPath (MainProof f p) = [ MainProof f (concat (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])) ]
     rl currentPath (SubProof p)
       | path == currentPath = [res, insertThis]
       | otherwise = [res]
         where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Formula _ _)
+    rl currentPath f@(Line _ _)
       | path == currentPath = [f, insertThis]
       | otherwise = [f]
-    rl _ p = [p]
-  
-removeFromProof :: FormulaPath -> ProofFormula -> ProofFormula
-removeFromProof path = rl path []
+
+insertAfterProof :: FormulaPath -> FEStep -> FESequent -> FESequent
+insertAfterProof path insertThis = replaceSteps f
   where
-    rl removePath currentPath (MainProof f p)
-      | removePath == currentPath = Removed
-      | otherwise = MainProof f (filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..])
+    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
+
+    rl currentPath (SubProof p)
+      | path == currentPath = [res, insertThis]
+      | otherwise = [res]
+        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Line _ _)
+      | path == currentPath = [f, insertThis]
+      | otherwise = [f]
+
+removeFromProof :: FormulaPath -> FESequent -> FESequent
+removeFromProof path = replaceSteps f
+  where
+    f steps = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
+
     rl removePath currentPath (SubProof p)
-      | removePath == currentPath = Removed
-      | otherwise = SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-    rl removePath currentPath f@(Formula _ _)
-      | removePath == currentPath = Removed
-      | otherwise = f
-    rl _ _ p = p
-    filterValid = filter validateProof
-    validateProof Removed = False
+      | removePath == currentPath = Nothing
+      | otherwise = Just $ SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+    rl removePath currentPath f@(Line _ _)
+      | removePath == currentPath = Nothing
+      | otherwise = Just f
+
+    filterValid = filter validateProof . catMaybes
     validateProof (SubProof []) = False
     validateProof _ = True
 
-editFormulaInProof :: FormulaPath -> Int -> Text -> ProofFormula -> ProofFormula
-editFormulaInProof path arg newText = el path arg newText []
+editFormulaInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
+editFormulaInProof path arg newText = replaceSteps f
   where
-    el editPath arg newText currentPath (MainProof f p) = MainProof f (zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..])
+    f steps = zipWith (\p idx -> el path arg newText [idx] p) steps [0..]
     el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
-    el editPath arg newText currentPath f@(Formula statement rule)
+    el editPath arg newText currentPath f@(Line statement rule)
       | editPath == currentPath = case arg of
-        0 -> Formula newText rule
-        1 -> Formula statement newText
+        0 -> Line newText rule
+        1 -> Line statement newText
         _ -> error "Invalid field, should be 0 or 1"
       | otherwise = f
-    el _ _ _ _ p = p
 
-replaceInProof :: FormulaPath -> (ProofFormula -> ProofFormula) -> ProofFormula -> ProofFormula
-replaceInProof path replaceWith = rl []
+replaceInProof :: FormulaPath -> (FEStep -> FEStep) -> FESequent -> FESequent
+replaceInProof path replaceWith = replaceSteps f
   where
-    rl currentPath f@(MainProof c p)
-      | path == currentPath = replaceWith f
-      | otherwise = MainProof c (zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..])
+    f steps = zipWith (\p idx -> rl [idx] p) steps [0..]
     rl currentPath f@(SubProof p)
       | path == currentPath = replaceWith f
       | otherwise = SubProof $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Formula _ _)
+    rl currentPath f@(Line _ _)
       | path == currentPath = replaceWith f
       | otherwise = f
-    rl _ p = p
 
-applyOnCurrentProof :: AppModel -> (ProofFormula -> ProofFormula) -> [EventResponse AppModel e sp ep]
+replaceSteps :: ([FEStep] -> [FEStep]) -> FESequent -> FESequent
+replaceSteps f sequent = FESequent premises conclusion steps
+ where
+    premises = _premises sequent
+    conclusion = _conclusion sequent
+    steps = f $ _steps sequent
+
+applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
 applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
@@ -618,6 +623,6 @@ applyOnCurrentProof model f = actions
 
     getActions fileIndex = [
         Model $ model
-          & tmpLoadedFiles . singular (ix fileIndex) . parsedContent %~ f
+          & tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ f
           & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
       ]

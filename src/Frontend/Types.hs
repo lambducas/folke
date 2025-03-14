@@ -14,14 +14,20 @@ import Shared.Messages ( BackendMessage, FrontendMessage )
 type SymbolDict = [(Text, Text)]
 type FormulaPath = [Int]
 
-data ProofFormula
-  = MainProof Text [ProofFormula]
-  | Formula {
+data FESequent = FESequent {
+  _premises :: [FEFormula],
+  _conclusion :: FEFormula,
+  _steps :: [FEStep]
+} deriving (Eq, Show)
+
+type FEFormula = Text
+
+data FEStep
+  = Line {
     _statement :: Text,
     _rule :: Text
   }
-  | SubProof [ProofFormula]
-  | Removed
+  | SubProof [FEStep]
   deriving (Eq, Show)
 
 data File = File {
@@ -29,13 +35,11 @@ data File = File {
   _name :: Text,
   _subname :: Text,
   _content :: Text,
-  _parsedContent :: ProofFormula,
+  _parsedSequent :: FESequent,
   _isEdited :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
-  _clickCount :: Int,
-
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
