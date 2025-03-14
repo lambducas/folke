@@ -80,8 +80,8 @@ executable bsc
                     , bsc-project
                     , data-default
                     , lens
-                    , monomer
-                    -- , custom-monomer
+                    -- , monomer
+                    , custom-monomer
                     , text
                     , text-show
                     , directory
