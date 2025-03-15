@@ -33,20 +33,22 @@ data FEStep
 
 data File = File {
   _path :: FilePath,
-  _name :: Text,
-  _subname :: Text,
   _content :: Text,
   _parsedSequent :: FESequent,
   _isEdited :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
+  _openMenuBarItem :: Maybe Integer,
+
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
   _tmpLoadedFiles :: [File],
   _openFiles :: [FilePath],
   _currentFile :: Maybe FilePath,
+  _confirmDeletePopup :: Bool,
+  _confirmDeleteTarget :: Maybe FilePath,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
@@ -60,9 +62,25 @@ instance Show (Chan a) where
   show _ = ""
 
 data AppEvent
-  = AppInit
-  | NextFocus Int
+  = NoEvent
+  | AppInit
 
+  -- Menu bar
+  | SetOpenMenuBarItem (Maybe Integer)
+
+  -- Focus
+  | NextFocus Int
+  | FocusOnKey WidgetKey
+
+  -- Handle premises
+  | EditPremise Int Text
+  | RemovePremise Int
+  | AddPremise
+
+  -- Handle conclusion
+  | EditConclusion Text
+
+  -- Handle proof
   | AddLine
   | AddSubProof
   | InsertLineAfter FormulaPath
@@ -72,21 +90,26 @@ data AppEvent
   | SwitchLineToSubProof FormulaPath
   | SwitchSubProofToLine FormulaPath
 
+  -- Handle files
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
   | OpenFileSuccess File
   | CloseFile FilePath
+  | CloseFileSuccess FilePath
   | CloseCurrentFile
   | SaveProof File
   | SaveProofSuccess File
   | SetCurrentFile FilePath
 
+  -- Handle creation of proof
   | OpenCreateProofPopup
   | CreateEmptyProof Text
 
+  -- Proof checking
   | CheckProof
   | BackendResponse BackendMessage
 
+  -- Theme
   | SwitchTheme
   deriving (Eq, Show)
 
