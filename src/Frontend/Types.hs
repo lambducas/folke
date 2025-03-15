@@ -62,9 +62,20 @@ instance Show (Chan a) where
 data AppEvent
   = NoEvent
   | AppInit
+
+  -- Focus
   | NextFocus Int
   | FocusOnKey WidgetKey
 
+  -- Handle premises
+  | EditPremise Int Text
+  | RemovePremise Int
+  | AddPremise
+
+  -- Handle conclusion
+  | EditConclusion Text
+
+  -- Handle proof
   | AddLine
   | AddSubProof
   | InsertLineAfter FormulaPath
@@ -74,6 +85,7 @@ data AppEvent
   | SwitchLineToSubProof FormulaPath
   | SwitchSubProofToLine FormulaPath
 
+  -- Handle files
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
   | OpenFileSuccess File
@@ -83,12 +95,15 @@ data AppEvent
   | SaveProofSuccess File
   | SetCurrentFile FilePath
 
+  -- Handle creation of proof
   | OpenCreateProofPopup
   | CreateEmptyProof Text
 
+  -- Proof checking
   | CheckProof
   | BackendResponse BackendMessage
 
+  -- Theme
   | SwitchTheme
   deriving (Eq, Show)
 

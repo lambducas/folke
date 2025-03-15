@@ -160,12 +160,18 @@ buildUI _wenv model = widgetTree where
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
-      vstack_ [childSpacing] $ label "Premises" : map premiseLine (_premises sequent),
+      vstack_ [childSpacing] [
+        label "Premises",
+        vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
+        widgetIf (null $ _premises sequent) (box $ label "No premises")
+      ],
+      spacer,
+      hstack [button "+ Premise" AddPremise],
       spacer, spacer,
 
       label "Conclusion",
       spacer,
-      textFieldV (_conclusion sequent) (const AddLine),
+      textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"],
       spacer, spacer,
 
       label "Proof",
@@ -176,7 +182,12 @@ buildUI _wenv model = widgetTree where
       box (label "") `styleBasic` [height 1000]
     ]
     where
-      premiseLine premise = textFieldV premise (const AddLine)
+      premiseLine premise idx = hstack [
+          textFieldV_ premise (EditPremise idx) [placeholder "Enter premise"],
+          spacer,
+          tooltip "Remove line" $ trashButton (RemovePremise idx),
+          spacer
+        ]
 
       tree = ui
         where
@@ -212,7 +223,7 @@ buildUI _wenv model = widgetTree where
                 textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
                   `styleBasic` [textFont "Symbol_Regular"]
                   `nodeKey` showt index <> ".statement",
-              
+
                 spacer,
 
                 firstKeystroke [
@@ -242,7 +253,7 @@ buildUI _wenv model = widgetTree where
                   tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)),
                 tooltip "Add line after" $ button "↓+" (InsertLineAfter path),
                 -- button "|[]+" (InsertSubProofAfter path),
-                widgetIf isLastLine $
+                widgetIf (isLastLine && nextIndexExists) $
                   tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof))
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
@@ -284,6 +295,14 @@ handleEvent wenv node model evt = case evt of
   FocusOnKey key -> [ SetFocusOnKey key ]
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
+
+  AddPremise -> applyOnCurrentProof model addPremiseToProof
+
+  RemovePremise idx -> applyOnCurrentProof model (removePremiseFromProof idx)
+
+  EditPremise idx newText -> applyOnCurrentProof model (editPremisesInProof idx newText)
+
+  EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
 
   SwitchLineToSubProof path -> applyOnCurrentProof model switch ++ focusAction
     where
@@ -555,10 +574,20 @@ exportProof = const $ Seq [] FormBot []
 -- Placeholder
 parseProofFromFile :: Text -> FESequent
 parseProofFromFile p = case proof of
-  [SubProof p] -> FESequent [] "" p
+  [SubProof p] -> FESequent premises conclusion p
   _ -> error "Invalid proof from `parseText`"
   where
-    proof = [parseText (unpack p) 0 []]
+    premises = filter (/="") (map trimText (splitOn "," (pack $ slice 0 premiseEnd text)))
+    conclusion = trimText (pack (slice (premiseEnd + 1) conclusionEnd text))
+
+    premiseEnd = snd $ fromMaybe (error "Empty premise") (gotoNextChar text (-1) [';'])
+    conclusionEnd = snd $ fromMaybe (error "Empty conclusion") (gotoNextChar text premiseEnd [';'])
+    proofStart = snd $ fromMaybe (error "No proof") (gotoNextChar text conclusionEnd ['{'])
+
+    proof = [parseText text proofStart []]
+    -- proof = [parseText (trim $ drop (conclusionEnd + 1) text) 0 []]
+    -- proof = [parseText text 0 []]
+    text = unpack p
 
     parseText :: String -> Int -> [FEStep] -> FEStep
     parseText text ptr formulas = case nextSpecialChar of
@@ -567,15 +596,15 @@ parseProofFromFile p = case proof of
         '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
         '}' -> SubProof formulas
         _ -> error "Invalid special char"
-      Nothing -> error "Removed?"
+      Nothing -> SubProof [Line "" ""] -- Return garbage instead of crashing
       where
         nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
 
     parseFormula :: Text -> FEStep
     parseFormula text = Line statement rule
       where
-        statement = (pack . trim . unpack) $ head parts
-        rule = (pack . trim . unpack) $ parts !! 1
+        statement = trimText $ head parts
+        rule = trimText $ parts !! 1
         parts = splitOn ":" text
 
     gotoNextChar text ptr chars
@@ -588,7 +617,7 @@ parseProofFromFile p = case proof of
 
     findClosingBracket :: [Char] -> Int -> Int -> Int -> Int
     findClosingBracket text nestedLevel idx cnl
-      | idx >= length text - 1 = error "No closing bracket found"
+      | idx >= length text - 1 = idx -- error "No closing bracket found"
       | otherwise = case char of
       '{' -> findClosingBracket text nestedLevel (idx + 1) (cnl + 1)
       '}' -> if nestedLevel == cnl then idx + 1 else findClosingBracket text nestedLevel (idx + 1) (cnl - 1)
@@ -597,8 +626,11 @@ parseProofFromFile p = case proof of
 
 -- Placeholder
 parseProofToFile :: FESequent -> Text
-parseProofToFile sequent = exportProofHelper (SubProof (_steps sequent)) 0
+parseProofToFile sequent = "\n" <> premises <> ";\n" <> conclusion <> ";\n" <> exportProofHelper (SubProof (_steps sequent)) 0
   where
+    premises = intercalate "," (_premises sequent)
+    conclusion = _conclusion sequent
+
     exportProofHelper :: FEStep -> Int -> Text
     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
     exportProofHelper (Line statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
@@ -627,6 +659,9 @@ slice from to xs = take (to - from) (drop from xs)
 
 trim :: [Char] -> [Char]
 trim = dropWhileEnd isSpace . dropWhile isSpace
+
+trimText :: Text -> Text
+trimText = pack . trim . unpack
 
 evalPath :: FESequent -> FormulaPath -> FEStep
 evalPath sequent path = ep path (SubProof $ _steps sequent)
@@ -676,7 +711,10 @@ insertAfterProof path insertThis = replaceSteps f
 removeFromProof :: FormulaPath -> FESequent -> FESequent
 removeFromProof path = replaceSteps f
   where
-    f steps = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
+    f steps = if null res then startProof else res
+      where
+        startProof = [Line "" ""]
+        res = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
 
     rl removePath currentPath (SubProof p)
       | removePath == currentPath = Nothing
@@ -688,6 +726,34 @@ removeFromProof path = replaceSteps f
     filterValid = filter validateProof . catMaybes
     validateProof (SubProof []) = False
     validateProof _ = True
+
+removePremiseFromProof :: Int -> FESequent -> FESequent
+removePremiseFromProof idx sequent = FESequent premises conclusion steps
+  where
+    premises = _premises sequent ^.. folded . ifiltered (\i _ -> i /= idx)
+    conclusion = _conclusion sequent
+    steps = _steps sequent
+
+addPremiseToProof :: FESequent -> FESequent
+addPremiseToProof sequent = FESequent premises conclusion steps
+  where
+    premises = _premises sequent ++ [""]
+    conclusion = _conclusion sequent
+    steps = _steps sequent
+
+editPremisesInProof :: Int -> Text -> FESequent -> FESequent
+editPremisesInProof idx newText sequent = FESequent premises conclusion steps
+  where
+    premises = _premises sequent & element idx .~ newText
+    conclusion = _conclusion sequent
+    steps = _steps sequent
+
+editConclusionInProof :: Text -> FESequent -> FESequent
+editConclusionInProof newText sequent = FESequent premises conclusion steps
+  where
+    premises = _premises sequent
+    conclusion = newText
+    steps = _steps sequent
 
 editFormulaInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
 editFormulaInProof path arg newText = replaceSteps f
