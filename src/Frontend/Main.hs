@@ -46,8 +46,9 @@ buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI wenv model = widgetTree where
+buildUI _wenv model = widgetTree where
   selTheme = model ^. selectedTheme
+  backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
@@ -114,7 +115,7 @@ buildUI wenv model = widgetTree where
             `styleBasic` [textFont "Symbol_Regular", textSize 24, radius 8, padding 4]
             `styleHover` [bgColor hoverColor]) `styleBasic` [padding 4]
         ]
-          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor red), cursorHand]
+          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
             displayName = pack filePath
@@ -169,7 +170,10 @@ buildUI wenv model = widgetTree where
 
       label "Proof",
       spacer,
-      tree
+      tree,
+
+      -- Hack so last proof line can scroll all the way to the top
+      box (label "") `styleBasic` [height 1000]
     ]
     where
       premiseLine premise = textFieldV premise (const AddLine)
@@ -189,26 +193,69 @@ buildUI wenv model = widgetTree where
       pf (Line statement rule) index path = (ui, lastIndex)
         where
           ui = hstack [
-              label $ showt index <> ".",
+              hstack [
+                label $ showt index <> ".",
+                spacer,
+
+                firstKeystroke [
+                  ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
+                  ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
+                  ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
+
+                  ("Tab", SwitchLineToSubProof path, True),
+                  ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
+                  ("Delete", RemoveLine path, True),
+                  ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
+                  ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                  ("Enter", NextFocus 1, True)
+                ] $
+                textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
+                  `styleBasic` [textFont "Symbol_Regular"]
+                  `nodeKey` showt index <> ".statement",
+              
+                spacer,
+
+                firstKeystroke [
+                  ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+                  ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+                  ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+
+                  ("Tab", SwitchLineToSubProof path, True),
+                  ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
+                  ("Delete", RemoveLine path, True),
+                  ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                  ("Enter", InsertLineAfter path, True)
+                ] $
+                textFieldV (replaceSpecialSymbols rule) (EditLine path 1)
+                  `styleBasic` [textFont "Symbol_Regular", width 175]
+                  `nodeKey` showt index <> ".rule"
+              ]
+                `nodeKey` showt index,
+
               spacer,
 
-              textFieldV (replaceSpecialSymbols statement) (EditLine path 0) `styleBasic` [textFont "Symbol_Regular"],
-              spacer,
+              box $ hstack_ [childSpacing] [
+                tooltip "Remove line" $ trashButton (RemoveLine path),
 
-              textFieldV (replaceSpecialSymbols rule) (EditLine path 1) `styleBasic` [textFont "Symbol_Regular", width 175],
-              spacer,
-
-              trashButton (RemoveLine path),
-
-              button "->[]" (SwitchLineToSubProof path),
-              button "<-[]" (SwitchSubProofToLine pathToParentSubProof),
-              button "|+" (InsertLineAfter path),
-              button "|[]+" (InsertSubProofAfter path),
-              button "/+" (InsertLineAfter pathToParentSubProof),
-              button "/[]+" (InsertSubProofAfter pathToParentSubProof)
+                tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path),
+                widgetIf (isSingleton $ evalPath sequent pathToParentSubProof) $
+                  tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)),
+                tooltip "Add line after" $ button "↓+" (InsertLineAfter path),
+                -- button "|[]+" (InsertSubProofAfter path),
+                widgetIf isLastLine $
+                  tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof))
+                -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
+              ] `styleBasic` [width 300]
             ]
           pathToParentSubProof = init path
           lastIndex = index + 1
+          prevIndexExists = index > 1
+          nextIndexExists = not (isLastLine && length path == 1)
+          isSingleton (SubProof p) = length p == 1
+          isSingleton _ = False
+          isLastLine = case evalPath sequent pathToParentSubProof of
+            SubProof p -> length p == last path + 1
+            _ -> False
 
       getSubProof p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
@@ -223,6 +270,8 @@ handleEvent
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
+  NoEvent -> []
+
   AppInit -> [
       Producer directoryFilesProducer,
       Task $ do
@@ -232,12 +281,19 @@ handleEvent wenv node model evt = case evt of
         return $ BackendResponse (OtherBackendMessage "Initialized")
     ]
 
+  FocusOnKey key -> [ SetFocusOnKey key ]
+
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  SwitchLineToSubProof path -> applyOnCurrentProof model switch
-    where switch = replaceInProof path (\oldLine -> SubProof [oldLine])
+  SwitchLineToSubProof path -> applyOnCurrentProof model switch ++ focusAction
+    where
+      switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-  SwitchSubProofToLine path -> applyOnCurrentProof model switch
+      focusAction = fromMaybe [] maybeFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusBwd ]
+
+  SwitchSubProofToLine path -> applyOnCurrentProof model switch ++ focusAction
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
         SubProof p -> head p
@@ -246,8 +302,16 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-  InsertLineAfter path -> applyOnCurrentProof model insertLine
-    where insertLine = insertAfterProof path (Line "" "")
+      focusAction = fromMaybe [] maybeFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd ]
+
+  InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
+    where
+      focusAction = fromMaybe [] maybeFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt (l + 1) <> ".statement") ]
+      insertLine = insertAfterProof path (Line "" "")
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
     where insertSubProof = insertAfterProof path (SubProof [Line "" ""])
@@ -417,6 +481,7 @@ main = do
 
 customLightTheme :: Theme
 customLightTheme = baseTheme lightThemeColors {
+  clearColor = rgb 255 255 255,
   btnMainBgBasic = rgbHex "#EE9000",
   btnMainBgHover = rgbHex "#FFB522",
   btnMainBgFocus = rgbHex "#FFA500",
@@ -425,6 +490,7 @@ customLightTheme = baseTheme lightThemeColors {
   btnMainText = rgbHex "#FF0000",
   labelText = rgbHex "000000"
 }
+  & L.userColorMap . at "backgroundColor" ?~ rgb 255 255 255
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 0 0 0 0.1
@@ -441,6 +507,7 @@ customDarkTheme = baseTheme darkThemeColors {
   btnMainText = rgbHex "#FF0000",
   labelText = rgbHex "#FFFFFF"
 }
+  & L.userColorMap . at "backgroundColor" ?~ rgb 30 30 30
   & L.userColorMap . at "hoverColor" ?~ rgba 255 255 255 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 255 255 255 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 255 255 255 0.1
@@ -566,8 +633,19 @@ evalPath sequent path = ep path (SubProof $ _steps sequent)
   where
     ep (idx:tail) currentProof = case currentProof of
       SubProof p -> ep tail $ p !! idx
-      Line _ _ -> error "Tried to index into `Formula` (not an array)"
+      Line _ _ -> error "Tried to index into `Line` (not an array)"
     ep [] p = p
+
+pathToLineNumber :: FESequent -> FormulaPath -> Integer
+pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
+  where
+    ep (idx:tail) currentProof startLine = case currentProof of
+      SubProof p -> ep tail (p !! idx) (startLine + sum (map stepLength (take idx p)))
+      Line _ _ -> error "Tried to index into `Line` (not an array)"
+    ep [] _ startLine = startLine
+
+    stepLength (SubProof p) = sum $ map stepLength p
+    stepLength (Line _ _) = 1
 
 insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
 insertBeforeProof path insertThis = replaceSteps f
@@ -653,3 +731,16 @@ applyOnCurrentProof model f = actions
           & tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ f
           & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
       ]
+
+getCurrentSequent :: AppModel -> Maybe FESequent
+getCurrentSequent model = sequent
+  where
+    sequent = fileIndex >>= Just . getSequent
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+    cf = model ^. currentFile
+
+    getSequent fileIndex = model ^. tmpLoadedFiles . singular (ix fileIndex) . parsedSequent
+
+firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
+firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts] (firstKeystroke xs widget)
+firstKeystroke [] widget = widget

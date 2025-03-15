@@ -60,8 +60,10 @@ instance Show (Chan a) where
   show _ = ""
 
 data AppEvent
-  = AppInit
+  = NoEvent
+  | AppInit
   | NextFocus Int
+  | FocusOnKey WidgetKey
 
   | AddLine
   | AddSubProof
