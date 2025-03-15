@@ -33,14 +33,14 @@ data FEStep
 
 data File = File {
   _path :: FilePath,
-  _name :: Text,
-  _subname :: Text,
   _content :: Text,
   _parsedSequent :: FESequent,
   _isEdited :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
+  _openMenuBarItem :: Maybe Integer,
+
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
@@ -62,6 +62,9 @@ instance Show (Chan a) where
 data AppEvent
   = NoEvent
   | AppInit
+
+  -- Menu bar
+  | SetOpenMenuBarItem (Maybe Integer)
 
   -- Focus
   | NextFocus Int

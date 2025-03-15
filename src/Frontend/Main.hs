@@ -42,12 +42,38 @@ symbolLookup = [
   ("=>", "⊢")
   ]
 
+menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
+menuBarCategories = [
+    ("File", [
+      ("New Proof", "Ctrl+N", OpenCreateProofPopup),
+      ("Save Proof", "Ctrl+S", NoEvent)
+    ]),
+    ("Edit", [
+      ("Cut", "Ctrl+X", NoEvent),
+      ("Copy", "Ctrl+C", NoEvent),
+      ("Paste", "Ctrl+V", NoEvent),
+
+      ("Make Subproof", "Tab", NoEvent),
+      ("Undo Subproof", "Shift+Tab", NoEvent),
+      ("Insert Line After", "Ctrl+Enter", NoEvent),
+      ("Close Subproof", "Ctrl+Enter", NoEvent)
+    ]),
+    ("View", [
+      ("Open Settings", "Ctrl+Shift+P", NoEvent),
+      ("Toggle Theme", "", SwitchTheme)
+    ]),
+    ("Help", [
+      ("Open Guide", "", NoEvent)
+    ])
+  ]
+
 buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
 buildUI _wenv model = widgetTree where
   selTheme = model ^. selectedTheme
+  popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
   backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
@@ -59,14 +85,27 @@ buildUI _wenv model = widgetTree where
       mainContent
     ]
 
-  menuBar = hstack (map menuBarButton ["File", "Edit", "View", "Help"])
+  menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
     `styleBasic` [borderB 1 dividerColor, padding 5]
     where
-      menuBarButton text = box_ [onClick SwitchTheme] (
-          label text
-            `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
-            `styleHover` [bgColor selectedColor]
-        )
+      menuBarButton (name, actions) idx = vstack [
+          box_ [onClick (SetOpenMenuBarItem (Just idx))] (
+            label name
+              `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
+              `styleHover` [bgColor selectedColor]
+          ),
+          popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing)
+            (vstack (map dropdownButton actions)
+              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4])
+        ]
+
+      dropdownButton (name, keybind, action) = box_ [onClick action, expandContent] $ hstack [
+          label name,
+          filler,
+          label keybind
+        ]
+          `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
+          `styleHover` [bgColor hoverColor]
 
   mainContent = hstack [
       fileWindow,
@@ -86,7 +125,7 @@ buildUI _wenv model = widgetTree where
             spacer,
             let cep = (CreateEmptyProof $ model ^. newFileName) in
               keystroke [("Enter", cep)] $ button "Create proof" cep
-          ] `styleBasic` [bgColor $ rgb 230 230 230, padding 10])
+          ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor],
       vstack $ map fileItem (model ^. filesInDirectory)
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
@@ -128,19 +167,12 @@ buildUI _wenv model = widgetTree where
   proofWindow (Just fileName) = case file of
     Nothing -> label "Filepath not loaded"
     Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
-        h1 $ _name file,
-        label $ _subname file,
-        label $ pack $ _path file,
+        h1 $ pack $ _path file,
         spacer,
+        label prettySequent,
+        spacer, spacer, spacer, spacer,
 
-        vscroll $ vstack [
-          proofTreeUI parsedSequent
-          -- spacer,
-          -- hstack_ [childSpacing] [
-          --   button "+ New line" AddLine,
-          --   button "+→ New sub proof" AddSubProof
-          -- ]
-        ],
+        vscroll $ proofTreeUI parsedSequent,
         spacer,
 
         hstack [
@@ -149,7 +181,9 @@ buildUI _wenv model = widgetTree where
           button "Save proof" (SaveProof file)
         ]
       ] `styleBasic` [padding 10]
-      where parsedSequent = _parsedSequent file
+      where
+        prettySequent = intercalate ", " (_premises parsedSequent) <> " ⊢ " <> _conclusion parsedSequent
+        parsedSequent = _parsedSequent file
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = hstack [
@@ -161,22 +195,28 @@ buildUI _wenv model = widgetTree where
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
       vstack_ [childSpacing] [
-        label "Premises",
+        label "Premises" `styleBasic` [textFont "Bold"],
         vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-        widgetIf (null $ _premises sequent) (box $ label "No premises")
+        widgetIf (null $ _premises sequent) (label "No premises")
       ],
       spacer,
       hstack [button "+ Premise" AddPremise],
       spacer, spacer,
 
-      label "Conclusion",
+      label "Conclusion" `styleBasic` [textFont "Bold"],
       spacer,
       textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"],
       spacer, spacer,
 
-      label "Proof",
+      label "Proof" `styleBasic` [textFont "Bold"],
       spacer,
       tree,
+
+      -- spacer,
+      -- hstack_ [childSpacing] [
+      --   button "+ New line" AddLine,
+      --   button "+→ New sub proof" AddSubProof
+      -- ]
 
       -- Hack so last proof line can scroll all the way to the top
       box (label "") `styleBasic` [height 1000]
@@ -249,7 +289,7 @@ buildUI _wenv model = widgetTree where
                 tooltip "Remove line" $ trashButton (RemoveLine path),
 
                 tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path),
-                widgetIf (isSingleton $ evalPath sequent pathToParentSubProof) $
+                widgetIf isSubProofSingleton $
                   tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)),
                 tooltip "Add line after" $ button "↓+" (InsertLineAfter path),
                 -- button "|[]+" (InsertSubProofAfter path),
@@ -262,6 +302,7 @@ buildUI _wenv model = widgetTree where
           lastIndex = index + 1
           prevIndexExists = index > 1
           nextIndexExists = not (isLastLine && length path == 1)
+          isSubProofSingleton = length path /= 1 && isSingleton (evalPath sequent pathToParentSubProof)
           isSingleton (SubProof p) = length p == 1
           isSingleton _ = False
           isLastLine = case evalPath sequent pathToParentSubProof of
@@ -291,6 +332,8 @@ handleEvent wenv node model evt = case evt of
         startCommunication frontendChan backendChan
         return $ BackendResponse (OtherBackendMessage "Initialized")
     ]
+
+  SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
 
   FocusOnKey key -> [ SetFocusOnKey key ]
 
@@ -375,12 +418,10 @@ handleEvent wenv node model evt = case evt of
   OpenFile filePath -> [
       Producer (\sendMsg -> do
         pContent <- readFile ("./myProofs/" <> filePath)
-        let pName = pack filePath
-            pSubname = "subname"
-            pContentText = pack pContent
+        let pContentText = pack pContent
             pParsedContent = parseProofFromFile pContentText
             pIsEdited = False
-        sendMsg (OpenFileSuccess $ File filePath pName pSubname pContentText pParsedContent pIsEdited)
+        sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
       )
     ]
 
@@ -474,6 +515,8 @@ main = do
       ]
     -- Initial states
     model frontendChan backendChan = AppModel {
+      _openMenuBarItem = Nothing,
+
       _newFileName = "",
       _newFilePopupOpen = False,
       _filesInDirectory = [],
@@ -509,6 +552,7 @@ customLightTheme = baseTheme lightThemeColors {
   btnMainText = rgbHex "#FF0000",
   labelText = rgbHex "000000"
 }
+  & L.userColorMap . at "popupBackground" ?~ rgb 230 230 230
   & L.userColorMap . at "backgroundColor" ?~ rgb 255 255 255
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
@@ -526,6 +570,7 @@ customDarkTheme = baseTheme darkThemeColors {
   btnMainText = rgbHex "#FF0000",
   labelText = rgbHex "#FFFFFF"
 }
+  & L.userColorMap . at "popupBackground" ?~ rgb 50 50 50
   & L.userColorMap . at "backgroundColor" ?~ rgb 30 30 30
   & L.userColorMap . at "hoverColor" ?~ rgba 255 255 255 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 255 255 255 0.1
