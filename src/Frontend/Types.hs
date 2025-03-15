@@ -47,6 +47,8 @@ data AppModel = AppModel {
   _tmpLoadedFiles :: [File],
   _openFiles :: [FilePath],
   _currentFile :: Maybe FilePath,
+  _confirmDeletePopup :: Bool,
+  _confirmDeleteTarget :: Maybe FilePath,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
@@ -93,6 +95,7 @@ data AppEvent
   | OpenFile FilePath
   | OpenFileSuccess File
   | CloseFile FilePath
+  | CloseFileSuccess FilePath
   | CloseCurrentFile
   | SaveProof File
   | SaveProofSuccess File

@@ -79,10 +79,23 @@ buildUI _wenv model = widgetTree where
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
-
+ 
   widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
-      menuBar,
-      mainContent
+      vstack [
+        menuBar,
+        mainContent
+      ],
+      popup_ confirmDeletePopup [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
+        h1 "Close without saving?",
+        label "Are you sure you want to close",
+        label (showt $ model ^. confirmDeleteTarget),
+        label "without saving. All changes will be lost!",
+        spacer,
+        hstack_ [childSpacing] [
+          button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
+          toggleButton "Cancel" confirmDeletePopup
+        ]
+      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20])
     ]
 
   menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
@@ -99,10 +112,10 @@ buildUI _wenv model = widgetTree where
               `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4])
         ]
 
-      dropdownButton (name, keybind, action) = box_ [onClick action, expandContent] $ hstack [
-          label name,
+      dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
+          label name `styleBasic` [textSize 14],
           filler,
-          label keybind
+          label keybind `styleBasic` [textSize 14]
         ]
           `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
           `styleHover` [bgColor hoverColor]
@@ -441,10 +454,23 @@ handleEvent wenv node model evt = case evt of
     Nothing -> []
     Just filePath -> handleEvent wenv node model (CloseFile filePath)
 
-  CloseFile filePath -> [ Model finalModel ]
+  CloseFile filePath -> case file of
+    Just file -> if _isEdited file then [
+        Model $ model
+          & confirmDeletePopup .~ True
+          & confirmDeleteTarget .~ Just filePath
+      ] else handleEvent wenv node model (CloseFileSuccess filePath)
+    Nothing -> []
+    where file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+
+  CloseFileSuccess filePath -> [ Model finalModel ]
     where
-      finalModel = modelWithClosedFile & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. openFiles) else cf)
-      modelWithClosedFile = model & openFiles %~ filter (filePath/=)
+      finalModel = modelWithClosedFile
+        & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. openFiles) else cf)
+      modelWithClosedFile = model
+        & openFiles %~ filter (filePath/=)
+        & confirmDeleteTarget .~ Nothing
+        & confirmDeletePopup .~ False
       cf = model ^. currentFile
 
   SaveProof f -> [
@@ -523,6 +549,8 @@ main = do
       _tmpLoadedFiles = [],
       _openFiles = [],
       _currentFile = Nothing,
+      _confirmDeletePopup = False,
+      _confirmDeleteTarget = Nothing,
 
       _frontendChan = frontendChan,
       _backendChan = backendChan,
@@ -562,8 +590,19 @@ customLightTheme = baseTheme lightThemeColors {
 customDarkTheme :: Theme
 customDarkTheme = baseTheme darkThemeColors {
   clearColor = rgb 30 30 30,
+
+  inputBgBasic = rgb 50 50 50,
+
+  btnBgBasic = rgb 50 50 50,
+  btnBgHover = rgb 70 70 70,
+  btnBgFocus = rgb 60 60 60,
+  btnBgActive = rgb 90 90 90,
+  btnBgDisabled = rgb 40 40 40,
+  btnTextDisabled = rgb 70 70 70,
+  btnText = rgbHex "#FFFFFF",
+
   btnMainBgBasic = rgbHex "#EE9000",
-  btnMainBgHover = rgbHex "#FFB522",
+  btnMainBgHover = rgbHex "#0000FF",
   btnMainBgFocus = rgbHex "#FFA500",
   btnMainBgActive = rgbHex "#DD8000",
   btnMainBgDisabled = rgbHex "#BB8800",
