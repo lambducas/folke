@@ -3,10 +3,9 @@ module Backend.TypeChecker where
 import Control.Monad
 import qualified Data.Map as Map
 
-import Logic.Abs
+import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 import Shared.Messages
-
 {-
     Type containing all enviroment information for the typechecker
 -}
@@ -21,85 +20,83 @@ addPrem env id t = do
 {-
     Type repersenting a type in the typechecker
 -}
-data Type = Nothing
-
 {-
     Type for returning the result of an typecheck can either be an Type if successful or
     an error describing how the check failed 
 -}
-type Result = Either Error Type
+data Result = Ok Type | Error ErrorKind String
 
-{-
-    Error returned from an check
--}
-data Error = SyntaxError String | Unknown String deriving (Show) 
-
+data ErrorKind = SyntaxError | UnknownError
+data Type = Form | Pred
 {-
     Entry point for typechecking
     sets upp env and will handle errors such
 -}
 
-isProofCorrect :: Sequent -> Bool
+isProofCorrect :: Abs.Sequent -> Bool
 isProofCorrect seq = case check seq of
-    Left _ ->  False
-    Right _ -> True
+    Error _ _->  False
+    Ok _ -> True
 
-check :: Sequent -> Result
+check :: Abs.Sequent -> Result
 check seq = do 
     let env = Env{prems = Map.empty}
     checkSequent env seq
 {-
     Typechecks and Seq node
 -}
-checkSequent :: Env -> Sequent -> Result
-checkSequent _ = undefined 
+checkSequent :: Env -> Abs.Sequent -> Result
+checkSequent env seq= Error UnknownError "Unimplemented"
 
 
-checkSteps :: Env -> [Step] -> Result
+checkSteps :: Env -> [Abs.Step] -> Result
 checkSteps env [] = undefined
 checkSteps env (step:steps) = undefined
 
-checkStep :: Env -> Step -> Result
+checkStep :: Env -> Abs.Step -> Result
 checkStep _ = undefined 
 
 {-
     Typechecks and Form node
 -}
-checkForm :: Env -> Form -> Result
+checkForms :: Env -> [Abs.Form] -> Result
+checkForms env forms= Error UnknownError "Unimplemented"
+
+checkForm :: Env -> Abs.Form -> Result
 checkForm env f = case f of  
-    FormBot -> undefined
-    FormEq term1 term2 -> undefined
-    FormPred pred -> undefined
-    FormAll id form -> undefined
-    FormSome id form -> undefined
-    FormNot form -> undefined
-    FormAnd form1 form2 -> undefined
-    FormOr form1 form2 -> undefined
-    FormIf form1 form2 -> undefined
+    Abs.FormBot -> undefined
+    Abs.FormEq term1 term2 -> undefined
+    Abs.FormPred pred -> undefined
+    Abs.FormAll id form -> undefined
+    Abs.FormSome id form -> undefined
+    Abs.FormNot form -> undefined
+    Abs.FormAnd form1 form2 -> undefined
+    Abs.FormOr form1 form2 -> undefined
+    Abs.FormIf form1 form2 -> undefined
 
 {-
     Typechecks and Seq node
 -}
-checkPred :: Env -> Pred -> Result
+checkPred :: Env -> Abs.Pred -> Result
 checkPred _ = undefined 
 
 {-
     Typechecks and Term node
 -}
-checkTerm :: Env -> Term -> Result
+checkTerm :: Env -> Abs.Term -> Result
 checkTerm _ = undefined 
 
 {-
     Typechecks and Params node
 -}
-checkParams :: Env -> Params -> Result
+checkParams :: Env -> Abs.Params -> Result
 checkParams _ = undefined 
 
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckSequent sequent) =
     let result = check sequent
     in case result of
-        Left err -> SequentChecked (Left (show err))
-        Right _ -> SequentChecked (Left "If do not error then the proof is correct frontend do not need to know the sequent again")
+        Error _ msg -> SequentChecked (Left msg)
+        Ok _ -> SequentChecked (Left "If do not error then the proof is correct frontend do not need to know the sequent again")
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text

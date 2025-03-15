@@ -33,6 +33,6 @@ example = do
         result = check sequent
     
     case result of
-        Left err -> putStrLn $ "Error: " ++ show err
-        Right seq -> do
+        Error kind err -> putStrLn $ "Error: " ++ show err
+        Ok seq -> do
             putStrLn "Proof is correct!"
