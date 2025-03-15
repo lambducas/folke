@@ -4,7 +4,7 @@
 
 -- | The abstract syntax of language logic.
 
-module Parser.Logic.Abs where
+module Logic.Abs where
 
 import Prelude (Integer, String)
 import qualified Prelude as C (Eq, Ord, Show, Read)

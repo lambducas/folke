@@ -3,7 +3,7 @@ module Shared.Messages (
     BackendMessage(..)
 ) where
 
-import Parser.Logic.Abs (Sequent, Step)
+import Logic.Abs (Sequent, Step)
 
 data FrontendMessage
     = CheckSequent Sequent

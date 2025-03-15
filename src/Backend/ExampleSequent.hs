@@ -2,7 +2,7 @@ module Backend.ExampleSequent (
     exampleSequent
 ) where
 
-import Parser.Logic.Abs
+import Logic.Abs
 
 exampleSequent :: Sequent
 exampleSequent = Seq

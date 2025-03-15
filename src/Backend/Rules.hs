@@ -3,7 +3,7 @@ module Backend.Rules (
     Rule(..)
 ) where
 
-import Parser.Logic.Abs
+import Logic.Abs
 
 data Rule = MP | AndI | AndE1 | AndE2
     deriving (Eq, Show)

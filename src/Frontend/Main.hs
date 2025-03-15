@@ -25,7 +25,7 @@ import Data.Default ( Default(def) )
 
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
-import Parser.Logic.Abs (Sequent(..), Form(..))
+import Logic.Abs (Sequent(..), Form(..))
 import Frontend.Communication (startCommunication, evaluateProofSegment)
 
 symbolLookup :: SymbolDict

@@ -59,12 +59,16 @@ library
     exposed-modules:  Backend.TypeChecker
                     , Backend.AuxiliaryTypes
                     , Backend.Rules
-                    , Parser.Logic.Abs
+                    , Logic.Abs
+                    , Logic.Par
+                    , Logic.Lex
                     , Shared.Messages
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
                     , text
+                    , array
+                    
 
     hs-source-dirs:   src
     default-language: Haskell2010
@@ -84,13 +88,16 @@ executable bsc
                     , text-show
                     , directory
                     , containers
+                    , array
     other-modules:
                       Backend.TypeChecker
                     , Backend.Rules
                     , Backend.ExampleSequent
                     , Shared.Messages
                     , Example
-                    , Parser.Logic.Abs
+                    , Logic.Abs
+                    , Logic.Par
+                    , Logic.Lex
                     , Frontend.Main
                     , Frontend.Communication
                     , Frontend.Types
@@ -124,4 +131,7 @@ test-suite bsc-project-test
     -- Test dependencies.
     build-depends:
         base ^>=4.17.2.1,
-        bsc-project
+        bsc-project,
+        HUnit,
+        directory,
+        array

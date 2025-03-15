@@ -6,7 +6,7 @@ module Frontend.Communication (
 
 import Control.Concurrent (Chan, forkIO, writeChan, readChan)
 import Shared.Messages
-import Parser.Logic.Abs (Sequent, Step)
+import Logic.Abs (Sequent, Step)
 import Backend.TypeChecker (handleFrontendMessage)  -- Import the function
 
 -- Function to start the communication between frontend and backend
