@@ -5,10 +5,7 @@ import qualified Data.Map as Map
 
 import Logic.Abs
 import Logic.Par (pSequent, myLexer)
-
-
-import GHC.Base (TrName(TrNameD))
-import GHC.IO (FilePath)
+import Shared.Messages
 
 {-
     Type containing all enviroment information for the typechecker
@@ -41,6 +38,11 @@ data Error = SyntaxError String | Unknown String deriving (Show)
     Entry point for typechecking
     sets upp env and will handle errors such
 -}
+
+isProofCorrect :: Sequent -> Bool
+isProofCorrect seq = case check seq of
+    Left _ ->  False
+    Right _ -> True
 
 check :: Sequent -> Result
 check seq = do 
@@ -92,3 +94,12 @@ checkTerm _ = undefined
 -}
 checkParams :: Env -> Params -> Result
 checkParams _ = undefined 
+
+handleFrontendMessage :: FrontendMessage -> BackendMessage
+handleFrontendMessage (CheckSequent sequent) =
+    let result = check sequent
+    in case result of
+        Left err -> SequentChecked (Left (show err))
+        Right _ -> SequentChecked (Left "If do not error then the proof is correct frontend do not need to know the sequent again")
+handleFrontendMessage (OtherFrontendMessage text) =
+    OtherBackendMessage text

@@ -3,13 +3,12 @@ module Example (
 ) where
 
 import Backend.TypeChecker
-import Parser.Logic.Abs
+import Logic.Abs
 import qualified Data.Map as Map
 
 example :: IO ()
 example = do
-    let env = Map.empty
-        termX = Term (TermId "x") (Params [])
+    let termX = Term (TermId "x") (Params [])
         termY = Term (TermId "y") (Params [])
         termZ = Term (TermId "z") (Params [])
         
@@ -31,13 +30,9 @@ example = do
         sequent = Seq [form1, form2] conclusion steps
         
         -- Check the sequent
-        result = checkSequent env sequent
+        result = check sequent
     
     case result of
-        Left err -> putStrLn $ "Error: " ++ err
-        Right (checkedSequent, newEnv) -> do
-            putStrLn $ "Checked Sequent: " ++ show checkedSequent
-            putStrLn $ "New Environment: " ++ show newEnv
-            if isProofCorrect checkedSequent
-                then putStrLn "Proof is correct!"
-                else putStrLn "Proof is incorrect!"
+        Left err -> putStrLn $ "Error: " ++ show err
+        Right seq -> do
+            putStrLn "Proof is correct!"
