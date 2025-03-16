@@ -11,12 +11,9 @@ import Logic.Par (pSequent, myLexer)
 
 testProof:: String -> Test
 testProof proof = TestCase(do
-        case pSequent (myLexer proof) of
-            Left err -> assertBool ("SYNTAX ERROR: " ++ err) False
-            Right seq -> do
-                let result = check seq
-                let error  = fromLeft (Unknown "This is not an error") result
-                assertBool ("TYPE ERROR: " ++ show error) (isRight result))
+        case checkString proof of
+            Error kind msg -> assertBool (show kind ++ msg) False
+            Ok seq -> assertBool "Dummy msg" True)
 
 testProofs :: [String] -> [String]-> [Test]
 testProofs [] [] = []
