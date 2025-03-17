@@ -86,14 +86,14 @@ $ cabal run bsc
 1. Start mingw64 terminal: `C:\ghcup\msys64\mingw64.exe`
 1. Run all these commands in the mingw64 terminal
     ```bash
-    > pacman -S mingw-w64-x86_64-pkg-config
-    > pacman -S mingw-w64-x86_64-SDL2
-    > pacman -S mingw-w64-x86_64-freeglut
-    > pacman -S mingw-w64-x86_64-glew
-    > pacman -S mingw-w64-x86_64-freetype
-    > pacman -S make
+    $ pacman -S mingw-w64-x86_64-pkg-config
+    $ pacman -S mingw-w64-x86_64-SDL2
+    $ pacman -S mingw-w64-x86_64-freeglut
+    $ pacman -S mingw-w64-x86_64-glew
+    $ pacman -S mingw-w64-x86_64-freetype
+    $ pacman -S make
     ```
-1. Set up BNFC
+1. Set up BNFC next. Run these commands in the normal windows command prompt:
     ```bash
     > ghcup run --mingw-path -- cabal install BNFC
     > ghcup run --mingw-path -- cabal install alex
@@ -119,7 +119,7 @@ $ cabal run bsc
     but SDL2 will probably fail to build with `ld.lld: error: undefined symbol: __stack_chk_fail`
 1. Run the project
     ```bash
-    cabal run bsc
+    > cabal run bsc
     ```
 
 ## SDL2 build error solution
@@ -128,10 +128,10 @@ If sdl2 fails with `error: ld.lld: error: undefined symbol: __stack_chk_fail` (f
 1. Unzip and place the folder `SDL2-2.30.6` in Downloads or somewhere else. Make sure it contains a folder called `x86_64-w64-mingw32` with subfolders: bin, include, lib and share
 1. Run the following 3 commands in a mingw64 terminal (replace `your-user-name` with your actual username and make sure the first path of `cp` points to your downloaded folder)
     ```bash
-    cd /c/ghcup/msys64
-    cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/lib/* -r /mingw64/lib/
-    cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/include/* -r /mingw64/include/
-    cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/bin/* -r /mingw64/bin/
+    $ cd /c/ghcup/msys64
+    $ cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/lib/* -r /mingw64/lib/
+    $ cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/include/* -r /mingw64/include/
+    $ cp /c/Users/your-user-name/Downloads/SDL2-2.30.6/x86_64-w64-mingw32/bin/* -r /mingw64/bin/
     ```
 1. Run `ghcup run --mingw-path -- cabal build` again and it should work (it works on my machine 💀)
 
