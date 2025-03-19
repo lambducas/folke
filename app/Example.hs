@@ -4,7 +4,7 @@ module Example (
 
 import Backend.TypeChecker
 import Logic.Abs
-import qualified Data.Map as Map
+import Backend.Types
 
 example :: IO ()
 example = do
@@ -25,14 +25,16 @@ example = do
                 , StepPrem form2
                 , StepForm (Ident "equalityElim") [ArgLit 1, ArgLit 2] conclusion
                 ]
+
+        proof = Proof (map (ProofElem []) steps)
         
         -- Sequent
-        sequent = Seq [form1, form2] conclusion steps
+        sequent = Seq [form1, form2] conclusion proof
         
         -- Check the sequent
         result = check sequent
     
     case result of
-        Error kind err -> putStrLn $ "Error: " ++ show err
-        Ok seq -> do
+        Error _kind err -> putStrLn $ "Error: " ++ show err
+        Ok _seq -> do
             putStrLn "Proof is correct!"

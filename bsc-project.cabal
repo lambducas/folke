@@ -92,6 +92,7 @@ executable bsc
     other-modules:
                       Backend.TypeChecker
                     , Backend.Rules
+                    , Backend.Types
                     , Shared.Messages
                     , Example
                     , Logic.Abs
