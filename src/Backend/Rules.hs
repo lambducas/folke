@@ -29,3 +29,8 @@ ruleAndElimRight [form] = case form of
     And l r -> Ok r
     _ -> Error TypeError ("Can not apply And elimination on " ++ show form ++ ".")
 ruleAndElimRight forms  = Error TypeError ("And elimination takes 2 arguments not" ++ show (List.length forms) ++".")
+
+ruleOrIntroLeft:: [Formula] -> Result Formula
+ruleOrIntroLeft _ = Error TypeError "Or Introduction Left not yet implemented."
+ruleOrIntroRight:: [Formula] -> Result Formula
+ruleAndElimRight _ = Error TypeError "Or Introduction Right not yet implemented."

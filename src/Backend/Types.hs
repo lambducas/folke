@@ -1,6 +1,6 @@
 module Backend.Types (
     Sequent(Sequent),
-    Formula(Pred, And, Nil),
+    Formula(Pred, And, Or, Not, Bot, Nil),
     Predicate(Predicate),
     Result(Ok, Error),
     ErrorKind(TypeError,SyntaxError, UnknownError)
@@ -16,14 +16,23 @@ instance Eq Sequent where
 data Formula = 
             Pred Predicate |
             And Formula Formula |
+            Or  Formula Formula |
+            Not Formula |
+            Bot |
             Nil
 instance Show Formula where
     show (Pred a) = show a
     show (And a b) = show a ++ "&" ++ show b
+    show (Or a b) = show a ++ "|" ++ show b
+    show (Not a) = "!" ++ show a
+    show Bot  = "bot"
     show Nil = "Nil"
 instance Eq Formula where 
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
+    Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
     Pred a == Pred b = a==b
+    Not a == Not b = a==b
+    Bot == Bot = True
     Nil == Nil = True
     _ == _ = False
 

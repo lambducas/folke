@@ -143,20 +143,26 @@ checkForms env (form:forms) = case checkForm env form of
 
 checkForm :: Env -> Abs.Form -> Result Formula
 checkForm env f = case f of  
-    Abs.FormBot             -> Error UnknownError "Unimplemented checkForm bot"
+    Abs.FormBot             -> Ok Bot
     Abs.FormEq term1 term2  -> Error UnknownError "Unimplemented checkForm eq"
     Abs.FormPred pred       -> case checkPred env pred of
         Error kind msg  -> Error kind msg
         Ok pred_t       -> Ok (Pred pred_t)
     Abs.FormAll id form     -> Error UnknownError "Unimplemented checkForm all"
     Abs.FormSome id form    -> Error UnknownError "Unimplemented checkForm some"
-    Abs.FormNot form        -> Error UnknownError "Unimplemented checkForm not"
+    Abs.FormNot form        -> case checkForm env form of
+        Error kind msg -> Error kind msg
+        Ok form_t -> Ok (Not form_t)
     Abs.FormAnd left right -> case checkForm env left of
         Error kind msg -> Error kind msg
         Ok left_t -> case checkForm env  right of 
             Error kind msg -> Error kind msg
             Ok right_t -> Ok (And left_t right_t)
-    Abs.FormOr form1 form2  -> Error UnknownError "Unimplemented checkForm or"
+    Abs.FormAnd left right -> case checkForm env left of
+        Error kind msg -> Error kind msg
+        Ok left_t -> case checkForm env  right of 
+            Error kind msg -> Error kind msg
+            Ok right_t -> Ok (Or left_t right_t)
     Abs.FormIf form1 form2  -> Error UnknownError "Unimplemented checkForm if"
 
 {-
