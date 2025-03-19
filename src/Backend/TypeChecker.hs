@@ -146,7 +146,7 @@ checkForm env f = case f of
     Typechecks and Seq node
 -}
 checkPred :: Env -> Abs.Pred -> Result Predicate
-checkPred env (Abs.Pred id (Abs.Params params)) = Ok (Predicate (predIdToString id)) 
+checkPred env (Abs.Pred id (Abs.Params params)) = Ok (Predicate (identToString id)) 
 
 {-
     Typechecks and Term node
@@ -160,14 +160,8 @@ checkTerm env term = Error UnknownError "Unimplemented checkTerm"
 checkParams :: Env -> Abs.Params -> Result ()
 checkParams env params =  Error UnknownError "Unimplemented checkParams"   
 
-predIdToString :: Abs.PredId -> String
-predIdToString (Abs.PredId str) = str
-
-ruleIdToString :: Abs.RuleId -> String
-ruleIdToString (Abs.RuleId str) = str
-
-termIdToString :: Abs.TermId -> String
-termIdToString (Abs.TermId str) = str
+identToString :: Abs.Ident -> String
+identToString (Abs.Ident str) = str
 
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent text) =

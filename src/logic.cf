@@ -7,12 +7,12 @@ Seq. Sequent ::= [Form] "|-" Form "{" [Step] "}";
 -- const form;
 
 StepPrem.       Step ::= "prem" Form ";";
-StepDecConst.   Step ::= "const" TermId ";";
-StepDecVar.     Step ::= "var" TermId";";
-StepDecFun.     Step ::= TermId "(" [TermId] ")" ";";
+StepDecConst.   Step ::= "const" Ident ";";
+StepDecVar.     Step ::= "var" Ident";";
+StepDecFun.     Step ::= Ident "(" [Ident] ")" ";";
 StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
 StepProof.      Step ::= "{"[Step]"}"; 
-StepForm.       Step ::= RuleId "[" [Arg] "]" Form ";";
+StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";
 terminator      Step "" ;
 
 --var x
@@ -26,8 +26,8 @@ FormBot.  Form4 ::= "bot";
 FormEq.   Form4 ::= Term "=" Term;
 FormPred. Form4 ::= Pred;
 
-FormAll.  Form3 ::= "all" TermId Form3;
-FormSome. Form3 ::= "some" TermId Form3;
+FormAll.  Form3 ::= "all" Ident Form3;
+FormSome. Form3 ::= "some" Ident Form3;
 FormNot.  Form3 ::= "!" Form3;
 
 FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
@@ -37,8 +37,8 @@ FormIf.   Form1 ::= Form2 "->" Form1; --right-associative(book)
 coercions Form 4;
 separator Form ",";
 
-Pred. Pred ::= PredId Params;
-Term. Term ::= TermId Params;
+Pred. Pred ::= Ident Params;
+Term. Term ::= Ident Params;
 
 Params. Params ::= "(" [Term] ")";
 params. Params ::= Nil;
@@ -49,11 +49,6 @@ define params n = Params [];
 Nil. Nil ::= "";
 
 separator nonempty Term ",";
-
-token PredId (upper);
-token TermId (lower (letter | digit | '_' )*);
-token RuleId (upper (letter | digit | '_' )*);
-
-separator nonempty TermId ",";
+separator nonempty Ident ",";
 
 comment "#";

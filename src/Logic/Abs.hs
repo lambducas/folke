@@ -15,33 +15,33 @@ data Sequent = Seq [Form] Form [Step]
 
 data Step
     = StepPrem Form
-    | StepDecConst TermId
-    | StepDecVar TermId
-    | StepDecFun TermId [TermId]
+    | StepDecConst Ident
+    | StepDecVar Ident
+    | StepDecFun Ident [Ident]
     | StepAssume Form
     | StepProof [Step]
-    | StepForm RuleId [Arg] Form
+    | StepForm Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Arg = ArgSub Step | ArgLit Integer
+data Arg = ArgRange Integer Integer | ArgSub Step | ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form
     = FormBot
     | FormEq Term Term
     | FormPred Pred
-    | FormAll TermId Form
-    | FormSome TermId Form
+    | FormAll Ident Form
+    | FormSome Ident Form
     | FormNot Form
     | FormAnd Form Form
     | FormOr Form Form
     | FormIf Form Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Pred = Pred PredId Params
+data Pred = Pred Ident Params
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Term = Term TermId Params
+data Term = Term Ident Params
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Params = Params [Term]
@@ -53,12 +53,6 @@ data Nil = Nil
 params :: Nil -> Params
 params = \ n -> Params []
 
-newtype PredId = PredId String
-  deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
-
-newtype TermId = TermId String
-  deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
-
-newtype RuleId = RuleId String
+newtype Ident = Ident String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
 
