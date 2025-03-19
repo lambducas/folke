@@ -1,0 +1,4 @@
+bot |- A {
+    1: prem bot;
+    BotE [1] A; 
+}

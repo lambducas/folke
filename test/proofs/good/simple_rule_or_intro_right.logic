@@ -1,0 +1,4 @@
+A |- A|B {
+    1: prem A;
+    OrIL [1] A|B;
+}

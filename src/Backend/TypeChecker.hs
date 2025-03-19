@@ -19,7 +19,7 @@ import qualified Data.List as List
 data Env =  Env {
     prems :: [Formula],
     refs  :: Map.Map Integer Formula,
-    rules :: Map.Map String ([Formula]->Result Formula)
+    rules :: Map.Map String ([Formula]->Formula->Result Formula)
 }
 newEnv :: Env
 newEnv = Env{
@@ -29,7 +29,17 @@ newEnv = Env{
         ("Reiteration",  Rules.ruleReiteration), 
         ("AndI", Rules.ruleAndIntro),
         ("AndEL", Rules.ruleAndElimLeft),
-        ("AndER", Rules.ruleAndElimRight)
+        ("AndER", Rules.ruleAndElimRight),
+        ("OrIL", Rules.ruleOrIntroLeft),
+        ("OrIR", Rules.ruleOrIntroRight),
+        ("OrE", Rules.ruleOrEilm),
+        ("ThenI", Rules.ruleThenIntro),
+        ("ThenE", Rules.ruleThenEilm),
+        ("NotI", Rules.ruleNotIntro),
+        ("NotE", Rules.ruleNotEilm),
+        ("BotE", Rules.ruleBottomElim),
+        ("NotNotI", Rules.ruleNotNotIntro),
+        ("NotNotE", Rules.ruleNotNotElim)
         ]
     }
 
@@ -50,12 +60,13 @@ getRefs env (x: xs) = case getRefs env xs of
         Just form -> Ok ([form] ++ forms)
 
 
-applyRule :: Env -> String -> [Formula] -> Result Formula
-applyRule env name args = case Map.lookup name (rules env) of
+applyRule :: Env -> String -> [Formula] -> Formula -> Result Formula
+applyRule env name args res = case Map.lookup name (rules env) of
     Nothing   -> Error TypeError ("No rule named " ++ name ++ " exists.") 
-    Just rule -> do 
-        let res_t = rule args
-        res_t
+    Just rule -> case rule args res of 
+            Error kind msg -> Error kind msg
+            Ok res_t -> if res_t == res then Ok res_t 
+            else Error TypeError (show res_t ++ " did not match " ++ show res) 
 {-
     Type repersenting a type in the typechecker
 -}
@@ -122,17 +133,15 @@ checkStep env step = case step of
     Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
     Abs.StepAssume   form         -> Error UnknownError "Unimplemented checkStep Assume"
     Abs.StepProof    steps        -> Error UnknownError "Unimplemented checkStep Proof"
-    Abs.StepForm     name args form -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of 
+    Abs.StepForm     name args form -> case checkForm env form of
         Error kind msg -> Error kind msg
-        Ok refs_t -> case applyRule env (identToString name) refs_t of 
-            Error kind msg -> Error kind msg
-            Ok res_t -> case checkForm env form of
+        Ok form_t -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of
+             Error kind msg -> Error kind msg
+             Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
                 Error kind msg -> Error kind msg
-                Ok form_t -> if res_t == form_t then Ok (env, res_t) 
-                else Error TypeError ("The given result of the rule did not match expected " ++ show form_t ++ " got " ++ show res_t ++ ".")
-{-
-    Typechecks and Form node
--}
+                Ok res_t -> Ok(env, res_t)
+
+
 checkForms :: Env -> [Abs.Form] -> Result [Formula]
 checkForms _ []           = Ok []
 checkForms env (form:forms) = case checkForm env form of 
@@ -158,7 +167,7 @@ checkForm env f = case f of
         Ok left_t -> case checkForm env  right of 
             Error kind msg -> Error kind msg
             Ok right_t -> Ok (And left_t right_t)
-    Abs.FormAnd left right -> case checkForm env left of
+    Abs.FormOr left right -> case checkForm env left of
         Error kind msg -> Error kind msg
         Ok left_t -> case checkForm env  right of 
             Error kind msg -> Error kind msg
