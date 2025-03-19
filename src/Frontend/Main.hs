@@ -18,7 +18,7 @@ import Control.Exception (try, SomeException (SomeException))
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory )
 import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
-import Data.List (find, dropWhileEnd, findIndex)
+import Data.List (find, dropWhileEnd, findIndex, sort)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe, isNothing, catMaybes)
 import Data.Default ( Default(def) )
@@ -140,8 +140,9 @@ buildUI _wenv model = widgetTree where
               keystroke [("Enter", cep)] $ button "Create proof" cep
           ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor],
-      vstack $ map fileItem (model ^. filesInDirectory)
+      vstack $ map fileItem files
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+    where files = sort (model ^. filesInDirectory)
 
   fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
       label $ pack filePath
@@ -185,7 +186,7 @@ buildUI _wenv model = widgetTree where
         label prettySequent,
         spacer, spacer, spacer, spacer,
 
-        vscroll_ [wheelRate 50] $ proofTreeUI parsedSequent,
+        scroll_ [wheelRate 50] $ proofTreeUI parsedSequent,
         spacer,
 
         hstack [
@@ -219,7 +220,7 @@ buildUI _wenv model = widgetTree where
 
       label "Conclusion" `styleBasic` [textFont "Bold"],
       spacer,
-      textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"],
+      textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
       spacer, spacer,
 
       label "Proof" `styleBasic` [textFont "Bold"],
@@ -237,7 +238,7 @@ buildUI _wenv model = widgetTree where
     ]
     where
       premiseLine premise idx = hstack [
-          textFieldV_ premise (EditPremise idx) [placeholder "Enter premise"],
+          textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"],
           spacer,
           tooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
