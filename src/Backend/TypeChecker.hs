@@ -3,7 +3,8 @@ module Backend.TypeChecker (
     check,
     checkString,
     handleFrontendMessage,
-    Result(Ok, Error)
+    Result(Ok, Error),
+    ErrorKind(TypeError,SyntaxError, UnknownError)
 ) where
 
 import Control.Monad

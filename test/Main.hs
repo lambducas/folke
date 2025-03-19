@@ -9,24 +9,39 @@ import Backend.TypeChecker
 
 import Logic.Par (pSequent, myLexer)
 
-testProof:: String -> Test
-testProof proof = TestCase(do
+testProofGood:: String -> Test
+testProofGood proof = TestCase(do
         case checkString proof of
-            Error kind msg -> assertBool (show kind ++ msg) False
+            Error kind msg -> assertBool (show kind ++ ": " ++ msg) False
             Ok seq -> assertBool "Dummy msg" True)
 
-testProofs :: [String] -> [String]-> [Test]
-testProofs [] [] = []
-testProofs (name:names) (proof:proofs) = do 
-    let tests = testProofs names proofs
-    let test  = testProof proof
+testProofBadType:: String -> Test
+testProofBadType proof = TestCase(do
+        case checkString proof of
+            Error TypeError _ ->  assertBool "Dummy msg" True
+            Error kind msg -> case kind of
+                TypeError -> assertBool "Dummy msg" True
+                _ -> assertBool ("Expected TypeError not " ++ show kind ++ ": " ++ msg) False
+            Ok _ -> assertBool "Did not fail as expected" False)
+
+testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
+testProofs test_fun [] [] = []
+testProofs test_fun (name:names) (proof:proofs) = do 
+    let tests = testProofs test_fun names proofs
+    let test  = test_fun proof
     tests ++ [TestLabel name test]
 
 
 main :: IO ()
 main = do
-    files <- listDirectory "test/proofs"
-    let paths = ["test/proofs/"++file | file <- files]
+    files <- listDirectory "test/proofs/good"
+    let paths = ["test/proofs/good/"++file | file <- files]
     proofs <- mapM readFile paths
-    let tests = TestList (testProofs files proofs)
+    let tests_good = TestList (testProofs testProofGood files proofs)
+
+    files <- listDirectory "test/proofs/bad_type/"
+    let paths = ["test/proofs/bad_type/"++file | file <- files]
+    proofs <- mapM readFile paths
+    let tests_bad_type = TestList (testProofs testProofBadType files proofs)
+    let tests = TestList [TestLabel "Good" tests_good, TestLabel "Bad Types"  tests_bad_type]
     runTestTTAndExit tests
