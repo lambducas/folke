@@ -17,13 +17,27 @@ import Shared.Messages
     Type containing all enviroment information for the typechecker
 -}
 data Env =  Env {
-    prems :: [Formula]
+    prems :: [Formula],
+    refs :: Map.Map String Formula,
+    rules :: Map.Map String ([Formula]->Formula)
 }
+newEnv :: Env
+newEnv = Env{
+    prems = [],
+    refs  = Map.empty,
+    rules = Map.empty
+    }
+
 addPrem :: Env -> Formula -> Env
 addPrem env prem = do 
     env{prems = [prem] ++ prems env}
 getPrems :: Env -> [Formula]
 getPrems env  = prems env
+
+applyRule :: Env -> String -> [Formula] -> Result Formula
+applyRule env id args = case Map.lookup id (rules env) of
+    Nothing   -> Error TypeError ("No rule named " ++ id ++ " exists.") 
+    Just rule -> Ok (rule args)
 {-
     Type repersenting a type in the typechecker
 -}
@@ -74,7 +88,7 @@ isProofCorrect seq = case check seq of
 
 check :: Abs.Sequent -> Result ()
 check seq = do 
-    let env = Env{prems = []}
+    let env = newEnv
     case checkSequent env seq of
         Error kind msg -> Error kind msg
         Ok _ -> Ok ()
@@ -97,25 +111,25 @@ checkSequent env (Abs.Seq prems conc steps) = case checkForms env prems of
 checkSteps :: Env -> [Abs.Step] -> Result Sequent
 checkSteps env [] = Ok (Sequent (getPrems env) Nil) 
 checkSteps env [step] = case step of 
-    Abs.StepPrem form         -> case checkForm env form of
+    Abs.StepPrem labels form         -> case checkForm env form of
         Error kind msg -> Error kind msg
         Ok form_t      -> Ok (Sequent (getPrems (addPrem env form_t)) form_t) 
-    Abs.StepDecConst id       -> Error UnknownError "Unimplemented checkSteps DecConst"
-    Abs.StepDecVar id         -> Error UnknownError "Unimplemented checkSteps DecVar"
-    Abs.StepDecFun id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
-    Abs.StepAssume form       -> Error UnknownError "Unimplemented checkSteps Assume"
-    Abs.StepProof steps       -> Error UnknownError "Unimplemented checkSteps Proof"
-    Abs.StepForm id args form -> Error UnknownError "Unimplemented checkSteps From"
+    Abs.StepDecConst labels id       -> Error UnknownError "Unimplemented checkSteps DecConst"
+    Abs.StepDecVar labels id         -> Error UnknownError "Unimplemented checkSteps DecVar"
+    Abs.StepDecFun labels id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
+    Abs.StepAssume labels form       -> Error UnknownError "Unimplemented checkSteps Assume"
+    Abs.StepProof labels steps       -> Error UnknownError "Unimplemented checkSteps Proof"
+    Abs.StepForm labels id args form -> Error UnknownError "Unimplemented checkSteps From"
 checkSteps env (step:steps) = case step of 
-    Abs.StepPrem form         -> case checkForm env form of
+    Abs.StepPrem labels form         -> case checkForm env form of
         Error kind msg -> Error kind msg
         Ok form_t      -> checkSteps (addPrem env form_t) steps
-    Abs.StepDecConst id       -> Error UnknownError "Unimplemented checkSteps DecConst"
-    Abs.StepDecVar id         -> Error UnknownError "Unimplemented checkSteps DecVar"
-    Abs.StepDecFun id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
-    Abs.StepAssume form       -> Error UnknownError "Unimplemented checkSteps Assume"
-    Abs.StepProof steps       -> Error UnknownError "Unimplemented checkSteps Proof"
-    Abs.StepForm id args form -> Error UnknownError "Unimplemented checkSteps From"
+    Abs.StepDecConst labels id       -> Error UnknownError "Unimplemented checkSteps DecConst"
+    Abs.StepDecVar labels id         -> Error UnknownError "Unimplemented checkSteps DecVar"
+    Abs.StepDecFun labels id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
+    Abs.StepAssume labels form       -> Error UnknownError "Unimplemented checkSteps Assume"
+    Abs.StepProof labels steps       -> Error UnknownError "Unimplemented checkSteps Proof"
+    Abs.StepForm labels id args form -> Error UnknownError "Unimplemented checkSteps From"
 
 {-
     Typechecks and Form node

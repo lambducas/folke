@@ -14,13 +14,13 @@ data Sequent = Seq [Form] Form [Step]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Step
-    = StepPrem Form
-    | StepDecConst Ident
-    | StepDecVar Ident
-    | StepDecFun Ident [Ident]
-    | StepAssume Form
-    | StepProof [Step]
-    | StepForm Ident [Arg] Form
+    = StepPrem [Label] Form
+    | StepDecConst [Label] Ident
+    | StepDecVar [Label] Ident
+    | StepDecFun [Label] Ident [Ident]
+    | StepAssume [Label] Form
+    | StepProof [Label] [Step]
+    | StepForm [Label] Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Arg = ArgRange Integer Integer | ArgSub Step | ArgLit Integer
@@ -45,6 +45,9 @@ data Term = Term Ident Params
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Params = Params [Term]
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data Label = Label Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Nil = Nil

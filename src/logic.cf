@@ -6,18 +6,18 @@ Seq. Sequent ::= [Form] "|-" Form "{" [Step] "}";
 -- var form;
 -- const form;
 
-StepPrem.       Step ::= "prem" Form ";";
-StepDecConst.   Step ::= "const" Ident ";";
-StepDecVar.     Step ::= "var" Ident";";
-StepDecFun.     Step ::= Ident "(" [Ident] ")" ";";
-StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
-StepProof.      Step ::= "{"[Step]"}"; 
-StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";
+StepPrem.       Step ::= [Label] "prem" Form ";";
+StepDecConst.   Step ::= [Label] "const" Ident ";";
+StepDecVar.     Step ::= [Label] "var" Ident";";
+StepDecFun.     Step ::= [Label] Ident "(" [Ident] ")" ";";
+StepAssume.     Step ::= [Label] "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
+StepProof.      Step ::= [Label] "{" [Step] "}"; 
+StepForm.       Step ::= [Label]  Ident "[" [Arg] "]" Form ";";
 terminator      Step "" ;
 
 --var x
 --const x
-ArgRange.   Arg   ::= Integer "-" Integer;
+ArgRange. Arg   ::= Integer "-" Integer;
 ArgSub.   Arg   ::= Step;
 ArgLit.   Arg   ::= Integer;
 separator Arg   ",";
@@ -44,6 +44,9 @@ Params. Params ::= "(" [Term] ")";
 params. Params ::= Nil;
 
 define params n = Params [];
+
+Label.     Label ::= Integer ":";
+separator  Label "";
 
 --Ugly but works?
 Nil. Nil ::= "";

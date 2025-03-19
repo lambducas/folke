@@ -1,0 +1,4 @@
+A, B|-B{
+    1: prem A;
+    2: prem B;
+}
