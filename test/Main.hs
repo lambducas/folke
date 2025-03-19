@@ -6,6 +6,7 @@ import System.Directory
 import Data.Either
 
 import Backend.TypeChecker
+import Backend.Types
 
 import Logic.Par (pSequent, myLexer)
 

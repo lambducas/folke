@@ -3,41 +3,53 @@ module Backend.TypeChecker (
     check,
     checkString,
     handleFrontendMessage,
-    Result(Ok, Error),
-    ErrorKind(TypeError,SyntaxError, UnknownError)
 ) where
 
-import Control.Monad
 import qualified Data.Map as Map
 
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 import Shared.Messages
+import Backend.Types 
+import qualified Backend.Rules as Rules
 {-
     Type containing all enviroment information for the typechecker
 -}
 data Env =  Env {
     prems :: [Formula],
-    refs  :: Map.Map Int Formula,
-    rules :: Map.Map String ([Formula]->Formula)
+    refs  :: Map.Map Integer Formula,
+    rules :: Map.Map String ([Formula]->Result Formula)
 }
 newEnv :: Env
 newEnv = Env{
     prems = [],
     refs  = Map.empty,
-    rules = Map.empty
+    rules = Map.fromList[("Reiteration",  Rules.ruleReiteration)]
     }
 
 addPrem :: Env -> Formula -> Env
 addPrem env prem = do 
-    env{prems = [prem] ++ prems env}
+    env{prems = prems env ++ [prem]}
 getPrems :: Env -> [Formula]
 getPrems env  = prems env
 
+addRefs :: Env -> [Integer] -> Formula -> Env
+addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label, form)| label <-labels])}
+getRefs :: Env -> [Integer] -> Result [Formula]
+getRefs env [] = Ok []
+getRefs env (x: xs) = case getRefs env xs of
+    Error kind msg -> Error kind msg
+    Ok (forms) -> case Map.lookup x (refs env) of
+        Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
+        Just form -> Ok (forms ++ [form])
+
+
 applyRule :: Env -> String -> [Formula] -> Result Formula
-applyRule env id args = case Map.lookup id (rules env) of
-    Nothing   -> Error TypeError ("No rule named " ++ id ++ " exists.") 
-    Just rule -> Ok (rule args)
+applyRule env name args = case Map.lookup name (rules env) of
+    Nothing   -> Error TypeError ("No rule named " ++ name ++ " exists.") 
+    Just rule -> do 
+        let res_t = rule args
+        res_t
 {-
     Type repersenting a type in the typechecker
 -}
@@ -45,32 +57,6 @@ applyRule env id args = case Map.lookup id (rules env) of
     Type for returning the result of an typecheck can either be an Type if successful or
     an error describing how the check failed 
 -}
-data Result a = Ok a | Error ErrorKind String
-
-data Sequent = Sequent [Formula] Formula
-
-instance Eq Sequent where 
-    Sequent [] conc_a == Sequent [] conc_b = conc_a == conc_b
-    Sequent [a] conc_a == Sequent [b] conc_b = a == b && Sequent [] conc_a == Sequent [] conc_b
-    Sequent [] _ == Sequent _ _ = False
-    Sequent _ _ == Sequent [] _ = False
-    Sequent (a:as) conc_a == Sequent (b:bs) conc_b = a == b && Sequent as conc_a == Sequent bs conc_b
-
-data Formula = 
-            Pred Predicate |
-            And Formula Formula |
-            Nil
-instance Eq Formula where 
-    And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
-    Pred a == Pred b = a==b
-    _ == _ = False
-
-
-data Predicate = Predicate String
-instance Eq Predicate where 
-    Predicate a == Predicate b = a == b
-
-data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
 {-
     Entry point for typechecking
     sets upp env and will handle errors such
@@ -79,58 +65,65 @@ data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show
 checkString :: String -> Result ()
 checkString proof = case pSequent (myLexer proof) of
     Left err -> Error SyntaxError err
-    Right seq -> check seq
+    Right seq_t -> check seq_t
 
 isProofCorrect :: Abs.Sequent -> Bool
-isProofCorrect seq = case check seq of
+isProofCorrect seq_t = case check seq_t of
     Error _ _->  False
     Ok _ -> True
 
 check :: Abs.Sequent -> Result ()
-check seq = do 
+check seq_t = do 
     let env = newEnv
-    case checkSequent env seq of
+    case checkSequent env seq_t of
         Error kind msg -> Error kind msg
         Ok _ -> Ok ()
 {-
     Typechecks and Seq node
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Sequent
-checkSequent env (Abs.Seq prems conc steps) = case checkForms env prems of 
+checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkForms env prems of 
     Error kind msg -> Error kind msg
     Ok prems_t -> case checkForm env conc of 
          Error kind msg -> Error kind msg
-         Ok conc_t -> case checkSteps env steps of
+         Ok conc_t -> case checkProof env proof of
              Error kind msg -> Error kind msg
              Ok proof_t -> do 
                 let seq_t = Sequent prems_t conc_t
                 if proof_t == seq_t then Ok seq_t
-                else Error TypeError "The proof steps did not prove the sequent"
+                else Error TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ ".")
 
 
-checkSteps :: Env -> [Abs.Step] -> Result Sequent
-checkSteps env [] = Ok (Sequent (getPrems env) Nil) 
-checkSteps env [step] = case step of 
-    Abs.StepPrem labels form         -> case checkForm env form of
+checkProof :: Env -> [Abs.ProofElem] -> Result Sequent
+checkProof env [] = Ok (Sequent (getPrems env) Nil)
+checkProof env [Abs.ProofElem _ step] = case checkStep env step of
+    Error kind msg -> Error kind msg
+    Ok (new_env, step_t) -> Ok (Sequent (getPrems new_env) step_t)
+checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
+    Error kind msg -> Error kind msg
+    Ok (new_env, step_t) -> case checkProof (addRefs new_env [i| (Abs.Label i) <- labels] step_t) elems of
         Error kind msg -> Error kind msg
-        Ok form_t      -> Ok (Sequent (getPrems (addPrem env form_t)) form_t) 
-    Abs.StepDecConst labels id       -> Error UnknownError "Unimplemented checkSteps DecConst"
-    Abs.StepDecVar labels id         -> Error UnknownError "Unimplemented checkSteps DecVar"
-    Abs.StepDecFun labels id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
-    Abs.StepAssume labels form       -> Error UnknownError "Unimplemented checkSteps Assume"
-    Abs.StepProof labels steps       -> Error UnknownError "Unimplemented checkSteps Proof"
-    Abs.StepForm labels id args form -> Error UnknownError "Unimplemented checkSteps From"
-checkSteps env (step:steps) = case step of 
-    Abs.StepPrem labels form         -> case checkForm env form of
-        Error kind msg -> Error kind msg
-        Ok form_t      -> checkSteps (addPrem env form_t) steps
-    Abs.StepDecConst labels id       -> Error UnknownError "Unimplemented checkSteps DecConst"
-    Abs.StepDecVar labels id         -> Error UnknownError "Unimplemented checkSteps DecVar"
-    Abs.StepDecFun labels id ids     -> Error UnknownError "Unimplemented checkSteps DecFun"
-    Abs.StepAssume labels form       -> Error UnknownError "Unimplemented checkSteps Assume"
-    Abs.StepProof labels steps       -> Error UnknownError "Unimplemented checkSteps Proof"
-    Abs.StepForm labels id args form -> Error UnknownError "Unimplemented checkSteps From"
+        Ok seq_t -> Ok seq_t
 
+
+checkStep :: Env -> Abs.Step -> Result (Env, Formula)
+checkStep env step = case step of 
+    Abs.StepPrem     form         -> case checkForm env form of
+        Error kind msg -> Error kind msg
+        Ok form_t      -> Ok (addPrem env form_t, form_t)
+    Abs.StepDecConst id           -> Error UnknownError "Unimplemented checkStep DecConst"
+    Abs.StepDecVar   id           -> Error UnknownError "Unimplemented checkStep DecVar"
+    Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
+    Abs.StepAssume   form         -> Error UnknownError "Unimplemented checkStep Assume"
+    Abs.StepProof    steps        -> Error UnknownError "Unimplemented checkStep Proof"
+    Abs.StepForm     name args form -> case getRefs env [arg| (Abs.ArgLit arg) <- args] of 
+        Error kind msg -> Error kind msg
+        Ok refs_t -> case applyRule env (identToString name) refs_t of 
+            Error kind msg -> Error kind msg
+            Ok res_t -> case checkForm env form of
+                Error kind msg -> Error kind msg
+                Ok form_t -> if res_t == form_t then Ok (env, res_t) 
+                else Error TypeError "The given result of the rule did not match"
 {-
     Typechecks and Form node
 -}

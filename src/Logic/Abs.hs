@@ -10,17 +10,23 @@ import Prelude (Integer, String)
 import qualified Prelude as C (Eq, Ord, Show, Read)
 import qualified Data.String
 
-data Sequent = Seq [Form] Form [Step]
+data Sequent = Seq [Form] Form Proof
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data Proof = Proof [ProofElem]
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+data ProofElem = ProofElem [Label] Step
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Step
-    = StepPrem [Label] Form
-    | StepDecConst [Label] Ident
-    | StepDecVar [Label] Ident
-    | StepDecFun [Label] Ident [Ident]
-    | StepAssume [Label] Form
-    | StepProof [Label] [Step]
-    | StepForm [Label] Ident [Arg] Form
+    = StepPrem Form
+    | StepDecConst Ident
+    | StepDecVar Ident
+    | StepDecFun Ident [Ident]
+    | StepAssume Form
+    | StepProof Proof
+    | StepForm Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Arg = ArgLit Integer

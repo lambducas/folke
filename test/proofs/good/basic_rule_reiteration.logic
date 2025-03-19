@@ -1,0 +1,5 @@
+A, B|-A{
+    1: prem A;
+    2: prem B;
+    Reiteration [1] A;
+}
