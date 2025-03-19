@@ -1,22 +1,22 @@
 |- ((P -> Q) & (!R -> !Q)) -> (P -> R) {
-    {
+  {
 		assume (P -> Q) & (!R -> !Q);
 		{
 			assume P;
-			reiteration [1] (P -> Q) & (!R -> !Q);
-			orE [3] P -> Q;
-			impE [2, 4] Q;
-			andE [3] !R -> !Q;
+			Reiteration [1] (P -> Q) & (!R -> !Q);
+			OrE [3] P -> Q;
+			ImpE [2, 4] Q;
+			AndE [3] !R -> !Q;
 			{
 				assume !R;
-				reiteration [6] !R -> !Q;
-				impE [7, 8] !Q;
-				reiteration [5] Q;
+				Reiteration [6] !R -> !Q;
+				ImpE [7, 8] !Q;
+				Reiteration [5] Q;
 			}
-			negI [7-10] !!R;
-			nnegE [11] R;
+			NegI [7-10] !!R;
+			NnegE [11] R;
 		}
-		impI [2-12] P -> R;
+		ImpI [2-12] P -> R;
 	}
-	impI [1-13] ((P -> Q) & (!R -> !Q)) -> (P -> R);
+	ImpI [1-13] ((P -> Q) & (!R -> !Q)) -> (P -> R);
 }

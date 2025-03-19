@@ -17,6 +17,7 @@ terminator      Step "" ;
 
 --var x
 --const x
+ArgRange.   Arg   ::= Integer "-" Integer;
 ArgSub.   Arg   ::= Step;
 ArgLit.   Arg   ::= Integer;
 separator Arg   ",";
@@ -49,7 +50,7 @@ Nil. Nil ::= "";
 
 separator nonempty Term ",";
 
-token PredId (upper (letter | digit | '_' )*);
+token PredId (upper);
 token TermId (lower (letter | digit | '_' )*);
 token RuleId (upper (letter | digit | '_' )*);
 
