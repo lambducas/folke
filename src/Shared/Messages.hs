@@ -7,12 +7,14 @@ import Logic.Abs (Sequent, Step)
 
 data FrontendMessage
     = CheckSequent Sequent
+    | CheckStringSequent String
     | CheckStep Step
     | OtherFrontendMessage String
     deriving (Show, Eq)
 
 data BackendMessage
-    = SequentChecked (Either String Sequent)
-    | StepChecked (Either String Step)
+    = SequentChecked (Either String ())
+    | StringSequentChecked (Either String ())
+    | StepChecked (Either String ())
     | OtherBackendMessage String
     deriving (Show, Eq)

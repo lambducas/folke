@@ -52,7 +52,8 @@ data AppModel = AppModel {
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
-  _proofStatus :: Maybe Bool,
+  _proofStatus :: Maybe (Either String ()),
+  -- _proofStatus :: Maybe Bool,
 
   _selectedTheme :: Theme
 } deriving (Eq, Show)
@@ -106,7 +107,7 @@ data AppEvent
   | CreateEmptyProof Text
 
   -- Proof checking
-  | CheckProof
+  | CheckProof File
   | BackendResponse BackendMessage
 
   -- Theme
