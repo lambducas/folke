@@ -6,13 +6,13 @@ import Logic.Abs
 
 exampleSequent :: Sequent
 exampleSequent = Seq
-    [ FormEq (Term (TermId "x") (Params [])) (Term (TermId "y") (Params []))
-    , FormNot (FormEq (Term (TermId "a") (Params [])) (Term (TermId "b") (Params [])))
+    [ FormEq (Term (Ident "x") (Params [])) (Term (Ident "y") (Params []))
+    , FormNot (FormEq (Term (Ident "a") (Params [])) (Term (Ident "b") (Params [])))
     ]
-    (FormAnd (FormEq (Term (TermId "x") (Params [])) (Term (TermId "y") (Params [])))
-             (FormNot (FormEq (Term (TermId "a") (Params [])) (Term (TermId "b") (Params [])))))
-    [ StepPrem (FormEq (Term (TermId "x") (Params [])) (Term (TermId "y") (Params [])))
-    , StepAssume (FormNot (FormEq (Term (TermId "a") (Params [])) (Term (TermId "b") (Params []))))
-    , StepForm (RuleId "someRule") [ArgLit 1] (FormAnd (FormEq (Term (TermId "x") (Params [])) (Term (TermId "y") (Params [])))
-                                                      (FormNot (FormEq (Term (TermId "a") (Params [])) (Term (TermId "b") (Params [])))))
+    (FormAnd (FormEq (Term (Ident "x") (Params [])) (Term (Ident "y") (Params [])))
+             (FormNot (FormEq (Term (Ident "a") (Params [])) (Term (Ident "b") (Params [])))))
+    [ StepPrem (FormEq (Term (Ident "x") (Params [])) (Term (Ident "y") (Params [])))
+    , StepAssume (FormNot (FormEq (Term (Ident "a") (Params [])) (Term (Ident "b") (Params []))))
+    , StepForm (Ident "someRule") [ArgLit 1] (FormAnd (FormEq (Term (Ident "x") (Params [])) (Term (Ident "y") (Params [])))
+                                                      (FormNot (FormEq (Term (Ident "a") (Params [])) (Term (Ident "b") (Params [])))))
     ]

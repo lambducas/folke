@@ -8,9 +8,9 @@ import qualified Data.Map as Map
 
 example :: IO ()
 example = do
-    let termX = Term (TermId "x") (Params [])
-        termY = Term (TermId "y") (Params [])
-        termZ = Term (TermId "z") (Params [])
+    let termX = Term (Ident "x") (Params [])
+        termY = Term (Ident "y") (Params [])
+        termZ = Term (Ident "z") (Params [])
         
         -- Statements
         form1 = FormEq termX termY
@@ -23,7 +23,7 @@ example = do
         -- Steps
         steps = [ StepPrem form1
                 , StepPrem form2
-                , StepForm (RuleId "equalityElim") [ArgLit 1, ArgLit 2] conclusion
+                , StepForm (Ident "equalityElim") [ArgLit 1, ArgLit 2] conclusion
                 ]
         
         -- Sequent

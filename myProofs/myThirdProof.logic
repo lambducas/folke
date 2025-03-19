@@ -1,0 +1,25 @@
+
+;
+((P → Q) ∧ (¬R → ¬Q)) → (P → R);
+{
+	{
+		(P -> Q) & (!R -> !Q) : assume;
+		{
+			P : assume;
+			(P -> Q) & (!R -> !Q) : Reiteration [1];
+			P -> Q : OrE [3];
+			Q : ImpE [2, 4];
+			!R -> !Q : AndE [3];
+			{
+				!R : assume;
+				!R -> !Q : Reiteration [6];
+				!Q : ImpE [7, 8];
+				Q : Reiteration [5];
+			}
+			!!R : NegI [7-10];
+			R : NnegE [11];
+		}
+		P -> R : ImpI [2-12];
+	}
+	((P -> Q) & (!R -> !Q)) -> (P -> R) : ImpI [1-13];
+}

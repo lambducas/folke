@@ -670,19 +670,19 @@ evaluateCurrentProof model file sendMsg = do
     -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
     -- sendMsg (BackendResponse answer)
 
-    let text = unpack $ parseProofToFile (_parsedSequent file)
+    let text = unpack $ parseProofForBackend (_parsedSequent file)
     answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
     sendMsg (BackendResponse answer)
 
 -- Empty for now
-exportProof :: File -> Sequent
-exportProof file = Seq [] FormBot []
-  where
-    _feSequent = _parsedSequent file
--- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
+-- exportProof :: File -> Sequent
+-- exportProof file = Seq [] FormBot []
 --   where
---     toStep :: ProofLine -> Step
---     toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
+--     _feSequent = _parsedSequent file
+-- -- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
+-- --   where
+-- --     toStep :: ProofLine -> Step
+-- --     toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
 
 -- Placeholder
 parseProofFromFile :: Text -> FESequent
@@ -737,12 +737,25 @@ parseProofFromFile p = case proof of
       _ -> findClosingBracket text nestedLevel (idx + 1) cnl
       where char = text !! (idx + 1)
 
+parseProofForBackend :: FESequent -> Text
+parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper (SubProof (_steps sequent)) 0
+  where
+    premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
+    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
+
+    exportProofHelper :: FEStep -> Int -> Text
+    exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
+    exportProofHelper (Line statement rule) indent = tabs indent <> rule <> " " <> statement <> ";"
+
+    tabs :: Int -> Text
+    tabs n = pack $ replicate n '\t'
+
 -- Placeholder
 parseProofToFile :: FESequent -> Text
 parseProofToFile sequent = "\n" <> premises <> ";\n" <> conclusion <> ";\n" <> exportProofHelper (SubProof (_steps sequent)) 0
   where
-    premises = intercalate "," (_premises sequent)
-    conclusion = _conclusion sequent
+    premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
+    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
     exportProofHelper :: FEStep -> Int -> Text
     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
@@ -755,8 +768,15 @@ replaceFromLookup :: Text -> SymbolDict -> Text
 replaceFromLookup s [] = s
 replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s ls
 
+replaceFromInverseLookup :: Text -> SymbolDict -> Text
+replaceFromInverseLookup s [] = s
+replaceFromInverseLookup s ((key, value):ls) = replace value key $ replaceFromInverseLookup s ls
+
 replaceSpecialSymbols :: Text -> Text
 replaceSpecialSymbols s = replaceFromLookup s symbolLookup
+
+replaceSpecialSymbolsInverse :: Text -> Text
+replaceSpecialSymbolsInverse s = replaceFromInverseLookup s symbolLookup
 
 removeIdx :: Int -> [a] -> [a]
 removeIdx idx lst = part1 ++ drop 1 part2 where
