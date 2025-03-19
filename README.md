@@ -77,6 +77,13 @@ To run the backend (standard output) and frontend GUI, use the following command
 $ cabal run bsc
 ```
 
+## Run tests
+
+To run tests, use the following command:
+
+```bash
+$ cabal test
+```
 
 ## License?
 

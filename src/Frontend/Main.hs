@@ -26,7 +26,7 @@ import Data.Default ( Default(def) )
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
 import Logic.Abs (Sequent(..), Form(..))
-import Frontend.Communication (startCommunication, evaluateProofSegment)
+import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofString)
 
 symbolLookup :: SymbolDict
 symbolLookup = [
@@ -79,7 +79,7 @@ buildUI _wenv model = widgetTree where
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
- 
+
   widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
         menuBar,
@@ -185,13 +185,15 @@ buildUI _wenv model = widgetTree where
         label prettySequent,
         spacer, spacer, spacer, spacer,
 
-        vscroll $ proofTreeUI parsedSequent,
+        vscroll_ [wheelRate 50] $ proofTreeUI parsedSequent,
         spacer,
 
         hstack [
           proofStatusLabel,
           filler,
-          button "Save proof" (SaveProof file)
+          button "Save proof" (SaveProof file),
+          spacer,
+          button "Check proof" (CheckProof file)
         ]
       ] `styleBasic` [padding 10]
       where
@@ -199,11 +201,10 @@ buildUI _wenv model = widgetTree where
         parsedSequent = _parsedSequent file
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
-  proofStatusLabel = hstack [
-      widgetIf (model ^. proofStatus == Just True) (label "Proof is correct :)" `styleBasic` [textColor lime]),
-      widgetIf (model ^. proofStatus == Just False) (label "Proof is not correct!" `styleBasic` [textColor pink]),
-      widgetIf (model ^. proofStatus == Nothing) (label "Checking proof..." `styleBasic` [textColor orange])
-    ]
+  proofStatusLabel = case model ^. proofStatus of
+    Nothing -> label "Checking proof..." `styleBasic` [textColor orange]
+    Just (Left error) -> label ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
+    Just (Right _) -> label "Proof is correct :)" `styleBasic` [textColor lime]
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
@@ -298,7 +299,9 @@ buildUI _wenv model = widgetTree where
 
               spacer,
 
-              box $ hstack_ [childSpacing] [
+              b
+            ]
+          b = box $ hstack_ [childSpacing] [
                 tooltip "Remove line" $ trashButton (RemoveLine path),
 
                 tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path),
@@ -310,7 +313,7 @@ buildUI _wenv model = widgetTree where
                   tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof))
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
-            ]
+
           pathToParentSubProof = init path
           lastIndex = index + 1
           prevIndexExists = index > 1
@@ -342,8 +345,8 @@ handleEvent wenv node model evt = case evt of
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
-        startCommunication frontendChan backendChan
-        return $ BackendResponse (OtherBackendMessage "Initialized")
+        answer <- startCommunication frontendChan backendChan
+        return $ BackendResponse answer
     ]
 
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
@@ -491,15 +494,11 @@ handleEvent wenv node model evt = case evt of
       getActions fileIndex = [ Model $ model & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
       fileIndex = getProofFileIndexByPath (model ^. tmpLoadedFiles) (_path f)
 
-  SetCurrentFile filePath -> [ Model $ model & currentFile ?~ filePath ]
-
-  BackendResponse (SequentChecked result) -> case result of
-    Left err -> [Message "Error" (pack err)]  -- Add type annotation
-    Right sequent -> [Model $ model & proofStatus ?~ isProofCorrect sequent]
-
-  BackendResponse (StepChecked result) -> case result of
-    Left err -> [Message "Error" (pack err)]  -- Add type annotation
-    Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
+  SetCurrentFile filePath -> [
+      Model $ model
+        & currentFile ?~ filePath
+        & proofStatus .~ Nothing
+    ]
 
   SwitchTheme -> [
       Model $ model & selectedTheme %~ switchTheme
@@ -510,6 +509,30 @@ handleEvent wenv node model evt = case evt of
         | oldTheme == customDarkTheme = customLightTheme
         | otherwise = customLightTheme
 
+  -- Backend events
+  CheckProof file -> [
+      Model $ model & proofStatus .~ Nothing,
+      Producer (evaluateCurrentProof model file)
+    ]
+
+  BackendResponse (StringSequentChecked result) -> case result of
+    Left error -> [ Model $ model & proofStatus ?~ Left error ]
+    Right _ -> [ Model $ model & proofStatus ?~ Right () ]
+
+  BackendResponse (SequentChecked result) -> case result of
+    Left error -> [ Model $ model & proofStatus ?~ Left error ]
+    Right _ -> [ Model $ model & proofStatus ?~ Right () ]
+
+  BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
+
+  -- BackendResponse (SequentChecked result) -> case result of
+  --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
+  --   Right sequent -> [Model $ model & proofStatus ?~ isProofCorrect sequent]
+
+  -- BackendResponse (StepChecked result) -> case result of
+  --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
+  --   Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
+
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]
 
@@ -517,7 +540,7 @@ main :: IO ()
 main = do
   frontendChan <- newChan
   backendChan <- newChan
-  startCommunication frontendChan backendChan
+  _ <- startCommunication frontendChan backendChan
   startApp (model frontendChan backendChan) handleEvent buildUI config
   where
     config = [
@@ -641,19 +664,25 @@ getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
 getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
 
+evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO b) -> IO b
+evaluateCurrentProof model file sendMsg = do
+    -- let sequent = exportProof file
+    -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
+    -- sendMsg (BackendResponse answer)
+
+    let text = unpack $ parseProofToFile (_parsedSequent file)
+    answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
+    sendMsg (BackendResponse answer)
+
 -- Empty for now
-exportProof :: AppModel -> Sequent
-exportProof = const $ Seq [] FormBot []
-
--- evaluateCurrentProof :: AppModel -> IO (Either String Sequent)
--- evaluateCurrentProof model = do
---     let sequent = exportProof model
---     evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
-
+exportProof :: File -> Sequent
+exportProof file = Seq [] FormBot []
+  where
+    _feSequent = _parsedSequent file
 -- exportProof model = Seq [] (FormPred (Pred (PredId (unpack (model ^. conclusion))) (Params []))) (map toStep (model ^. proofLines))
-
--- toStep :: ProofLine -> Step
--- toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
+--   where
+--     toStep :: ProofLine -> Step
+--     toStep line = StepPrem (FormPred (Pred (PredId (unpack (line ^. statement))) (Params [])))
 
 -- Placeholder
 parseProofFromFile :: Text -> FESequent

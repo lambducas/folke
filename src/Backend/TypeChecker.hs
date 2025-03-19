@@ -143,10 +143,17 @@ termIdToString :: Abs.TermId -> String
 termIdToString (Abs.TermId str) = str
 
 handleFrontendMessage :: FrontendMessage -> BackendMessage
+handleFrontendMessage (CheckStringSequent text) =
+    let result = checkString text
+    in case result of
+        Error kind msg -> StringSequentChecked (Left (show kind ++ ": " ++ msg))
+        Ok _ -> StringSequentChecked (Right ())
 handleFrontendMessage (CheckSequent sequent) =
     let result = check sequent
     in case result of
-        Error _ msg -> SequentChecked (Left msg)
-        Ok _ -> SequentChecked (Left "If do not error then the proof is correct frontend do not need to know the sequent again")
+        Error kind msg -> StringSequentChecked (Left (show kind ++ ": " ++ msg))
+        Ok _ -> SequentChecked (Right ())
+handleFrontendMessage (CheckStep _) =
+    StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
