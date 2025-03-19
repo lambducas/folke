@@ -18,7 +18,7 @@ import Shared.Messages
 -}
 data Env =  Env {
     prems :: [Formula],
-    refs :: Map.Map String Formula,
+    refs  :: Map.Map Int Formula,
     rules :: Map.Map String ([Formula]->Formula)
 }
 newEnv :: Env

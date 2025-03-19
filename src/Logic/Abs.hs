@@ -23,7 +23,7 @@ data Step
     | StepForm [Label] Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Arg = ArgRange Integer Integer | ArgSub Step | ArgLit Integer
+data Arg = ArgLit Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form

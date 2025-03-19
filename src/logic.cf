@@ -15,10 +15,6 @@ StepProof.      Step ::= [Label] "{" [Step] "}";
 StepForm.       Step ::= [Label]  Ident "[" [Arg] "]" Form ";";
 terminator      Step "" ;
 
---var x
---const x
-ArgRange. Arg   ::= Integer "-" Integer;
-ArgSub.   Arg   ::= Step;
 ArgLit.   Arg   ::= Integer;
 separator Arg   ",";
 
