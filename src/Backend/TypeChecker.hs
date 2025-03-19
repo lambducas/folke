@@ -12,6 +12,7 @@ import Logic.Par (pSequent, myLexer)
 import Shared.Messages
 import Backend.Types 
 import qualified Backend.Rules as Rules
+import qualified Data.List as List
 {-
     Type containing all enviroment information for the typechecker
 -}
@@ -24,7 +25,12 @@ newEnv :: Env
 newEnv = Env{
     prems = [],
     refs  = Map.empty,
-    rules = Map.fromList[("Reiteration",  Rules.ruleReiteration)]
+    rules = Map.fromList[
+        ("Reiteration",  Rules.ruleReiteration), 
+        ("AndI", Rules.ruleAndIntro),
+        ("AndEL", Rules.ruleAndElimLeft),
+        ("AndER", Rules.ruleAndElimRight)
+        ]
     }
 
 addPrem :: Env -> Formula -> Env
@@ -41,7 +47,7 @@ getRefs env (x: xs) = case getRefs env xs of
     Error kind msg -> Error kind msg
     Ok (forms) -> case Map.lookup x (refs env) of
         Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
-        Just form -> Ok (forms ++ [form])
+        Just form -> Ok ([form] ++ forms)
 
 
 applyRule :: Env -> String -> [Formula] -> Result Formula
@@ -101,7 +107,7 @@ checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Ok (new_env, step_t) -> Ok (Sequent (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
     Error kind msg -> Error kind msg
-    Ok (new_env, step_t) -> case checkProof (addRefs new_env [i| (Abs.Label i) <- labels] step_t) elems of
+    Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
         Error kind msg -> Error kind msg
         Ok seq_t -> Ok seq_t
 
@@ -116,14 +122,14 @@ checkStep env step = case step of
     Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
     Abs.StepAssume   form         -> Error UnknownError "Unimplemented checkStep Assume"
     Abs.StepProof    steps        -> Error UnknownError "Unimplemented checkStep Proof"
-    Abs.StepForm     name args form -> case getRefs env [arg| (Abs.ArgLit arg) <- args] of 
+    Abs.StepForm     name args form -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of 
         Error kind msg -> Error kind msg
         Ok refs_t -> case applyRule env (identToString name) refs_t of 
             Error kind msg -> Error kind msg
             Ok res_t -> case checkForm env form of
                 Error kind msg -> Error kind msg
                 Ok form_t -> if res_t == form_t then Ok (env, res_t) 
-                else Error TypeError "The given result of the rule did not match"
+                else Error TypeError ("The given result of the rule did not match expected " ++ show form_t ++ " got " ++ show res_t ++ ".")
 {-
     Typechecks and Form node
 -}
@@ -145,7 +151,11 @@ checkForm env f = case f of
     Abs.FormAll id form     -> Error UnknownError "Unimplemented checkForm all"
     Abs.FormSome id form    -> Error UnknownError "Unimplemented checkForm some"
     Abs.FormNot form        -> Error UnknownError "Unimplemented checkForm not"
-    Abs.FormAnd form1 form2 -> Error UnknownError "Unimplemented checkForm and"
+    Abs.FormAnd left right -> case checkForm env left of
+        Error kind msg -> Error kind msg
+        Ok left_t -> case checkForm env  right of 
+            Error kind msg -> Error kind msg
+            Ok right_t -> Ok (And left_t right_t)
     Abs.FormOr form1 form2  -> Error UnknownError "Unimplemented checkForm or"
     Abs.FormIf form1 form2  -> Error UnknownError "Unimplemented checkForm if"
 
