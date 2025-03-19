@@ -1,5 +1,5 @@
 module Backend.Types (
-    Sequent(Sequent),
+    Proof(Proof),
     Formula(Pred, And, Or, Not, Bot, Nil),
     Predicate(Predicate),
     Result(Ok, Error),
@@ -7,11 +7,11 @@ module Backend.Types (
 ) where
 data Result a = Ok a | Error ErrorKind String
 
-data Sequent = Sequent [Formula] Formula
-instance Show Sequent where
-    show (Sequent prems conc) = show prems ++ "|-" ++ show conc
-instance Eq Sequent where 
-    Sequent prems1 conc1 == Sequent prems2 conc2 = prems1 == prems2 && conc1 == conc2
+data Proof = Proof [Formula] Formula
+instance Show Proof where
+    show (Proof prems conc) = show prems ++ "|-" ++ show conc
+instance Eq Proof where 
+    Proof prems1 conc1 == Proof prems2 conc2 = prems1 == prems2 && conc1 == conc2
 
 data Formula = 
             Pred Predicate |

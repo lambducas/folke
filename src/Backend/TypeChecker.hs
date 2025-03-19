@@ -98,7 +98,7 @@ check seq_t = do
 {-
     Typechecks and Seq node
 -}
-checkSequent :: Env -> Abs.Sequent -> Result Sequent
+checkSequent :: Env -> Abs.Sequent -> Result Proof
 checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkForms env prems of 
     Error kind msg -> Error kind msg
     Ok prems_t -> case checkForm env conc of 
@@ -106,16 +106,16 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkForms env pr
          Ok conc_t -> case checkProof env proof of
              Error kind msg -> Error kind msg
              Ok proof_t -> do 
-                let seq_t = Sequent prems_t conc_t
+                let seq_t = Proof prems_t conc_t
                 if proof_t == seq_t then Ok seq_t
                 else Error TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ ".")
 
 
-checkProof :: Env -> [Abs.ProofElem] -> Result Sequent
-checkProof env [] = Ok (Sequent (getPrems env) Nil)
+checkProof :: Env -> [Abs.ProofElem] -> Result Proof
+checkProof env [] = Ok (Proof (getPrems env) Nil)
 checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Error kind msg -> Error kind msg
-    Ok (new_env, step_t) -> Ok (Sequent (getPrems new_env) step_t)
+    Ok (new_env, step_t) -> Ok (Proof (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
     Error kind msg -> Error kind msg
     Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
