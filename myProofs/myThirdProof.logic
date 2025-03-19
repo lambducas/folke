@@ -16,10 +16,10 @@
 				!Q : ImpE [7, 8];
 				Q : Reiteration [5];
 			}
-			!!R : NegI [7-10];
+			!!R : NegI [7, 10];
 			R : NnegE [11];
 		}
-		P -> R : ImpI [2-12];
+		P -> R : ImpI [2, 12];
 	}
-	((P -> Q) & (!R -> !Q)) -> (P -> R) : ImpI [1-13];
+	((P -> Q) & (!R -> !Q)) -> (P -> R) : ImpI [1, 13];
 }

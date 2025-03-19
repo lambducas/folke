@@ -266,7 +266,7 @@ buildUI _wenv model = widgetTree where
                 firstKeystroke [
                   ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
                   ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
-                  ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
+                  -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
                   ("Tab", SwitchLineToSubProof path, True),
                   ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
@@ -284,7 +284,7 @@ buildUI _wenv model = widgetTree where
                 firstKeystroke [
                   ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
                   ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-                  ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+                  -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
                   ("Tab", SwitchLineToSubProof path, True),
                   ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
@@ -672,6 +672,7 @@ evaluateCurrentProof model file sendMsg = do
     -- sendMsg (BackendResponse answer)
 
     let text = unpack $ parseProofForBackend (_parsedSequent file)
+    putStrLn text
     answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
     sendMsg (BackendResponse answer)
 
@@ -739,14 +740,14 @@ parseProofFromFile p = case proof of
       where char = text !! (idx + 1)
 
 parseProofForBackend :: FESequent -> Text
-parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper (SubProof (_steps sequent)) 0
+parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] (SubProof (_steps sequent))
   where
     premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
     conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
-    exportProofHelper :: FEStep -> Int -> Text
-    exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
-    exportProofHelper (Line statement rule) indent = tabs indent <> rule <> " " <> statement <> ";"
+    exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
+    exportProofHelper indent path (SubProof p) = tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+    exportProofHelper indent path (Line statement rule) = showt (pathToLineNumber sequent path) <> ":" <> tabs indent <> rule <> " " <> statement <> ";"
 
     tabs :: Int -> Text
     tabs n = pack $ replicate n '\t'
