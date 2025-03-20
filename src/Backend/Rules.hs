@@ -6,13 +6,16 @@ module Backend.Rules (
     ruleOrIntroLeft,
     ruleOrIntroRight,
     ruleOrEilm,
-    ruleThenIntro,
-    ruleThenEilm,
+    ruleIfIntro,
+    ruleIfEilm,
     ruleNotIntro,
     ruleNotEilm,
     ruleBottomElim,
     ruleNotNotIntro,
-    ruleNotNotElim
+    ruleNotNotElim,
+    ruleMT,
+    rulePBC,
+    ruleLEM
 ) where
 
 import qualified Data.List as List
@@ -53,10 +56,14 @@ ruleOrIntroRight forms _  = Error TypeError ("Or introduction takes 1 argument n
 ruleOrEilm:: [Formula] -> Formula -> Result Formula
 ruleOrEilm _ _ = Error TypeError "Or eliminaton is not implemented"
 
-ruleThenIntro:: [Formula] -> Formula -> Result Formula
-ruleThenIntro _ _ = Error TypeError "Or introduction is not implemented"
-ruleThenEilm:: [Formula] -> Formula -> Result Formula
-ruleThenEilm _ _ = Error TypeError "Or eliminaton is not implemented"
+ruleIfIntro:: [Formula] -> Formula -> Result Formula
+ruleIfIntro _ _ = Error TypeError "Or introduction is not implemented"
+ruleIfEilm:: [Formula] -> Formula -> Result Formula
+ruleIfEilm [a, If b c] r = if a == b then if c == r then Ok r
+        else Error TypeError ("Expected result " ++ show r ++ " did not match result of rule " ++ show b ++ ".")
+    else Error TypeError (show a ++ " did not match " ++ show b ++ ".")
+ruleIfEilm [_, _] _  = Error TypeError "Then eliminaton takes a argument on the form A->B"
+ruleIfEilm forms _  = Error TypeError ("Then eliminaton takes 2 argument not" ++ show (List.length forms) ++".")
 
 ruleNotIntro:: [Formula] -> Formula -> Result Formula
 ruleNotIntro _ _ = Error TypeError "Not introduction is not implemented"
@@ -75,3 +82,13 @@ ruleNotNotElim:: [Formula] -> Formula -> Result Formula
 ruleNotNotElim [Not (Not a)] _ = Ok a
 ruleNotNotElim [_a] _ = Error TypeError "Argument needs to be not not"
 ruleNotNotElim forms _  = Error TypeError ("Not not eliminaton takes 1 argument not" ++ show (List.length forms) ++".")
+
+ruleMT:: [Formula] -> Formula -> Result Formula
+ruleMT [If a b, Not c] r@(Not d) = if b == c && a==d then Ok r else Error TypeError "Arguments did not match"
+ruleMT forms _  = Error TypeError ("MT takes 2 argument not" ++ show (List.length forms) ++".")
+
+rulePBC:: [Formula] -> Formula -> Result Formula
+rulePBC _ _ = Error TypeError "MT is not implemented"
+ruleLEM:: [Formula] -> Formula -> Result Formula
+ruleLEM [] r@(Or a (Not b)) = if a == b then Ok r else Error TypeError "Arguments did not match"
+ruleLEM forms _  = Error TypeError ("LEM takes 0 argument not" ++ show (List.length forms) ++".")

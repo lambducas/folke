@@ -33,13 +33,16 @@ newEnv = Env{
         ("OrIL", Rules.ruleOrIntroLeft),
         ("OrIR", Rules.ruleOrIntroRight),
         ("OrE", Rules.ruleOrEilm),
-        ("ThenI", Rules.ruleThenIntro),
-        ("ThenE", Rules.ruleThenEilm),
+        ("IfI", Rules.ruleIfIntro),
+        ("IfE", Rules.ruleIfEilm),
         ("NotI", Rules.ruleNotIntro),
         ("NotE", Rules.ruleNotEilm),
         ("BotE", Rules.ruleBottomElim),
         ("NotNotI", Rules.ruleNotNotIntro),
-        ("NotNotE", Rules.ruleNotNotElim)
+        ("NotNotE", Rules.ruleNotNotElim),
+        ("MT", Rules.ruleMT),
+        ("PBC", Rules.rulePBC),
+        ("LEM", Rules.ruleLEM)
         ]
     }
 
@@ -172,8 +175,11 @@ checkForm env f = case f of
         Ok left_t -> case checkForm env  right of 
             Error kind msg -> Error kind msg
             Ok right_t -> Ok (Or left_t right_t)
-    Abs.FormIf form1 form2  -> Error UnknownError "Unimplemented checkForm if"
-
+    Abs.FormIf left right  -> case checkForm env left of
+         Error kind msg -> Error kind msg
+         Ok left_t -> case checkForm env  right of 
+            Error kind msg -> Error kind msg
+            Ok right_t -> Ok (If left_t right_t)
 {-
     Typechecks and Seq node
 -}
