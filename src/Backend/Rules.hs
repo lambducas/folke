@@ -62,8 +62,8 @@ ruleIfEilm:: [Formula] -> Formula -> Result Formula
 ruleIfEilm [a, If b c] r = if a == b then if c == r then Ok r
         else Error TypeError ("Expected result " ++ show r ++ " did not match result of rule " ++ show b ++ ".")
     else Error TypeError (show a ++ " did not match " ++ show b ++ ".")
-ruleIfEilm [_, _] _  = Error TypeError "Then eliminaton takes a argument on the form A->B"
-ruleIfEilm forms _  = Error TypeError ("Then eliminaton takes 2 argument not" ++ show (List.length forms) ++".")
+ruleIfEilm [_, _] _  = Error TypeError "If eliminaton takes a argument on the form A->B"
+ruleIfEilm forms _  = Error TypeError ("If eliminaton takes 2 argument not" ++ show (List.length forms) ++".")
 
 ruleNotIntro:: [Formula] -> Formula -> Result Formula
 ruleNotIntro _ _ = Error TypeError "Not introduction is not implemented"

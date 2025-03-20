@@ -1,0 +1,8 @@
+(p&q)&r,s&t|-q&s{
+    1: prem (p&q)&r;
+    2: prem s&t;
+    3: AndEL[1] p&q;
+    4: AndER[3] q;
+    5: AndEL[2] s;
+    6: AndI [4,5] q&s;
+}

@@ -1,0 +1,7 @@
+q->(p->r), !r, q |- !p{
+    1: prem q->(p->r);
+    2: prem !r;
+    3: prem q;
+    4: IfE [3,1] p->r;
+    5: MT  [4,2] !p;
+}
