@@ -20,7 +20,14 @@ module Backend.Rules (
 
 import qualified Data.List as List
 import Backend.Types
-
+{-
+    All predefined rules
+    Rules are functions on the form
+    -params: 
+        -List of arguments
+        -Expected result of rule
+    -return: result of rule
+-}
 
 
 ruleReiteration:: [Arg] -> Formula -> Result Formula
