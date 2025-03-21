@@ -1,0 +1,15 @@
+A|B, A->C, B->C |- C{
+    1: prem A|B;
+    2: prem A->C;
+    3: prem B->C;
+
+    4: {
+        41: assume A;
+        42: IfE [41, 2] C;
+    }
+    5: {
+        51: assume B;
+        52: IfE [51, 3] C;
+    }
+    OrE[1,4,5] C;
+}

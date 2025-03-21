@@ -46,6 +46,9 @@ newEnv = Env{
         ]
     }
 
+push :: Env -> Env
+push env = env {prems=[]}
+
 addPrem :: Env -> Formula -> Env
 addPrem env prem = do 
     env{prems = prems env ++ [prem]}
@@ -135,8 +138,12 @@ checkStep env step = case step of
     Abs.StepDecConst id           -> Error UnknownError "Unimplemented checkStep DecConst"
     Abs.StepDecVar   id           -> Error UnknownError "Unimplemented checkStep DecVar"
     Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
-    Abs.StepAssume   form         -> Error UnknownError "Unimplemented checkStep Assume"
-    Abs.StepProof    steps        -> Error UnknownError "Unimplemented checkStep Proof"
+    Abs.StepAssume   form         -> case checkForm env form of
+        Error kind msg -> Error kind msg
+        Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
+    Abs.StepProof   (Abs.Proof steps) -> case checkProof (push env) steps of 
+        Error kind msg -> Error kind msg
+        Ok proof_t -> Ok(env, ArgProof proof_t)
     Abs.StepForm     name args form -> case checkForm env form of
         Error kind msg -> Error kind msg
         Ok form_t -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of
