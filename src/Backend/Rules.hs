@@ -1,5 +1,5 @@
 module Backend.Rules (
-    ruleReiteration,
+    ruleCopy,
     ruleAndIntro,
     ruleAndElimLeft,
     ruleAndElimRight,
@@ -30,9 +30,9 @@ import Backend.Types
 -}
 
 
-ruleReiteration:: [Arg] -> Formula -> Result Formula
-ruleReiteration [ArgForm form] _ = Ok form
-ruleReiteration forms          _ = Error TypeError ("Rule takes 1 argument not " ++ show (List.length forms) ++".")
+ruleCopy:: [Arg] -> Formula -> Result Formula
+ruleCopy [ArgForm form] _ = Ok form
+ruleCopy forms          _ = Error TypeError ("Rule takes 1 argument not " ++ show (List.length forms) ++".")
 
 ruleAndIntro:: [Arg] -> Formula -> Result Formula
 ruleAndIntro [ArgForm a, ArgForm b] _ = Ok (And a b) 

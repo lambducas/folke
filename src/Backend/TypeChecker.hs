@@ -34,7 +34,7 @@ newEnv = Env{
     prems = [],
     refs  = Map.empty,
     rules = Map.fromList[
-        ("Reiteration",  Rules.ruleReiteration), 
+        ("copy",  Rules.ruleCopy), 
         ("AndI", Rules.ruleAndIntro),
         ("AndEL", Rules.ruleAndElimLeft),
         ("AndER", Rules.ruleAndElimRight),

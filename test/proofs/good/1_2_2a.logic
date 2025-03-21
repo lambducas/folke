@@ -1,0 +1,10 @@
+!p->!q|-q->p{
+    1: prem !p->!q;
+    2: {
+        3: assume q;
+        4: NotNotI [3] !!q;
+        5: MT[1,4] !!p;
+        NotNotE[5] p;
+    }
+    IfI[2] q->p;
+}
