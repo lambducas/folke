@@ -191,7 +191,7 @@ checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Ok (_, ArgProof _) -> Error TypeError "Last step in proof was another proof."
     Ok (new_env, ArgForm step_t) -> Ok (Proof (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
-    Error kind msg -> Error kind msg
+    Error kind msg -> Error kind (show (List.reverse["@" ++ show i| (Abs.Label i) <- labels]) ++ msg)
     Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
         Error kind msg -> Error kind msg
         Ok seq_t -> Ok seq_t
@@ -206,19 +206,19 @@ checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
 checkStep :: Env -> Abs.Step -> Result (Env, Arg)
 checkStep env step = case step of 
     Abs.StepPrem     form         -> case checkForm env form of
-        Error kind msg -> Error kind msg
+        Error kind msg -> Error kind ("Inside assumption: "++ msg)
         Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
     Abs.StepDecConst id           -> Error UnknownError "Unimplemented checkStep DecConst"
     Abs.StepDecVar   id           -> Error UnknownError "Unimplemented checkStep DecVar"
     Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
     Abs.StepAssume   form         -> case checkForm env form of
-        Error kind msg -> Error kind msg
+        Error kind msg -> Error kind ("Inside assumption: "++ msg)
         Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
     Abs.StepProof   (Abs.Proof steps) -> case checkProof (push env) steps of 
-        Error kind msg -> Error kind msg
+        Error kind msg -> Error kind ("Inside subproof: "++msg)
         Ok proof_t -> Ok(env, ArgProof proof_t)
     Abs.StepForm     name args form -> case checkForm env form of
-        Error kind msg -> Error kind msg
+        Error kind msg -> Error kind ("While checking given result: " ++ msg)
         Ok form_t -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of
              Error kind msg -> Error kind msg
              Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
