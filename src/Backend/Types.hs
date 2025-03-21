@@ -1,4 +1,5 @@
 module Backend.Types (
+    Arg(ArgProof, ArgForm),
     Proof(Proof),
     Formula(Pred, And, Or, If , Not, Bot, Nil),
     Predicate(Predicate),
@@ -6,6 +7,11 @@ module Backend.Types (
     ErrorKind(TypeError,SyntaxError, UnknownError)
 ) where
 data Result a = Ok a | Error ErrorKind String
+
+data Arg = ArgProof Proof | ArgForm Formula
+instance Show Arg where 
+    show (ArgProof p) = show p 
+    show (ArgForm f) = show f 
 
 data Proof = Proof [Formula] Formula
 instance Show Proof where

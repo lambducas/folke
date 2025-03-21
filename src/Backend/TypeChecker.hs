@@ -18,8 +18,8 @@ import qualified Data.List as List
 -}
 data Env =  Env {
     prems :: [Formula],
-    refs  :: Map.Map Integer Formula,
-    rules :: Map.Map String ([Formula]->Formula->Result Formula)
+    refs  :: Map.Map Integer Arg,
+    rules :: Map.Map String ([Arg]->Formula->Result Formula)
 }
 newEnv :: Env
 newEnv = Env{
@@ -52,18 +52,18 @@ addPrem env prem = do
 getPrems :: Env -> [Formula]
 getPrems env  = prems env
 
-addRefs :: Env -> [Integer] -> Formula -> Env
+addRefs :: Env -> [Integer] -> Arg -> Env
 addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label, form)| label <-labels])}
-getRefs :: Env -> [Integer] -> Result [Formula]
-getRefs env [] = Ok []
+getRefs :: Env -> [Integer] -> Result [Arg]
+getRefs _ [] = Ok []
 getRefs env (x: xs) = case getRefs env xs of
     Error kind msg -> Error kind msg
-    Ok (forms) -> case Map.lookup x (refs env) of
+    Ok forms -> case Map.lookup x (refs env) of
         Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
         Just form -> Ok ([form] ++ forms)
 
 
-applyRule :: Env -> String -> [Formula] -> Formula -> Result Formula
+applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule env name args res = case Map.lookup name (rules env) of
     Nothing   -> Error TypeError ("No rule named " ++ name ++ " exists.") 
     Just rule -> case rule args res of 
@@ -118,7 +118,8 @@ checkProof :: Env -> [Abs.ProofElem] -> Result Proof
 checkProof env [] = Ok (Proof (getPrems env) Nil)
 checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Error kind msg -> Error kind msg
-    Ok (new_env, step_t) -> Ok (Proof (getPrems new_env) step_t)
+    Ok (_, ArgProof _) -> Error TypeError "Last step in proof was another proof."
+    Ok (new_env, ArgForm step_t) -> Ok (Proof (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
     Error kind msg -> Error kind msg
     Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
@@ -126,11 +127,11 @@ checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
         Ok seq_t -> Ok seq_t
 
 
-checkStep :: Env -> Abs.Step -> Result (Env, Formula)
+checkStep :: Env -> Abs.Step -> Result (Env, Arg)
 checkStep env step = case step of 
     Abs.StepPrem     form         -> case checkForm env form of
         Error kind msg -> Error kind msg
-        Ok form_t      -> Ok (addPrem env form_t, form_t)
+        Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
     Abs.StepDecConst id           -> Error UnknownError "Unimplemented checkStep DecConst"
     Abs.StepDecVar   id           -> Error UnknownError "Unimplemented checkStep DecVar"
     Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
@@ -142,7 +143,7 @@ checkStep env step = case step of
              Error kind msg -> Error kind msg
              Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
                 Error kind msg -> Error kind msg
-                Ok res_t -> Ok(env, res_t)
+                Ok res_t -> Ok(env, ArgForm res_t)
 
 
 checkForms :: Env -> [Abs.Form] -> Result [Formula]
