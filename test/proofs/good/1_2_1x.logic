@@ -1,0 +1,19 @@
+p->(q|r), q->s, r->s|- p->s{
+    1: prem p->(q|r);
+    2: prem q->s;
+    3: prem r->s;
+    4: {
+        5: assume p;
+        6: IfE [5, 1] q|r;
+        7: {
+            8: assume q;
+            IfE[8,2] s;
+        }
+        9: {
+            8: assume r;
+            IfE[8,3] s;
+        }
+        OrE[6, 7, 9] s;
+    }
+    IfI[4] p->s;
+}
