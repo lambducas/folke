@@ -70,7 +70,7 @@ applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule env name args res = case Map.lookup name (rules env) of
     Nothing   -> Error TypeError ("No rule named " ++ name ++ " exists.") 
     Just rule -> case rule args res of 
-            Error kind msg -> Error kind msg
+            Error kind msg -> Error kind  ("While applying rule " ++ name ++ ": " ++ msg)
             Ok res_t -> if res_t == res then Ok res_t 
             else Error TypeError ("Wrong conclusion when using rule " ++ name ++ " expected " ++ show res_t ++ " not " ++ show res) 
 {-
