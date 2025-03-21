@@ -72,7 +72,7 @@ applyRule env name args res = case Map.lookup name (rules env) of
     Just rule -> case rule args res of 
             Error kind msg -> Error kind msg
             Ok res_t -> if res_t == res then Ok res_t 
-            else Error TypeError (show res_t ++ " did not match " ++ show res) 
+            else Error TypeError ("Wrong conclusion when using rule " ++ name ++ " expected " ++ show res_t ++ " not " ++ show res) 
 {-
     Type repersenting a type in the typechecker
 -}

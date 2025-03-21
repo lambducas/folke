@@ -1,0 +1,10 @@
+(p->r)&(q->r)|-p&q->r{
+    1: prem (p->r)&(q->r);
+    2: {
+        3: assume p&q;
+        4: AndEL[3] p;
+        5: AndEL[1] p->r;
+        IfE[4, 5] r;
+    }
+    IfI[2] p&q->r;
+}

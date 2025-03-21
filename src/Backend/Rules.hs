@@ -44,17 +44,18 @@ ruleAndElimRight [ArgForm form] _ = case form of
 ruleAndElimRight forms _ = Error TypeError ("And Elimination takes 2 arguments not " ++ show (List.length forms) ++".")
 
 ruleOrIntroLeft:: [Arg] -> Formula -> Result Formula
-ruleOrIntroLeft [ArgForm a]  r@(Or b _) = if a == b then Ok r else Error TypeError (show a ++ "did not match " ++ show b)
+ruleOrIntroLeft [ArgForm a]  r@(Or b _) = if a == b then Ok r else Error TypeError ("Or introduction Error"++ show a ++ "did not match " ++ show b)
 ruleOrIntroLeft [_]  r = Error TypeError (show r ++" is not an an or.")
 ruleOrIntroLeft forms _  = Error TypeError ("Or introduction takes 1 argument not " ++ show (List.length forms) ++".")
 
 ruleOrIntroRight:: [Arg] -> Formula -> Result Formula
-ruleOrIntroRight [ArgForm a]  r@(Or _ b) = if a == b then Ok r else Error TypeError (show a ++ "did not match " ++ show b)
+ruleOrIntroRight [ArgForm a]  r@(Or _ b) = if a == b then Ok r else Error TypeError ("Or introduction Error"++ show a ++ "did not match " ++ show b)
 ruleOrIntroRight [_]  r = Error TypeError (show r ++" is not an an or.")
 ruleOrIntroRight forms _  = Error TypeError ("Or introduction takes 1 argument not " ++ show (List.length forms) ++".")
 
 ruleOrEilm:: [Arg] -> Formula -> Result Formula
-ruleOrEilm [ArgForm (Or a b), ArgProof (Proof [p1] c1), ArgProof (Proof [p2] c2)] _ = if a == p1 && b == p2 && c1 == c2 then Ok c1 else Error TypeError "Error"
+ruleOrEilm [ArgForm (Or a b), ArgProof (Proof [p1] c1), ArgProof (Proof [p2] c2)] _ = if a == p1 && b == p2 && c1 == c2 then Ok c1 
+    else Error TypeError "Or eliminaton Error"
 ruleOrEilm forms _  = Error TypeError ("Or eliminaton takes 3 argument not " ++ show (List.length forms) ++".")
 
 ruleIfIntro:: [Arg] -> Formula -> Result Formula
@@ -64,7 +65,7 @@ ruleIfIntro forms _  = Error TypeError ("If introduction takes 1 argument not " 
 ruleIfEilm:: [Arg] -> Formula -> Result Formula
 ruleIfEilm [ArgForm a, ArgForm (If b c)] r = if a == b then if c == r then Ok r
         else Error TypeError ("Expected result " ++ show r ++ " did not match result of rule " ++ show b ++ ".")
-    else Error TypeError (show a ++ " did not match " ++ show b ++ ".")
+    else Error TypeError ("If eliminaton Error"++ show a ++ " did not match " ++ show b ++ ".")
 ruleIfEilm [_, _] _  = Error TypeError "If eliminaton takes a argument on the form A->B"
 ruleIfEilm forms _  = Error TypeError ("If eliminaton takes 2 argument not " ++ show (List.length forms) ++".")
 
@@ -72,7 +73,7 @@ ruleNotIntro:: [Arg] -> Formula -> Result Formula
 ruleNotIntro [ArgProof (Proof [a] Bot)] _ = Ok (Not a)
 ruleNotIntro forms _  = Error TypeError ("Not introduction takes 1 argument not " ++ show (List.length forms) ++".")
 ruleNotEilm:: [Arg] -> Formula -> Result Formula
-ruleNotEilm [ArgForm a, ArgForm (Not b)] _ = if a == b then Ok Bot else Error TypeError "Error"
+ruleNotEilm [ArgForm a, ArgForm (Not b)] _ = if a == b then Ok Bot else Error TypeError "Not eliminaton error."
 ruleNotEilm forms _  = Error TypeError ("Not eliminaton takes 2 argument not " ++ show (List.length forms) ++".")
 
 ruleBottomElim:: [Arg] -> Formula -> Result Formula
