@@ -29,7 +29,7 @@ data Step
     | StepForm Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Arg = ArgLit Integer
+data Arg = ArgRange Integer Integer | ArgLine Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form
@@ -53,7 +53,7 @@ data Term = Term Ident Params
 data Params = Params [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Label = Label Integer
+data Label = LabelLine Integer | LabelRange Integer Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Nil = Nil

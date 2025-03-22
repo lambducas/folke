@@ -21,7 +21,7 @@ import qualified Data.List as List
 -}
 data Env =  Env {
     prems :: [Formula],
-    refs  :: Map.Map Integer Arg,
+    refs  :: Map.Map Ref Arg,
     rules :: Map.Map String ([Arg]->Formula->Result Formula)
 }
 {-
@@ -89,7 +89,7 @@ getPrems env  = prems env
         - The value of the labels(all labels get the same value)
     -return: Updated environment
 -}
-addRefs :: Env -> [Integer] -> Arg -> Env
+addRefs :: Env -> [Ref] -> Arg -> Env
 addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label, form)| label <-labels])}
 
 {-
@@ -99,7 +99,7 @@ addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label,
         - List of labels
     -return: List of values associated with the labels
 -}
-getRefs :: Env -> [Integer] -> Result [Arg]
+getRefs :: Env -> [Ref] -> Result [Arg]
 getRefs _ [] = Ok []
 getRefs env (x: xs) = case getRefs env xs of
     Error kind msg -> Error kind msg
@@ -191,10 +191,20 @@ checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Ok (_, ArgProof _) -> Error TypeError "Last step in proof was another proof."
     Ok (new_env, ArgForm step_t) -> Ok (Proof (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
-    Error kind msg -> Error kind (show (List.reverse["@" ++ show i| (Abs.Label i) <- labels]) ++ msg)
-    Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
+    Error kind msg -> Error kind (show (List.reverse["@" ++ show i| i <- labels]) ++ msg)
+    Ok (new_env, step_t) -> case checkRefs labels of
         Error kind msg -> Error kind msg
-        Ok seq_t -> Ok seq_t
+        Ok refs -> case checkProof (addRefs new_env refs step_t) elems of
+            Error kind msg -> Error kind msg
+            Ok seq_t -> Ok seq_t
+
+checkRefs :: [Abs.Label] -> Result [Ref]
+checkRefs [] = Ok[]
+checkRefs (label: labels) = case checkRefs labels of 
+    Error kind msg -> Error kind msg
+    Ok refs -> case label of
+        Abs.LabelRange i j -> Ok ([RefRange i j] ++ refs)
+        Abs.LabelLine i    -> Ok ([RefLine i] ++ refs)
 
 {-
     Typechecks a step in a proof, returns the environment becuase we do not change scope between each step.
@@ -219,12 +229,21 @@ checkStep env step = case step of
         Ok proof_t -> Ok(env, ArgProof proof_t)
     Abs.StepForm     name args form -> case checkForm env form of
         Error kind msg -> Error kind ("While checking given result: " ++ msg)
-        Ok form_t -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of
-             Error kind msg -> Error kind msg
-             Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
+        Ok form_t -> case checkArgs env args of
+            Error kind msg -> Error kind msg
+            Ok refs ->case getRefs env refs of
                 Error kind msg -> Error kind msg
-                Ok res_t -> Ok(env, ArgForm res_t)
+                Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
+                    Error kind msg -> Error kind msg
+                    Ok res_t -> Ok(env, ArgForm res_t)
 
+checkArgs :: Env -> [Abs.Arg] -> Result [Ref]
+checkArgs env [] = Ok []
+checkArgs env (arg: args) = case checkArgs env args of 
+    Error kind msg -> Error kind msg
+    Ok refs -> case arg of 
+        Abs.ArgRange i j -> Ok ([RefRange i j] ++ refs)
+        Abs.ArgLine  i   -> Ok ([RefLine i] ++ refs)
 {-
     Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
     -params:

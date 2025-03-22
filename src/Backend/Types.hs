@@ -1,4 +1,5 @@
 module Backend.Types (
+    Ref(RefRange, RefLine),
     Arg(ArgProof, ArgForm),
     Proof(Proof),
     Formula(Pred, And, Or, If , Not, Bot, Nil),
@@ -7,6 +8,10 @@ module Backend.Types (
     ErrorKind(TypeError,SyntaxError, UnknownError)
 ) where
 data Result a = Ok a | Error ErrorKind String
+
+data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)
+
+
 
 data Arg = ArgProof Proof | ArgForm Formula
 instance Show Arg where 

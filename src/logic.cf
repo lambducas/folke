@@ -17,7 +17,8 @@ StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same onl
 StepProof.      Step ::= Proof; 
 StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";
 
-ArgLit.   Arg   ::= Integer;
+ArgRange. Arg   ::= Integer "-" Integer;
+ArgLine.  Arg   ::= Integer;
 separator Arg   ",";
 
 FormBot.  Form4 ::= "bot";
@@ -43,8 +44,9 @@ params. Params ::= Nil;
 
 define params n = Params [];
 
-Label.     Label ::= Integer ":";
-separator  Label "";
+LabelLine.  Label ::= Integer ":";
+LabelRange. Label ::= Integer "-" Integer ":";
+separator   Label "";
 
 --Ugly but works?
 Nil. Nil ::= "";
