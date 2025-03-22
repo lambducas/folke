@@ -6,20 +6,21 @@
 		(P -> Q) & (!R -> !Q) : assume;
 		{
 			P : assume;
-			(P -> Q) & (!R -> !Q) : Reiteration [1];
-			P -> Q : OrE [3];
-			Q : ImpE [2, 4];
-			!R -> !Q : AndE [3];
+			(P -> Q) & (!R -> !Q) : copy [1];
+			P -> Q : AndEL [3];
+			Q : IfE [2, 4];
+			!R -> !Q : AndER [3];
 			{
 				!R : assume;
-				!R -> !Q : Reiteration [6];
-				!Q : ImpE [7, 8];
-				Q : Reiteration [5];
+				!R -> !Q : copy [6];
+				!Q : IfE [7, 8];
+				Q : copy [5];
+				bot : NotE [10, 9];
 			}
-			!!R : NegI [7, 10];
-			R : NnegE [11];
+			!!R : NotI [7-11];
+			R : NotNotE [12];
 		}
-		P -> R : ImpI [2, 12];
+		P -> R : IfI [2-13];
 	}
-	((P -> Q) & (!R -> !Q)) -> (P -> R) : ImpI [1, 13];
+	((P -> Q) & (!R -> !Q)) -> (P -> R) : IfI [1-14];
 }

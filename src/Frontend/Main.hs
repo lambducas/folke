@@ -746,7 +746,10 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
     conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
     exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
-    exportProofHelper indent path (SubProof p) = tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+    exportProofHelper indent path (SubProof p) = label <> tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+      where label = if null path then
+              "" else
+              showt (pathToLineNumber sequent (path ++ [0])) <> "-" <> showt (pathToLineNumber sequent (path ++ [length p - 1])) <> ":"
     exportProofHelper indent path (Line statement rule) = showt (pathToLineNumber sequent path) <> ":" <> tabs indent <> rule <> " " <> statement <> ";"
 
     tabs :: Int -> Text

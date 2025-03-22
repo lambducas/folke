@@ -21,7 +21,7 @@ import qualified Data.List as List
 -}
 data Env =  Env {
     prems :: [Formula],
-    refs  :: Map.Map Integer Arg,
+    refs  :: Map.Map String Arg,
     rules :: Map.Map String ([Arg]->Formula->Result Formula)
 }
 {-
@@ -89,7 +89,7 @@ getPrems env  = prems env
         - The value of the labels(all labels get the same value)
     -return: Updated environment
 -}
-addRefs :: Env -> [Integer] -> Arg -> Env
+addRefs :: Env -> [String] -> Arg -> Env
 addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label, form)| label <-labels])}
 
 {-
@@ -99,12 +99,12 @@ addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label,
         - List of labels
     -return: List of values associated with the labels
 -}
-getRefs :: Env -> [Integer] -> Result [Arg]
+getRefs :: Env -> [String] -> Result [Arg]
 getRefs _ [] = Ok []
 getRefs env (x: xs) = case getRefs env xs of
     Error kind msg -> Error kind msg
     Ok forms -> case Map.lookup x (refs env) of
-        Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
+        Nothing -> Error TypeError ("No ref " ++ x ++ " exists.") 
         Just form -> Ok ([form] ++ forms)
 
 {-
@@ -191,8 +191,8 @@ checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Ok (_, ArgProof _) -> Error TypeError "Last step in proof was another proof."
     Ok (new_env, ArgForm step_t) -> Ok (Proof (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
-    Error kind msg -> Error kind (show (List.reverse["@" ++ show i| (Abs.Label i) <- labels]) ++ msg)
-    Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label i) <- labels]) step_t) elems of
+    Error kind msg -> Error kind (show (List.reverse["@" ++ i | (Abs.Label (Abs.LabelToken i)) <- labels]) ++ msg)
+    Ok (new_env, step_t) -> case checkProof (addRefs new_env (List.reverse[i| (Abs.Label (Abs.LabelToken i)) <- labels]) step_t) elems of
         Error kind msg -> Error kind msg
         Ok seq_t -> Ok seq_t
 
@@ -219,7 +219,7 @@ checkStep env step = case step of
         Ok proof_t -> Ok(env, ArgProof proof_t)
     Abs.StepForm     name args form -> case checkForm env form of
         Error kind msg -> Error kind ("While checking given result: " ++ msg)
-        Ok form_t -> case getRefs env ([arg| (Abs.ArgLit arg) <- args]) of
+        Ok form_t -> case getRefs env ([arg | (Abs.ArgLit (Abs.LabelToken arg)) <- args]) of
              Error kind msg -> Error kind msg
              Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
                 Error kind msg -> Error kind msg
