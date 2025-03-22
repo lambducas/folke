@@ -57,8 +57,8 @@ common warnings
 library
     import:           warnings
     exposed-modules:  Backend.TypeChecker
+                    , Backend.Environment
                     , Backend.Types
-                    , Backend.Rules
                     , Logic.Abs
                     , Logic.Par
                     , Logic.Lex
@@ -91,7 +91,7 @@ executable bsc
                     , array
     other-modules:
                       Backend.TypeChecker
-                    , Backend.Rules
+                    , Backend.Environment
                     , Backend.Types
                     , Shared.Messages
                     , Example

@@ -10,120 +10,9 @@ import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 import Shared.Messages
+import Backend.Environment
 import Backend.Types 
-import qualified Backend.Rules as Rules
 import qualified Data.List as List
-{-
-    Type containing all environment information for an instace of the typechecker.
-    -prems: Contains a list of all premises/assumptions in the current scope in the order they were introduced
-    -refs:  References to all labeld steps in the proof. 
-    -rules: All rules 
--}
-data Env =  Env {
-    prems :: [Formula],
-    refs  :: Map.Map Ref Arg,
-    rules :: Map.Map String ([Arg]->Formula->Result Formula)
-}
-{-
-    Creates a new environment
-    -params:
-    -return: New environment
--}
-newEnv :: Env
-newEnv = Env{
-    prems = [],
-    refs  = Map.empty,
-    rules = Map.fromList[
-        ("copy",  Rules.ruleCopy), 
-        ("AndI", Rules.ruleAndIntro),
-        ("AndEL", Rules.ruleAndElimLeft),
-        ("AndER", Rules.ruleAndElimRight),
-        ("OrIL", Rules.ruleOrIntroLeft),
-        ("OrIR", Rules.ruleOrIntroRight),
-        ("OrE", Rules.ruleOrEilm),
-        ("IfI", Rules.ruleIfIntro),
-        ("IfE", Rules.ruleIfEilm),
-        ("NotI", Rules.ruleNotIntro),
-        ("NotE", Rules.ruleNotEilm),
-        ("BotE", Rules.ruleBottomElim),
-        ("NotNotI", Rules.ruleNotNotIntro),
-        ("NotNotE", Rules.ruleNotNotElim),
-        ("MT", Rules.ruleMT),
-        ("PBC", Rules.rulePBC),
-        ("LEM", Rules.ruleLEM)
-        ]
-    }
-{-
-    Pushes an new context to the environment, used when entering a box
-    -params:
-        -Old environment
-    -return: Updated environment
-    -}
-push :: Env -> Env
-push env = env {prems=[]}
-
-{-
-    Adds an premise/assumption to the environment
-    -params:
-        - Old environment
-        - Premise/assumption to be added
-    -return: Updated environment
--}
-addPrem :: Env -> Formula -> Env
-addPrem env prem = do 
-    env{prems = prems env ++ [prem]}
-{-
-    Returns all premises/assumptions in the current scope
-    -params:
-        - Environment
-    -return: List of all premises/assumptions 
--}
-getPrems :: Env -> [Formula]
-getPrems env  = prems env
-
-{-
-    Adds references
-    -params:
-        - Old environment
-        - List of labels
-        - The value of the labels(all labels get the same value)
-    -return: Updated environment
--}
-addRefs :: Env -> [Ref] -> Arg -> Env
-addRefs env labels form = env{refs = Map.union (refs env) (Map.fromList [(label, form)| label <-labels])}
-
-{-
-    Returns the values corresponding to the refrenses in an list
-    -params:
-        - Environment
-        - List of labels
-    -return: List of values associated with the labels
--}
-getRefs :: Env -> [Ref] -> Result [Arg]
-getRefs _ [] = Ok []
-getRefs env (x: xs) = case getRefs env xs of
-    Error kind msg -> Error kind msg
-    Ok forms -> case Map.lookup x (refs env) of
-        Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
-        Just form -> Ok ([form] ++ forms)
-
-{-
-    Applies rule to a given list of arguments will return error if expected result dont match result.
-    -params:
-        - Environment
-        - Name of the rule
-        - List of arguments to apply to the rule
-        - Expected result of the application
-    -return: The result of the application of the rule
--}
-applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
-applyRule env name args res = case Map.lookup name (rules env) of
-    Nothing   -> Error TypeError ("No rule named " ++ name ++ " exists.") 
-    Just rule -> case rule args res of 
-            Error kind msg -> Error kind  ("While applying rule " ++ name ++ ": " ++ msg)
-            Ok res_t -> if res_t == res then Ok res_t 
-            else Error TypeError ("Wrong conclusion when using rule " ++ name ++ " expected " ++ show res_t ++ " not " ++ show res) 
-
 {-
     Runs the parser and then the typechecker on a given string
     -params:
@@ -269,12 +158,16 @@ checkForms env (form:forms) = case checkForm env form of
 checkForm :: Env -> Abs.Form -> Result Formula
 checkForm env f = case f of  
     Abs.FormBot             -> Ok Bot
-    Abs.FormEq term1 term2  -> Error UnknownError "Unimplemented checkForm eq"
-    Abs.FormPred pred       -> case checkPred env pred of
-        Error kind msg  -> Error kind msg
-        Ok pred_t       -> Ok (Pred pred_t)
-    Abs.FormAll id form     -> Error UnknownError "Unimplemented checkForm all"
-    Abs.FormSome id form    -> Error UnknownError "Unimplemented checkForm some"
+    Abs.FormEq a b -> case checkTerm env a of
+        Error kind msg -> Error kind msg
+        Ok a_t -> case checkTerm env b of 
+            Error kind msg -> Error kind msg
+            Ok b_t -> Ok (Eq a_t b_t)
+    Abs.FormPred pred -> case checkPred env pred of
+        Error kind msg -> Error kind msg
+        Ok pred_t      -> Ok (Pred pred_t)
+    Abs.FormAll id form -> Error UnknownError "Unimplemented checkForm all"
+    Abs.FormSome id form -> Error UnknownError "Unimplemented checkForm some"
     Abs.FormNot form        -> case checkForm env form of
         Error kind msg -> Error kind msg
         Ok form_t -> Ok (Not form_t)
@@ -306,8 +199,8 @@ checkPred env (Abs.Pred id (Abs.Params params)) = Ok (Predicate (identToString i
 {-
     Typechecks a term
 -}
-checkTerm :: Env -> Abs.Term -> Result ()
-checkTerm env term = Error UnknownError "Unimplemented checkTerm"  
+checkTerm :: Env -> Abs.Term -> Result Term
+checkTerm env (Abs.Term id (Abs.Params params)) = Ok (Term (identToString id))
 
 {-
     Typechecks a list of parameters of an predicate or term

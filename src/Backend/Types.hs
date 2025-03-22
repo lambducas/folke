@@ -2,16 +2,16 @@ module Backend.Types (
     Ref(RefRange, RefLine),
     Arg(ArgProof, ArgForm),
     Proof(Proof),
-    Formula(Pred, And, Or, If , Not, Bot, Nil),
+    Formula(Pred, And, Or, If , Eq, Not, Bot, Nil),
     Predicate(Predicate),
+    Term(Term),
     Result(Ok, Error),
-    ErrorKind(TypeError,SyntaxError, UnknownError)
+    ErrorKind(TypeError,SyntaxError, UnknownError),
+    replaceTerm
 ) where
 data Result a = Ok a | Error ErrorKind String
 
 data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)
-
-
 
 data Arg = ArgProof Proof | ArgForm Formula
 instance Show Arg where 
@@ -26,25 +26,28 @@ instance Eq Proof where
 
 data Formula = 
             Pred Predicate |
-            And Formula Formula |
-            Or  Formula Formula |
-            If  Formula Formula |
-            Not Formula |
-            Bot |
+            And  Formula Formula |
+            Or   Formula Formula |
+            If   Formula Formula |
+            Eq   Term Term |
+            Not  Formula |
+            Bot  |
             Nil
 instance Show Formula where
     show (Pred a) = show a
     show (And a b) = show a ++ "&" ++ show b
     show (Or a b) = show a ++ "|" ++ show b
     show (If a b) = show a ++ "->" ++ show b
+    show (Eq a b) = show a ++ "=" ++ show b
     show (Not a) = "!" ++ show a
     show Bot  = "bot"
     show Nil = "Nil"
 instance Eq Formula where 
+    Pred a == Pred b = a==b
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
     Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
     If a1 a2 == If b1 b2 = a1 == b1 && a2 == b2
-    Pred a == Pred b = a==b
+    Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2 
     Not a == Not b = a==b
     Bot == Bot = True
     Nil == Nil = True
@@ -57,4 +60,30 @@ instance Show Predicate where
 instance Eq Predicate where 
     Predicate a == Predicate b = a == b
 
+data Term = Term String
+instance Show Term where
+    show (Term name) = name
+instance Eq Term where 
+    Term a == Term b = a == b
+
+
 data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
+
+{-
+    replaces all instances of term t in f with the variable x
+    -params:
+        - t
+        - x
+        - f
+    -return: f[t/x]
+-}
+replaceTerm:: Term -> Term -> Formula -> Formula
+replaceTerm t x f = case f of
+    Pred p -> Pred p --Check parameters
+    And l r -> And (replaceTerm t x l) (replaceTerm t x r)
+    Or l r -> Or (replaceTerm t x l) (replaceTerm t x r)
+    If l r -> If (replaceTerm t x l) (replaceTerm t x r)
+    Eq l r -> Eq (if l == t then x else l) (if r == t then x else r)--Check parameters
+    Not a -> Not (replaceTerm t x a)
+    Bot -> Bot
+    Nil -> Nil
