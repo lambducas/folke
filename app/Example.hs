@@ -3,8 +3,8 @@ module Example (
 ) where
 
 import Backend.TypeChecker
-import qualified Logic.Abs as Abs
 import Backend.Types
+import qualified Logic.Abs as Abs
 
 example :: IO ()
 example = do
@@ -23,7 +23,7 @@ example = do
         -- Steps
         steps = [ Abs.StepPrem form1
                 , Abs.StepPrem form2
-                , Abs.StepForm (Abs.Ident "equalityElim") [Abs.ArgLit 1, Abs.ArgLit 2] conclusion
+                , Abs.StepForm (Abs.Ident "equalityElim") [Abs.ArgLine 1, Abs.ArgLine 2] conclusion
                 ]
 
         proof = Abs.Proof (map (Abs.ProofElem []) steps)
