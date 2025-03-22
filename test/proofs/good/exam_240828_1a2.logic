@@ -1,0 +1,19 @@
+!(p->q)|- p | !q{
+    1: prem !(p->q);
+    2: LEM[] q|!q;
+    3-8: {
+        3: assume q;
+        4-5:{
+            4: assume p;
+            5: copy[3] q;
+        }
+        6: IfI[4-5] p->q;
+        7: NotE[6,1] bot;
+        8: BotE[7] p | !q;
+    }
+    9-10: {
+        9: assume !q;
+        10: OrIR[9] p | !q;
+    }
+    11: OrE[2,3-8,9-10] p | !q;
+}

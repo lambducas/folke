@@ -1,0 +1,24 @@
+|-((p->q)->p)->((q->p)|p){
+    1-13: {
+        1: assume ((p->q)->p);
+        2: LEM[] p | !p;
+        3-4: {
+            3: assume p;
+            4: OrIR[3] (q->p)|p;
+        }
+        5-12: {
+            5: assume !p;
+            6-8: {
+                6: assume p;
+                7: NotE[6,5] bot;
+                8: BotE[7] q;
+            }
+            9: IfI[6-8] p->q;
+            10: IfE[9,1] p;
+            11: NotE[10,5] bot;
+            12: BotE[11] (q->p)|p;
+        }
+        13: OrE[2,3-4,5-12] (q->p)|p;
+    }
+    14: IfI[1-13] ((p->q)->p)->((q->p)|p);
+}

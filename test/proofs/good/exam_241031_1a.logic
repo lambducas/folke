@@ -1,0 +1,15 @@
+p->(q->r), p|r, !q->!p |-r{
+    1: prem p->(q->r);
+    2: prem p|r;
+    3: prem !q->!p;
+    4-9: {
+        4: assume p;
+        5: NotNotI[4] !!p;
+        6: MT[3, 5] !!q;
+        7: NotNotE[6] q;
+        8: IfE[4,1] q->r;
+        9: IfE[7, 8] r;
+    }
+    10-10: {assume r;}
+    11: OrE[2,4-9,10-10] r;
+}
