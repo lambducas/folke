@@ -1,0 +1,25 @@
+!(p -> !q) |- (p & q) {
+1:	prem !(p -> !q);
+2-7:	{
+2:		assume !p;
+3-5:		{
+3:			assume p;
+4:			NotE [3, 2] bot;
+5:			BotE [4] !q;
+		}
+6:		IfI [3-5] (p -> !q);
+7:		NotE [6, 1] bot;
+	}
+8:	PBC [2-7] p;
+9-13:	{
+9:		assume !q;
+10-11:		{
+10:			assume p;
+11:			copy [9] !q;
+		}
+12:		IfI [10-11] (p -> !q);
+13:		NotE [12, 1] bot;
+	}
+14:	PBC [9-13] q;
+15:	AndI [8, 14] (p & q);
+}
