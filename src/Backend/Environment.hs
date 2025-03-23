@@ -53,6 +53,7 @@ newEnv = Env{
         ("PBC", rulePBC),
         ("LEM", ruleLEM),
         ("EqI", ruleEqI),
+        ("EqE", ruleEqE),
         ("AllE", ruleAllE),
         ("AllI", ruleAllI),
         ("SomeE", ruleSomeE),
@@ -240,8 +241,8 @@ ruleNotNotElim _ forms                   _ = Error TypeError ("Rule takes 1 argu
 
 ruleMT:: Env-> [Arg] -> Formula -> Result Formula
 ruleMT _ [ArgForm (If a b), ArgForm (Not c)] _ = if b == c then Ok (Not a) else Error TypeError "Conclusion in argument 1 did not match argument 2"
-ruleMT _ [ArgForm (If a b), ArgForm _]       _ = Error TypeError "Argument 2 need to be a not formula."
-ruleMT _ [ArgForm (If a b), _]               _ = Error TypeError "Argument 2 need to be a formula."
+ruleMT _ [ArgForm (If _ _), ArgForm _]       _ = Error TypeError "Argument 2 need to be a not formula."
+ruleMT _ [ArgForm (If _ _), _]               _ = Error TypeError "Argument 2 need to be a formula."
 ruleMT _ [ArgForm _, _ ]                     _ = Error TypeError "Argument 1 need to be a if then formula."
 ruleMT _ [_, _]                              _ = Error TypeError "Argument 1 need to be a formula."
 ruleMT _ forms                               _  = Error TypeError ("Rule takes 2 argument not " ++ show (List.length forms) ++".")
