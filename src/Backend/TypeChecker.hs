@@ -166,8 +166,12 @@ checkForm env f = case f of
     Abs.FormPred pred -> case checkPred env pred of
         Error kind msg -> Error kind msg
         Ok pred_t      -> Ok (Pred pred_t)
-    Abs.FormAll id form -> Error UnknownError "Unimplemented checkForm all"
-    Abs.FormSome id form -> Error UnknownError "Unimplemented checkForm some"
+    Abs.FormAll id form -> case checkForm env form of
+        Error kind msg -> Error kind msg
+        Ok term_t -> Ok (All (Term (identToString id) []) term_t)
+    Abs.FormSome id form -> case checkForm env form of
+        Error kind msg -> Error kind msg
+        Ok term_t -> Ok (All (Term (identToString id) []) term_t)
     Abs.FormNot form        -> case checkForm env form of
         Error kind msg -> Error kind msg
         Ok form_t -> Ok (Not form_t)
@@ -194,20 +198,27 @@ checkForm env f = case f of
     -return: The type of the predicate
 -}
 checkPred :: Env -> Abs.Pred -> Result Predicate
-checkPred env (Abs.Pred id (Abs.Params params)) = Ok (Predicate (identToString id)) 
+checkPred env (Abs.Pred id (Abs.Params terms)) = case checkTerms env terms of 
+    Error kind msg -> Error kind msg
+    Ok terms_t -> Ok (Predicate (identToString id) terms_t) 
 
 {-
     Typechecks a term
 -}
 checkTerm :: Env -> Abs.Term -> Result Term
-checkTerm env (Abs.Term id (Abs.Params params)) = Ok (Term (identToString id))
-
+checkTerm env (Abs.Term id (Abs.Params terms)) = case checkTerms env terms of 
+    Error kind msg -> Error kind msg
+    Ok terms_t -> Ok (Term (identToString id) terms_t) 
 {-
-    Typechecks a list of parameters of an predicate or term
+    Typechecks a list of terms of an predicate or term
 -}
-checkParams :: Env -> Abs.Params -> Result ()
-checkParams env params =  Error UnknownError "Unimplemented checkParams"
-
+checkTerms :: Env -> [Abs.Term] -> Result [Term]
+checkTerms _ [] = Ok []
+checkTerms env (x: xs) = case checkTerm env x of
+    Error kind msg -> Error kind msg
+    Ok term_t -> case checkTerms env xs of 
+        Error kind msg -> Error kind msg
+        Ok  terms_t -> Ok( [term_t] ++ terms_t)
 {-
     Converts identifier to string
     -params:

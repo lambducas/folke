@@ -1,8 +1,9 @@
+{-# LANGUAGE InstanceSigs #-}
 module Backend.Types (
     Ref(RefRange, RefLine),
     Arg(ArgProof, ArgForm),
     Proof(Proof),
-    Formula(Pred, And, Or, If , Eq, Not, Bot, Nil),
+    Formula(Pred, And, Or, If , Eq, All, Some, Not, Bot, Nil),
     Predicate(Predicate),
     Term(Term),
     Result(Ok, Error),
@@ -30,6 +31,8 @@ data Formula =
             Or   Formula Formula |
             If   Formula Formula |
             Eq   Term Term |
+            All Term Formula |
+            Some Term Formula |
             Not  Formula |
             Bot  |
             Nil
@@ -54,17 +57,20 @@ instance Eq Formula where
     _ == _ = False
 
 
-data Predicate = Predicate String 
+data Predicate = Predicate String [Term]
 instance Show Predicate where
-    show (Predicate name) = name
+    show (Predicate name []) = name
+    show (Predicate name terms) = name ++ "("++ show terms ++")"
 instance Eq Predicate where 
-    Predicate a == Predicate b = a == b
+    (==) :: Predicate -> Predicate -> Bool
+    Predicate a as == Predicate b bs = a == b && as == bs
 
-data Term = Term String
+data Term = Term String [Term]
 instance Show Term where
-    show (Term name) = name
+    show (Term name []) = name
+    show (Term name terms) = name ++ "("++ show terms ++")"
 instance Eq Term where 
-    Term a == Term b = a == b
+    Term a as == Term b bs = a == b && as == bs
 
 
 data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
