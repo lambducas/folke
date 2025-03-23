@@ -4,6 +4,9 @@
 - Add an assets folder in `Frontend/` and remove `assets/` in root directory.
 - Write examples of backend-frontend communication.
 
+## IDEAS
+- Use reference counting to check that all parts of the proof is used.
+- Latex output for proofs.
 ## Directory Structure
 
 ```

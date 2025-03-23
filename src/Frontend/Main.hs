@@ -16,17 +16,19 @@ import Control.Lens
 import Control.Concurrent (threadDelay, Chan, newChan)
 import Control.Exception (try, SomeException (SomeException))
 import TextShow ( TextShow(showt) )
-import System.Directory ( doesFileExist, listDirectory )
+import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist )
 import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
-import Data.List (find, dropWhileEnd, findIndex, sort)
+import Data.List (find, dropWhileEnd, findIndex, sort, groupBy)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe, isNothing, catMaybes)
 import Data.Default ( Default(def) )
 
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
-import Logic.Abs (Sequent(..), Form(..))
+import qualified Logic.Abs as Abs
 import Frontend.Communication (startCommunication, evaluateProofSegment, evaluateProofString)
+import Logic.Par (pSequent, myLexer)
+import Control.Monad (filterM, (<$!>))
 
 symbolLookup :: SymbolDict
 symbolLookup = [
@@ -140,15 +142,39 @@ buildUI _wenv model = widgetTree where
               keystroke [("Enter", cep)] $ button "Create proof" cep
           ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor],
-      vstack $ map fileItem files
+      vscroll $ fileTreeUI parts 1
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
-    where files = sort (model ^. filesInDirectory)
+    where
+      parts = map (\f -> (splitOn "/" (pack f), f)) files
+      files = sort (model ^. filesInDirectory)
 
-  fileItem filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
-      label $ pack filePath
+      fileTreeUI parts indent = vstack [
+          vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
+          vstack $ map folder groups
+        ]
+        where
+          -- parts = map (\f -> (splitOn "/" (pack f), f)) files
+          partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
+          partFolder = filter (\i -> length (fst i) > 1) parts
+          groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+          
+          folder seqs = vstack [
+              hstack [
+                label ((head . fst . head) seqs),
+                iconLabel remixFolder5Line `styleBasic` [paddingL 8]
+              ] `styleBasic` [paddingL (16 * indent), paddingV 8],
+              fileTreeUI newParts (indent + 1)
+            ]
+            where
+              newParts = map (\f -> ((tail . fst) f, snd f)) seqs
+              -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
+              -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
+
+  fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
+      label_ text [ellipsis]
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 dividerColor, paddingH 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
+      `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
       isCurrent = (model ^. currentFile) == Just filePath
 
@@ -436,11 +462,39 @@ handleEvent wenv node model evt = case evt of
       Producer (\sendMsg -> do
         pContent <- readFile ("./myProofs/" <> filePath)
         let pContentText = pack pContent
-            pParsedContent = parseProofFromFile pContentText
+            -- pParsedContent = parseProofFromFile pContentText
             pIsEdited = False
-        sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
+        case pSequent (myLexer pContent) of
+          Left _err -> sendMsg (OpenFileSuccess $ File filePath pContentText (FESequent [] "" [Line "Invalid" ""]) pIsEdited)
+          Right seq_t -> sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
+            where pParsedContent = convertSeq seq_t
       )
     ]
+    where
+      convertSeq (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
+
+      convertForm Abs.FormBot = "bot"
+      -- convertForm (Abs.FormEq a b) = (convertForm a) <> " = " <> (convertForm b)
+      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
+      -- convertForm (Abs.FormAll a b) = "#"
+      -- convertForm (Abs.FormSome a b) = "#"
+      convertForm (Abs.FormNot a) = "!" <> convertForm a
+      convertForm (Abs.FormAnd a b) = "(" <> convertForm a <> " & " <> convertForm b <> ")"
+      convertForm (Abs.FormOr a b) = "(" <> convertForm a <> " | " <> convertForm b <> ")"
+      convertForm (Abs.FormIf a b) = "(" <> convertForm a <> " -> " <> convertForm b <> ")"
+      convertForm s = error (show s)
+
+      convertProof (Abs.Proof proofElems) = map convertProofElem proofElems
+      convertProofElem (Abs.ProofElem _labels step) = convertStep step
+
+      convertStep (Abs.StepPrem form) = Line (convertForm form) "prem"
+      convertStep (Abs.StepAssume form) = Line (convertForm form) "assume"
+      convertStep (Abs.StepProof proof) = SubProof (convertProof proof)
+      convertStep (Abs.StepForm (Abs.Ident i) args form) = Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")
+      convertStep s = error (show s)
+
+      convertArg (Abs.ArgLine i) = showt i
+      convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
@@ -486,7 +540,8 @@ handleEvent wenv node model evt = case evt of
       )
     ]
     where
-      content = unpack $ parseProofToFile $ _parsedSequent f
+      content = unpack $ parseProofForBackend $ _parsedSequent f
+      -- content = unpack $ parseProofToFile $ _parsedSequent f
       fileName = _path f
 
   SaveProofSuccess f -> actions
@@ -642,15 +697,32 @@ customDarkTheme = baseTheme darkThemeColors {
 
 directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer sendMsg = do
-  allFileNames <- listDirectory "./myProofs"
+  let dir = "./myProofs"
+  allFileNames <- fmap (map (drop (length dir + 1))) (listDirectoryRecursive dir)
+  -- onlyFiles <- filterM (doesFileExist . (dir++)) allFileNames
+  -- onlyDirs <- filterM (doesDirectoryExist . (dir++)) allFileNames
   sendMsg (SetFilesInDirectory allFileNames)
 
   threadDelay $ 2 * seconds
   directoryFilesProducer sendMsg
     where seconds = 1000 * 1000
 
+listDirectoryRecursive :: FilePath -> IO [FilePath]
+listDirectoryRecursive directory = do
+  content <- listDirectory directory
+  onlyFiles <- filterM doesFileExist (map appendTop content)
+  onlyDirs <- filterM doesDirectoryExist (map appendTop content)
+  extraFiles <- fmap concat (mapM listDirectoryRecursive onlyDirs)
+  return $ onlyFiles ++ extraFiles
+    where
+      appendTop :: FilePath -> FilePath
+      appendTop = ((directory ++ "/") ++)
+
 h1 :: Text -> WidgetNode s e
 h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
+
+iconLabel :: Text -> WidgetNode s e
+iconLabel icon = label icon `styleBasic` [textFont "Remix", textBottom]
 
 iconButton :: Text -> AppEvent -> WidgetNode AppModel AppEvent
 iconButton iconIdent action = button iconIdent action
@@ -746,8 +818,13 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
     conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
     exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
-    exportProofHelper indent path (SubProof p) = tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
-    exportProofHelper indent path (Line statement rule) = showt (pathToLineNumber sequent path) <> ":" <> tabs indent <> rule <> " " <> statement <> ";"
+    exportProofHelper indent path (SubProof p) = label <> tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+      where label = if null p || null path then "" else showt (pathToLineNumber sequent (path ++ [0])) <> "-" <> showt (pathToLineNumber sequent (path ++ [length p - 1])) <> ":"
+    exportProofHelper indent path (Line statement rule) = label <> tabs indent <> nRule <> " " <> nStatement <> ";"
+      where
+        nRule = replaceSpecialSymbolsInverse rule
+        nStatement = replaceSpecialSymbolsInverse statement
+        label = showt (pathToLineNumber sequent path) <> ":"
 
     tabs :: Int -> Text
     tabs n = pack $ replicate n '\t'

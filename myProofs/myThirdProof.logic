@@ -1,25 +1,23 @@
-
-;
-((P -> Q) & (!R -> !Q)) -> (P -> R);
-{
-	{
-		(P -> Q) & (!R -> !Q) : assume;
-		{
-			P : assume;
-			(P -> Q) & (!R -> !Q) : Reiteration [1];
-			P -> Q : OrE [3];
-			Q : ImpE [2, 4];
-			!R -> !Q : AndE [3];
-			{
-				!R : assume;
-				!R -> !Q : Reiteration [6];
-				!Q : ImpE [7, 8];
-				Q : Reiteration [5];
+ |- (((P -> Q) & (!R -> !Q)) -> (P -> R)) {
+1-14:	{
+1:		assume ((P -> Q) & (!R -> !Q));
+2-13:		{
+2:			assume P;
+3:			copy [1] ((P -> Q) & (!R -> !Q));
+4:			AndEL [3] (P -> Q);
+5:			IfE [2, 4] Q;
+6:			AndER [3] (!R -> !Q);
+7-11:			{
+7:				assume !R;
+8:				copy [6] (!R -> !Q);
+9:				IfE [7, 8] !Q;
+10:				copy [5] Q;
+11:				NotE [10, 9] bot;
 			}
-			!!R : NegI [7, 10];
-			R : NnegE [11];
+12:			NotI [7-11] !!R;
+13:			NotNotE [12] R;
 		}
-		P -> R : ImpI [2, 12];
+14:		IfI [2-13] (P -> R);
 	}
-	((P -> Q) & (!R -> !Q)) -> (P -> R) : ImpI [1, 13];
+15:	IfI [1-14] (((P -> Q) & (!R -> !Q)) -> (P -> R));
 }
