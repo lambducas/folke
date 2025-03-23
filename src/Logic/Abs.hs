@@ -29,7 +29,8 @@ data Step
     | StepForm Ident [Arg] Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Arg = ArgRange Integer Integer | ArgLine Integer
+data Arg
+    = ArgRange Integer Integer | ArgLine Integer | ArgTerm Term
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form

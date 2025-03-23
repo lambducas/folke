@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 module Backend.Types (
     Ref(RefRange, RefLine),
-    Arg(ArgProof, ArgForm),
+    Arg(ArgProof, ArgForm, ArgTerm),
     Proof(Proof),
     Formula(Pred, And, Or, If , Eq, All, Some, Not, Bot, Nil),
     Predicate(Predicate),
@@ -14,7 +14,7 @@ data Result a = Ok a | Error ErrorKind String
 
 data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)
 
-data Arg = ArgProof Proof | ArgForm Formula
+data Arg = ArgProof Proof | ArgForm Formula | ArgTerm Term
 instance Show Arg where 
     show (ArgProof p) = show p 
     show (ArgForm f) = show f 

@@ -19,6 +19,7 @@ StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";
 
 ArgRange. Arg   ::= Integer "-" Integer;
 ArgLine.  Arg   ::= Integer;
+ArgTerm.  Arg   ::= Term;
 separator Arg   ",";
 
 FormBot.  Form4 ::= "bot";

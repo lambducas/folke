@@ -6,6 +6,7 @@ module Backend.Environment (
     getPrems,
     addRefs,
     getRefs,
+    getRef,
     applyRule
 ) where
 
@@ -51,7 +52,11 @@ newEnv = Env{
         ("MT", ruleMT),
         ("PBC", rulePBC),
         ("LEM", ruleLEM),
-        ("EqI", ruleEqI)
+        ("EqI", ruleEqI),
+        ("AllE", ruleAllE),
+        ("AllI", ruleAllI),
+        ("SomeE", ruleSomeE),
+        ("SomeI", ruleSomeI)
         ]
     }
 {-
@@ -104,10 +109,14 @@ getRefs :: Env -> [Ref] -> Result [Arg]
 getRefs _ [] = Ok []
 getRefs env (x: xs) = case getRefs env xs of
     Error kind msg -> Error kind msg
-    Ok forms -> case Map.lookup x (refs env) of
-        Nothing -> Error TypeError ("No ref " ++ show x ++ " exists.") 
-        Just form -> Ok ([form] ++ forms)
+    Ok args -> case getRef env x of 
+        Error kind msg -> Error kind msg
+        Ok arg -> Ok ([arg] ++ args)
 
+getRef :: Env -> Ref -> Result Arg
+getRef env ref = case Map.lookup ref (refs env) of
+    Nothing -> Error TypeError ("No ref " ++ show ref ++ " exists.") 
+    Just arg -> Ok arg
 {-
     Applies rule to a given list of arguments will return error if expected result dont match result.
     -params:
@@ -256,3 +265,15 @@ ruleEqI _ forms _ = Error TypeError ("Rule takes 0 argument not " ++ show (List.
 
 ruleEqE:: Env-> [Arg] -> Formula -> Result Formula
 ruleEqE _ _ _ = Error UnknownError "Unimplemented."
+
+ruleAllE:: Env-> [Arg] -> Formula -> Result Formula
+ruleAllE _ _ _ = Error UnknownError "Unimplemented."
+
+ruleAllI:: Env-> [Arg] -> Formula -> Result Formula
+ruleAllI _ _ _ = Error UnknownError "Unimplemented."
+
+ruleSomeE:: Env-> [Arg] -> Formula -> Result Formula
+ruleSomeE _ _ _ = Error UnknownError "Unimplemented."
+
+ruleSomeI:: Env-> [Arg] -> Formula -> Result Formula
+ruleSomeI _ _ _ = Error UnknownError "Unimplemented."

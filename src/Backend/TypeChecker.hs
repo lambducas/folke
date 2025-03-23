@@ -79,8 +79,10 @@ checkProof env [Abs.ProofElem _ step] = case checkStep env step of
     Error kind msg -> Error kind msg
     Ok (_, ArgProof _) -> Error TypeError "Last step in proof was another proof."
     Ok (new_env, ArgForm step_t) -> Ok (Proof (getPrems new_env) step_t)
+    Ok (_, ArgTerm _) -> Error TypeError "Check step could not return an term."
 checkProof env ((Abs.ProofElem labels step):elems) = case checkStep env step of
     Error kind msg -> Error kind (show (List.reverse["@" ++ show i| i <- labels]) ++ msg)
+    Ok (_, ArgTerm _) -> Error TypeError "Check step could not return an term."
     Ok (new_env, step_t) -> case checkRefs labels of
         Error kind msg -> Error kind msg
         Ok refs -> case checkProof (addRefs new_env refs step_t) elems of
@@ -120,19 +122,27 @@ checkStep env step = case step of
         Error kind msg -> Error kind ("While checking given result: " ++ msg)
         Ok form_t -> case checkArgs env args of
             Error kind msg -> Error kind msg
-            Ok refs ->case getRefs env refs of
-                Error kind msg -> Error kind msg
-                Ok refs_t -> case applyRule env (identToString name) refs_t form_t of
+            Ok args_t -> case applyRule env (identToString name) args_t form_t of
                     Error kind msg -> Error kind msg
                     Ok res_t -> Ok(env, ArgForm res_t)
 
-checkArgs :: Env -> [Abs.Arg] -> Result [Ref]
+checkArgs :: Env -> [Abs.Arg] -> Result [Arg]
 checkArgs env [] = Ok []
-checkArgs env (arg: args) = case checkArgs env args of 
+checkArgs env (arg: args) = case checkArg env arg of 
     Error kind msg -> Error kind msg
-    Ok refs -> case arg of 
-        Abs.ArgRange i j -> Ok ([RefRange i j] ++ refs)
-        Abs.ArgLine  i   -> Ok ([RefLine i] ++ refs)
+    Ok arg_t -> case checkArgs env args of 
+        Error kind msg -> Error kind msg
+        Ok args_t -> Ok ([arg_t] ++ args_t)
+checkArg :: Env -> Abs.Arg -> Result Arg
+checkArg env (Abs.ArgRange i j) = case getRef env (RefRange i j) of
+    Error kind msg -> Error kind msg
+    Ok arg_t -> Ok arg_t
+checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of 
+    Error kind msg -> Error kind msg
+    Ok arg_t -> Ok arg_t
+checkArg env (Abs.ArgTerm term) = case checkTerm env term of
+     Error kind msg -> Error kind msg
+     Ok term_t -> Ok (ArgTerm term_t)
 {-
     Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
     -params:
