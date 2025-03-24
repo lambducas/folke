@@ -55,7 +55,11 @@ data AppModel = AppModel {
   _proofStatus :: Maybe (Either String ()),
   -- _proofStatus :: Maybe Bool,
 
-  _selectedTheme :: Theme
+  _selectedTheme :: Theme,
+  --Albin Settings v
+  _selectNormalFont :: [String],
+  _normalFont :: String,
+  _logicFont :: String
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -94,6 +98,7 @@ data AppEvent
   -- Handle files
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
+  | OpenFile_ FilePath FilePath
   | OpenFileSuccess File
   | CloseFile FilePath
   | CloseFileSuccess FilePath

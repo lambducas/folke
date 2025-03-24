@@ -22,7 +22,7 @@ import Data.List (find, dropWhileEnd, findIndex, sort, groupBy)
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe, isNothing, catMaybes)
 import Data.Default ( Default(def) )
-
+import Data.String (fromString)
 import Shared.Messages
 import Backend.TypeChecker (isProofCorrect)
 import qualified Logic.Abs as Abs
@@ -66,6 +66,9 @@ menuBarCategories = [
     ]),
     ("Help", [
       ("Open Guide", "", NoEvent)
+    ]),
+    ("Settings", [
+      ("Settings", "", OpenFile_ "Settings.json" "")
     ])
   ]
 
@@ -204,6 +207,20 @@ buildUI _wenv model = widgetTree where
             isCurrent = (model ^. currentFile) == Just filePath
 
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
+  proofWindow (Just "Settings.json") = hstack [
+      filler, 
+      vstack [
+          label "Balabahararararara" `styleBasic` [textFont $ fromString $ model ^. normalFont],
+          textDropdown_ selectNormalFont [
+            ["Regular","Medium","Bold"], 
+            ["Roboto_Regular","Roboto_Medium","Roboto_Bold"], 
+            ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+            ] fontListToText [],
+          --button "Confirm" (Model $ model & normalFont .~ (head (model ^. selectNormalFont))),
+          textDropdown_ normalFont (model ^. selectNormalFont) pack [],
+          label "Balabahararararara" `styleBasic` [textFont $ fromString $ model ^. normalFont]
+        ]
+      ] `styleBasic` [padding 10] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
     Nothing -> label "Filepath not loaded"
     Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
@@ -458,9 +475,9 @@ handleEvent wenv node model evt = case evt of
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
-  OpenFile filePath -> [
+  OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
-        pContent <- readFile ("./myProofs/" <> filePath)
+        pContent <- readFile (folderPath <> filePath)
         let pContentText = pack pContent
             -- pParsedContent = parseProofFromFile pContentText
             pIsEdited = False
@@ -495,6 +512,8 @@ handleEvent wenv node model evt = case evt of
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
+  
+  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath "./myProofs/")
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
@@ -609,6 +628,15 @@ main = do
       appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
       appFontDef "Bold" "./assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf",
 
+      appFontDef "Roboto_Regular" "./assets/fonts/Roboto/Roboto-Regular.ttf",
+      appFontDef "Roboto_Medium" "./assets/fonts/Roboto/Roboto-Medium.ttf",
+      appFontDef "Roboto_Bold" "./assets/fonts/Roboto/Roboto-Bold.ttf",
+
+      appFontDef "Comic_Sans_Medium" "assets/fonts/ldfcomicsans-font/Ldfcomicsans-jj7l.ttf",
+      appFontDef "Comic_Sans_Bold" "assets/fonts/ldfcomicsans-font/Ldfcomicsansbold-zgma.ttf",
+      appFontDef "Comic_Sans_Regular" "assets/fonts/ldfcomicsans-font/Ldfcomicsanshairline-5PmL.ttf",
+      appFontDef "Comic_Sans_Thin" "assets/fonts/ldfcomicsans-font/Ldfcomicsanslight-6dZo.ttf",
+
       appFontDef "Symbol_Regular" "./assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
       appFontDef "Symbol_Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
       appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
@@ -635,7 +663,11 @@ main = do
       _backendChan = backendChan,
       _proofStatus = Nothing,
 
-      _selectedTheme = customDarkTheme
+      _selectedTheme = customDarkTheme,
+
+      _selectNormalFont = ["Regular","Medium","Bold"],
+      _normalFont = "Regular",
+      _logicFont = "Symbol_Regular"
     }
 
 -- customTheme :: Theme
@@ -1022,3 +1054,8 @@ getCurrentSequent model = sequent
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts] (firstKeystroke xs widget)
 firstKeystroke [] widget = widget
+
+fontListToText :: [String] -> Text
+fontListToText fontList | head fontList == "Regular" = "Default"
+                        | head fontList == "Roboto_Regular" = "Roboto"
+                        | otherwise = "bajs"
