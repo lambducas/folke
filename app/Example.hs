@@ -23,10 +23,10 @@ example = do
         -- Steps
         steps = [ Abs.StepPrem form1
                 , Abs.StepPrem form2
-                , Abs.StepForm (Abs.Ident "equalityElim") [Abs.ArgLine 1, Abs.ArgLine 2] conclusion
+                , Abs.StepForm (Abs.Ident "EqE") [Abs.ArgLine 1, Abs.ArgLine 2] conclusion
                 ]
 
-        proof = Abs.Proof (map (Abs.ProofElem []) steps)
+        proof = Abs.Proof (zipWith (\s i -> Abs.ProofElem [Abs.LabelLine i] s) steps [1..])
         
         -- Sequent
         sequent = Abs.Seq [form1, form2] conclusion proof

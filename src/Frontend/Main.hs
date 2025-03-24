@@ -4,6 +4,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -Wno-unused-local-binds #-}
 
 module Frontend.Main where
 
@@ -14,7 +15,7 @@ import qualified Monomer.Lens as L
 import Monomer.Core.Themes.BaseTheme
 import Control.Lens
 import Control.Concurrent (threadDelay, Chan, newChan)
-import Control.Exception (try, SomeException (SomeException))
+import Control.Exception (try, SomeException (SomeException), catch, ErrorCall (ErrorCall))
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist )
 import Data.Text (Text, replace, unpack, pack, intercalate, splitOn)
@@ -92,9 +93,9 @@ buildUI _wenv model = widgetTree where
       ],
       popup_ confirmDeletePopup [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
         h1 "Close without saving?",
-        ourLabel "Are you sure you want to close",
-        ourLabel (showt $ model ^. confirmDeleteTarget),
-        ourLabel "without saving. All changes will be lost!",
+        paragraph "Are you sure you want to close",
+        paragraph (showt $ model ^. confirmDeleteTarget),
+        paragraph "without saving. All changes will be lost!",
         spacer,
         hstack_ [childSpacing] [
           button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
@@ -108,7 +109,7 @@ buildUI _wenv model = widgetTree where
     where
       menuBarButton (name, actions) idx = vstack [
           box_ [onClick (SetOpenMenuBarItem (Just idx))] (
-            label name
+            span name
               `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
               `styleHover` [bgColor selectedColor]
           ),
@@ -118,9 +119,9 @@ buildUI _wenv model = widgetTree where
         ]
 
       dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
-          ourLabel name `styleBasic` [textSize 14],
+          span name `styleBasic` [textSize 14],
           filler,
-          ourLabel keybind `styleBasic` [textSize 14]
+          span keybind `styleBasic` [textSize 14]
         ]
           `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
           `styleHover` [bgColor hoverColor]
@@ -132,12 +133,12 @@ buildUI _wenv model = widgetTree where
 
   fileWindow = vstack [
       box_ [expandContent] (hstack [
-          ourLabel "Manage proofs" `styleBasic` [padding 10, textFont "Bold"],
+          h2 "Manage proofs" `styleBasic` [padding 10],
           filler,
           box (button "+" OpenCreateProofPopup) `styleBasic` [bgColor transparent, padding 4],
 
           popup newFilePopupOpen (vstack [
-            ourLabel "Enter the name of your proof",
+            paragraph "Enter the name of your proof",
             spacer,
             textField_ newFileName [placeholder "my_proof"],
             spacer,
@@ -160,10 +161,10 @@ buildUI _wenv model = widgetTree where
           partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
           partFolder = filter (\i -> length (fst i) > 1) parts
           groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
-          
+
           folder seqs = vstack [
               hstack [
-                ourLabel ((head . fst . head) seqs),
+                span ((head . fst . head) seqs),
                 iconLabel remixFolder5Line `styleBasic` [paddingL 8]
               ] `styleBasic` [paddingL (16 * indent), paddingV 8],
               fileTreeUI newParts (indent + 1)
@@ -174,7 +175,7 @@ buildUI _wenv model = widgetTree where
               -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
   fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
-      label_ text [ellipsis]
+      span_ text [ellipsis]
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
@@ -191,11 +192,11 @@ buildUI _wenv model = widgetTree where
     where
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
-          ourLabel displayName,
+          span displayName,
           -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-          box_ [onClick (CloseFile filePath)] (ourLabel closeText
-            `styleBasic` [textFont "Symbol_Regular", textSize 24, radius 8, padding 4]
-            `styleHover` [bgColor hoverColor]) `styleBasic` [padding 4]
+          box_ [onClick (CloseFile filePath)] (symbolSpan closeText
+            `styleBasic` [textFont "Symbol_Regular", textSize (1.5*u), radius 8, padding 4]
+            `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
@@ -215,7 +216,7 @@ buildUI _wenv model = widgetTree where
             ["Regular","Medium","Bold"], 
             ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"], 
-            ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+            ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
             ] fontListToText [],
           label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
           button "Set font" UpdateFont,
@@ -230,53 +231,57 @@ buildUI _wenv model = widgetTree where
         ]
       ]
   proofWindow (Just fileName) = case file of
-    Nothing -> label "Filepath not loaded"
+    Nothing -> span "Filepath not loaded"
     Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
-        h1 $ pack $ _path file,
-        spacer,
-        label prettySequent `styleBasic` [textFont $ fromString $ model ^. logicFont],
-        spacer, spacer, spacer, spacer,
-
-        scroll_ [wheelRate 50] $ proofTreeUI parsedSequent,
-        spacer,
-
+        vstack [
+          h1 $ pack $ _path file,
+          spacer,
+          symbolSpan prettySequent `styleBasic` [textFont $ fromString $ model ^. logicFont]
+        ] `styleBasic` [padding 10, borderB 1 dividerColor],
+        scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
         hstack [
           proofStatusLabel,
           filler,
           button "Save proof" (SaveProof file),
           spacer,
           button "Check proof" (CheckProof file)
-        ]
-      ] `styleBasic` [padding 10]
+        ] `styleBasic` [padding 10, borderT 1 dividerColor]
+      ]
       where
-        prettySequent = intercalate ", " (_premises parsedSequent) <> " ⊢ " <> _conclusion parsedSequent
+        prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
+        conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
+        premises = map replaceSpecialSymbols (_premises parsedSequent)
         parsedSequent = _parsedSequent file
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
-    Nothing -> ourLabel "Checking proof..." `styleBasic` [textColor orange]
-    Just (Left error) -> ourLabel ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
-    Just (Right _) -> ourLabel "Proof is correct :)" `styleBasic` [textColor lime]
+    Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
+    Just (Left error) -> span ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
+    Just (Right _) -> span "Proof is correct :)" `styleBasic` [textColor lime]
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
       vstack_ [childSpacing] [
-        ourLabel "Premises" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+        h2 "Premises" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
         vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-        widgetIf (null $ _premises sequent) (ourLabel "No premises")
+        widgetIf (null $ _premises sequent) (span "No premises")
       ],
       spacer,
       hstack [button "+ Premise" AddPremise],
       spacer, spacer,
 
-      ourLabel "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+      h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
-      textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
+      textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+        `styleBasic` [textFont "Symbol_Regular"],
       spacer, spacer,
 
-      ourLabel "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+      h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
-      tree,
+      hstack [
+        lineNumbers,
+        tree
+      ],
 
       -- spacer,
       -- hstack_ [childSpacing] [
@@ -285,11 +290,12 @@ buildUI _wenv model = widgetTree where
       -- ]
 
       -- Hack so last proof line can scroll all the way to the top
-      box (ourLabel "") `styleBasic` [height 1000]
+      box (label "") `styleBasic` [height 1000]
     ]
     where
       premiseLine premise idx = hstack [
-          textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"],
+          textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
+            `styleBasic` [textFont "Symbol_Regular"],
           spacer,
           tooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
@@ -297,8 +303,18 @@ buildUI _wenv model = widgetTree where
 
       tree = ui
         where
-          ui = vstack_ [childSpacing] (map fst s)
+          ui = vstack_ [childSpacing] (ghostPremises ++ map fst s)
           s = getSubProof (_steps sequent) [] 0 1
+
+          ghostPremises = map ghostPremise (_premises sequent)
+          ghostPremise premise = hstack [
+              symbolSpan pp,
+              filler,
+              symbolSpan "premise" `styleBasic` [width 175, paddingH 10],
+              spacer,
+              vstack [] `styleBasic` [width 300]
+            ] `styleBasic` [height 34]
+            where pp = replaceSpecialSymbols premise
 
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
@@ -311,8 +327,8 @@ buildUI _wenv model = widgetTree where
         where
           ui = hstack [
               hstack [
-                label (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
-                spacer,
+                -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
+                -- spacer,
 
                 firstKeystroke [
                   ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
@@ -382,11 +398,77 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-  h1 :: Text -> WidgetNode s e
-  h1 t = label t `styleBasic` [ textSize 24, textFont $ fromString $ last $ model ^. selectNormalFont ]
 
-  ourLabel :: Text -> WidgetNode s e
-  ourLabel t = label t `styleBasic` [ textFont $ fromString $ model ^. normalFont ]
+
+
+      lineNumbers = ui
+        where
+          ui = vstack_ [childSpacing] (ghostLines ++ map fst s)
+          s = getSubProof2 (_steps sequent) [] 0 (length (_premises sequent) + 1)
+
+          ghostLines = map ghostLine [1..length (_premises sequent)]
+          ghostLine index = symbolSpan (showt index <> ".")
+            `styleBasic` [width 48, paddingR 12, height 34, textRight]
+
+      ln (SubProof p) index path = (ui, lastIndex)
+        where
+          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 transparent, paddingV 8]
+          lastIndex = if null s then index else snd $ last s
+          s = getSubProof2 p path 0 index
+
+      ln (Line _ _) index _path = (ui, lastIndex)
+        where
+          ui = symbolSpan (showt index <> ".")
+            `styleBasic` [width 48, paddingR 12, height 34, textRight]
+            `nodeKey` showt index <> "label"
+          lastIndex = index + 1
+
+      getSubProof2 p path arrayIndex visualIndex
+        | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
+        | otherwise = []
+          where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
+
+  -- Using HTML tag name convention
+  h1, h2, span, paragraph, iconLabel :: Text -> WidgetNode s e
+  h1_, h2_, span_, paragraph_, iconLabel_ :: Text -> [LabelCfg s e] -> WidgetNode s e
+  
+  -- Main heading
+  h1 t = label t `styleBasic` [ textSize (2.625 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+  h1_ t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+  
+  -- Secondary heading
+  h2 t = label t `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+  h2_ t cfg = label_ t cfg `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+  
+  -- Plain text
+  span t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+  span_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+  
+  -- Monospaced text (used for symbols in logic)
+  symbolSpan t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
+  symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
+  -- symbolSpan t = label t `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
+  -- symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
+  
+  -- Plain text when used as paragraph (same as span right now but usually has margin at bottom and top)
+  paragraph t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+  paragraph_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+
+  -- For rendering icons
+  iconLabel icon = label icon `styleBasic` [textFont "Remix", textBottom]
+  iconLabel_ icon cfg = label_ icon cfg `styleBasic` [textFont "Remix", textBottom]
+
+  -- For rendering icons inside buttons
+  iconButton :: Text -> AppEvent -> WidgetNode AppModel AppEvent
+  iconButton iconIdent action = button iconIdent action
+    `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
+
+  -- Button with trashcan icon
+  trashButton :: AppEvent -> WidgetNode AppModel AppEvent
+  trashButton = iconButton remixDeleteBinFill
+
+  -- Base unit for fonts. Use instead of pixels (1u = 16px)
+  u = 16
 
 
 handleEvent
@@ -504,28 +586,51 @@ handleEvent wenv node model evt = case evt of
     where
       convertSeq (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
 
-      convertForm Abs.FormBot = "bot"
       -- convertForm (Abs.FormEq a b) = (convertForm a) <> " = " <> (convertForm b)
-      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
       -- convertForm (Abs.FormAll a b) = "#"
       -- convertForm (Abs.FormSome a b) = "#"
-      convertForm (Abs.FormNot a) = "!" <> convertForm a
-      convertForm (Abs.FormAnd a b) = "(" <> convertForm a <> " & " <> convertForm b <> ")"
-      convertForm (Abs.FormOr a b) = "(" <> convertForm a <> " | " <> convertForm b <> ")"
-      convertForm (Abs.FormIf a b) = "(" <> convertForm a <> " -> " <> convertForm b <> ")"
+      convertForm (Abs.FormNot a) = "!" <> getOutput a
+        where
+          getOutput form = case form of
+            Abs.FormPred _ -> c
+            Abs.FormNot _ -> c
+            Abs.FormBot -> c
+            _ -> p
+            where c = convertForm form; p = "(" <> c <> ")"
+
+      convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
+        where
+          getOutput form = case form of
+            Abs.FormOr _ _ -> p
+            Abs.FormIf _ _ -> p
+            _ -> c
+            where c = convertForm form; p = "(" <> c <> ")"
+
+      convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
+        where
+          getOutput form = case form of
+            Abs.FormAnd _ _ -> p
+            Abs.FormIf _ _ -> p
+            _ -> c
+            where c = convertForm form; p = "(" <> c <> ")"
+
+      convertForm (Abs.FormIf a b) = convertForm a <> " -> " <> convertForm b
+      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
+      convertForm Abs.FormBot = "bot"
       convertForm s = error (show s)
 
-      convertProof (Abs.Proof proofElems) = map convertProofElem proofElems
+      convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
 
-      convertStep (Abs.StepPrem form) = Line (convertForm form) "prem"
-      convertStep (Abs.StepAssume form) = Line (convertForm form) "assume"
-      convertStep (Abs.StepProof proof) = SubProof (convertProof proof)
-      convertStep (Abs.StepForm (Abs.Ident i) args form) = Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")
+      convertStep (Abs.StepPrem _form) = [] -- [Line (convertForm form) "prem"]
+      convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
+      convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
+      convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
       convertStep s = error (show s)
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
+      convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
   
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath "./myProofs/")
 
@@ -651,8 +756,8 @@ main = do
 
       appFontDef "Comic_Sans_Medium" "assets/fonts/ldfcomicsans-font/Ldfcomicsans-jj7l.ttf",
       appFontDef "Comic_Sans_Bold" "assets/fonts/ldfcomicsans-font/Ldfcomicsansbold-zgma.ttf",
-      appFontDef "Comic_Sans_Regular" "assets/fonts/ldfcomicsans-font/Ldfcomicsanshairline-5PmL.ttf",
-      appFontDef "Comic_Sans_Thin" "assets/fonts/ldfcomicsans-font/Ldfcomicsanslight-6dZo.ttf",
+      appFontDef "Comic_Sans_Thin" "assets/fonts/ldfcomicsans-font/Ldfcomicsanshairline-5PmL.ttf",
+      appFontDef "Comic_Sans_Regular" "assets/fonts/ldfcomicsans-font/Ldfcomicsanslight-6dZo.ttf",
 
       appFontDef "Symbol_Regular" "./assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
       appFontDef "Symbol_Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
@@ -767,16 +872,6 @@ listDirectoryRecursive directory = do
       appendTop :: FilePath -> FilePath
       appendTop = ((directory ++ "/") ++)
 
-iconLabel :: Text -> WidgetNode s e
-iconLabel icon = label icon `styleBasic` [textFont "Remix", textBottom]
-
-iconButton :: Text -> AppEvent -> WidgetNode AppModel AppEvent
-iconButton iconIdent action = button iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
-
-trashButton :: AppEvent -> WidgetNode AppModel AppEvent
-trashButton = iconButton remixDeleteBinFill
-
 getProofFileByPath :: [File] -> FilePath -> Maybe File
 getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
 
@@ -785,14 +880,16 @@ getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath
 
 evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO b) -> IO b
 evaluateCurrentProof model file sendMsg = do
-    -- let sequent = exportProof file
-    -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
-    -- sendMsg (BackendResponse answer)
+  -- let sequent = exportProof file
+  -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
+  -- sendMsg (BackendResponse answer)
 
-    let text = unpack $ parseProofForBackend (_parsedSequent file)
-    putStrLn text
-    answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
-    sendMsg (BackendResponse answer)
+  -- catch (putStrLn $ unpack $ parseProofForBackend (_parsedSequent file)) (print :: ErrorCall -> IO ())
+
+  let text = unpack $ parseProofForBackend (_parsedSequent file)
+  putStrLn text
+  answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
+  sendMsg (BackendResponse answer)
 
 -- Empty for now
 -- exportProof :: File -> Sequent
@@ -858,19 +955,25 @@ parseProofFromFile p = case proof of
       where char = text !! (idx + 1)
 
 parseProofForBackend :: FESequent -> Text
-parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] (SubProof (_steps sequent))
+parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
   where
     premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
     conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
+    newSequent = FESequent (_premises sequent) (_conclusion sequent) (ghostPremises ++ _steps sequent)
+    proof = SubProof (_steps newSequent)
+    ghostPremises = map (\p -> Line p "prem") (_premises sequent)
+
     exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
-    exportProofHelper indent path (SubProof p) = label <> tabs indent <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
-      where label = if null p || null path then "" else showt (pathToLineNumber sequent (path ++ [0])) <> "-" <> showt (pathToLineNumber sequent (path ++ [length p - 1])) <> ":"
-    exportProofHelper indent path (Line statement rule) = label <> tabs indent <> nRule <> " " <> nStatement <> ";"
+    exportProofHelper indent path (SubProof p) = tabs indent <> label <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+      where label = if null p || null path then "" else showt (offsetLineNumber (path ++ [0])) <> "-" <> showt (offsetLineNumber (path ++ [length p - 1])) <> ":"
+    exportProofHelper indent path (Line statement rule) = tabs indent <> label <> nRule <> " " <> nStatement <> ";"
       where
         nRule = replaceSpecialSymbolsInverse rule
         nStatement = replaceSpecialSymbolsInverse statement
-        label = showt (pathToLineNumber sequent path) <> ":"
+        label = showt (offsetLineNumber path) <> ":"
+
+    offsetLineNumber path = pathToLineNumber newSequent path-- + toInteger (length (_premises sequent))
 
     tabs :: Int -> Text
     tabs n = pack $ replicate n '\t'
