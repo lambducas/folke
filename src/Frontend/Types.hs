@@ -34,7 +34,7 @@ data FEStep
 data File = File {
   _path :: FilePath,
   _content :: Text,
-  _parsedSequent :: FESequent,
+  _parsedSequent :: Maybe FESequent,
   _isEdited :: Bool
 } deriving (Eq, Show)
 

@@ -137,14 +137,15 @@ buildUI _wenv model = widgetTree where
           filler,
           box (button "+" OpenCreateProofPopup) `styleBasic` [bgColor transparent, padding 4],
 
-          popup newFilePopupOpen (vstack [
-            paragraph "Enter the name of your proof",
-            spacer,
-            textField_ newFileName [placeholder "my_proof"],
-            spacer,
-            let cep = (CreateEmptyProof $ model ^. newFileName) in
-              keystroke [("Enter", cep)] $ button "Create proof" cep
-          ] `styleBasic` [bgColor popupBackground, padding 10])
+          let cep = (CreateEmptyProof $ model ^. newFileName) in
+            popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
+              h2 "Create proof",
+              paragraph "Enter the name of your proof",
+              spacer,
+              firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
+              spacer,
+              button "Create proof" cep
+            ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor],
       vscroll $ fileTreeUI parts 1
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
@@ -232,25 +233,40 @@ buildUI _wenv model = widgetTree where
       ]
   proofWindow (Just fileName) = case file of
     Nothing -> span "Filepath not loaded"
-    Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
-        vstack [
-          h1 $ pack $ _path file,
-          spacer,
-          symbolSpan prettySequent `styleBasic` [textFont $ fromString $ model ^. logicFont]
-        ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
-        hstack [
-          proofStatusLabel,
-          filler,
-          button "Save proof" (SaveProof file),
-          spacer,
-          button "Check proof" (CheckProof file)
-        ] `styleBasic` [padding 10, borderT 1 dividerColor]
-      ]
+    Just file -> case parsedSequent of
+      Nothing -> vstack [
+          vstack [
+            h1 $ pack $ _path file,
+            spacer
+          ] `styleBasic` [padding 10, borderB 1 dividerColor],
+          vscroll_ [wheelRate 50] (vstack [
+            paragraph_ "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed" [multiline],
+            spacer,
+            paragraph "File preview:",
+            spacer,
+            symbolSpan_ (_content file) [multiline]
+          ]) `styleBasic` [padding 10]
+        ]
+      Just parsedSequent -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
+          vstack [
+            h1 $ pack $ _path file,
+            spacer,
+            symbolSpan prettySequent
+          ] `styleBasic` [padding 10, borderB 1 dividerColor],
+          scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
+          hstack [
+            proofStatusLabel,
+            filler,
+            button "Save proof" (SaveProof file),
+            spacer,
+            button "Check proof" (CheckProof file)
+          ] `styleBasic` [padding 10, borderT 1 dividerColor]
+        ]
+        where
+          prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
+          conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
+          premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
-        prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-        conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
-        premises = map replaceSpecialSymbols (_premises parsedSequent)
         parsedSequent = _parsedSequent file
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
@@ -283,11 +299,13 @@ buildUI _wenv model = widgetTree where
         tree
       ],
 
-      -- spacer,
-      -- hstack_ [childSpacing] [
-      --   button "+ New line" AddLine,
-      --   button "+→ New sub proof" AddSubProof
-      -- ]
+      widgetIf (null (_steps sequent)) (vstack [
+        spacer,
+        hstack_ [childSpacing] [
+          button "+ New line" AddLine,
+          button "+☐ New sub proof" AddSubProof
+        ]
+      ]),
 
       -- Hack so last proof line can scroll all the way to the top
       box (label "") `styleBasic` [height 1000]
@@ -433,7 +451,7 @@ buildUI _wenv model = widgetTree where
   h1_, h2_, span_, paragraph_, iconLabel_ :: Text -> [LabelCfg s e] -> WidgetNode s e
   
   -- Main heading
-  h1 t = label t `styleBasic` [ textSize (2.625 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+  h1 t = label t `styleBasic` [ textSize (1.75 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
   h1_ t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
   
   -- Secondary heading
@@ -559,15 +577,20 @@ handleEvent wenv node model evt = case evt of
   OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
   CreateEmptyProof fileName -> [
-      Producer (\_ -> do
+      Producer (\sendMsg -> do
         exists <- doesFileExist filePath
-        if exists then return () else writeFile filePath ""
+        if exists then return () else do
+          writeFile filePath emptyProof
+          sendMsg (OpenFile shortFilePath)
       ),
       Model $ model
         & newFilePopupOpen .~ False
         & newFileName .~ ""
     ]
-    where filePath = "./myProofs/" <> unpack fileName <> ".logic"
+    where
+      filePath = "./myProofs/" <> shortFilePath
+      shortFilePath = unpack fileName <> ".logic"
+      emptyProof = "|-P{}"
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
@@ -578,9 +601,9 @@ handleEvent wenv node model evt = case evt of
             -- pParsedContent = parseProofFromFile pContentText
             pIsEdited = False
         case pSequent (myLexer pContent) of
-          Left _err -> sendMsg (OpenFileSuccess $ File filePath pContentText (FESequent [] "" [Line "Invalid" ""]) pIsEdited)
+          Left _err -> sendMsg (OpenFileSuccess $ File filePath pContentText Nothing pIsEdited)
           Right seq_t -> sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
-            where pParsedContent = convertSeq seq_t
+            where pParsedContent = Just (convertSeq seq_t)
       )
     ]
     where
@@ -669,18 +692,20 @@ handleEvent wenv node model evt = case evt of
         & confirmDeletePopup .~ False
       cf = model ^. currentFile
 
-  SaveProof f -> [
-      Producer (\sendMsg -> do
-        result <- try (writeFile ("./myProofs/" <> fileName) content) :: IO (Either SomeException ())
-        case result of
-          Left _ -> return ()
-          Right _ -> sendMsg (SaveProofSuccess f)
-      )
-    ]
-    where
-      content = unpack $ parseProofForBackend $ _parsedSequent f
-      -- content = unpack $ parseProofToFile $ _parsedSequent f
-      fileName = _path f
+  SaveProof f -> case _parsedSequent f of
+    Nothing -> []
+    Just seq -> [
+        Producer (\sendMsg -> do
+          let content = (unpack . parseProofForBackend) seq
+            -- content = unpack $ parseProofToFile $ _parsedSequent f
+              fileName = _path f
+
+          result <- try (writeFile ("./myProofs/" <> fileName) content) :: IO (Either SomeException ())
+          case result of
+            Left _ -> return ()
+            Right _ -> sendMsg (SaveProofSuccess f)
+        )
+      ]
 
   SaveProofSuccess f -> actions
     where
@@ -878,18 +903,20 @@ getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
 getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
 
-evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO b) -> IO b
+evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO ()) -> IO ()
 evaluateCurrentProof model file sendMsg = do
   -- let sequent = exportProof file
   -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
   -- sendMsg (BackendResponse answer)
 
   -- catch (putStrLn $ unpack $ parseProofForBackend (_parsedSequent file)) (print :: ErrorCall -> IO ())
-
-  let text = unpack $ parseProofForBackend (_parsedSequent file)
-  putStrLn text
-  answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
-  sendMsg (BackendResponse answer)
+  case _parsedSequent file of
+    Nothing -> return ()
+    Just seq -> do
+      let text = unpack $ parseProofForBackend seq
+      putStrLn text
+      answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
+      sendMsg (BackendResponse answer)
 
 -- Empty for now
 -- exportProof :: File -> Sequent
@@ -905,7 +932,7 @@ evaluateCurrentProof model file sendMsg = do
 parseProofFromFile :: Text -> FESequent
 parseProofFromFile p = case proof of
   [SubProof p] -> FESequent premises conclusion p
-  _ -> error "Invalid proof from `parseText`"
+  _ -> error "Corrupt proof from `parseText`"
   where
     premises = filter (/="") (map trimText (splitOn "," (pack $ slice 0 premiseEnd text)))
     conclusion = trimText (pack (slice (premiseEnd + 1) conclusionEnd text))
@@ -1155,14 +1182,17 @@ applyOnCurrentProof model f = actions
 
     getActions fileIndex = [
         Model $ model
-          & tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ f
+          & tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
           & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
       ]
+
+    maybeF (Just s) = Just (f s)
+    maybeF Nothing = Nothing
 
 getCurrentSequent :: AppModel -> Maybe FESequent
 getCurrentSequent model = sequent
   where
-    sequent = fileIndex >>= Just . getSequent
+    sequent = fileIndex >>= getSequent
     fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
     cf = model ^. currentFile
 
@@ -1175,6 +1205,6 @@ firstKeystroke [] widget = widget
 fontListToText :: [String] -> Text
 fontListToText fontList | head fontList == "Regular" = "Default"
                         | head fontList == "Roboto_Regular" = "Roboto"
-                        | head fontList == "Comic_Sans_Regular" = "Comic Sans"
+                        | head fontList == "Comic_Sans_Thin" = "Comic Sans"
                         | head fontList == "Dyslexic" = "Dyslexic"
                         | otherwise = "forgor_to_label"
