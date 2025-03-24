@@ -92,9 +92,9 @@ buildUI _wenv model = widgetTree where
       ],
       popup_ confirmDeletePopup [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
         h1 "Close without saving?",
-        label "Are you sure you want to close",
-        label (showt $ model ^. confirmDeleteTarget),
-        label "without saving. All changes will be lost!",
+        ourLabel "Are you sure you want to close",
+        ourLabel (showt $ model ^. confirmDeleteTarget),
+        ourLabel "without saving. All changes will be lost!",
         spacer,
         hstack_ [childSpacing] [
           button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
@@ -118,9 +118,9 @@ buildUI _wenv model = widgetTree where
         ]
 
       dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
-          label name `styleBasic` [textSize 14],
+          ourLabel name `styleBasic` [textSize 14],
           filler,
-          label keybind `styleBasic` [textSize 14]
+          ourLabel keybind `styleBasic` [textSize 14]
         ]
           `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
           `styleHover` [bgColor hoverColor]
@@ -132,12 +132,12 @@ buildUI _wenv model = widgetTree where
 
   fileWindow = vstack [
       box_ [expandContent] (hstack [
-          label "Manage proofs" `styleBasic` [padding 10, textFont "Bold"],
+          ourLabel "Manage proofs" `styleBasic` [padding 10, textFont "Bold"],
           filler,
           box (button "+" OpenCreateProofPopup) `styleBasic` [bgColor transparent, padding 4],
 
           popup newFilePopupOpen (vstack [
-            label "Enter the name of your proof",
+            ourLabel "Enter the name of your proof",
             spacer,
             textField_ newFileName [placeholder "my_proof"],
             spacer,
@@ -163,7 +163,7 @@ buildUI _wenv model = widgetTree where
           
           folder seqs = vstack [
               hstack [
-                label ((head . fst . head) seqs),
+                ourLabel ((head . fst . head) seqs),
                 iconLabel remixFolder5Line `styleBasic` [paddingL 8]
               ] `styleBasic` [paddingL (16 * indent), paddingV 8],
               fileTreeUI newParts (indent + 1)
@@ -191,9 +191,9 @@ buildUI _wenv model = widgetTree where
     where
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
-          label displayName,
+          ourLabel displayName,
           -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
-          box_ [onClick (CloseFile filePath)] (label closeText
+          box_ [onClick (CloseFile filePath)] (ourLabel closeText
             `styleBasic` [textFont "Symbol_Regular", textSize 24, radius 8, padding 4]
             `styleHover` [bgColor hoverColor]) `styleBasic` [padding 4]
         ]
@@ -206,27 +206,35 @@ buildUI _wenv model = widgetTree where
             file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
             isCurrent = (model ^. currentFile) == Just filePath
 
+  illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess]]
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just "Settings.json") = hstack [
-      filler, 
       vstack [
-          label "Balabahararararara" `styleBasic` [textFont $ fromString $ model ^. normalFont],
+          label "Choose font" `styleBasic` [textFont $ fromString $ model ^. normalFont],
           textDropdown_ selectNormalFont [
             ["Regular","Medium","Bold"], 
+            ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"], 
             ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
             ] fontListToText [],
-          --button "Confirm" (Model $ model & normalFont .~ (head (model ^. selectNormalFont))),
+          label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
+          button "Set font" UpdateFont,
+          spacer,
+          label "Set thickness" `styleBasic` [textFont $ fromString $ model ^. normalFont],
           textDropdown_ normalFont (model ^. selectNormalFont) pack [],
-          label "Balabahararararara" `styleBasic` [textFont $ fromString $ model ^. normalFont]
+          vstack $ map illustThickness (model ^. selectNormalFont),
+          spacer,
+          spacer,
+          label "Set symbolic font for proofs" `styleBasic` [textFont $ fromString $ model ^. logicFont],
+          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack []
         ]
-      ] `styleBasic` [padding 10] -- Don't know how expandWith works, but it works
+      ]
   proofWindow (Just fileName) = case file of
     Nothing -> label "Filepath not loaded"
     Just file -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
         h1 $ pack $ _path file,
         spacer,
-        label prettySequent,
+        label prettySequent `styleBasic` [textFont $ fromString $ model ^. logicFont],
         spacer, spacer, spacer, spacer,
 
         scroll_ [wheelRate 50] $ proofTreeUI parsedSequent,
@@ -246,27 +254,27 @@ buildUI _wenv model = widgetTree where
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
-    Nothing -> label "Checking proof..." `styleBasic` [textColor orange]
-    Just (Left error) -> label ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
-    Just (Right _) -> label "Proof is correct :)" `styleBasic` [textColor lime]
+    Nothing -> ourLabel "Checking proof..." `styleBasic` [textColor orange]
+    Just (Left error) -> ourLabel ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
+    Just (Right _) -> ourLabel "Proof is correct :)" `styleBasic` [textColor lime]
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
       vstack_ [childSpacing] [
-        label "Premises" `styleBasic` [textFont "Bold"],
+        ourLabel "Premises" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
         vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-        widgetIf (null $ _premises sequent) (label "No premises")
+        widgetIf (null $ _premises sequent) (ourLabel "No premises")
       ],
       spacer,
       hstack [button "+ Premise" AddPremise],
       spacer, spacer,
 
-      label "Conclusion" `styleBasic` [textFont "Bold"],
+      ourLabel "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
       textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
       spacer, spacer,
 
-      label "Proof" `styleBasic` [textFont "Bold"],
+      ourLabel "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
       tree,
 
@@ -277,7 +285,7 @@ buildUI _wenv model = widgetTree where
       -- ]
 
       -- Hack so last proof line can scroll all the way to the top
-      box (label "") `styleBasic` [height 1000]
+      box (ourLabel "") `styleBasic` [height 1000]
     ]
     where
       premiseLine premise idx = hstack [
@@ -303,7 +311,7 @@ buildUI _wenv model = widgetTree where
         where
           ui = hstack [
               hstack [
-                label $ showt index <> ".",
+                label (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
                 spacer,
 
                 firstKeystroke [
@@ -319,7 +327,7 @@ buildUI _wenv model = widgetTree where
                   ("Enter", NextFocus 1, True)
                 ] $
                 textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
-                  `styleBasic` [textFont "Symbol_Regular"]
+                  `styleBasic` [textFont $ fromString $ model ^. logicFont]
                   `nodeKey` showt index <> ".statement",
 
                 spacer,
@@ -373,6 +381,12 @@ buildUI _wenv model = widgetTree where
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
+
+  h1 :: Text -> WidgetNode s e
+  h1 t = label t `styleBasic` [ textSize 24, textFont $ fromString $ last $ model ^. selectNormalFont ]
+
+  ourLabel :: Text -> WidgetNode s e
+  ourLabel t = label t `styleBasic` [ textFont $ fromString $ model ^. normalFont ]
 
 
 handleEvent
@@ -584,6 +598,7 @@ handleEvent wenv node model evt = case evt of
         | oldTheme == customDarkTheme = customLightTheme
         | otherwise = customLightTheme
 
+  UpdateFont -> [Model $ model & normalFont .~ head (model ^. selectNormalFont)]
   -- Backend events
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
@@ -627,6 +642,8 @@ main = do
       appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
       appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
       appFontDef "Bold" "./assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf",
+
+      appFontDef "Dyslexic" "assets/fonts/Dyslexic/open-dyslexic.ttf",
 
       appFontDef "Roboto_Regular" "./assets/fonts/Roboto/Roboto-Regular.ttf",
       appFontDef "Roboto_Medium" "./assets/fonts/Roboto/Roboto-Medium.ttf",
@@ -749,9 +766,6 @@ listDirectoryRecursive directory = do
     where
       appendTop :: FilePath -> FilePath
       appendTop = ((directory ++ "/") ++)
-
-h1 :: Text -> WidgetNode s e
-h1 t = label t `styleBasic` [ textSize 24, textFont "Bold" ]
 
 iconLabel :: Text -> WidgetNode s e
 iconLabel icon = label icon `styleBasic` [textFont "Remix", textBottom]
@@ -1058,4 +1072,6 @@ firstKeystroke [] widget = widget
 fontListToText :: [String] -> Text
 fontListToText fontList | head fontList == "Regular" = "Default"
                         | head fontList == "Roboto_Regular" = "Roboto"
-                        | otherwise = "bajs"
+                        | head fontList == "Comic_Sans_Regular" = "Comic Sans"
+                        | head fontList == "Dyslexic" = "Dyslexic"
+                        | otherwise = "forgor_to_label"

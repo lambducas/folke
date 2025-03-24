@@ -117,6 +117,9 @@ data AppEvent
 
   -- Theme
   | SwitchTheme
+
+  -- Settings
+  | UpdateFont
   deriving (Eq, Show)
 
 makeLenses 'File
