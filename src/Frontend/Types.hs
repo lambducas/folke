@@ -119,7 +119,7 @@ data AppEvent
   | SwitchTheme
 
   -- Settings
-  | UpdateFont
+  | UpdateFont [String]
   deriving (Eq, Show)
 
 makeLenses 'File

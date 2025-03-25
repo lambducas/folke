@@ -217,10 +217,9 @@ buildUI _wenv model = widgetTree where
             ["Regular","Medium","Bold"], 
             ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"], 
-            ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
-            ] fontListToText [],
+            ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+            ] fontListToText [onChange UpdateFont],
           label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
-          --button "Set font" UpdateFont,
           spacer,
           label "Set thickness" `styleBasic` [textFont $ fromString $ model ^. normalFont],
           textDropdown_ normalFont (model ^. selectNormalFont) pack [],
@@ -728,7 +727,7 @@ handleEvent wenv node model evt = case evt of
         | oldTheme == customDarkTheme = customLightTheme
         | otherwise = customLightTheme
 
-  UpdateFont -> [Model $ model & normalFont .~ head (model ^. selectNormalFont)]
+  UpdateFont s -> [Model $ model & normalFont .~ head s]
   -- Backend events
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
