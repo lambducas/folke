@@ -101,6 +101,11 @@ executable bsc
                     , Frontend.Main
                     , Frontend.Communication
                     , Frontend.Types
+                    , Frontend.BuildUI
+                    , Frontend.HandleEvent
+                    , Frontend.SpecialCharacters
+                    , Frontend.Helper
+                    , Frontend.Themes
                     , Shared.Messages
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
