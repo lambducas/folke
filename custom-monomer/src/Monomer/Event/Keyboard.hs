@@ -28,7 +28,7 @@ keyLCtrl :: KeyCode
 keyLCtrl = getKeyCode SDL.KeycodeLCtrl
 
 keyRCtrl :: KeyCode
-keyRCtrl = getKeyCode SDL.KeycodeLCtrl
+keyRCtrl = getKeyCode SDL.KeycodeRCtrl
 
 keyLGUI :: KeyCode
 keyLGUI = getKeyCode SDL.KeycodeLGUI
@@ -40,7 +40,7 @@ keyLShift :: KeyCode
 keyLShift = getKeyCode SDL.KeycodeLShift
 
 keyRShift :: KeyCode
-keyRShift = getKeyCode SDL.KeycodeLShift
+keyRShift = getKeyCode SDL.KeycodeRShift
 
 -- General keys
 keyUnknown :: KeyCode

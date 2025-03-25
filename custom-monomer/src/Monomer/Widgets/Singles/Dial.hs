@@ -335,7 +335,7 @@ makeDial !field !minVal !maxVal !config !state = widget where
       widgetId = node ^. L.info . L.widgetId
       path = node ^. L.info . L.path
 
-      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift
+      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift || wenv ^. L.inputStatus . L.keyMod . L.rightShift
       isSelectKey code = isKeyReturn code || isKeySpace code
       addReqsEvts result newVal = newResult where
         currVal = widgetDataGet (wenv ^. L.model) field

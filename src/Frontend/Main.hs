@@ -24,7 +24,6 @@ main = do
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appTheme customLightTheme,
-      -- appTheme darkTheme,
 
       appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
       appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",

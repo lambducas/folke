@@ -397,7 +397,7 @@ makeTextArea !wdata !config !state = widget where
         | tpX < lineLen tpY = (lineLen tpY - T.length nextWordEnd, tpY)
         | otherwise = (lineLen (tpY + 1) - T.length nextWordEnd, tpY + 1)
 
-      isShift = _kmLeftShift mod
+      isShift = _kmLeftShift mod || _kmRightShift mod
       isLeft = isKeyLeft code
       isRight = isKeyRight code
       isUp = isKeyUp code

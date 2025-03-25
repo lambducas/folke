@@ -576,4 +576,5 @@ createMoveFocusReq :: WidgetEnv s e -> WidgetRequest s e
 createMoveFocusReq wenv = MoveFocus Nothing direction where
   direction
     | wenv ^. L.inputStatus . L.keyMod . L.leftShift = FocusBwd
+    | wenv ^. L.inputStatus . L.keyMod . L.rightShift = FocusBwd
     | otherwise = FocusFwd

@@ -125,7 +125,7 @@ handleEvent wenv node model evt = case evt of
     where
       filePath = "./myProofs/" <> shortFilePath
       shortFilePath = unpack fileName <> ".logic"
-      emptyProof = "|-P{}"
+      emptyProof = "|-bot{1: ;}"
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
@@ -144,22 +144,20 @@ handleEvent wenv node model evt = case evt of
     where
       convertSeq (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
 
-      -- convertForm (Abs.FormEq a b) = (convertForm a) <> " = " <> (convertForm b)
-      -- convertForm (Abs.FormAll a b) = "#"
-      -- convertForm (Abs.FormSome a b) = "#"
       convertForm (Abs.FormNot a) = "!" <> getOutput a
         where
           getOutput form = case form of
             Abs.FormPred _ -> c
             Abs.FormNot _ -> c
             Abs.FormBot -> c
+            Abs.FormPar _ -> c
             _ -> p
             where c = convertForm form; p = "(" <> c <> ")"
 
       convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
         where
           getOutput form = case form of
-            Abs.FormOr _ _ -> p
+            -- Abs.FormOr _ _ -> p
             Abs.FormIf _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
@@ -167,7 +165,7 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
         where
           getOutput form = case form of
-            Abs.FormAnd _ _ -> p
+            -- Abs.FormAnd _ _ -> p
             Abs.FormIf _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
@@ -175,16 +173,22 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormIf a b) = convertForm a <> " -> " <> convertForm b
       convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
       convertForm Abs.FormBot = "bot"
-      convertForm s = error (show s)
+      convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
+      convertForm (Abs.FormEq _ _) = error "= not implemented"
+      convertForm (Abs.FormAll _ _) = error "forall not implemented"
+      convertForm (Abs.FormSome _ _) = error "exists not implemented"
 
       convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
 
+      convertStep Abs.StepNil = [Line "" ""]
       convertStep (Abs.StepPrem _form) = [] -- [Line (convertForm form) "prem"]
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
-      convertStep s = error (show s)
+      convertStep (Abs.StepDecConst _) = error "StepDecConst not implemented"
+      convertStep (Abs.StepDecVar _) = error "StepDecVar not implemented"
+      convertStep (Abs.StepDecFun _ _) = error "StepDecFun not implemented"
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b

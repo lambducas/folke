@@ -356,7 +356,7 @@ makeInputField !config !state = widget where
       prevWordStartIdx = T.length prevWordStart
       nextWordEnd = T.dropWhile (not . delim) $ T.dropWhile delim part2
       nextWordEndIdx = txtLen - T.length nextWordEnd
-      isShift = _kmLeftShift mod
+      isShift = _kmLeftShift mod || _kmRightShift mod
       isLeft = isKeyLeft code
       isRight = isKeyRight code
       isHome = isKeyHome code
@@ -575,7 +575,7 @@ makeInputField !config !state = widget where
       widgetId = node ^. L.info . L.widgetId
       viewport = node ^. L.info . L.viewport
       newFieldState = newTextState wenv node state config
-      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift
+      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift || wenv ^. L.inputStatus . L.keyMod . L.rightShift
       dragSelectText btn
         = wenv ^. L.mainButton == btn
         && not shiftPressed

@@ -408,7 +408,7 @@ makeSlider !isHz !field !minVal !maxVal !config !state = widget where
       style = currentStyle wenv node
       vp = getContentArea node style
       widgetId = node ^. L.info . L.widgetId
-      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift
+      shiftPressed = wenv ^. L.inputStatus . L.keyMod . L.leftShift || wenv ^. L.inputStatus . L.keyMod . L.rightShift
       SliderState maxPos pos = state
 
       resultFromPoint !point !reqs = resultFromPos newPos reqs where
