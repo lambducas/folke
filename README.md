@@ -7,6 +7,7 @@
 ## IDEAS
 - Use reference counting to check that all parts of the proof is used.
 - Latex output for proofs.
+- Support for subscript in front end, nice if x_0 renders fancy.
 ## Directory Structure
 
 ```
