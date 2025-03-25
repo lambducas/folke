@@ -196,7 +196,7 @@ buildUI _wenv model = widgetTree where
           span displayName,
           -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
           box_ [onClick (CloseFile filePath)] (symbolSpan closeText
-            `styleBasic` [textFont "Symbol_Regular", textSize (1.5*u), radius 8, padding 4]
+            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
             `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
@@ -220,7 +220,7 @@ buildUI _wenv model = widgetTree where
             ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
             ] fontListToText [],
           label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
-          button "Set font" UpdateFont,
+          --button "Set font" UpdateFont,
           spacer,
           label "Set thickness" `styleBasic` [textFont $ fromString $ model ^. normalFont],
           textDropdown_ normalFont (model ^. selectNormalFont) pack [],
@@ -289,7 +289,7 @@ buildUI _wenv model = widgetTree where
       h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
       textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
-        `styleBasic` [textFont "Symbol_Regular"],
+        `styleBasic` [textFont $ fromString $ model ^. logicFont],
       spacer, spacer,
 
       h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
@@ -313,7 +313,7 @@ buildUI _wenv model = widgetTree where
     where
       premiseLine premise idx = hstack [
           textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
-            `styleBasic` [textFont "Symbol_Regular"],
+            `styleBasic` [textFont $ fromString $ model ^. logicFont],
           spacer,
           tooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
@@ -378,7 +378,7 @@ buildUI _wenv model = widgetTree where
                   ("Enter", InsertLineAfter path, True)
                 ] $
                 textFieldV (replaceSpecialSymbols rule) (EditLine path 1)
-                  `styleBasic` [textFont "Symbol_Regular", width 175]
+                  `styleBasic` [textFont $ fromString $ model ^. logicFont, width 175]
                   `nodeKey` showt index <> ".rule"
               ]
                 `nodeKey` showt index,
