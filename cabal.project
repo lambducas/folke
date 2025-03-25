@@ -1,4 +1,4 @@
-packages: .
+packages: . ./custom-monomer
 
 package sdl2
   flags: -recent-ish
