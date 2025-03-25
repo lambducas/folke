@@ -1,6 +1,4 @@
 --Grammar for logic
-entrypoints Sequent;
-
 Seq. Sequent ::= [Form] "|-" Form Proof;
 
 -- var form;
@@ -16,12 +14,14 @@ StepDecFun.     Step ::= Ident "(" [Ident] ")" ";";
 StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
 StepProof.      Step ::= Proof; 
 StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";
+StepNil.        Step ::= ";";
 
 ArgRange. Arg   ::= Integer "-" Integer;
 ArgLine.  Arg   ::= Integer;
 ArgTerm.  Arg   ::= Term;
 separator Arg   ",";
 
+FormPar.  Form5 ::= "(" Form ")";
 FormBot.  Form4 ::= "bot";
 FormEq.   Form4 ::= Term "=" Term;
 FormPred. Form4 ::= Pred;
@@ -34,7 +34,13 @@ FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
 FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
 FormIf.   Form1 ::= Form2 "->" Form1; --right-associative(book)
-coercions Form 4;
+
+_. Form4 ::= Form5;
+_. Form3 ::= Form4;
+_. Form2 ::= Form3;
+_. Form1 ::= Form2;
+_. Form ::= Form1;
+
 separator Form ",";
 
 Pred. Pred ::= Ident Params;

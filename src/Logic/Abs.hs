@@ -27,6 +27,7 @@ data Step
     | StepAssume Form
     | StepProof Proof
     | StepForm Ident [Arg] Form
+    | StepNil
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Arg
@@ -34,7 +35,8 @@ data Arg
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form
-    = FormBot
+    = FormPar Form
+    | FormBot
     | FormEq Term Term
     | FormPred Pred
     | FormAll Ident Form

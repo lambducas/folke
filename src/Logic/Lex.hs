@@ -1,7 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# OPTIONS_GHC -fno-warn-tabs #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
-{-# OPTIONS_GHC -fno-warn-unused-imports #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LINE 4 "Logic/Lex.x" #-}
@@ -18,11 +15,22 @@ import qualified Data.Bits
 import Data.Char     (ord)
 import Data.Function (on)
 import Data.Word     (Word8)
+#if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
-import qualified Data.Array
+#elif defined(__GLASGOW_HASKELL__)
+#include "config.h"
+#endif
+#if __GLASGOW_HASKELL__ >= 503
+import Data.Array
+#else
+import Array
+#endif
+#if __GLASGOW_HASKELL__ >= 503
 import Data.Array.Base (unsafeAt)
-import GHC.Exts (Addr#,Int#,Int(I#),(*#),(+#),(-#),(==#),(>=#),indexCharOffAddr#,indexInt16OffAddr#,indexInt32OffAddr#,int2Word#,narrow16Int#,narrow32Int#,negateInt#,or#,ord#,uncheckedShiftL#,word2Int#)
-import qualified GHC.Exts
+import GHC.Exts
+#else
+import GlaExts
+#endif
 alex_tab_size :: Int
 alex_tab_size = 8
 alex_base :: AlexAddr
@@ -41,7 +49,7 @@ alex_deflt :: AlexAddr
 alex_deflt = AlexA#
   "\xff\xff\x0d\x00\x0a\x00\xff\xff\x0b\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x00\x0b\x00\x0b\x00\x0a\x00\xff\xff\x0d\x00\xff\xff\xff\xff"#
 
-alex_accept = Data.Array.listArray (0 :: Int, 17)
+alex_accept = listArray (0 :: Int, 17)
   [ AlexAccNone
   , AlexAccNone
   , AlexAccNone
@@ -62,7 +70,7 @@ alex_accept = Data.Array.listArray (0 :: Int, 17)
   , AlexAcc 0
   ]
 
-alex_actions = Data.Array.array (0 :: Int, 5)
+alex_actions = array (0 :: Int, 5)
   [ (4,alex_action_2)
   , (3,alex_action_3)
   , (2,alex_action_4)
@@ -91,8 +99,8 @@ alex_action_4 = tok TI
 #  define FAST_INT Int#
 -- Do not remove this comment. Required to fix CPP parsing when using GCC and a clang-compiled alex.
 #  if __GLASGOW_HASKELL__ > 706
-#    define GTE(n,m) (GHC.Exts.tagToEnum# (n >=# m))
-#    define EQ(n,m) (GHC.Exts.tagToEnum# (n ==# m))
+#    define GTE(n,m) (tagToEnum# (n >=# m))
+#    define EQ(n,m) (tagToEnum# (n ==# m))
 #  else
 #    define GTE(n,m) (n >=# m)
 #    define EQ(n,m) (n ==# m)
@@ -118,47 +126,65 @@ alex_action_4 = tok TI
 #ifdef ALEX_GHC
 data AlexAddr = AlexA# Addr#
 -- Do not remove this comment. Required to fix CPP parsing when using GCC and a clang-compiled alex.
+#if __GLASGOW_HASKELL__ < 503
+uncheckedShiftL# = shiftL#
+#endif
 
 {-# INLINE alexIndexInt16OffAddr #-}
 alexIndexInt16OffAddr :: AlexAddr -> Int# -> Int#
 alexIndexInt16OffAddr (AlexA# arr) off =
+#ifdef WORDS_BIGENDIAN
+  narrow16Int# i
+  where
+        i    = word2Int# ((high `uncheckedShiftL#` 8#) `or#` low)
+        high = int2Word# (ord# (indexCharOffAddr# arr (off' +# 1#)))
+        low  = int2Word# (ord# (indexCharOffAddr# arr off'))
+        off' = off *# 2#
+#else
 #if __GLASGOW_HASKELL__ >= 901
-  GHC.Exts.int16ToInt# -- qualified import because it doesn't exist on older GHC's
+  int16ToInt#
 #endif
-#ifdef WORDS_BIGENDIAN
-  (GHC.Exts.word16ToInt16# (GHC.Exts.wordToWord16# (GHC.Exts.byteSwap16# (GHC.Exts.word16ToWord# (GHC.Exts.int16ToWord16#
-#endif
-  (indexInt16OffAddr# arr off)
-#ifdef WORDS_BIGENDIAN
-  )))))
+    (indexInt16OffAddr# arr off)
 #endif
 #else
-alexIndexInt16OffAddr = (Data.Array.!)
+alexIndexInt16OffAddr arr off = arr ! off
 #endif
 
 #ifdef ALEX_GHC
 {-# INLINE alexIndexInt32OffAddr #-}
 alexIndexInt32OffAddr :: AlexAddr -> Int# -> Int#
 alexIndexInt32OffAddr (AlexA# arr) off =
+#ifdef WORDS_BIGENDIAN
+  narrow32Int# i
+  where
+   i    = word2Int# ((b3 `uncheckedShiftL#` 24#) `or#`
+                     (b2 `uncheckedShiftL#` 16#) `or#`
+                     (b1 `uncheckedShiftL#` 8#) `or#` b0)
+   b3   = int2Word# (ord# (indexCharOffAddr# arr (off' +# 3#)))
+   b2   = int2Word# (ord# (indexCharOffAddr# arr (off' +# 2#)))
+   b1   = int2Word# (ord# (indexCharOffAddr# arr (off' +# 1#)))
+   b0   = int2Word# (ord# (indexCharOffAddr# arr off'))
+   off' = off *# 4#
+#else
 #if __GLASGOW_HASKELL__ >= 901
-  GHC.Exts.int32ToInt# -- qualified import because it doesn't exist on older GHC's
+  int32ToInt#
 #endif
-#ifdef WORDS_BIGENDIAN
-  (GHC.Exts.word32ToInt32# (GHC.Exts.wordToWord32# (GHC.Exts.byteSwap32# (GHC.Exts.word32ToWord# (GHC.Exts.int32ToWord32#
-#endif
-  (indexInt32OffAddr# arr off)
-#ifdef WORDS_BIGENDIAN
-  )))))
+    (indexInt32OffAddr# arr off)
 #endif
 #else
-alexIndexInt32OffAddr = (Data.Array.!)
+alexIndexInt32OffAddr arr off = arr ! off
 #endif
 
 #ifdef ALEX_GHC
+
+#if __GLASGOW_HASKELL__ < 503
+quickIndex arr i = arr ! i
+#else
 -- GHC >= 503, unsafeAt is available from Data.Array.Base.
 quickIndex = unsafeAt
+#endif
 #else
-quickIndex = (Data.Array.!)
+quickIndex arr i = arr ! i
 #endif
 
 -- -----------------------------------------------------------------------------
@@ -172,12 +198,7 @@ data AlexReturn a
 
 -- alexScan :: AlexInput -> StartCode -> AlexReturn a
 alexScan input__ IBOX(sc)
-  = alexScanUser (error "alex rule requiring context was invoked by alexScan; use alexScanUser instead?") input__ IBOX(sc)
-
--- If the generated alexScan/alexScanUser functions are called multiple times
--- in the same file, alexScanUser gets broken out into a separate function and
--- increases memory usage. Make sure GHC inlines this function and optimizes it.
-{-# INLINE alexScanUser #-}
+  = alexScanUser undefined input__ IBOX(sc)
 
 alexScanUser user__ input__ IBOX(sc)
   = case alex_scan_tkn user__ input__ ILIT(0) input__ sc AlexNone of
@@ -185,26 +206,26 @@ alexScanUser user__ input__ IBOX(sc)
     case alexGetByte input__ of
       Nothing ->
 #ifdef ALEX_DEBUG
-                                   Debug.Trace.trace ("End of input.") $
+                                   trace ("End of input.") $
 #endif
                                    AlexEOF
       Just _ ->
 #ifdef ALEX_DEBUG
-                                   Debug.Trace.trace ("Error.") $
+                                   trace ("Error.") $
 #endif
                                    AlexError input__'
 
   (AlexLastSkip input__'' len, _) ->
 #ifdef ALEX_DEBUG
-    Debug.Trace.trace ("Skipping.") $
+    trace ("Skipping.") $
 #endif
     AlexSkip input__'' len
 
   (AlexLastAcc k input__''' len, _) ->
 #ifdef ALEX_DEBUG
-    Debug.Trace.trace ("Accept.") $
+    trace ("Accept.") $
 #endif
-    AlexToken input__''' len ((Data.Array.!) alex_actions k)
+    AlexToken input__''' len (alex_actions ! k)
 
 
 -- Push the input through the DFA, remembering the most recent accepting
@@ -220,7 +241,7 @@ alex_scan_tkn user__ orig_input len input__ s last_acc =
      Nothing -> (new_acc, input__)
      Just (c, new_input) ->
 #ifdef ALEX_DEBUG
-      Debug.Trace.trace ("State: " ++ show IBOX(s) ++ ", char: " ++ show c ++ " " ++ (show . chr . fromIntegral) c) $
+      trace ("State: " ++ show IBOX(s) ++ ", char: " ++ show c) $
 #endif
       case fromIntegral c of { IBOX(ord_c) ->
         let
@@ -291,7 +312,7 @@ alexPrevCharIs c _ input__ _ _ = c == alexInputPrevChar input__
 alexPrevCharMatches f _ input__ _ _ = f (alexInputPrevChar input__)
 
 --alexPrevCharIsOneOfPred :: Array Char Bool -> AlexAccPred _
-alexPrevCharIsOneOf arr _ input__ _ _ = arr Data.Array.! alexInputPrevChar input__
+alexPrevCharIsOneOf arr _ input__ _ _ = arr ! alexInputPrevChar input__
 
 --alexRightContext :: Int -> AlexAccPred _
 alexRightContext IBOX(sc) user__ _ _ input__ =

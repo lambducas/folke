@@ -125,6 +125,7 @@ checkStep env step = case step of
             Ok args_t -> case applyRule env (identToString name) args_t form_t of
                     Error kind msg -> Error kind msg
                     Ok res_t -> Ok(env, ArgForm res_t)
+    Abs.StepNil -> Error UnknownError "Empty step."
 
 checkArgs :: Env -> [Abs.Arg] -> Result [Arg]
 checkArgs env [] = Ok []
@@ -167,7 +168,8 @@ checkForms env (form:forms) = case checkForm env form of
 -}
 checkForm :: Env -> Abs.Form -> Result Formula
 checkForm env f = case f of  
-    Abs.FormBot             -> Ok Bot
+    Abs.FormPar form -> checkForm env form
+    Abs.FormBot -> Ok Bot
     Abs.FormEq a b -> case checkTerm env a of
         Error kind msg -> Error kind msg
         Ok a_t -> case checkTerm env b of 
