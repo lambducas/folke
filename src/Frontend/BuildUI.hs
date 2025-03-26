@@ -47,7 +47,8 @@ menuBarCategories = [
       ("Open Guide", "", NoEvent)
     ]),
     ("Settings", [
-      ("Settings", "", OpenFile_ "Settings.json" "")
+      ("Open", "", OpenFile_ "Settings.json" ""),
+      ("Apply", "", ReadSettings)
     ])
   ]
 
@@ -198,7 +199,7 @@ buildUI _wenv model = widgetTree where
           spacer,
           span displayName,
           box_ [onClick (CloseFile filePath)] (symbolSpan closeText
-            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
+            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*(model ^. fontSize)), radius 8, padding 4]
             `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
@@ -214,25 +215,27 @@ buildUI _wenv model = widgetTree where
     Nothing -> span "Filepath not loaded"
     Just (SettingsFile _) -> hstack [
       vstack [
-          label "Choose font" `styleBasic` [textFont $ fromString $ model ^. normalFont],
+          span "Set text size",
+          hslider_ fontSize 8 32 [thumbVisible],
+          spacer, spacer,
+          span "Choose font:",
           textDropdown_ selectNormalFont [
             ["Regular","Medium","Bold"],
             ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
             ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
-            ] fontListToText [onChange UpdateFont],
-          label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
+            ] fontListToText [onChange UpdateFont] `styleBasic` [textSize (model ^. fontSize)],
           spacer,
-          label "Set thickness" `styleBasic` [textFont $ fromString $ model ^. normalFont],
-          textDropdown_ normalFont (model ^. selectNormalFont) pack [],
+          span "Set font thickness:",
+          textDropdown_ normalFont (model ^. selectNormalFont) pack [] `styleBasic` [textSize (model ^. fontSize)],
           vstack $ map illustThickness (model ^. selectNormalFont),
           spacer,
           spacer,
-          label "Set symbolic font for proofs" `styleBasic` [textFont $ fromString $ model ^. logicFont],
-          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack []
-        ]
-      ]
-      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess]]
+          symbolSpan "Set symbolic font thickness (the font used in logic proofs):",
+          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize (model ^. fontSize)]
+        ] `styleBasic` [maxWidth 1024]
+      ] `styleBasic` [padding 30]
+      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize (model ^. fontSize)]]
     Just file@(ProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
           vstack [
@@ -268,7 +271,7 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
-    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding (model ^. fontSize), maxWidth 300]) `nodeKey` "markdownScroll"
     Just (OtherFile p content) -> vstack_ [childSpacing] [
         label $ pack p <> ": This file type is not supported",
         paragraph content

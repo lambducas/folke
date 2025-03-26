@@ -287,6 +287,15 @@ handleEvent wenv node model evt = case evt of
         | otherwise = customLightTheme
 
   UpdateFont s -> [Model $ model & normalFont .~ head s]
+
+  ReadSettings -> [
+      Producer (\sendMsg -> do
+        pContent <- readFile "Settings.json"
+        sendMsg (ReadSettings_ pContent)
+      )
+    ]
+  ReadSettings_ settings -> [Model $ model & testSetting .~ pack settings]
+
   -- Backend events
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,

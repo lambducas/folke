@@ -13,17 +13,18 @@ import Monomer
 import Data.Text (Text, splitOn, unpack, pack, intercalate)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
+import Control.Lens
 
 renderMarkdown :: AppModel -> Text -> WidgetNode s e
 renderMarkdown model markdown = vstack_ [childSpacing] lineRenders
   where
     lineRenders = map (renderLine . trim . unpack) lines
     lines = splitOn "\n" markdown
-    renderLine ('*':t) = span model ("• " <> pack (trim t)) `styleBasic` [paddingL u]
+    renderLine ('*':t) = span model ("• " <> pack (trim t)) `styleBasic` [paddingL (model ^. fontSize)]
     renderLine ('#':'#':t) = h2 model (pack (trim t))
     renderLine ('#':t) = h1 model (pack (trim t))
     renderLine t
-      | isList = span model (liA <> ". " <> liB) `styleBasic` [paddingL u]
+      | isList = span model (liA <> ". " <> liB) `styleBasic` [paddingL (model ^. fontSize)]
       | otherwise = paragraph_ model (pack (trim t)) [multiline]
       where
         isList = 

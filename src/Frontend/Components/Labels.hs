@@ -1,5 +1,4 @@
 module Frontend.Components.Labels (
-  u,
   h1, h1_,
   h2, h2_,
   span, span_,
@@ -20,34 +19,34 @@ import Data.Text (Text)
 import Data.String (fromString)
 
 -- Base unit for fonts. Use instead of pixels (1u = 16px)
-u :: Double
-u = 16
+-- u :: Double
+-- u = model ^. fontSize = 16
 
 -- Using HTML tag name convention
 h1, h2, span, paragraph, iconLabel, symbolSpan :: AppModel -> Text -> WidgetNode s e
 h1_, h2_, span_, paragraph_, iconLabel_, symbolSpan_ :: AppModel -> Text -> [LabelCfg s e] -> WidgetNode s e
 
 -- Main heading
-h1 model t = label t `styleBasic` [ textSize (1.75 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-h1_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+h1 model t = label t `styleBasic` [ textSize (1.75 * (model ^. fontSize)), textFont $ fromString $ last $ model ^. selectNormalFont ]
+h1_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * (model ^. fontSize)), textFont $ fromString $ last $ model ^. selectNormalFont ]
 
 -- Secondary heading
-h2 model t = label t `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-h2_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
+h2 model t = label t `styleBasic` [ textSize (1.25 * (model ^. fontSize)), textFont $ fromString $ last $ model ^. selectNormalFont ]
+h2_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.25 * (model ^. fontSize)), textFont $ fromString $ last $ model ^. selectNormalFont ]
 
 -- Plain text
-span model t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-span_ model t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+span model t = label t `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. normalFont ]
+span_ model t cfg = label_ t cfg `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. normalFont ]
 
 -- Monospaced text (used for symbols in logic)
-symbolSpan model t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
-symbolSpan_ model t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
+symbolSpan model t = label t `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. logicFont ]
+symbolSpan_ model t cfg = label_ t cfg `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. logicFont ]
 -- symbolSpan t = label t `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
 -- symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
 
 -- Plain text when used as paragraph (same as span right now but usually has margin at bottom and top)
-paragraph model t = label_ t [multiline] `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-paragraph_ model t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
+paragraph model t = label_ t [multiline] `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. normalFont ]
+paragraph_ model t cfg = label_ t cfg `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. normalFont ]
 
 -- For rendering icons
 iconLabel model icon = label icon `styleBasic` [textFont "Remix", textBottom]

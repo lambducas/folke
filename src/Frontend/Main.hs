@@ -18,7 +18,6 @@ main = do
   currentBackendChan <- newChan
   _ <- startCommunication currentFrontendChan currentBackendChan
   startApp (model currentFrontendChan currentBackendChan) handleEvent buildUI config
-
   where
     config = [
       appWindowTitle "Proof Editor",
@@ -71,5 +70,7 @@ main = do
 
       _selectNormalFont = ["Regular","Medium","Bold"],
       _normalFont = "Regular",
-      _logicFont = "Symbol_Regular"
+      _logicFont = "Symbol_Regular",
+      _fontSize = 16,
+      _testSetting = "bajs"
     }

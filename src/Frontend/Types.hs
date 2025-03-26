@@ -72,7 +72,9 @@ data AppModel = AppModel {
   --Albin Settings v
   _selectNormalFont :: [String],
   _normalFont :: String,
-  _logicFont :: String
+  _logicFont :: String,
+  _fontSize :: Double,
+  _testSetting :: Text
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -133,6 +135,8 @@ data AppEvent
 
   -- Settings
   | UpdateFont [String]
+  | ReadSettings
+  | ReadSettings_ String
   deriving (Eq, Show)
 
 makeLenses 'ProofFile
