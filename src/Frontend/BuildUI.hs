@@ -72,7 +72,7 @@ buildUI _wenv model = widgetTree where
   symbolSpan = Frontend.Components.Labels.symbolSpan model
   symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
   paragraph = Frontend.Components.Labels.paragraph model
-  paragraph_ = Frontend.Components.Labels.paragraph_ model
+  -- paragraph_ = Frontend.Components.Labels.paragraph_ model
   iconLabel = Frontend.Components.Labels.iconLabel model
   iconButton = Frontend.Components.Labels.iconButton model
   trashButton = Frontend.Components.Labels.trashButton model
@@ -141,6 +141,9 @@ buildUI _wenv model = widgetTree where
               button "+ Create proof" cep
             ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+      
+      button "[DEBUG] Open file dialog" DEBUGOpenFileDialog,
+
       vscroll $ fileTreeUI parts 1
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
     where

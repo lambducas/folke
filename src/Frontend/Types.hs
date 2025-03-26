@@ -111,6 +111,7 @@ data AppEvent
   | SwitchSubProofToLine FormulaPath
 
   -- Handle files
+  | DEBUGOpenFileDialog
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath

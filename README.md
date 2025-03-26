@@ -73,6 +73,14 @@ freetype2-any, not found in the pkg-config database)` when building, run
 sudo apt-get install libfreetype6-dev
 ```
 
+## Setup nativefiledialog
+```bash
+sudo apt-get install libgtk-3-dev
+# Should not be needed:
+# cd nativefiledialog-hs/nativefiledialog/build/gmake_linux
+# make config=release_x64
+```
+
 ## Running the Project
 
 To run the backend (standard output) and frontend GUI, use the following command to run the executable:
@@ -133,7 +141,7 @@ $ cabal test
     > cabal run bsc
     ```
 
-## SDL2 build error solution
+### SDL2 build error solution
 If sdl2 fails with `error: ld.lld: error: undefined symbol: __stack_chk_fail` (from [this](https://github.com/haskell-game/sdl2/issues/277#issuecomment-2283057736) github comment ❤🤗):
 1. Download `SDL2-devel-2.30.6-mingw.zip` from [this repo](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.6)
 1. Unzip and place the folder `SDL2-2.30.6` in Downloads or somewhere else. Make sure it contains a folder called `x86_64-w64-mingw32` with subfolders: bin, include, lib and share
@@ -146,7 +154,7 @@ If sdl2 fails with `error: ld.lld: error: undefined symbol: __stack_chk_fail` (f
     ```
 1. Run `ghcup run --mingw-path -- cabal build` again and it should work (it works on my machine 💀)
 
-### Useful links maybe
+#### Useful links maybe
 Getting cabal to find pkg-config: https://discourse.haskell.org/t/installing-a-library-with-c-dependencies-on-windows/8557
 Old SDL2 versions: https://repo.msys2.org/mingw/mingw64/
 Solve sdl2 build error: https://github.com/haskell-game/sdl2/issues/277#issuecomment-2283057736
