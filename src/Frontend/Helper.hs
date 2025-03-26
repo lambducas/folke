@@ -1,5 +1,9 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module Frontend.Helper (
+  isFileEdited,
   evalPath,
+  pathToLineNumber,
   maybeHead,
   getProofFileByPath,
   removeIdx,
@@ -7,81 +11,127 @@ module Frontend.Helper (
   trim,
   trimText,
   firstKeystroke,
-  fontListToText
+  fontListToText,
+  parseProofForBackend,
+  parseProofToSimpleFileFormat,
+  parseProofFromSimpleFileFormat
 ) where
 
+import Frontend.SpecialCharacters
 import Frontend.Types
 import Monomer
 import Data.Char (isSpace)
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd)
+import TextShow (showt)
 
--- -- Placeholder
--- parseProofToFile :: FESequent -> Text
--- parseProofToFile sequent = "\n" <> premises <> ";\n" <> conclusion <> ";\n" <> exportProofHelper (SubProof (_steps sequent)) 0
---   where
---     premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
---     conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
+isFileEdited :: Maybe File -> Bool
+isFileEdited (Just f@ProofFile {}) = _isEdited f
+isFileEdited Nothing = False
+isFileEdited _ = False
 
---     exportProofHelper :: FEStep -> Int -> Text
---     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
---     exportProofHelper (Line statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
+parseProofForBackend :: FESequent -> Text
+parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
+  where
+    premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
+    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
---     tabs :: Int -> Text
---     tabs n = pack $ replicate n '\t'
+    newSequent = FESequent (_premises sequent) (_conclusion sequent) (ghostPremises ++ _steps sequent)
+    proof = SubProof (_steps newSequent)
+    ghostPremises = map (\p -> Line p "prem") (_premises sequent)
 
--- -- Placeholder
--- parseProofFromFile :: Text -> FESequent
--- parseProofFromFile p = case proof of
---   [SubProof p] -> FESequent premises conclusion p
---   _ -> error "Corrupt proof from `parseText`"
---   where
---     premises = filter (/="") (map trimText (splitOn "," (pack $ slice 0 premiseEnd text)))
---     conclusion = trimText (pack (slice (premiseEnd + 1) conclusionEnd text))
+    exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
+    exportProofHelper indent path (SubProof p) = tabs indent <> label <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+      where label = if null p || null path then "" else showt (offsetLineNumber (path ++ [0])) <> "-" <> showt (offsetLineNumber (path ++ [length p - 1])) <> ":"
+    exportProofHelper indent path (Line statement rule) = tabs indent <> label <> nRule <> " " <> nStatement <> ";"
+      where
+        nRule = replaceSpecialSymbolsInverse rule
+        nStatement = replaceSpecialSymbolsInverse statement
+        label = showt (offsetLineNumber path) <> ":"
 
---     premiseEnd = snd $ fromMaybe (error "Empty premise") (gotoNextChar text (-1) [';'])
---     conclusionEnd = snd $ fromMaybe (error "Empty conclusion") (gotoNextChar text premiseEnd [';'])
---     proofStart = snd $ fromMaybe (error "No proof") (gotoNextChar text conclusionEnd ['{'])
+    offsetLineNumber path = pathToLineNumber newSequent path-- + toInteger (length (_premises sequent))
 
---     proof = [parseText text proofStart []]
---     -- proof = [parseText (trim $ drop (conclusionEnd + 1) text) 0 []]
---     -- proof = [parseText text 0 []]
---     text = unpack p
+    tabs :: Int -> Text
+    tabs n = pack $ replicate n '\t'
 
---     parseText :: String -> Int -> [FEStep] -> FEStep
---     parseText text ptr formulas = case nextSpecialChar of
---       Just (char, idx) -> case char of
---         ';' -> parseText text idx (formulas ++ [parseFormula $ pack $ slice (ptr + 1) idx text])
---         '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
---         '}' -> SubProof formulas
---         _ -> error "Invalid special char"
---       Nothing -> SubProof [Line "" ""] -- Return garbage instead of crashing
---       where
---         nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
+-- Placeholder
+parseProofToSimpleFileFormat :: FESequent -> Text
+parseProofToSimpleFileFormat sequent = "\n" <> premises <> ";\n" <> conclusion <> ";\n" <> exportProofHelper (SubProof (_steps sequent)) 0
+  where
+    premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
+    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
 
---     parseFormula :: Text -> FEStep
---     parseFormula text = Line statement rule
---       where
---         statement = trimText $ head parts
---         rule = trimText $ parts !! 1
---         parts = splitOn ":" text
+    exportProofHelper :: FEStep -> Int -> Text
+    exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
+    exportProofHelper (Line statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
 
---     gotoNextChar text ptr chars
---       | ptr >= len - 1 = Nothing
---       | currentChar `elem` chars = Just (currentChar, ptr + 1)
---       | otherwise = gotoNextChar text (ptr + 1) chars
---       where
---         len = length text
---         currentChar = text !! (ptr + 1)
+    tabs :: Int -> Text
+    tabs n = pack $ replicate n '\t'
 
---     findClosingBracket :: [Char] -> Int -> Int -> Int -> Int
---     findClosingBracket text nestedLevel idx cnl
---       | idx >= length text - 1 = idx -- error "No closing bracket found"
---       | otherwise = case char of
---       '{' -> findClosingBracket text nestedLevel (idx + 1) (cnl + 1)
---       '}' -> if nestedLevel == cnl then idx + 1 else findClosingBracket text nestedLevel (idx + 1) (cnl - 1)
---       _ -> findClosingBracket text nestedLevel (idx + 1) cnl
---       where char = text !! (idx + 1)
+-- Placeholder
+parseProofFromSimpleFileFormat :: Text -> Maybe FESequent
+parseProofFromSimpleFileFormat p = case proof of
+  Just [SubProof p] -> case premises of
+    Nothing -> Nothing
+    Just premises -> case conclusion of
+      Nothing -> Nothing
+      Just conclusion -> Just (FESequent premises conclusion p)
+  _ -> Nothing--error "Corrupt proof from `parseText`"
+  where
+    premises = premiseEnd >>= (\pe -> Just $ filter (/="") (map trimText (splitOn "," (pack $ slice 0 pe text))))
+    conclusion = case premiseEnd of
+      Nothing -> Nothing
+      Just premiseEnd -> case conclusionEnd of
+        Nothing -> Nothing
+        Just conclusionEnd -> Just $ trimText (pack (slice (premiseEnd + 1) conclusionEnd text))
+
+    premiseEnd = gotoNextChar text (-1) [';'] >>= Just . snd
+    conclusionEnd = (premiseEnd >>= (\f -> gotoNextChar text f [';'])) >>= Just . snd
+    proofStart = (conclusionEnd >>= (\f -> gotoNextChar text f ['{'])) >>= Just . snd
+
+    -- premiseEnd = snd $ fromMaybe (throw NoPrem) (gotoNextChar text (-1) [';'])
+    -- conclusionEnd = snd $ fromMaybe (throw NoConc) (gotoNextChar text premiseEnd [';'])
+    -- proofStart = snd $ fromMaybe (throw NoProof) (gotoNextChar text conclusionEnd ['{'])
+
+    proof = proofStart >>= (\f -> Just [parseText text f []])
+    -- proof = [parseText (trim $ drop (conclusionEnd + 1) text) 0 []]
+    -- proof = [parseText text 0 []]
+    text = unpack p
+
+    parseText :: String -> Int -> [FEStep] -> FEStep
+    parseText text ptr formulas = case nextSpecialChar of
+      Just (char, idx) -> case char of
+        ';' -> parseText text idx (formulas ++ [parseFormula $ pack $ slice (ptr + 1) idx text])
+        '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
+        '}' -> SubProof formulas
+        _ -> error "Invalid special char"
+      Nothing -> SubProof [Line "" ""] -- Return garbage instead of crashing
+      where
+        nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
+
+    parseFormula :: Text -> FEStep
+    parseFormula text = Line statement rule
+      where
+        statement = trimText $ head parts
+        rule = trimText $ parts !! 1
+        parts = splitOn ":" text
+
+    gotoNextChar text ptr chars
+      | ptr >= len - 1 = Nothing
+      | currentChar `elem` chars = Just (currentChar, ptr + 1)
+      | otherwise = gotoNextChar text (ptr + 1) chars
+      where
+        len = length text
+        currentChar = text !! (ptr + 1)
+
+    findClosingBracket :: [Char] -> Int -> Int -> Int -> Int
+    findClosingBracket text nestedLevel idx cnl
+      | idx >= length text - 1 = idx -- error "No closing bracket found"
+      | otherwise = case char of
+      '{' -> findClosingBracket text nestedLevel (idx + 1) (cnl + 1)
+      '}' -> if nestedLevel == cnl then idx + 1 else findClosingBracket text nestedLevel (idx + 1) (cnl - 1)
+      _ -> findClosingBracket text nestedLevel (idx + 1) cnl
+      where char = text !! (idx + 1)
 
 getProofFileByPath :: [File] -> FilePath -> Maybe File
 getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
@@ -93,6 +143,17 @@ evalPath sequent formulaPath = ep formulaPath (SubProof $ _steps sequent)
       SubProof p -> ep rest $ p !! idx
       Line _ _ -> error "Tried to index into `Line` (not an array)"
     ep [] p = p
+
+pathToLineNumber :: FESequent -> FormulaPath -> Integer
+pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
+  where
+    ep (idx:tail) currentProof startLine = case currentProof of
+      SubProof p -> ep tail (p !! idx) (startLine + sum (map stepLength (take idx p)))
+      Line _ _ -> error "Tried to index into `Line` (not an array)"
+    ep [] _ startLine = startLine
+
+    stepLength (SubProof p) = sum $ map stepLength p
+    stepLength (Line _ _) = 1
 
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts] (firstKeystroke xs widget)

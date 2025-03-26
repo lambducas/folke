@@ -87,6 +87,7 @@ executable bsc
                     , text
                     , text-show
                     , directory
+                    , filepath
                     , containers
                     , array
     other-modules:
@@ -106,6 +107,8 @@ executable bsc
                     , Frontend.SpecialCharacters
                     , Frontend.Helper
                     , Frontend.Themes
+                    , Frontend.Components.RenderMarkdown
+                    , Frontend.Components.Labels
                     , Shared.Messages
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded

@@ -4,9 +4,13 @@ module Frontend.BuildUI (
   buildUI
 ) where
 
+import Prelude hiding (span)
+
 import Frontend.Types
 import Frontend.SpecialCharacters
 import Frontend.Helper
+import Frontend.Components.Labels
+import Frontend.Components.RenderMarkdown (renderMarkdown)
 
 import Monomer
 import qualified Monomer.Lens as L
@@ -14,9 +18,10 @@ import Control.Lens
 import TextShow ( TextShow(showt) )
 import Data.Text (Text, pack, intercalate, splitOn)
 import Data.List (sort, groupBy)
-import Data.Maybe (fromMaybe)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
+import System.FilePath (takeExtension)
+import Data.Maybe (fromMaybe)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -58,6 +63,19 @@ buildUI _wenv model = widgetTree where
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
+
+  h1 = Frontend.Components.Labels.h1 model
+  h2 = Frontend.Components.Labels.h2 model
+  span = Frontend.Components.Labels.span model
+  span_ = Frontend.Components.Labels.span_ model
+  symbolSpan = Frontend.Components.Labels.symbolSpan model
+  symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
+  paragraph = Frontend.Components.Labels.paragraph model
+  paragraph_ = Frontend.Components.Labels.paragraph_ model
+  iconLabel = Frontend.Components.Labels.iconLabel model
+  iconButton = Frontend.Components.Labels.iconButton model
+  trashButton = Frontend.Components.Labels.trashButton model
+  bold = Frontend.Components.Labels.bold model
 
   widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
@@ -106,9 +124,11 @@ buildUI _wenv model = widgetTree where
 
   fileWindow = vstack [
       box_ [expandContent] (hstack [
-          h2 "Manage proofs" `styleBasic` [padding 10],
+          bold (span "File Explorer"),
           filler,
-          box (button "+" OpenCreateProofPopup) `styleBasic` [bgColor transparent, padding 4],
+          iconButton remixFileAddLine OpenCreateProofPopup
+            `styleBasic` [bgColor transparent, border 1 transparent, padding 4]
+            `styleHover` [bgColor hoverColor],
 
           let cep = (CreateEmptyProof $ model ^. newFileName) in
             popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
@@ -117,9 +137,9 @@ buildUI _wenv model = widgetTree where
               spacer,
               firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
               spacer,
-              button "Create proof" cep
+              button "+ Create proof" cep
             ] `styleBasic` [bgColor popupBackground, padding 10])
-        ]) `styleBasic` [borderB 1 dividerColor],
+        ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
       vscroll $ fileTreeUI parts 1
     ] `styleBasic` [ width 250, borderR 1 dividerColor ]
     where
@@ -148,13 +168,23 @@ buildUI _wenv model = widgetTree where
               -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
               -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
-  fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ vstack [
+  fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ hstack_ [childSpacing] [
+      iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
       span_ text [ellipsis]
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
       isCurrent = (model ^. currentFile) == Just filePath
+      ext = takeExtension filePath
+      iconIdent = case ext of
+        ".md" -> remixMarkdownFill
+        ".logic" -> remixSurveyFill
+        _ -> remixMenu2Line
+      iconColor = case ext of
+        ".md" -> Just $ rgb 94 156 255
+        ".logic" -> Just $ rgb 255 130 0
+        _ -> Nothing
 
   editWindow = vstack [
       fileNavBar (model ^. openFiles),
@@ -167,7 +197,6 @@ buildUI _wenv model = widgetTree where
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
           span displayName,
-          -- button displayName (SetCurrentFile filePath) `styleBasic` [textColor white, bgColor transparent, paddingV 8, paddingH 16, radius 0, border 0 transparent],
           box_ [onClick (CloseFile filePath)] (symbolSpan closeText
             `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
             `styleHover` [bgColor hoverColor])
@@ -176,20 +205,20 @@ buildUI _wenv model = widgetTree where
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
             displayName = pack filePath
-            closeText = if isEdited then "●" else "⨯"
-            isEdited = fromMaybe False (file >>= Just . _isEdited)
+            closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
             isCurrent = (model ^. currentFile) == Just filePath
 
-  illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess]]
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
-  proofWindow (Just "Settings.json") = hstack [
+  proofWindow (Just fileName) = case file of
+    Nothing -> span "Filepath not loaded"
+    Just (SettingsFile _) -> hstack [
       vstack [
           label "Choose font" `styleBasic` [textFont $ fromString $ model ^. normalFont],
           textDropdown_ selectNormalFont [
-            ["Regular","Medium","Bold"], 
+            ["Regular","Medium","Bold"],
             ["Dyslexic"],
-            ["Roboto_Regular","Roboto_Medium","Roboto_Bold"], 
+            ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
             ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
             ] fontListToText [onChange UpdateFont],
           label "This is how I look" `styleBasic` [textFont $ fromString $ head $ model ^. selectNormalFont],
@@ -203,16 +232,15 @@ buildUI _wenv model = widgetTree where
           textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack []
         ]
       ]
-  proofWindow (Just fileName) = case file of
-    Nothing -> span "Filepath not loaded"
-    Just file -> case parsedSequent of
+      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess]]
+    Just file@(ProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
           vstack [
             h1 $ pack $ _path file,
             spacer
           ] `styleBasic` [padding 10, borderB 1 dividerColor],
           vscroll_ [wheelRate 50] (vstack [
-            paragraph_ "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed" [multiline],
+            paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
             spacer,
             paragraph "File preview:",
             spacer,
@@ -240,6 +268,11 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
+    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+    Just (OtherFile p content) -> vstack_ [childSpacing] [
+        label $ pack p <> ": This file type is not supported",
+        paragraph content
+      ]
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
@@ -271,14 +304,6 @@ buildUI _wenv model = widgetTree where
         tree
       ],
 
-      widgetIf (null (_steps sequent)) (vstack [
-        spacer,
-        hstack_ [childSpacing] [
-          button "+ New line" AddLine,
-          button "+☐ New sub proof" AddSubProof
-        ]
-      ]),
-
       -- Hack so last proof line can scroll all the way to the top
       box (label "") `styleBasic` [height 1000]
     ]
@@ -291,7 +316,14 @@ buildUI _wenv model = widgetTree where
           spacer
         ]
 
-      tree = ui
+      tree = vstack [
+          ui,
+          spacer,
+          hstack_ [childSpacing] [
+            button "+ New line" AddLine,
+            button "+☐ New sub proof" AddSubProof
+          ]
+        ]
         where
           ui = vstack_ [childSpacing] (ghostPremises ++ map fst s)
           s = getSubProof (_steps sequent) [] 0 1
@@ -417,45 +449,3 @@ buildUI _wenv model = widgetTree where
         | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
-
-  -- Using HTML tag name convention
-  h1, h2, span, paragraph, iconLabel :: Text -> WidgetNode s e
-  h1_, h2_, span_, paragraph_, iconLabel_ :: Text -> [LabelCfg s e] -> WidgetNode s e
-  
-  -- Main heading
-  h1 t = label t `styleBasic` [ textSize (1.75 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-  h1_ t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-  
-  -- Secondary heading
-  h2 t = label t `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-  h2_ t cfg = label_ t cfg `styleBasic` [ textSize (1.25 * u), textFont $ fromString $ last $ model ^. selectNormalFont ]
-  
-  -- Plain text
-  span t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-  span_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-  
-  -- Monospaced text (used for symbols in logic)
-  symbolSpan t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
-  symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. logicFont ]
-  -- symbolSpan t = label t `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
-  -- symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
-  
-  -- Plain text when used as paragraph (same as span right now but usually has margin at bottom and top)
-  paragraph t = label t `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-  paragraph_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont $ fromString $ model ^. normalFont ]
-
-  -- For rendering icons
-  iconLabel icon = label icon `styleBasic` [textFont "Remix", textBottom]
-  iconLabel_ icon cfg = label_ icon cfg `styleBasic` [textFont "Remix", textBottom]
-
-  -- For rendering icons inside buttons
-  iconButton :: Text -> AppEvent -> WidgetNode AppModel AppEvent
-  iconButton iconIdent action = button iconIdent action
-    `styleBasic` [textFont "Remix", textMiddle, textColor orangeRed, bgColor transparent, border 0 transparent]
-
-  -- Button with trashcan icon
-  trashButton :: AppEvent -> WidgetNode AppModel AppEvent
-  trashButton = iconButton remixDeleteBinFill
-
-  -- Base unit for fonts. Use instead of pixels (1u = 16px)
-  u = 16

@@ -31,12 +31,25 @@ data FEStep
   | SubProof [FEStep]
   deriving (Eq, Show)
 
-data File = File {
-  _path :: FilePath,
-  _content :: Text,
-  _parsedSequent :: Maybe FESequent,
-  _isEdited :: Bool
-} deriving (Eq, Show)
+data File
+  = OtherFile {
+    _path :: FilePath,
+    _content :: Text
+  }
+  | SettingsFile {
+    _path :: FilePath
+  }
+  | MarkdownFile {
+    _path :: FilePath,
+    _content :: Text
+  }
+  | ProofFile {
+    _path :: FilePath,
+    _content :: Text,
+    _parsedSequent :: Maybe FESequent,
+    _isEdited :: Bool
+  }
+  deriving (Eq, Show)
 
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
@@ -122,5 +135,5 @@ data AppEvent
   | UpdateFont [String]
   deriving (Eq, Show)
 
-makeLenses 'File
+makeLenses 'ProofFile
 makeLenses 'AppModel

@@ -5,7 +5,6 @@ module Frontend.HandleEvent (
 ) where
 
 import Frontend.Types
-import Frontend.SpecialCharacters
 import Frontend.Helper
 import Frontend.Themes
 import Frontend.Communication (startCommunication, evaluateProofString)
@@ -23,6 +22,7 @@ import Data.List (findIndex)
 import Data.Text (Text, unpack, pack, intercalate)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist )
+import System.FilePath ( takeExtension )
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -133,12 +133,30 @@ handleEvent wenv node model evt = case evt of
       Producer (\sendMsg -> do
         pContent <- readFile (folderPath <> filePath)
         let pContentText = pack pContent
-            -- pParsedContent = parseProofFromFile pContentText
-            pIsEdited = False
-        case pSequent (myLexer pContent) of
-          Left _err -> sendMsg (OpenFileSuccess $ File filePath pContentText Nothing pIsEdited)
-          Right seq_t -> sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
-            where pParsedContent = Just (convertSeq seq_t)
+
+        if takeExtension filePath == ".md" then
+          sendMsg (OpenFileSuccess $ MarkdownFile filePath pContentText)
+        else if filePath == "Settings.json" && folderPath == "" then
+          sendMsg (OpenFileSuccess $ SettingsFile filePath)
+        else if takeExtension filePath == ".logic" then
+          do
+            let pIsEdited = False
+
+            case pSequent (myLexer pContent) of
+              Left _err -> do
+                let seq = parseProofFromSimpleFileFormat pContentText
+                sendMsg (OpenFileSuccess $ ProofFile filePath pContentText seq pIsEdited)
+                -- sendMsg (OpenFileSuccess $ File filePath pContentText Nothing pIsEdited)
+
+              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile filePath pContentText pParsedContent pIsEdited)
+                where pParsedContent = Just (convertSeq seq_t)
+
+            -- let pContentText = pack pContent
+            --     pParsedContent = Just (parseProofFromSimpleFileFormat pContentText)
+            --     pIsEdited = False
+            -- sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
+        else
+          sendMsg (OpenFileSuccess $ OtherFile filePath pContentText)
       )
     ]
     where
@@ -193,7 +211,7 @@ handleEvent wenv node model evt = case evt of
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
       convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
-  
+
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath "./myProofs/")
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
@@ -213,11 +231,12 @@ handleEvent wenv node model evt = case evt of
     Just filePath -> handleEvent wenv node model (CloseFile filePath)
 
   CloseFile filePath -> case file of
-    Just file -> if _isEdited file then [
+    Just file@ProofFile {} -> if _isEdited file then [
         Model $ model
           & confirmDeletePopup .~ True
           & confirmDeleteTarget .~ Just filePath
       ] else handleEvent wenv node model (CloseFileSuccess filePath)
+    Just _ -> handleEvent wenv node model (CloseFileSuccess filePath)
     Nothing -> []
     where file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
 
@@ -235,8 +254,8 @@ handleEvent wenv node model evt = case evt of
     Nothing -> []
     Just seq -> [
         Producer (\sendMsg -> do
-          let content = (unpack . parseProofForBackend) seq
-            -- content = unpack $ parseProofToFile $ _parsedSequent f
+          let content = (unpack . parseProofToSimpleFileFormat) seq
+          -- let content = (unpack . parseProofForBackend) seq
               fileName = _path f
 
           result <- try (writeFile ("./myProofs/" <> fileName) content) :: IO (Either SomeException ())
@@ -435,7 +454,12 @@ getCurrentSequent model = sequent
     fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
     cf = model ^. currentFile
 
-    getSequent fileIndex = model ^. tmpLoadedFiles . singular (ix fileIndex) . parsedSequent
+    getSequent fileIndex = case model ^. tmpLoadedFiles . singular (ix fileIndex) of
+      ProofFile _path _content _parsedSequent _isEdited -> _parsedSequent
+      _ -> Nothing
+
+
+    -- getSequent fileIndex = model ^. tmpLoadedFiles . singular (ix fileIndex) . parsedSequent
 
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
 getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
@@ -454,41 +478,6 @@ evaluateCurrentProof model file sendMsg = do
       putStrLn text
       answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
       sendMsg (BackendResponse answer)
-
-parseProofForBackend :: FESequent -> Text
-parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
-  where
-    premises = replaceSpecialSymbolsInverse $ intercalate "," (_premises sequent)
-    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
-
-    newSequent = FESequent (_premises sequent) (_conclusion sequent) (ghostPremises ++ _steps sequent)
-    proof = SubProof (_steps newSequent)
-    ghostPremises = map (\p -> Line p "prem") (_premises sequent)
-
-    exportProofHelper :: Int -> FormulaPath -> FEStep -> Text
-    exportProofHelper indent path (SubProof p) = tabs indent <> label <> "{\n" <> intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
-      where label = if null p || null path then "" else showt (offsetLineNumber (path ++ [0])) <> "-" <> showt (offsetLineNumber (path ++ [length p - 1])) <> ":"
-    exportProofHelper indent path (Line statement rule) = tabs indent <> label <> nRule <> " " <> nStatement <> ";"
-      where
-        nRule = replaceSpecialSymbolsInverse rule
-        nStatement = replaceSpecialSymbolsInverse statement
-        label = showt (offsetLineNumber path) <> ":"
-
-    offsetLineNumber path = pathToLineNumber newSequent path-- + toInteger (length (_premises sequent))
-
-    tabs :: Int -> Text
-    tabs n = pack $ replicate n '\t'
-
-pathToLineNumber :: FESequent -> FormulaPath -> Integer
-pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
-  where
-    ep (idx:tail) currentProof startLine = case currentProof of
-      SubProof p -> ep tail (p !! idx) (startLine + sum (map stepLength (take idx p)))
-      Line _ _ -> error "Tried to index into `Line` (not an array)"
-    ep [] _ startLine = startLine
-
-    stepLength (SubProof p) = sum $ map stepLength p
-    stepLength (Line _ _) = 1
 
 listDirectoryRecursive :: FilePath -> IO [FilePath]
 listDirectoryRecursive directory = do
