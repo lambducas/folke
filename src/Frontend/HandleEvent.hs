@@ -24,6 +24,8 @@ import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist )
 import System.FilePath ( takeExtension )
 
+import NativeFileDialog ( openDialogAndLogResult )
+
 handleEvent
   :: WidgetEnv AppModel AppEvent
   -> WidgetNode AppModel AppEvent
@@ -310,6 +312,13 @@ handleEvent wenv node model evt = case evt of
   -- BackendResponse (StepChecked result) -> case result of
   --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
   --   Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
+
+  -- Test the new library
+  DEBUGOpenFileDialog -> [ Producer openDiag ]
+    where
+      openDiag _ = do
+        _ <- openDialogAndLogResult
+        return ()
 
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]

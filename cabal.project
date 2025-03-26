@@ -1,4 +1,4 @@
-packages: . ./custom-monomer
+packages: . ./custom-monomer ./nativefiledialog-hs
 
 package sdl2
   flags: -recent-ish

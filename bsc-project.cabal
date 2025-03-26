@@ -90,6 +90,7 @@ executable bsc
                     , filepath
                     , containers
                     , array
+                    , nativefiledialog
     other-modules:
                       Backend.TypeChecker
                     , Backend.Environment
