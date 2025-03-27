@@ -3,7 +3,6 @@
 ### Backend
 - Write bad tests and make them fail
 - Variables in predicates must exist in environment
-- Latex output?
 ### Frontend
 --
 ### Other
