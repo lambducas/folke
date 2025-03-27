@@ -1,8 +1,13 @@
 ## TODO
 
-- Improve the semantics of the TypeChecker module (environment handling, form checking, non-exhaustiveness).
-- Add an assets folder in `Frontend/` and remove `assets/` in root directory.
-- Write examples of backend-frontend communication.
+### Backend
+- Write bad tests and make them fail
+- Variables in predicates must exist in environment
+- Latex output?
+### Frontend
+--
+### Other
+--
 
 ## IDEAS
 - Use reference counting to check that all parts of the proof is used.
