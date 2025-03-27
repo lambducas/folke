@@ -106,25 +106,40 @@ checkRefs (label: labels) = case checkRefs labels of
 -}
 checkStep :: Env -> Abs.Step -> Result (Env, Arg)
 checkStep env step = case step of 
-    Abs.StepPrem     form         -> case checkForm env form of
-        Error kind msg -> Error kind ("Inside assumption: "++ msg)
-        Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
-    Abs.StepDecConst id           -> Error UnknownError "Unimplemented checkStep DecConst"
-    Abs.StepDecVar   id           -> Error UnknownError "Unimplemented checkStep DecVar"
-    Abs.StepDecFun   id ids       -> Error UnknownError "Unimplemented checkStep DecFun"
-    Abs.StepAssume   form         -> case checkForm env form of
-        Error kind msg -> Error kind ("Inside assumption: "++ msg)
-        Ok form_t      -> Ok (addPrem env form_t, ArgForm form_t)
-    Abs.StepProof   (Abs.Proof steps) -> case checkProof (push env) steps of 
-        Error kind msg -> Error kind ("Inside subproof: "++msg)
-        Ok proof_t -> Ok(env, ArgProof proof_t)
-    Abs.StepForm     name args form -> case checkForm env form of
-        Error kind msg -> Error kind ("While checking given result: " ++ msg)
-        Ok form_t -> case checkArgs env args of
-            Error kind msg -> Error kind msg
-            Ok args_t -> case applyRule env (identToString name) args_t form_t of
+    Abs.StepPrem form -> 
+        case checkForm env form of
+            Error kind msg -> Error kind ("Inside assumption: " ++ msg)
+            Ok form_t -> Ok (addPrem env form_t, ArgForm form_t)
+    Abs.StepDecConst id -> 
+        let updatedEnv = addConst env (identToString id)
+            constTerm = Term (identToString id) []
+        in Ok (updatedEnv, ArgTerm constTerm)
+    Abs.StepDecVar id -> 
+        let updatedEnv = addVar env (identToString id)
+            varTerm = Term (identToString id) []
+        in Ok (updatedEnv, ArgTerm varTerm)
+    Abs.StepDecFun id ids -> 
+        let updatedEnv = addFun env (identToString id) (map identToString ids)
+            funTerm = Term (identToString id) (map (\arg -> Term (identToString arg) []) ids)
+        in Ok (updatedEnv, ArgTerm funTerm)
+    Abs.StepAssume form -> 
+        case checkForm env form of
+            Error kind msg -> Error kind ("Inside assumption: " ++ msg)
+            Ok form_t -> Ok (addPrem env form_t, ArgForm form_t)
+    Abs.StepProof (Abs.Proof steps) -> 
+        case checkProof (push env) steps of 
+            Error kind msg -> Error kind ("Inside subproof: " ++ msg)
+            Ok proof_t -> Ok (env, ArgProof proof_t)
+    Abs.StepForm name args form -> 
+        case checkForm env form of
+            Error kind msg -> Error kind ("While checking given result: " ++ msg)
+            Ok form_t -> 
+                case checkArgs env args of
                     Error kind msg -> Error kind msg
-                    Ok res_t -> Ok(env, ArgForm res_t)
+                    Ok args_t -> 
+                        case applyRule env (identToString name) args_t form_t of
+                            Error kind msg -> Error kind msg
+                            Ok res_t -> Ok (env, ArgForm res_t)
     Abs.StepNil -> Error UnknownError "Empty step."
 
 checkArgs :: Env -> [Abs.Arg] -> Result [Arg]
