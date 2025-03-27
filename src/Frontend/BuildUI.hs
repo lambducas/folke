@@ -77,6 +77,9 @@ buildUI _wenv model = widgetTree where
   iconButton = Frontend.Components.Labels.iconButton model
   trashButton = Frontend.Components.Labels.trashButton model
   bold = Frontend.Components.Labels.bold model
+  -- normalStyle = Frontend.Components.Labels.normalStyle model
+  symbolStyle :: (WidgetNode s e) -> (WidgetNode s e)
+  symbolStyle = Frontend.Components.Labels.symbolStyle model
 
   widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
@@ -218,6 +221,7 @@ buildUI _wenv model = widgetTree where
     Nothing -> span "Filepath not loaded"
     Just (SettingsFile _) -> hstack [
       vstack [
+          label $ model ^. testSetting,
           span "Set text size",
           hslider_ fontSize 8 32 [thumbVisible],
           spacer, spacer,
@@ -263,9 +267,9 @@ buildUI _wenv model = widgetTree where
           hstack [
             proofStatusLabel,
             filler,
-            button "Save proof" (SaveProof file),
+            button "Save proof" (SaveProof file) `styleBasic` [textSize $ model ^. fontSize],
             spacer,
-            button "Check proof" (CheckProof file)
+            button "Check proof" (CheckProof file) `styleBasic` [textSize $ model ^. fontSize]
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where
@@ -294,13 +298,13 @@ buildUI _wenv model = widgetTree where
         widgetIf (null $ _premises sequent) (span "No premises")
       ],
       spacer,
-      hstack [button "+ Premise" AddPremise],
+      hstack [button "+ Premise" AddPremise `styleBasic` [textSize $ model ^. fontSize]],
       spacer, spacer,
 
       h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
-      textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
-        `styleBasic` [textFont $ fromString $ model ^. logicFont],
+      symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
+        --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize $ model ^. fontSize],
       spacer, spacer,
 
       h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
@@ -315,10 +319,10 @@ buildUI _wenv model = widgetTree where
     ]
     where
       premiseLine premise idx = hstack [
-          textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
-            `styleBasic` [textFont $ fromString $ model ^. logicFont],
+          symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"],
+            --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize $ model ^. fontSize],
           spacer,
-          tooltip "Remove line" $ trashButton (RemovePremise idx),
+          tooltip "Remove line" $ trashButton (RemovePremise idx) `styleBasic` [textSize $ model ^. fontSize],
           spacer
         ]
 
@@ -326,8 +330,8 @@ buildUI _wenv model = widgetTree where
           ui,
           spacer,
           hstack_ [childSpacing] [
-            button "+ New line" AddLine,
-            button "+☐ New sub proof" AddSubProof
+            button "+ New line" AddLine `styleBasic` [textSize $ model ^. fontSize],
+            button "+☐ New sub proof" AddSubProof `styleBasic` [textSize $ model ^. fontSize]
           ]
         ]
         where
@@ -338,7 +342,7 @@ buildUI _wenv model = widgetTree where
           ghostPremise premise = hstack [
               symbolSpan pp,
               filler,
-              symbolSpan "premise" `styleBasic` [width 175, paddingH 10],
+              symbolSpan "premise" `styleBasic` [width 175, paddingH 10, textSize $ model ^. fontSize],
               spacer,
               vstack [] `styleBasic` [width 300]
             ] `styleBasic` [height 34]
@@ -370,8 +374,8 @@ buildUI _wenv model = widgetTree where
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", NextFocus 1, True)
                 ] $
-                textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
-                  `styleBasic` [textFont $ fromString $ model ^. logicFont]
+                symbolStyle $ textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
+                  --`styleBasic` [textFont $ fromString $ model ^. logicFont]
                   `nodeKey` showt index <> ".statement",
 
                 spacer,
@@ -387,8 +391,8 @@ buildUI _wenv model = widgetTree where
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", InsertLineAfter path, True)
                 ] $
-                textFieldV (replaceSpecialSymbols rule) (EditLine path 1)
-                  `styleBasic` [textFont $ fromString $ model ^. logicFont, width 175]
+                symbolStyle $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)
+                  --`styleBasic` [textFont $ fromString $ model ^. logicFont, width 175]
                   `nodeKey` showt index <> ".rule"
               ]
                 `nodeKey` showt index,
@@ -398,15 +402,17 @@ buildUI _wenv model = widgetTree where
               b
             ]
           b = box $ hstack_ [childSpacing] [
-                tooltip "Remove line" $ trashButton (RemoveLine path),
+                tooltip "Remove line" $ trashButton (RemoveLine path) `styleBasic` [textSize $ model ^. fontSize],
 
-                tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path),
+                tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path) `styleBasic` [textSize $ model ^. fontSize],
                 widgetIf isSubProofSingleton $
-                  tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)),
-                tooltip "Add line after" $ button "↓+" (InsertLineAfter path),
+                  tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof) 
+                    `styleBasic` [textSize $ model ^. fontSize]) `styleBasic` [textSize $ model ^. fontSize],
+                tooltip "Add line after" $ button "↓+" (InsertLineAfter path) `styleBasic` [textSize $ model ^. fontSize],
                 -- button "|[]+" (InsertSubProofAfter path),
                 widgetIf (isLastLine && nextIndexExists) $
-                  tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof))
+                  tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof) 
+                    `styleBasic` [textSize $ model ^. fontSize]) `styleBasic` [textSize $ model ^. fontSize]
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 

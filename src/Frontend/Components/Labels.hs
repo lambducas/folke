@@ -7,7 +7,8 @@ module Frontend.Components.Labels (
   iconLabel, iconLabel_,
   iconButton,
   trashButton,
-  bold
+  bold,
+  normalStyle, symbolStyle
 ) where
 
 import Prelude hiding (span)
@@ -60,8 +61,15 @@ iconButton model iconIdent action = button iconIdent action
 -- Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent
 trashButton model action = iconButton model remixDeleteBinFill action
-  `styleBasic` [textColor orangeRed]
+  `styleBasic` [textColor orangeRed, textSize $ model ^. fontSize]
 
 -- Make widget bold
 bold :: CmbStyleBasic t => AppModel -> t -> t
 bold model widget = widget `styleBasic` [ textFont $ fromString $ last $ model ^. selectNormalFont ]
+
+-- Make general widgets adhere to font and text size change
+normalStyle :: CmbStyleBasic t => AppModel -> t -> t
+normalStyle model widget = widget `styleBasic` [textFont $ fromString $ model ^. normalFont, textSize $ model ^. fontSize]
+
+symbolStyle :: CmbStyleBasic t => AppModel -> t -> t
+symbolStyle model widget = widget `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize $ model ^. fontSize]
