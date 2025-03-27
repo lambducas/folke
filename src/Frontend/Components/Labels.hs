@@ -50,13 +50,13 @@ paragraph model t = label_ t [multiline] `styleBasic` [ textSize (model ^. fontS
 paragraph_ model t cfg = label_ t cfg `styleBasic` [ textSize (model ^. fontSize), textFont $ fromString $ model ^. normalFont ]
 
 -- For rendering icons
-iconLabel model icon = label icon `styleBasic` [textFont "Remix", textBottom]
-iconLabel_ model icon cfg = label_ icon cfg `styleBasic` [textFont "Remix", textBottom]
+iconLabel model icon = label icon `styleBasic` [textFont "Remix", textBottom, textSize $ model ^. fontSize]
+iconLabel_ model icon cfg = label_ icon cfg `styleBasic` [textFont "Remix", textBottom, textSize $ model ^. fontSize]
 
 -- For rendering icons inside buttons
 iconButton :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
 iconButton model iconIdent action = button iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 0 transparent]
+  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 0 transparent, textSize $ model ^. fontSize]
 
 -- Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent

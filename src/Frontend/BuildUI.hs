@@ -77,7 +77,9 @@ buildUI _wenv model = widgetTree where
   iconButton = Frontend.Components.Labels.iconButton model
   trashButton = Frontend.Components.Labels.trashButton model
   bold = Frontend.Components.Labels.bold model
-  -- normalStyle = Frontend.Components.Labels.normalStyle model
+  --need to define below to avoid error
+  normalStyle :: (WidgetNode s e) -> (WidgetNode s e)
+  normalStyle = Frontend.Components.Labels.normalStyle model
   symbolStyle :: (WidgetNode s e) -> (WidgetNode s e)
   symbolStyle = Frontend.Components.Labels.symbolStyle model
 
@@ -93,32 +95,32 @@ buildUI _wenv model = widgetTree where
         paragraph "without saving. All changes will be lost!",
         spacer,
         hstack_ [childSpacing] [
-          button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
-          toggleButton "Cancel" confirmDeletePopup
+          normalStyle $ button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
+          normalStyle $ toggleButton "Cancel" confirmDeletePopup
         ]
-      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20])
+      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ model ^. fontSize -2])
     ]
 
   menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
-    `styleBasic` [borderB 1 dividerColor, padding 5]
+    `styleBasic` [borderB 1 dividerColor, padding 5, textSize $ model ^. fontSize -2]
     where
       menuBarButton (name, actions) idx = vstack [
           box_ [onClick (SetOpenMenuBarItem (Just idx))] (
             span name
-              `styleBasic` [textSize 14, radius 4, paddingV 5, paddingH 10]
+              `styleBasic` [textSize $ model ^. fontSize -2, radius 4, paddingV 5, paddingH 10]
               `styleHover` [bgColor selectedColor]
           ),
           popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing)
             (vstack (map dropdownButton actions)
-              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4])
+              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ model ^. fontSize -2])
         ]
 
       dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
-          span name `styleBasic` [textSize 14],
+          span name `styleBasic` [textSize $ model ^. fontSize -2],
           filler,
-          span keybind `styleBasic` [textSize 14]
+          span keybind `styleBasic` [textSize $ model ^. fontSize -2]
         ]
-          `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
+          `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ model ^. fontSize -2]
           `styleHover` [bgColor hoverColor]
 
   mainContent = hstack [
@@ -131,7 +133,7 @@ buildUI _wenv model = widgetTree where
           bold (span "File Explorer"),
           filler,
           iconButton remixFileAddLine OpenCreateProofPopup
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4]
+            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize $ model ^. fontSize]
             `styleHover` [bgColor hoverColor],
 
           let cep = (CreateEmptyProof $ model ^. newFileName) in
@@ -145,10 +147,10 @@ buildUI _wenv model = widgetTree where
             ] `styleBasic` [bgColor popupBackground, padding 10])
         ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
       
-      button "[DEBUG] Open file dialog" DEBUGOpenFileDialog,
+      normalStyle $ button "[DEBUG] Open file dialog" DEBUGOpenFileDialog,
 
       vscroll $ fileTreeUI parts 1
-    ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+    ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
     where
       parts = map (\f -> (splitOn "/" (pack f), f)) files
       files = sort (model ^. filesInDirectory)
@@ -222,7 +224,7 @@ buildUI _wenv model = widgetTree where
     Just (SettingsFile _) -> hstack [
       vstack [
           label $ model ^. testSetting,
-          span "Set text size",
+          span "Set zoom",
           hslider_ fontSize 8 32 [thumbVisible],
           spacer, spacer,
           span "Choose font:",
@@ -239,7 +241,10 @@ buildUI _wenv model = widgetTree where
           spacer,
           spacer,
           symbolSpan "Set symbolic font thickness (the font used in logic proofs):",
-          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize (model ^. fontSize)]
+          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize (model ^. fontSize)],
+          spacer,
+          spacer,
+          normalStyle $ button "Switch light/dark mode" SwitchTheme
         ] `styleBasic` [maxWidth 1024]
       ] `styleBasic` [padding 30]
       where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize (model ^. fontSize)]]
