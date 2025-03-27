@@ -4,6 +4,7 @@
 - Write bad tests and make them fail
 - Variables in predicates must exist in environment
 - Implement last rules
+- Improve error type
 ### Frontend
 --
 ### Other
