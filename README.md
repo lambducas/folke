@@ -5,6 +5,7 @@
 - Variables in predicates must exist in environment
 - Implement last rules
 - Improve error type
+- Rename If to Imp?
 ### Frontend
 --
 ### Other
