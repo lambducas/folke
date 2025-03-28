@@ -105,7 +105,7 @@ addFun env id args =
 -- Adds references to the environment.
 -- References map labels to arguments (e.g., proofs, formulas, or terms).
 addRefs :: Env -> [Ref] -> Arg -> Env
-addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(label, form) | label <- labels]) }
+addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(label, (0, form)) | label <- labels]) }
 
 -- Section: Getters
 
@@ -127,23 +127,23 @@ getFuns env = funs env
 
 -- Retrieves the values corresponding to a list of references.
 -- Returns an error if any reference is invalid.
-getRefs :: Env -> [Ref] -> Result [Arg]
-getRefs _ [] = Ok [] []
+getRefs :: Env -> [Ref] -> Result (Env, [Arg])
+getRefs env [] = Ok [] (env, [])
 getRefs env (x : xs) = 
     case getRefs env xs of
         Error warns error -> Error warns error
-        Ok warns1 args -> 
-            case getRef env x of 
+        Ok warns1 (env1, args) -> 
+            case getRef env1 x of 
                 Error warns error -> Error (warns++warns1) error
-                Ok warns2 arg -> Ok (warns1++warns2) (arg : args)
+                Ok warns2 (env2, arg) -> Ok (warns1++warns2) (env2, arg : args)
 
 -- Retrieves the value corresponding to a single reference.
 -- Returns an error if the reference does not exist.
-getRef :: Env -> Ref -> Result Arg
+getRef :: Env -> Ref -> Result (Env, Arg)
 getRef env ref = 
     case Map.lookup ref (refs env) of
         Nothing -> Error [] (TypeError ("No ref " ++ show ref ++ " exists.")) 
-        Just arg -> Ok [] arg
+        Just (count, arg) -> Ok [] (env{refs = Map.insert ref (count+1, arg) (refs env) }, arg)
 
 pushPos :: Env -> [Ref] -> Env 
 pushPos env r = env {pos = r ++ pos env}

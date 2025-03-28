@@ -20,7 +20,7 @@ type Terms  = [Term]
 
 data Env = Env {
       prems  :: [Formula]
-    , refs   :: Map.Map Ref Arg
+    , refs   :: Map.Map Ref (Integer, Arg)
     , rules  :: Map.Map String (Env -> [Arg] -> Formula -> Result Formula)
     , consts :: Terms
     , vars   :: Terms

@@ -138,20 +138,21 @@ checkStep env step = case step of
             Ok warns1 form_t -> 
                 case checkArgs env args of
                     Error warns error -> Error (warns++warns1) error
-                    Ok warns2 args_t -> 
-                        case applyRule env (identToString name) args_t form_t of
+                    Ok warns2 (env1, args_t) -> 
+                        case applyRule env1 (identToString name) args_t form_t of
                             Error warns error -> Error (warns++warns1++warns2) error
-                            Ok warns3 res_t -> Ok (warns1++warns2++warns3) (env, ArgForm res_t)
+                            Ok warns3 res_t -> Ok (warns1++warns2++warns3) (env1, ArgForm res_t)
     Abs.StepNil -> Error [] (UnknownError "Empty step.")
 
-checkArgs :: Env -> [Abs.Arg] -> Result [Arg]
-checkArgs env [] = Ok [] []
-checkArgs env (arg: args) = case checkArg env arg of
+checkArgs :: Env -> [Abs.Arg] -> Result (Env, [Arg])
+checkArgs env [] = Ok [] (env, [])
+checkArgs env (arg: args) = case checkArgs env args of 
     Error warns error -> Error warns error
-    Ok warns1 arg_t -> case checkArgs env args of 
+    Ok warns1 (env1, args_t) -> case checkArg env1 arg of
         Error warns error -> Error (warns++warns1) error
-        Ok warns2 args_t -> Ok (warns1++warns2) (arg_t : args_t)
-checkArg :: Env -> Abs.Arg -> Result Arg
+        Ok warns2 (env2, arg_t) -> Ok (warns1++warns2) (env, arg_t : args_t)
+
+checkArg :: Env -> Abs.Arg -> Result (Env, Arg)
 checkArg env (Abs.ArgRange i j) = case getRef env (RefRange i j) of
     Error warns error -> Error warns error
     Ok warns arg_t -> Ok warns arg_t
@@ -160,7 +161,7 @@ checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of
     Ok warns arg_t -> Ok warns arg_t
 checkArg env (Abs.ArgTerm term) = case checkTerm env term of
     Error warns error -> Error warns error
-    Ok warns term_t -> Ok warns (ArgTerm term_t)
+    Ok warns term_t -> Ok warns (env, ArgTerm term_t)
 {-
     Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
     -params:
