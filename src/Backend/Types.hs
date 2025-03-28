@@ -3,7 +3,7 @@ module Backend.Types (
     Ref(RefRange, RefLine),
     Arg(ArgProof, ArgForm, ArgTerm),
     Proof(Proof),
-    Formula(Pred, And, Or, If , Eq, All, Some, Not, Bot, Nil),
+    Formula(Pred, And, Or, Impl , Eq, All, Some, Not, Bot, Nil),
     Predicate(Predicate),
     Term(Term),
     Result(Ok, Error),
@@ -60,7 +60,7 @@ data Formula =
     Pred Predicate |
     And Formula Formula |
     Or Formula Formula |
-    If Formula Formula |
+    Impl Formula Formula |
     Eq Term Term |
     All Term Formula |
     Some Term Formula |
@@ -71,7 +71,7 @@ instance Show Formula where
     show (Pred a) = show a
     show (And a b) = show a ++ "&" ++ show b
     show (Or a b) = show a ++ "|" ++ show b
-    show (If a b) = show a ++ "->" ++ show b
+    show (Impl a b) = show a ++ "->" ++ show b
     show (Eq a b) = show a ++ "=" ++ show b
     show (All x a) = "All " ++ show x ++  show a
     show (Some x a) = "Some " ++ show x ++  show a
@@ -82,7 +82,7 @@ instance Eq Formula where
     Pred a == Pred b = a == b
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
     Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
-    If a1 a2 == If b1 b2 = a1 == b1 && a2 == b2
+    Impl a1 a2 == Impl b1 b2 = a1 == b1 && a2 == b2
     Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2
     All x a == All y b = x == y && a == b 
     Some x a == All y b = x == y && a == b 
@@ -115,7 +115,7 @@ replaceTerm t x f = case f of
     Pred p -> Pred p
     And l r -> And (replaceTerm t x l) (replaceTerm t x r)
     Or l r -> Or (replaceTerm t x l) (replaceTerm t x r)
-    If l r -> If (replaceTerm t x l) (replaceTerm t x r)
+    Impl l r -> Impl (replaceTerm t x l) (replaceTerm t x r)
     Eq l r -> Eq (if l == t then x else l) (if r == t then x else r)
     Not a -> Not (replaceTerm t x a)
     Bot -> Bot

@@ -212,11 +212,11 @@ checkForm env f = case f of
         Ok warns1 left_t -> case checkForm env  right of 
             Error warns kind msg -> Error (warns++warns1) kind msg
             Ok warns2 right_t -> Ok (warns1++warns2) (Or left_t right_t)
-    Abs.FormIf left right  -> case checkForm env left of
+    Abs.FormImpl left right  -> case checkForm env left of
         Error warns kind msg -> Error warns kind msg
         Ok warns1 left_t -> case checkForm env  right of 
             Error warns kind msg -> Error (warns++warns1) kind msg
-            Ok warns2 right_t -> Ok (warns1++warns2) (If left_t right_t)
+            Ok warns2 right_t -> Ok (warns1++warns2) (Impl left_t right_t)
 {-
     Typechecks a predicate
     -params:

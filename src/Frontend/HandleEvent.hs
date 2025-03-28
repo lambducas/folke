@@ -178,7 +178,7 @@ handleEvent wenv node model evt = case evt of
         where
           getOutput form = case form of
             -- Abs.FormOr _ _ -> p
-            Abs.FormIf _ _ -> p
+            Abs.FormImpl _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
 
@@ -186,11 +186,11 @@ handleEvent wenv node model evt = case evt of
         where
           getOutput form = case form of
             -- Abs.FormAnd _ _ -> p
-            Abs.FormIf _ _ -> p
+            Abs.FormImpl _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
 
-      convertForm (Abs.FormIf a b) = convertForm a <> " -> " <> convertForm b
+      convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
       convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
       convertForm Abs.FormBot = "bot"
       convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"

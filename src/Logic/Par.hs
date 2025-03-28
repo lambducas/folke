@@ -609,7 +609,7 @@ happyReduction_55 happy_x_3
 	 =  case happyOut37 happy_x_1 of { (HappyWrap37 happy_var_1) -> 
 	case happyOut38 happy_x_3 of { (HappyWrap38 happy_var_3) -> 
 	happyIn38
-		 (Logic.Abs.FormIf happy_var_1 happy_var_3
+		 (Logic.Abs.FormImpl happy_var_1 happy_var_3
 	)}}
 
 happyReduce_56 = happySpecReduce_1  13# happyReduction_56

@@ -42,8 +42,10 @@ newEnv = Env {
         ("OrIL", ruleOrIntroLeft),
         ("OrIR", ruleOrIntroRight),
         ("OrE", ruleOrEilm),
-        ("IfI", ruleIfIntro),
-        ("IfE", ruleIfEilm),
+        ("IfI", ruleImplIntro),
+        ("IfE", ruleImplEilm),
+        ("ImplI", ruleImplIntro),
+        ("ImplE", ruleImplEilm),
         ("NotI", ruleNotIntro),
         ("NotE", ruleNotEilm),
         ("BotE", ruleBottomElim),
@@ -208,20 +210,20 @@ ruleOrEilm env [ArgForm _, _, _]                 _ = Error [] TypeError "Argumen
 ruleOrEilm env [_, _, _]                         _ = Error [] TypeError "Argument 1 needs to be a formula."
 ruleOrEilm env forms                             _ = Error [] TypeError ("Rule takes 3 arguments not " ++ show (List.length forms) ++ ".")
 
-ruleIfIntro :: Env -> [Arg] -> Formula -> Result Formula
-ruleIfIntro _ [ArgProof (Proof [a] b)] _ = Ok [] (If a b)
-ruleIfIntro env [_]                      _ = Error [] TypeError "Argument 1 needs to be a proof."
-ruleIfIntro env forms                    _ = Error [] TypeError ("Rule takes 1 argument not " ++ show (List.length forms) ++ ".")
+ruleImplIntro :: Env -> [Arg] -> Formula -> Result Formula
+ruleImplIntro _ [ArgProof (Proof [a] b)] _ = Ok [] (Impl a b)
+ruleImplIntro env [_]                      _ = Error [] TypeError "Argument 1 needs to be a proof."
+ruleImplIntro env forms                    _ = Error [] TypeError ("Rule takes 1 argument not " ++ show (List.length forms) ++ ".")
 
-ruleIfEilm :: Env -> [Arg] -> Formula -> Result Formula
-ruleIfEilm env [ArgForm a, ArgForm (If b c)] r = 
+ruleImplEilm :: Env -> [Arg] -> Formula -> Result Formula
+ruleImplEilm env [ArgForm a, ArgForm (Impl b c)] r = 
     if a == b then 
         if c == r then Ok [] r else Error [] TypeError "Conclusions did not match."
     else Error [] TypeError "Premise did not match argument 1."
-ruleIfEilm env [ArgForm _, ArgForm _] _ = Error [] TypeError "Argument 2 needs to be an if-then formula."
-ruleIfEilm env [ArgForm _, _]         _ = Error [] TypeError "Argument 2 needs to be a formula."
-ruleIfEilm env [_        , _]         _ = Error [] TypeError "Argument 1 needs to be a formula."
-ruleIfEilm env forms                  _ = Error [] TypeError ("Rule takes 2 arguments not " ++ show (List.length forms) ++ ".")
+ruleImplEilm env [ArgForm _, ArgForm _] _ = Error [] TypeError "Argument 2 needs to be an if-then formula."
+ruleImplEilm env [ArgForm _, _]         _ = Error [] TypeError "Argument 2 needs to be a formula."
+ruleImplEilm env [_        , _]         _ = Error [] TypeError "Argument 1 needs to be a formula."
+ruleImplEilm env forms                  _ = Error [] TypeError ("Rule takes 2 arguments not " ++ show (List.length forms) ++ ".")
 
 ruleNotIntro :: Env -> [Arg] -> Formula -> Result Formula
 ruleNotIntro _ [ArgProof (Proof [a] Bot)] _ = Ok [] (Not a)
@@ -254,9 +256,9 @@ ruleNotNotElim env [_]                     _ = Error [] TypeError "Argument 1 ne
 ruleNotNotElim env forms                   _ = Error [] TypeError ("Rule takes 1 argument not " ++ show (List.length forms) ++ ".")
 
 ruleMT :: Env -> [Arg] -> Formula -> Result Formula
-ruleMT env [ArgForm (If a b), ArgForm (Not c)] _ = if b == c then Ok [] (Not a) else Error [] TypeError "Conclusion in argument 1 did not match argument 2."
-ruleMT env [ArgForm (If _ _), ArgForm _]       _ = Error [] TypeError "Argument 2 needs to be a not formula."
-ruleMT env [ArgForm (If _ _), _]               _ = Error [] TypeError "Argument 2 needs to be a formula."
+ruleMT env [ArgForm (Impl a b), ArgForm (Not c)] _ = if b == c then Ok [] (Not a) else Error [] TypeError "Conclusion in argument 1 did not match argument 2."
+ruleMT env [ArgForm (Impl _ _), ArgForm _]       _ = Error [] TypeError "Argument 2 needs to be a not formula."
+ruleMT env [ArgForm (Impl _ _), _]               _ = Error [] TypeError "Argument 2 needs to be a formula."
 ruleMT env [ArgForm _, _ ]                     _ = Error [] TypeError "Argument 1 needs to be an if-then formula."
 ruleMT env [_, _]                              _ = Error [] TypeError "Argument 1 needs to be a formula."
 ruleMT env forms                               _ = Error [] TypeError ("Rule takes 2 arguments not " ++ show (List.length forms) ++ ".")
