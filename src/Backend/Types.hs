@@ -38,6 +38,7 @@ data Warning = Warning Env String
 data Error = 
     TypeError String | 
     SyntaxError String | 
+    RuleNotFoundError Env String |
     RuleConcError Env String |
     RuleArgError Env Integer String |
     RuleArgCountError Env Integer Integer |
@@ -46,6 +47,7 @@ data Error =
 instance Show Error where 
     show (TypeError msg) = "TypeError: "++msg 
     show (SyntaxError msg) = "SyntaxError: "++msg
+    show (RuleNotFoundError _ name) = "RuleNotFoundError: No rule named " ++ name ++ " exists."
     show (RuleConcError _ msg) = "RuleConcError: Error in conclusion: " ++ msg 
     show (RuleArgError _ arg msg) = "RuleArgError: Error in argument "++ show arg ++ " : "++ msg
     show (RuleArgCountError _ arg_c arg_e ) = "RuleArgError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments expected " ++ show arg_e ++ " not " ++ show arg_c ++ "." 

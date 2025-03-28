@@ -153,13 +153,13 @@ pushPos env r = env {pos = r ++ pos env}
 applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule env name args res = 
     case Map.lookup name (rules env) of
-        Nothing -> Error [] (TypeError ("No rule named " ++ name ++ " exists.")) 
+        Nothing -> Error [] (RuleNotFoundError env name) 
         Just rule -> 
             case rule (env{rule = name}) args res of 
                 Error warns error -> Error warns error
                 Ok warns res_t -> 
                     if res_t == res then Ok warns res_t 
-                    else Error warns (TypeError ("Wrong conclusion when using rule " ++ name ++ ": expected " ++ show res_t ++ ", got " ++ show res))
+                    else Error warns (RuleConcError env ("Wrong conclusion when using rule, expected " ++ show res_t ++ ", got " ++ show res))
 
 -- All predefined rules.
 -- Rules are functions that take:
