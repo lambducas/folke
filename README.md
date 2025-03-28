@@ -1,13 +1,44 @@
 ## TODO
-
 ### Backend
 - Write bad tests and make them fail
 - Variables in predicates must exist in environment
 - Implement last rules
 - Improve error type
 - Rename If to Imp?
+#### Suggestions for new rule names
+| Old name  | New/secondary names      |
+|-----------|--------------------------|
+| copy      | COPY, C, REITERATION, R  |
+| AndI      | &I, ∧I                   |
+| AndEL     | &EL, ∧EL                 |
+| AndER     | &ER, ∧ER                 |
+| -         | &E, ∧E                   |
+| OrIL      | \|IL, ∨IL                |
+| OrIR      | \|IR, ∨IR                |
+| -         | \|I, ∨I                  |
+| OrE       | \|E, ∨E                  |
+| IfI       | ->I, →I                  |
+| IfE       | ->E, →E                  |
+| ImplI     | ->I, →I                  |
+| ImplE     | ->E, →E                  |
+| NotI      | !I, ¬I                   |
+| NotE      | !E, ¬E                   |
+| BotE      | botE, #E, ⊥E             |
+| NotNotI   | !!I, ¬¬I                 |
+| NotNotE   | !!E, ¬¬E                 |
+| MT        | MT                       |
+| PBC       | PBC                      |
+| LEM       | LEM                      |
+| EqI       | =I                       |
+| EqE       | =E                       |
+| AllE      | forallE, ∀E              |
+| AllI      | forallI, ∀I              |
+| SomeE     | existsE, ∃E              |
+| SomeI     | existsI, ∃I              |
+
 ### Frontend
 - All UI ellements should scale not only text 
+
 ### Other
 --
 
