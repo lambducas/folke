@@ -38,13 +38,17 @@ data Warning = Warning Env String
 data Error = 
     TypeError String | 
     SyntaxError String | 
-    ArgError Env Integer String |
+    RuleConcError Env String |
+    RuleArgError Env Integer String |
+    RuleArgCountError Env Integer Integer |
     UnknownError String
 
 instance Show Error where 
     show (TypeError msg) = "TypeError: "++msg 
     show (SyntaxError msg) = "SyntaxError: "++msg
-    show (ArgError labels n msg) = "Argument error: "++ msg
+    show (RuleConcError _ msg) = "RuleConcError: Error in conclusion: " ++ msg 
+    show (RuleArgError _ arg msg) = "RuleArgError: Error in argument "++ show arg ++ " : "++ msg
+    show (RuleArgCountError _ arg_c arg_e ) = "RuleArgError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments expected " ++ show arg_e ++ " not " ++ show arg_c ++ "." 
     show (UnknownError msg) = "UnknownError: "++msg
 
 -- Represents a reference in a proof, either a range or a single line.
