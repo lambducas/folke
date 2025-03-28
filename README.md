@@ -7,7 +7,7 @@
 - Improve error type
 - Rename If to Imp?
 ### Frontend
---
+- All UI ellements should scale not only text 
 ### Other
 --
 
