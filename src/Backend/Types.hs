@@ -8,15 +8,15 @@ module Backend.Types (
     Term(Term),
     Result(Ok, Error),
     Warning,
-    ErrorKind(TypeError, SyntaxError, UnknownError),
+    Error(..),
     Env(..),
     replaceTerm
 
 ) where
 
-import Data.Map as Map
+import Data.Map as Map ( Map )
 
-type Terms = [Term]
+type Terms  = [Term]
 
 data Env = Env {
       prems  :: [Formula]
@@ -26,17 +26,26 @@ data Env = Env {
     , vars   :: Terms
     , funs   :: Terms
     , pos    :: [Ref]
+    , rule   :: String
 }
 
 -- Represents the result of an operation, which can either succeed (Ok) or fail (Error).
-data Result t = Ok [Warning] t | Error [Warning] ErrorKind String
+data Result t = Ok [Warning] t | Error [Warning] Error
 
-data Warning = Warning [Ref] String
+data Warning = Warning Env String
 
 -- Represents the kinds of errors that can occur.
-data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
+data Error = 
+    TypeError String | 
+    SyntaxError String | 
+    ArgError Env Integer String |
+    UnknownError String
 
-
+instance Show Error where 
+    show (TypeError msg) = "TypeError: "++msg 
+    show (SyntaxError msg) = "SyntaxError: "++msg
+    show (ArgError labels n msg) = "Argument error: "++ msg
+    show (UnknownError msg) = "UnknownError: "++msg
 
 -- Represents a reference in a proof, either a range or a single line.
 data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)

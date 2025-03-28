@@ -35,6 +35,6 @@ example = do
         result = check sequent
     
     case result of
-        Error _ _kind err -> putStrLn $ "Error: " ++ show err
+        Error _ err -> putStrLn $ "Error: " ++ show err
         Ok _ _seq -> do
             putStrLn "Proof is correct!"

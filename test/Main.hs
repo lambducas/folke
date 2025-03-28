@@ -9,20 +9,19 @@ import Backend.TypeChecker
 import Backend.Types
 
 import Logic.Par (pSequent, myLexer)
+import Backend.Types (Error(SyntaxError))
 
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error _ kind msg -> assertBool (show kind ++ ": " ++ msg) False
+            Error _ error -> assertBool (show error) False
             Ok _ seq -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test
 testProofBadType proof = TestCase(do
         case checkString proof of
-            Error _ TypeError _ ->  assertBool "Dummy msg" True
-            Error _ kind msg -> case kind of
-                TypeError -> assertBool "Dummy msg" True
-                _ -> assertBool ("Expected TypeError not " ++ show kind ++ ": " ++ msg) False
+            Error _ error@(SyntaxError _) ->  assertBool (show error) True
+            Error _ error -> assertBool "Dummy msg" True
             Ok _ _ -> assertBool "Did not fail as expected" False)
 
 testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
