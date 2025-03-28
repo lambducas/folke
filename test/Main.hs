@@ -13,17 +13,17 @@ import Logic.Par (pSequent, myLexer)
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error kind msg -> assertBool (show kind ++ ": " ++ msg) False
-            Ok seq -> assertBool "Dummy msg" True)
+            Error _ kind msg -> assertBool (show kind ++ ": " ++ msg) False
+            Ok _ seq -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test
 testProofBadType proof = TestCase(do
         case checkString proof of
-            Error TypeError _ ->  assertBool "Dummy msg" True
-            Error kind msg -> case kind of
+            Error _ TypeError _ ->  assertBool "Dummy msg" True
+            Error _ kind msg -> case kind of
                 TypeError -> assertBool "Dummy msg" True
                 _ -> assertBool ("Expected TypeError not " ++ show kind ++ ": " ++ msg) False
-            Ok _ -> assertBool "Did not fail as expected" False)
+            Ok _ _ -> assertBool "Did not fail as expected" False)
 
 testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
 testProofs test_fun [] [] = []

@@ -7,6 +7,7 @@ module Backend.Types (
     Predicate(Predicate),
     Term(Term),
     Result(Ok, Error),
+    Warning,
     ErrorKind(TypeError, SyntaxError, UnknownError),
     Env(..),
     replaceTerm
@@ -24,10 +25,18 @@ data Env = Env {
     , consts :: Terms
     , vars   :: Terms
     , funs   :: Terms
+    , pos    :: [Ref]
 }
 
 -- Represents the result of an operation, which can either succeed (Ok) or fail (Error).
-data Result a = Ok a | Error ErrorKind String
+data Result t = Ok [Warning] t | Error [Warning] ErrorKind String
+
+data Warning = Warning [Ref] String
+
+-- Represents the kinds of errors that can occur.
+data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
+
+
 
 -- Represents a reference in a proof, either a range or a single line.
 data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)
@@ -37,6 +46,7 @@ data Arg = ArgProof Proof | ArgForm Formula | ArgTerm Term
 instance Show Arg where 
     show (ArgProof p) = show p 
     show (ArgForm f) = show f 
+    show (ArgTerm t) = show t
 
 -- Represents a proof with premises and a conclusion.
 data Proof = Proof [Formula] Formula
@@ -63,6 +73,8 @@ instance Show Formula where
     show (Or a b) = show a ++ "|" ++ show b
     show (If a b) = show a ++ "->" ++ show b
     show (Eq a b) = show a ++ "=" ++ show b
+    show (All x a) = "All " ++ show x ++  show a
+    show (Some x a) = "Some " ++ show x ++  show a
     show (Not a) = "!" ++ show a
     show Bot = "bot"
     show Nil = "Nil"
@@ -71,7 +83,9 @@ instance Eq Formula where
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
     Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
     If a1 a2 == If b1 b2 = a1 == b1 && a2 == b2
-    Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2 
+    Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2
+    All x a == All y b = x == y && a == b 
+    Some x a == All y b = x == y && a == b 
     Not a == Not b = a == b
     Bot == Bot = True
     Nil == Nil = True
@@ -94,8 +108,6 @@ instance Show Term where
 instance Eq Term where 
     Term a as == Term b bs = a == b && as == bs
 
--- Represents the kinds of errors that can occur.
-data ErrorKind = TypeError | SyntaxError | UnknownError deriving Show 
 
 -- Replaces all instances of a term `t` in a formula `f` with another term `x`.
 replaceTerm :: Term -> Term -> Formula -> Formula
