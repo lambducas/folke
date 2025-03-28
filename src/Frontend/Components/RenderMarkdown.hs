@@ -21,11 +21,15 @@ renderMarkdown model markdown = vstack_ [childSpacing] lineRenders
     lineRenders = map (renderLine . trim . unpack) lines
     lines = splitOn "\n" markdown
     renderLine ('*':t) = span model ("• " <> pack (trim t)) `styleBasic` [paddingL (model ^. fontSize)]
+    renderLine ('#':'#':'#':'#':'#':'#':t) = h6 model (pack (trim t))
+    renderLine ('#':'#':'#':'#':'#':t) = h5 model (pack (trim t))
+    renderLine ('#':'#':'#':'#':t) = h4 model (pack (trim t))
+    renderLine ('#':'#':'#':t) = h3 model (pack (trim t))
     renderLine ('#':'#':t) = h2 model (pack (trim t))
     renderLine ('#':t) = h1 model (pack (trim t))
     renderLine t
-      | isList = span model (liA <> ". " <> liB) `styleBasic` [paddingL (model ^. fontSize)]
-      | otherwise = paragraph_ model (pack (trim t)) [multiline]
+      | isList = span model (liA <> ". " <> liB)-- `styleBasic` [paddingL (model ^. fontSize)]
+      | otherwise = paragraph model (pack (trim t))
       where
         isList = 
           length splitDot > 1 &&

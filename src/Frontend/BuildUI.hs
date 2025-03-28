@@ -65,6 +65,8 @@ buildUI _wenv model = widgetTree where
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
+  u = model ^. fontSize
+
   h1 = Frontend.Components.Labels.h1 model
   h2 = Frontend.Components.Labels.h2 model
   span = Frontend.Components.Labels.span model
@@ -77,11 +79,11 @@ buildUI _wenv model = widgetTree where
   iconButton = Frontend.Components.Labels.iconButton model
   trashButton = Frontend.Components.Labels.trashButton model
   bold = Frontend.Components.Labels.bold model
-  --need to define below to avoid error
-  normalStyle :: (WidgetNode s e) -> (WidgetNode s e)
   normalStyle = Frontend.Components.Labels.normalStyle model
-  symbolStyle :: (WidgetNode s e) -> (WidgetNode s e)
   symbolStyle = Frontend.Components.Labels.symbolStyle model
+
+  button a b = Monomer.button a b `styleBasic` [textSize u]
+  fastTooltip tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize u]
 
   widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
@@ -90,37 +92,37 @@ buildUI _wenv model = widgetTree where
       ],
       popup_ confirmDeletePopup [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
         h1 "Close without saving?",
-        paragraph "Are you sure you want to close",
-        paragraph (showt $ model ^. confirmDeleteTarget),
-        paragraph "without saving. All changes will be lost!",
+        span "Are you sure you want to close",
+        bold $ span (showt $ model ^. confirmDeleteTarget),
+        span "without saving. All changes will be lost!",
         spacer,
         hstack_ [childSpacing] [
           normalStyle $ button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
           normalStyle $ toggleButton "Cancel" confirmDeletePopup
         ]
-      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ model ^. fontSize -2])
+      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ u -2])
     ]
 
   menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
-    `styleBasic` [borderB 1 dividerColor, padding 5, textSize $ model ^. fontSize -2]
+    `styleBasic` [borderB 1 dividerColor, padding 5, textSize $ u -2]
     where
       menuBarButton (name, actions) idx = vstack [
           box_ [onClick (SetOpenMenuBarItem (Just idx))] (
             span name
-              `styleBasic` [textSize $ model ^. fontSize -2, radius 4, paddingV 5, paddingH 10]
+              `styleBasic` [textSize $ u -2, radius 4, paddingV 5, paddingH 10]
               `styleHover` [bgColor selectedColor]
           ),
           popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing)
             (vstack (map dropdownButton actions)
-              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ model ^. fontSize -2])
+              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
         ]
 
       dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
-          span name `styleBasic` [textSize $ model ^. fontSize -2],
+          span name `styleBasic` [textSize $ u -2],
           filler,
-          span keybind `styleBasic` [textSize $ model ^. fontSize -2]
+          span keybind `styleBasic` [textSize $ u -2]
         ]
-          `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ model ^. fontSize -2]
+          `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ u -2]
           `styleHover` [bgColor hoverColor]
 
   mainContent = hstack [
@@ -132,25 +134,30 @@ buildUI _wenv model = widgetTree where
       box_ [expandContent] (hstack [
           bold (span "File Explorer"),
           filler,
-          iconButton remixFileAddLine OpenCreateProofPopup
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize $ model ^. fontSize]
+          fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
+            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+            `styleHover` [bgColor hoverColor],
+          fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
+            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+            `styleHover` [bgColor hoverColor],
+          fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
             `styleHover` [bgColor hoverColor],
 
           let cep = (CreateEmptyProof $ model ^. newFileName) in
             popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
               h2 "Create proof",
-              paragraph "Enter the name of your proof",
+              spacer,
+              span "Enter the name of your proof",
               spacer,
               firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
               spacer,
               button "+ Create proof" cep
-            ] `styleBasic` [bgColor popupBackground, padding 10])
+            ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
         ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
-      
-      normalStyle $ button "[DEBUG] Open file dialog" DEBUGOpenFileDialog,
 
       vscroll $ fileTreeUI parts 1
-    ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
+    ] `styleBasic` [ width 250, minWidth 250, maxWidth 400, borderR 1 dividerColor ]
     where
       parts = map (\f -> (splitOn "/" (pack f), f)) files
       files = sort (model ^. filesInDirectory)
@@ -207,7 +214,7 @@ buildUI _wenv model = widgetTree where
           spacer,
           span displayName,
           box_ [onClick (CloseFile filePath)] (symbolSpan closeText
-            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*(model ^. fontSize)), radius 8, padding 4]
+            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
             `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
@@ -233,21 +240,21 @@ buildUI _wenv model = widgetTree where
             ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
             ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
-            ] fontListToText [onChange UpdateFont] `styleBasic` [textSize (model ^. fontSize)],
+            ] fontListToText [onChange UpdateFont] `styleBasic` [textSize u],
           spacer,
           span "Set font thickness:",
-          textDropdown_ normalFont (model ^. selectNormalFont) pack [] `styleBasic` [textSize (model ^. fontSize)],
+          textDropdown_ normalFont (model ^. selectNormalFont) pack [] `styleBasic` [textSize u],
           vstack $ map illustThickness (model ^. selectNormalFont),
           spacer,
           spacer,
           symbolSpan "Set symbolic font thickness (the font used in logic proofs):",
-          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize (model ^. fontSize)],
+          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
           spacer,
           spacer,
           normalStyle $ button "Switch light/dark mode" SwitchTheme
         ] `styleBasic` [maxWidth 1024]
       ] `styleBasic` [padding 30]
-      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize (model ^. fontSize)]]
+      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
     Just file@(ProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
           vstack [
@@ -272,9 +279,9 @@ buildUI _wenv model = widgetTree where
           hstack [
             proofStatusLabel,
             filler,
-            button "Save proof" (SaveProof file) `styleBasic` [textSize $ model ^. fontSize],
+            button "Save proof" (SaveProof file) `styleBasic` [textSize u],
             spacer,
-            button "Check proof" (CheckProof file) `styleBasic` [textSize $ model ^. fontSize]
+            button "Check proof" (CheckProof file) `styleBasic` [textSize u]
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where
@@ -283,11 +290,11 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
-    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding (model ^. fontSize), maxWidth 300]) `nodeKey` "markdownScroll"
-    Just (OtherFile p content) -> vstack_ [childSpacing] [
+    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+    Just (OtherFile p content) -> vscroll $ vstack_ [childSpacing] [
         label $ pack p <> ": This file type is not supported",
         paragraph content
-      ]
+      ] `styleBasic` [padding u]
     where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
@@ -303,13 +310,13 @@ buildUI _wenv model = widgetTree where
         widgetIf (null $ _premises sequent) (span "No premises")
       ],
       spacer,
-      hstack [button "+ Premise" AddPremise `styleBasic` [textSize $ model ^. fontSize]],
+      hstack [button "+ Premise" AddPremise `styleBasic` [textSize u]],
       spacer, spacer,
 
       h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
       spacer,
       symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
-        --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize $ model ^. fontSize],
+        --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
       spacer, spacer,
 
       h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
@@ -325,9 +332,9 @@ buildUI _wenv model = widgetTree where
     where
       premiseLine premise idx = hstack [
           symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"],
-            --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize $ model ^. fontSize],
+            --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
           spacer,
-          tooltip "Remove line" $ trashButton (RemovePremise idx) `styleBasic` [textSize $ model ^. fontSize],
+          fastTooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
         ]
 
@@ -335,8 +342,8 @@ buildUI _wenv model = widgetTree where
           ui,
           spacer,
           hstack_ [childSpacing] [
-            button "+ New line" AddLine `styleBasic` [textSize $ model ^. fontSize],
-            button "+☐ New sub proof" AddSubProof `styleBasic` [textSize $ model ^. fontSize]
+            button "+ New line" AddLine `styleBasic` [textSize u],
+            button "+☐ New sub proof" AddSubProof `styleBasic` [textSize u]
           ]
         ]
         where
@@ -347,7 +354,7 @@ buildUI _wenv model = widgetTree where
           ghostPremise premise = hstack [
               symbolSpan pp,
               filler,
-              symbolSpan "premise" `styleBasic` [width 175, paddingH 10, textSize $ model ^. fontSize],
+              symbolSpan "premise" `styleBasic` [width 175, paddingH 10, textSize u],
               spacer,
               vstack [] `styleBasic` [width 300]
             ] `styleBasic` [height 34]
@@ -407,17 +414,17 @@ buildUI _wenv model = widgetTree where
               b
             ]
           b = box $ hstack_ [childSpacing] [
-                tooltip "Remove line" $ trashButton (RemoveLine path) `styleBasic` [textSize $ model ^. fontSize],
+                fastTooltip "Remove line" $ trashButton (RemoveLine path),
 
-                tooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path) `styleBasic` [textSize $ model ^. fontSize],
+                fastTooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path) `styleBasic` [textSize u],
                 widgetIf isSubProofSingleton $
-                  tooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof) 
-                    `styleBasic` [textSize $ model ^. fontSize]) `styleBasic` [textSize $ model ^. fontSize],
-                tooltip "Add line after" $ button "↓+" (InsertLineAfter path) `styleBasic` [textSize $ model ^. fontSize],
+                  fastTooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)
+                    `styleBasic` [textSize u]),
+                fastTooltip "Add line after" $ button "↓+" (InsertLineAfter path) `styleBasic` [textSize u],
                 -- button "|[]+" (InsertSubProofAfter path),
                 widgetIf (isLastLine && nextIndexExists) $
-                  tooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof) 
-                    `styleBasic` [textSize $ model ^. fontSize]) `styleBasic` [textSize $ model ^. fontSize]
+                  fastTooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof)
+                    `styleBasic` [textSize u])
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 

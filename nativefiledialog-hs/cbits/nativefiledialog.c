@@ -28,3 +28,24 @@ int openDialogAndLogResult( void )
 
     return 0;
 }
+
+nfdchar_t* pickFolder( void )
+{
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_PickFolder( NULL, &outPath );
+    if ( result == NFD_OKAY )
+    {
+        // puts("Success!");
+        return outPath;
+    }
+    else if ( result == NFD_CANCEL )
+    {
+        // puts("User pressed cancel.");
+    }
+    else 
+    {
+        printf("Error: %s\n", NFD_GetError() );
+    }
+
+    return "";
+}

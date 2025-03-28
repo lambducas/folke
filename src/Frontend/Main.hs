@@ -7,10 +7,10 @@ import Frontend.Types
 import Frontend.BuildUI ( buildUI )
 import Frontend.HandleEvent ( handleEvent )
 import Frontend.Themes ( customLightTheme, customDarkTheme )
+import Frontend.Communication (startCommunication)
 
 import Monomer
 import Control.Concurrent (newChan)
-import Frontend.Communication (startCommunication)
 
 main :: IO ()
 main = do
@@ -53,6 +53,7 @@ main = do
     model currentFrontendChan currentBackendChan = AppModel {
       _openMenuBarItem = Nothing,
 
+      _workingDir = "./myProofs",
       _newFileName = "",
       _newFilePopupOpen = False,
       _filesInDirectory = [],

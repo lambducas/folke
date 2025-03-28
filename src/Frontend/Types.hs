@@ -54,6 +54,7 @@ data File
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
 
+  _workingDir :: FilePath,
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
@@ -111,7 +112,9 @@ data AppEvent
   | SwitchSubProofToLine FormulaPath
 
   -- Handle files
-  | DEBUGOpenFileDialog
+  | RefreshExplorer
+  | OpenSetWorkingDir
+  | SetWorkingDir FilePath
   | SetFilesInDirectory [FilePath]
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath

@@ -15,7 +15,7 @@ import Logic.Par (pSequent, myLexer)
 import Monomer
 import Control.Lens
 import Control.Exception (try, SomeException)
-import Control.Concurrent (threadDelay, newChan)
+import Control.Concurrent (newChan)
 import Control.Monad (filterM)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.List (findIndex)
@@ -24,7 +24,8 @@ import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist )
 import System.FilePath ( takeExtension )
 
-import NativeFileDialog ( openDialogAndLogResult )
+import NativeFileDialog ( openFolderDialog )
+import System.FilePath.Posix ((</>))
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -36,7 +37,7 @@ handleEvent wenv node model evt = case evt of
   NoEvent -> []
 
   AppInit -> [
-      Producer directoryFilesProducer,
+      Producer $ directoryFilesProducer (model ^. workingDir),
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
@@ -113,27 +114,29 @@ handleEvent wenv node model evt = case evt of
 
   OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
-  CreateEmptyProof fileName -> [
+  CreateEmptyProof input -> [
       Producer (\sendMsg -> do
         exists <- doesFileExist filePath
         if exists then return () else do
           writeFile filePath emptyProof
-          sendMsg (OpenFile shortFilePath)
+          sendMsg (OpenFile fileName)
       ),
       Model $ model
         & newFilePopupOpen .~ False
         & newFileName .~ ""
     ]
     where
-      filePath = "./myProofs/" <> shortFilePath
-      shortFilePath = unpack fileName <> ".logic"
-      emptyProof = "|-bot{1: ;}"
+      filePath = model ^. workingDir </> fileName
+      fileName = unpack (trimExtension ".logic" input) <> ".logic"
+      emptyProof = ";;{ : ;}"
+
+  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. workingDir) ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
-        pContent <- readFile (folderPath <> filePath)
+        pContent <- readFile (folderPath </> filePath)
         let pContentText = pack pContent
 
         if takeExtension filePath == ".md" then
@@ -214,7 +217,7 @@ handleEvent wenv node model evt = case evt of
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
       convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
 
-  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath "./myProofs/")
+  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath (model ^. workingDir))
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
@@ -260,7 +263,7 @@ handleEvent wenv node model evt = case evt of
           -- let content = (unpack . parseProofForBackend) seq
               fileName = _path f
 
-          result <- try (writeFile ("./myProofs/" <> fileName) content) :: IO (Either SomeException ())
+          result <- try (writeFile (model ^. workingDir </> fileName) content) :: IO (Either SomeException ())
           case result of
             Left _ -> return ()
             Right _ -> sendMsg (SaveProofSuccess f)
@@ -322,29 +325,28 @@ handleEvent wenv node model evt = case evt of
   --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
   --   Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
 
-  -- Test the new library
-  DEBUGOpenFileDialog -> [ Producer openDiag ]
+  OpenSetWorkingDir -> [ Producer openDiag ]
     where
-      openDiag _ = do
-        _ <- openDialogAndLogResult
-        return ()
+      openDiag sendMsg = do
+        path <- openFolderDialog
+        case path of
+          Nothing -> return ()
+          Just path -> sendMsg (SetWorkingDir path)
+
+  SetWorkingDir path -> [
+      Model $ model & workingDir .~ path,
+      Producer (directoryFilesProducer path)
+    ]
 
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]
 
 
 
-directoryFilesProducer :: (AppEvent -> IO ()) -> IO ()
-directoryFilesProducer sendMsg = do
-  let dir = "./myProofs"
-  allFileNames <- fmap (map (drop (length dir + 1))) (listDirectoryRecursive dir)
-  -- onlyFiles <- filterM (doesFileExist . (dir++)) allFileNames
-  -- onlyDirs <- filterM (doesDirectoryExist . (dir++)) allFileNames
+directoryFilesProducer :: FilePath -> (AppEvent -> IO ()) -> IO ()
+directoryFilesProducer workingDir sendMsg = do
+  allFileNames <- fmap (map (drop (length workingDir + 1))) (listDirectoryRecursive workingDir)
   sendMsg (SetFilesInDirectory allFileNames)
-
-  threadDelay $ 2 * seconds
-  directoryFilesProducer sendMsg
-    where seconds = 1000 * 1000
 
 applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
 applyOnCurrentProof model f = actions

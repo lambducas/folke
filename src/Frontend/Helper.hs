@@ -10,6 +10,7 @@ module Frontend.Helper (
   slice,
   trim,
   trimText,
+  trimExtension,
   firstKeystroke,
   fontListToText,
   parseProofForBackend,
@@ -183,3 +184,11 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
 
 trimText :: Text -> Text
 trimText = pack . trim . unpack
+
+trimExtension :: Text -> Text -> Text
+trimExtension ext text
+  | hasExt = intercalate ext (init split)
+  | otherwise = text
+  where
+    hasExt = length split >= 2 && last split == ""
+    split = splitOn ext (trimText text)
