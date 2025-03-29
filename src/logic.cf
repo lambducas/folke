@@ -35,6 +35,8 @@ FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
 FormImpl. Form1 ::= Form2 "->" Form1; --right-associative(book)
 
+FormNil. Form ::= "";
+
 _. Form4 ::= Form5;
 _. Form3 ::= Form4;
 _. Form2 ::= Form3;

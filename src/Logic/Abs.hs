@@ -45,6 +45,7 @@ data Form
     | FormAnd Form Form
     | FormOr Form Form
     | FormImpl Form Form
+    | FormNil
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Pred = Pred Ident Params

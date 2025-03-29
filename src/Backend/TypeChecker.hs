@@ -58,18 +58,21 @@ check seq_t = do
     -return: The type of the proof
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkForms env prems of 
-    Error warns error -> Error warns error
-    Ok warns1 prems_t -> case checkForm env conc of 
-         Error warns error -> Error (warns++warns1) error
-         Ok warns2 conc_t -> case checkProof env proof of
-             Error warns error -> Error (warns++warns1++warns2) error
-             Ok warns3 proof_t -> do 
-                let seq_t = Proof prems_t conc_t
-                if proof_t == seq_t then Ok (warns1++warns2++warns3) seq_t
-                else Error (warns1++warns2++warns3) (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
-
-
+checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) =
+    -- Check if the conclusion is empty
+    case conc of
+        Abs.FormNil -> Error [] (TypeError "Conclusion is empty.")
+        _ -> case checkForms env prems of
+            Error warns error -> Error warns error
+            Ok warns1 prems_t -> case checkForm env conc of
+                Error warns error -> Error (warns ++ warns1) error
+                Ok warns2 conc_t -> case checkProof env proof of
+                    Error warns error -> Error (warns ++ warns1 ++ warns2) error
+                    Ok warns3 proof_t -> do
+                        let seq_t = Proof prems_t conc_t
+                        if proof_t == seq_t
+                            then Ok (warns1 ++ warns2 ++ warns3) seq_t
+                            else Error (warns1 ++ warns2 ++ warns3) (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
 {-
     Typechecks a given proof
     -params:
