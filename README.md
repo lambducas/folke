@@ -1,11 +1,9 @@
 ## TODO
 ### Backend
 - Write bad tests and make them fail
-- Variables in predicates must exist in environment
 - Implement last rules
 - Improve error type
 - Rename If to Imp?
-- Allow conclusion to be empty without throwing parse error (When the user checks an empty, newly created proof they should not get parse error)
 - Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
