@@ -20,6 +20,8 @@ main = do
   startApp (model currentFrontendChan currentBackendChan) handleEvent buildUI config
   where
     config = [
+      appScaleFactor 1.25,
+
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appTheme customLightTheme,
@@ -73,5 +75,7 @@ main = do
       _normalFont = "Regular",
       _logicFont = "Symbol_Regular",
       _fontSize = 16,
-      _testSetting = "bajs"
+      _testSetting = "bajs",
+
+      _userLens = ""
     }

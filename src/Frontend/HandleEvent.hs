@@ -59,15 +59,15 @@ handleEvent wenv node model evt = case evt of
 
   EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
 
-  SwitchLineToSubProof path -> applyOnCurrentProof model switch ++ focusAction
+  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusBwd]-- focusAction
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusBwd ]
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
 
-  SwitchSubProofToLine path -> applyOnCurrentProof model switch ++ focusAction
+  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
         SubProof p -> head p
@@ -78,7 +78,7 @@ handleEvent wenv node model evt = case evt of
 
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd ]
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
@@ -120,6 +120,7 @@ handleEvent wenv node model evt = case evt of
         if exists then return () else do
           writeFile filePath emptyProof
           sendMsg (OpenFile fileName)
+          sendMsg RefreshExplorer
       ),
       Model $ model
         & newFilePopupOpen .~ False
@@ -200,6 +201,7 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormEq _ _) = error "= not implemented"
       convertForm (Abs.FormAll _ _) = error "forall not implemented"
       convertForm (Abs.FormSome _ _) = error "exists not implemented"
+      convertForm Abs.FormNil = error "FormNil not implemented"
 
       convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
@@ -254,6 +256,13 @@ handleEvent wenv node model evt = case evt of
         & confirmDeleteTarget .~ Nothing
         & confirmDeletePopup .~ False
       cf = model ^. currentFile
+
+  SaveCurrentFile -> case model ^. currentFile of
+    Nothing -> []
+    Just filePath -> case currentFile of
+      Just file@ProofFile {} -> handleEvent wenv node model (SaveProof file)
+      _ -> []
+      where currentFile = getProofFileByPath (model ^. tmpLoadedFiles) filePath
 
   SaveProof f -> case _parsedSequent f of
     Nothing -> []
@@ -337,6 +346,8 @@ handleEvent wenv node model evt = case evt of
       Model $ model & workingDir .~ path,
       Producer (directoryFilesProducer path)
     ]
+
+  Print s -> [ Producer (\_ -> print s) ]
 
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]
