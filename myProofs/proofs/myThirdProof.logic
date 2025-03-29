@@ -1,23 +1,26 @@
- |- (P -> Q) & (!R -> !Q) -> P -> R {
-	1-14:{
-		1:assume (P -> Q) & (!R -> !Q);
-		2-13:{
-			2:assume P;
-			3:copy [1] (P -> Q) & (!R -> !Q);
-			4:AndEL [3] P -> Q;
-			5:IfE [2, 4] Q;
-			6:AndER [3] !R -> !Q;
-			7-11:{
-				7:assume !R;
-				8:copy [6] !R -> !Q;
-				9:IfE [7, 8] !Q;
-				10:copy [5] Q;
-				11:NotE [10, 9] bot;
+
+;
+(P -> Q) & (!R -> !Q) -> P -> R;
+{
+	{
+		(P -> Q) & (!R -> !Q) : assume;
+		{
+			P : assume;
+			(P -> Q) & (!R -> !Q) : copy [1];
+			P -> Q : AndEL [3];
+			Q : ImplE [2, 4];
+			!R -> !Q : AndER [3];
+			{
+				!R : assume;
+				!R -> !Q : copy [6];
+				!Q : ImplE [7, 8];
+				Q : copy [5];
+				bot : NotE [10, 9];
 			}
-			12:NotI [7-11] !!R;
-			13:NotNotE [12] R;
+			!!R : NotI [7-11];
+			R : NotNotE [12];
 		}
-		14:IfI [2-13] P -> R;
+		P -> R : IfI [2-13];
 	}
-	15:IfI [1-14] (P -> Q) & (!R -> !Q) -> P -> R;
+	(P -> Q) & (!R -> !Q) -> P -> R : IfI [1-14];
 }

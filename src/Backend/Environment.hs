@@ -30,37 +30,128 @@ import Backend.Types
 --   - `vars`: List of declared variables.
 --   - `funs`: List of declared functions.
 
--- Creates a new environment with an empty state.
 newEnv :: Env
 newEnv = Env {
     prems = [],
     refs  = Map.empty,
     rules = Map.fromList [
-        ("copy", ruleCopy), 
+        ("copy", ruleCopy),
+        ("COPY", ruleCopy),
+        ("C", ruleCopy),
+        ("REITERATION", ruleCopy),
+        ("R", ruleCopy),
+
         ("AndI", ruleAndIntro),
+        ("&I", ruleAndIntro),
+        ("∧I", ruleAndIntro),
+
         ("AndEL", ruleAndElimLeft),
+        ("&EL", ruleAndElimLeft),
+        ("∧EL", ruleAndElimLeft),
+
         ("AndER", ruleAndElimRight),
+        ("&ER", ruleAndElimRight),
+        ("∧ER", ruleAndElimRight),
+
         ("OrIL", ruleOrIntroLeft),
+        ("|IL", ruleOrIntroLeft),
+        ("∨IL", ruleOrIntroLeft),
+
         ("OrIR", ruleOrIntroRight),
+        ("|IR", ruleOrIntroRight),
+        ("∨IR", ruleOrIntroRight),
+
         ("OrE", ruleOrEilm),
-        ("IfI", ruleImplIntro),
-        ("IfE", ruleImplEilm),
+        ("|E", ruleOrEilm),
+        ("∨E", ruleOrEilm),
+
         ("ImplI", ruleImplIntro),
+        ("IfI", ruleImplIntro),
+        ("->I", ruleImplIntro),
+        ("→I", ruleImplIntro),
+
         ("ImplE", ruleImplEilm),
+        ("IfE", ruleImplEilm),
+        ("->E", ruleImplEilm),
+        ("→E", ruleImplEilm),
+
+        ("ImplI", ruleImplIntro),
+        ("IfI", ruleImplIntro),
+        ("->I", ruleImplIntro),
+        ("→I", ruleImplIntro),
+
+        ("ImplE", ruleImplEilm),
+        ("IfE", ruleImplEilm),
+        ("->E", ruleImplEilm),
+        ("→E", ruleImplEilm),
+
+        ("ImplI", ruleImplIntro),
+        ("IfI", ruleImplIntro),
+        ("->I", ruleImplIntro),
+        ("→I", ruleImplIntro),
+
+        ("ImplE", ruleImplEilm),
+        ("IfE", ruleImplEilm),
+        ("->E", ruleImplEilm),
+        ("→E", ruleImplEilm),
+
+        ("ImplI", ruleImplIntro),
+        ("->I", ruleImplIntro),
+        ("→I", ruleImplIntro),
+
+        ("ImplE", ruleImplEilm),
+        ("IfE", ruleImplEilm),
+        ("->E", ruleImplEilm),
+        ("→E", ruleImplEilm),
+
         ("NotI", ruleNotIntro),
+        ("!I", ruleNotIntro),
+        ("¬I", ruleNotIntro),
+
         ("NotE", ruleNotEilm),
+        ("!E", ruleNotEilm),
+        ("¬E", ruleNotEilm),
+
         ("BotE", ruleBottomElim),
+        ("botE", ruleBottomElim),
+        ("#E", ruleBottomElim),
+        ("⊥E", ruleBottomElim),
+
         ("NotNotI", ruleNotNotIntro),
+        ("!!I", ruleNotNotIntro),
+        ("¬¬I", ruleNotNotIntro),
+
         ("NotNotE", ruleNotNotElim),
+        ("!!E", ruleNotNotElim),
+        ("¬¬E", ruleNotNotElim),
+
         ("MT", ruleMT),
+
         ("PBC", rulePBC),
+
         ("LEM", ruleLEM),
+
         ("EqI", ruleEqI),
+        ("=I", ruleEqI),
+
         ("EqE", ruleEqE),
+        ("=E", ruleEqE),
+
         ("AllE", ruleAllE),
+        ("forallE", ruleAllE),
+        ("∀E", ruleAllE),
+
         ("AllI", ruleAllI),
+        ("forallI", ruleAllI),
+        ("∀I", ruleAllI),
+
         ("SomeE", ruleSomeE),
-        ("SomeI", ruleSomeI)
+        ("existsE", ruleSomeE),
+        ("∃E", ruleSomeE),
+
+        ("SomeI", ruleSomeI),
+        ("existsI", ruleSomeI),
+        ("∃I", ruleSomeI)
     ],
     consts = [],
     vars = [],
@@ -84,21 +175,21 @@ addPrem env prem = env { prems = prems env ++ [prem] }
 -- Adds a constant to the environment.
 -- Constants are terms with no arguments.
 addConst :: Env -> String -> Env
-addConst env id = 
+addConst env id =
     let constTerm = Term id []
     in env { consts = constTerm : consts env }
 
 -- Adds a variable to the environment.
 -- Variables are placeholders that can be used in formulas or terms.
 addVar :: Env -> String -> Env
-addVar env id = 
+addVar env id =
     let varTerm = Term id []
     in env { vars = varTerm : vars env }
 
 -- Adds a function to the environment.
 -- Functions are terms with arguments.
 addFun :: Env -> String -> [String] -> Env
-addFun env id args = 
+addFun env id args =
     let funTerm = Term id (map (\arg -> Term arg []) args)
     in env { funs = funTerm : funs env }
 
@@ -111,54 +202,54 @@ addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(labe
 
 -- Retrieves all premises/assumptions in the current scope.
 getPrems :: Env -> [Formula]
-getPrems env = prems env
+getPrems = prems
 
 -- Retrieves all constants in the environment.
 getConsts :: Env -> [Term]
-getConsts env = consts env
+getConsts = consts
 
 -- Retrieves all variables in the environment.
 getVars :: Env -> [Term]
-getVars env = vars env
+getVars = vars
 
 -- Retrieves all functions in the environment.
 getFuns :: Env -> [Term]
-getFuns env = funs env
+getFuns = funs
 
 -- Retrieves the values corresponding to a list of references.
 -- Returns an error if any reference is invalid.
 getRefs :: Env -> [Ref] -> Result (Env, [Arg])
 getRefs env [] = Ok [] (env, [])
-getRefs env (x : xs) = 
+getRefs env (x : xs) =
     case getRefs env xs of
         Error warns error -> Error warns error
-        Ok warns1 (env1, args) -> 
-            case getRef env1 x of 
+        Ok warns1 (env1, args) ->
+            case getRef env1 x of
                 Error warns error -> Error (warns++warns1) error
                 Ok warns2 (env2, arg) -> Ok (warns1++warns2) (env2, arg : args)
 
 -- Retrieves the value corresponding to a single reference.
 -- Returns an error if the reference does not exist.
 getRef :: Env -> Ref -> Result (Env, Arg)
-getRef env ref = 
+getRef env ref =
     case Map.lookup ref (refs env) of
-        Nothing -> Error [] (TypeError ("No ref " ++ show ref ++ " exists.")) 
+        Nothing -> Error [] (TypeError ("No ref " ++ show ref ++ " exists."))
         Just (count, arg) -> Ok [] (env{refs = Map.insert ref (count+1, arg) (refs env) }, arg)
 
-pushPos :: Env -> [Ref] -> Env 
+pushPos :: Env -> [Ref] -> Env
 pushPos env r = env {pos = r ++ pos env}
 -- Applies a rule to a list of arguments and checks the result.
 -- If the rule application succeeds, the resulting formula is returned.
 -- Otherwise, an error is returned.
 applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
-applyRule env name args res = 
+applyRule env name args res =
     case Map.lookup name (rules env) of
-        Nothing -> Error [] (RuleNotFoundError env name) 
-        Just rule -> 
-            case rule (env{rule = name}) args res of 
+        Nothing -> Error [] (RuleNotFoundError env name)
+        Just rule ->
+            case rule (env{rule = name}) args res of
                 Error warns error -> Error warns error
-                Ok warns res_t -> 
-                    if res_t == res then Ok warns res_t 
+                Ok warns res_t ->
+                    if res_t == res then Ok warns res_t
                     else Error warns (RuleConcError env ("Wrong conclusion when using rule, expected " ++ show res_t ++ ", got " ++ show res))
 
 -- All predefined rules.
@@ -172,7 +263,7 @@ ruleCopy _ [ArgForm form] _ = Ok [] form
 ruleCopy env forms          _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 ruleAndIntro :: Env -> [Arg] -> Formula -> Result Formula
-ruleAndIntro _ [ArgForm a, ArgForm b] _ = Ok [] (And a b) 
+ruleAndIntro _ [ArgForm a, ArgForm b] _ = Ok [] (And a b)
 ruleAndIntro env [_, ArgForm _]         _ = Error [] (RuleArgError env 1 "Needs to be a formula.")
 ruleAndIntro env [_, _]                 _ = Error [] (RuleArgError env 2 "Needs to be a formula.")
 ruleAndIntro env forms                  _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
@@ -200,9 +291,9 @@ ruleOrIntroRight env [_]            (Or _ _) = Error [] (RuleArgError env 1 "nee
 ruleOrIntroRight env forms                 _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 ruleOrEilm :: Env -> [Arg] -> Formula -> Result Formula
-ruleOrEilm env [ArgForm (Or a b), ArgProof (Proof [p1] c1), ArgProof (Proof [p2] c2)] _ = 
+ruleOrEilm env [ArgForm (Or a b), ArgProof (Proof [p1] c1), ArgProof (Proof [p2] c2)] _ =
     if a == p1 then
-        if b == p2 then 
+        if b == p2 then
             if c1 == c2 then Ok [] c1 else Error [] (RuleConcError env "The conclusions of the two proofs did not match.")--Not realy conclusion error? 
         else Error [] (RuleArgError env 3 "The premise of the proof did not match the right hand side of the or statement.")
     else Error [] (RuleArgError env 2 "The premise of the proof did not match the left hand side of the or statement.")
@@ -217,8 +308,8 @@ ruleImplIntro env [_]                      _ = Error [] (RuleArgError env 1 "Nee
 ruleImplIntro env forms                    _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 ruleImplEilm :: Env -> [Arg] -> Formula -> Result Formula
-ruleImplEilm env [ArgForm a, ArgForm (Impl b c)] r = 
-    if a == b then 
+ruleImplEilm env [ArgForm a, ArgForm (Impl b c)] r =
+    if a == b then
         if c == r then Ok [] r else Error [] (RuleConcError env "Conclusions did not match.")
     else Error [] (RuleArgError env 2 "Premise did not match argument 1.")
 ruleImplEilm env [ArgForm _, _]         _ = Error [] (RuleArgError env 2 "Needs to be an implication formula.")

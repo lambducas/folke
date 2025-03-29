@@ -19,10 +19,14 @@ import qualified Data.List as List
         - Code to check
     -return: Ok/Error
 -}
+
+-- | Make support for special characters
+
 checkString :: String -> Result ()
-checkString proof = case pSequent (myLexer proof) of
-    Left err -> Error [] (SyntaxError err)
-    Right seq_t -> check seq_t
+checkString proof = 
+    case pSequent (myLexer proof) of
+        Left err -> Error [] (SyntaxError err)
+        Right seq_t -> check seq_t
 {-
     Typechecks if a given proof is correct and if it matches the sequent. Discards any error information
     -params:
@@ -195,7 +199,7 @@ checkForm env f = case f of
             Ok warns2 b_t -> Ok (warns1++warns2) (Eq a_t b_t)
     Abs.FormPred pred -> case checkPred env pred of
         Error warns error -> Error warns error
-        Ok warns pred_t      -> Ok warns (Pred pred_t)
+        Ok warns (_, pred')      -> Ok warns (Pred pred')
     Abs.FormAll id form -> case checkForm env form of
         Error warns error -> Error warns error
         Ok warns term_t -> Ok warns (All (Term (identToString id) []) term_t)
@@ -227,10 +231,36 @@ checkForm env f = case f of
         - The predicate to check
     -return: The type of the predicate
 -}
-checkPred :: Env -> Abs.Pred -> Result Predicate
-checkPred env (Abs.Pred id (Abs.Params terms)) = case checkTerms env terms of
-    Error warns error -> Error warns error
-    Ok warns terms_t -> Ok warns (Predicate (identToString id) terms_t) 
+checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
+checkPred env (Abs.Pred id (Abs.Params terms)) = do
+    -- Check all terms in the predicate
+    case checkTerms env terms of
+        Error warns error -> Error warns error
+        Ok warns terms_t -> 
+            -- Add missing variables to the environment
+            case addMissingVars env terms_t of
+                Error warns error -> Error warns error
+                Ok warns updatedEnv -> Ok warns (updatedEnv, Predicate (identToString id) terms_t)
+
+-- Helper function to add missing variables to the environment
+addMissingVars :: Env -> [Term] -> Result Env
+addMissingVars env terms = 
+    let envVars = map termToString (getVars env)
+        termVars = concatMap extractVars terms  
+        missingVars = filter (`notElem` envVars) termVars
+        updatedEnv = foldl addVarToEnv env missingVars  
+    in Ok [] updatedEnv
+
+-- Helper function to add a variable to the environment
+addVarToEnv :: Env -> String -> Env
+addVarToEnv env var = env { vars = Term var [] : vars env }
+
+-- Helper function to extract variables from a term
+extractVars :: Term -> [String]
+extractVars (Term name subterms) = name : concatMap extractVars subterms
+
+termToString :: Term -> String
+termToString (Term name _) = name
 
 {-
     Typechecks a term
