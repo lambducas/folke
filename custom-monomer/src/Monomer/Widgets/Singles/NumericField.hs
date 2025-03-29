@@ -378,7 +378,8 @@ numericFieldD_ widgetData configs = newNode where
     _ifcDragCursor = Just CursorSizeV,
     _ifcOnFocusReq = _nfcOnFocusReq config,
     _ifcOnBlurReq = _nfcOnBlurReq config,
-    _ifcOnChangeReq = _nfcOnChangeReq config
+    _ifcOnChangeReq = _nfcOnChangeReq config,
+    _ifcOnKeyDownReq = []
   }
   wtype = WidgetType ("numericField-" <> showt (typeOf initialValue))
   newNode = inputField_ wtype inputConfig

@@ -17,38 +17,39 @@ import qualified Monomer.Lens as L
 import Control.Lens
 import TextShow ( TextShow(showt) )
 import Data.Text (Text, pack, intercalate, splitOn)
+import qualified Data.Text (length)
 import Data.List (sort, groupBy)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeExtension)
 import Data.Maybe (fromMaybe)
+import qualified Data.Map
+import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
+
+import Backend.Environment (newEnv)
+import Backend.Types (Env(Env))
+import Monomer.Widgets.Containers.TextFieldSuggestions (textFieldSuggestions)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
     ("File", [
       ("New Proof", "Ctrl+N", OpenCreateProofPopup),
-      ("Save Proof", "Ctrl+S", NoEvent)
+      ("Save File", "Ctrl+S", SaveCurrentFile),
+      ("Close File", "Ctrl+W", CloseCurrentFile)
     ]),
     ("Edit", [
-      ("Cut", "Ctrl+X", NoEvent),
-      ("Copy", "Ctrl+C", NoEvent),
-      ("Paste", "Ctrl+V", NoEvent),
-
-      ("Make Subproof", "Tab", NoEvent),
-      ("Undo Subproof", "Shift+Tab", NoEvent),
-      ("Insert Line After", "Ctrl+Enter", NoEvent),
+      ("Make Subproof", "Ctrl+Tab", NoEvent),
+      ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
+      ("Goto Next Input", "Return", NoEvent),
+      ("Insert Line Below", "Ctrl+Enter", NoEvent),
       ("Close Subproof", "Ctrl+Enter", NoEvent)
     ]),
-    ("View", [
-      ("Open Settings", "Ctrl+Shift+P", NoEvent),
-      ("Toggle Theme", "", SwitchTheme)
+    ("Preferences", [
+      ("Open Preferences", "Ctrl+Shift+P", OpenFile_ "Settings.json" ""),
+      ("Apply Preferences", "", ReadSettings)
     ]),
     ("Help", [
-      ("Open Guide", "", NoEvent)
-    ]),
-    ("Settings", [
-      ("Open", "", OpenFile_ "Settings.json" ""),
-      ("Apply", "", ReadSettings)
+      ("Open Guide", "", OpenFile_ "user_guide_en.md" "./docs")
     ])
   ]
 
@@ -85,7 +86,14 @@ buildUI _wenv model = widgetTree where
   button a b = Monomer.button a b `styleBasic` [textSize u]
   fastTooltip tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize u]
 
-  widgetTree = themeSwitch_ selTheme [themeClearBg] $ vstack [
+  globalKeybinds = [
+      ("Ctrl-n", OpenCreateProofPopup, True),
+      ("Ctrl-s", SaveCurrentFile, True),
+      ("Ctrl-w", CloseCurrentFile, True),
+      ("Ctrl-Shift-p", OpenFile_ "Settings.json" "", True)
+    ]
+
+  widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
         menuBar,
         mainContent
@@ -127,7 +135,8 @@ buildUI _wenv model = widgetTree where
 
   mainContent = hstack [
       fileWindow,
-      editWindow
+      editWindow,
+      ruleWindow
     ] `styleBasic` [expandHeight 1000]
 
   fileWindow = vstack [
@@ -157,7 +166,7 @@ buildUI _wenv model = widgetTree where
         ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
       vscroll $ fileTreeUI parts 1
-    ] `styleBasic` [ width 250, minWidth 250, maxWidth 400, borderR 1 dividerColor ]
+    ] `styleBasic` [ width 250, borderR 1 dividerColor ]
     where
       parts = map (\f -> (splitOn "/" (pack f), f)) files
       files = sort (model ^. filesInDirectory)
@@ -269,11 +278,11 @@ buildUI _wenv model = widgetTree where
             symbolSpan_ (_content file) [multiline]
           ]) `styleBasic` [padding 10]
         ]
-      Just parsedSequent -> keystroke [("Ctrl-s", SaveProof file), ("Ctrl-w", CloseCurrentFile)] $ vstack [
+      Just parsedSequent -> keystroke [("Ctrl-s", SaveProof file)] $ vstack [
           vstack [
             h1 $ pack $ _path file,
             spacer,
-            symbolSpan prettySequent
+            subheading
           ] `styleBasic` [padding 10, borderB 1 dividerColor],
           scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
           hstack [
@@ -285,6 +294,9 @@ buildUI _wenv model = widgetTree where
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where
+          subheading
+            | null premises && conclusion == "" = span "Empty proof"
+            | otherwise = symbolSpan prettySequent
           prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
           conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
           premises = map replaceSpecialSymbols (_premises parsedSequent)
@@ -313,10 +325,12 @@ buildUI _wenv model = widgetTree where
       hstack [button "+ Premise" AddPremise `styleBasic` [textSize u]],
       spacer, spacer,
 
-      h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
-      spacer,
-      symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"],
-        --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
+      vstack_ [childSpacing] [
+        h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+        spacer,
+        symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+          --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
+      ],
       spacer, spacer,
 
       h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
@@ -354,7 +368,7 @@ buildUI _wenv model = widgetTree where
           ghostPremise premise = hstack [
               symbolSpan pp,
               filler,
-              symbolSpan "premise" `styleBasic` [width 175, paddingH 10, textSize u],
+              symbolSpan "premise" `styleBasic` [width 300, paddingH 10, textSize u],
               spacer,
               vstack [] `styleBasic` [width 300]
             ] `styleBasic` [height 34]
@@ -374,21 +388,22 @@ buildUI _wenv model = widgetTree where
                 -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
                 -- spacer,
 
+                -- textFieldV "" (\_ -> NoEvent),
+
                 firstKeystroke [
                   ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
                   ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
                   -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
-                  ("Tab", SwitchLineToSubProof path, True),
-                  ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
+                  ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+                  ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
                   ("Delete", RemoveLine path, True),
                   ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", NextFocus 1, True)
-                ] $
-                symbolStyle $ textFieldV (replaceSpecialSymbols statement) (EditLine path 0)
-                  --`styleBasic` [textFont $ fromString $ model ^. logicFont]
-                  `nodeKey` showt index <> ".statement",
+                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey]
+                  `nodeKey` (showt index <> ".statement"))
+                    `nodeKey` (showt index <> ".statement.keystroke"), 
 
                 spacer,
 
@@ -397,37 +412,69 @@ buildUI _wenv model = widgetTree where
                   ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
                   -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
-                  ("Tab", SwitchLineToSubProof path, True),
-                  ("Shift-Tab", SwitchSubProofToLine pathToParentSubProof, True),
+                  ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+                  ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
                   ("Delete", RemoveLine path, True),
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", InsertLineAfter path, True)
-                ] $
-                symbolStyle $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)
-                  --`styleBasic` [textFont $ fromString $ model ^. logicFont, width 175]
-                  `nodeKey` showt index <> ".rule"
-              ]
-                `nodeKey` showt index,
+                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey]
+                  `nodeKey` (showt index <> ".rule"))
+                    `nodeKey` (showt index <> ".rule.keystroke")
+                    `styleBasic` [width 300]
 
+                , textFieldSuggestions userLens usernames makeSelected makeRow
+                , textFieldV "" (const NoEvent)
+              ],
               spacer,
-
               b
-            ]
-          b = box $ hstack_ [childSpacing] [
-                fastTooltip "Remove line" $ trashButton (RemoveLine path),
+            ] `nodeKey` showt index
 
-                fastTooltip "Convert line to subproof" $ button "→☐" (SwitchLineToSubProof path) `styleBasic` [textSize u],
+          usernames = [model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
+          makeSelected _ = textField userLens
+          makeRow username = label username
+          
+          handleFormulaKey, handleRuleKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
+          handleFormulaKey (_mod, code, state)
+            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")
+            | otherwise = Print $ show state
+            where
+              isAtEnd = cursorPos == textLen
+              cursorPos = _ifsCursorPos state
+              textLen = Data.Text.length (_ifsCurrText state)
+
+          handleRuleKey (_mod, code, state)
+            | isKeyLeft code && isAtBeginning = FocusOnKey $ WidgetKey (showt index <> ".statement")
+            | otherwise = Print $ show state
+            where
+              isAtBeginning = cursorPos == 0
+              cursorPos = _ifsCursorPos state
+
+          b = box $ hstack_ [childSpacing] [
+                fastTooltip "Remove line" $
+                  trashButton (RemoveLine path)
+                    `nodeEnabled` trashActive,
+
+                fastTooltip "Insert line below" $
+                  button "↓+" (InsertLineAfter path) `styleBasic` [textSize u],
+
+                -- fastTooltip "Insert subproof below" $
+                --   button "↓☐+" (InsertSubProofAfter path),
+
+                fastTooltip "Convert line to subproof" $
+                  button "→☐" (SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
+                
                 widgetIf isSubProofSingleton $
-                  fastTooltip "Undo subproof" (button "☒" (SwitchSubProofToLine pathToParentSubProof)
-                    `styleBasic` [textSize u]),
-                fastTooltip "Add line after" $ button "↓+" (InsertLineAfter path) `styleBasic` [textSize u],
-                -- button "|[]+" (InsertSubProofAfter path),
+                  fastTooltip "Undo subproof" $
+                    button "☒" (SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
+                
                 widgetIf (isLastLine && nextIndexExists) $
-                  fastTooltip "Close subproof" (button "⏎" (InsertLineAfter pathToParentSubProof)
-                    `styleBasic` [textSize u])
+                  fastTooltip "Close subproof" $
+                    button "⏎" (InsertLineAfter pathToParentSubProof) `styleBasic` [textSize u]
+                
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 
+          trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
           pathToParentSubProof = init path
           lastIndex = index + 1
           prevIndexExists = index > 1
@@ -473,3 +520,9 @@ buildUI _wenv model = widgetTree where
         | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
+
+  ruleWindow = vscroll $ vstack_ [childSpacing] [
+      h2 "Rules",
+      vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
+    ] `styleBasic` [width 300, padding u]
+    where rules (Env _ _ r _ _ _ _ _) = r

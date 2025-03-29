@@ -49,6 +49,8 @@ import Monomer.Helper
 import Monomer.Widgets.Single
 
 import qualified Monomer.Lens as L
+import Monomer.Graphics.ColorTable (red)
+import Monomer.Widgets.Container (updateWenvOffset)
 
 -- | Constraints for a value handled by input field.
 type InputFieldValue a = (Eq a, Show a, Typeable a)
@@ -134,7 +136,10 @@ data InputFieldCfg s e a = InputFieldCfg {
   -- | 'WidgetRequest' to generate when focus is lost.
   _ifcOnBlurReq :: [Path -> WidgetRequest s e],
   -- | 'WidgetRequest' to generate when value changes.
-  _ifcOnChangeReq :: [a -> WidgetRequest s e]
+  _ifcOnChangeReq :: [a -> WidgetRequest s e],
+
+  -- | 'WidgetRequest' to generate when key is pressed.
+  _ifcOnKeyDownReq :: [(KeyMod, KeyCode, InputFieldState a) -> WidgetRequest s e]
 }
 
 -- | Snapshot of a point in history of the input.
@@ -363,13 +368,13 @@ makeInputField !config !state = widget where
       isEnd = isKeyEnd code
       isWordMod
         | isMacOS wenv = _kmLeftAlt mod
-        | otherwise = _kmLeftCtrl mod
+        | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
       isLineMod
-        | isMacOS wenv = _kmLeftCtrl mod || _kmLeftGUI mod
+        | isMacOS wenv = _kmLeftCtrl mod || _kmRightCtrl mod || _kmLeftGUI mod
         | otherwise = _kmLeftAlt mod
       isAllMod
         | isMacOS wenv = _kmLeftGUI mod
-        | otherwise = _kmLeftCtrl mod
+        | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
       isBackspace = isKeyBackspace code && (tp > 0 || isJust currSel)
       isDelete = isKeyDelete code && (tp < T.length currText || isJust currSel)
       isDelBackWord = isBackspace && isWordMod
@@ -522,7 +527,9 @@ makeInputField !config !state = widget where
       | otherwise -> fmap handleKeyRes keyRes <|> cursorRes where
           !keyRes = handleKeyPress wenv mod code
           handleKeyRes (!newText, !newPos, !newSel) = result where
-            result = genInputResult wenv node False newText newPos newSel []
+            -- result = genInputResult wenv node False newText newPos newSel []
+            result = genInputResult wenv node False newText newPos newSel keyDownReqs
+            keyDownReqs = fmap ($ (mod, code, state)) (_ifcOnKeyDownReq config)
           cursorReq = changeCursorReq validCursor
           cursorRes
             | not (null cursorReq) = Just (resultReqs node cursorReq)
@@ -626,7 +633,9 @@ makeInputField !config !state = widget where
     stVal
       | isValid = fromMaybe currVal newVal
       | otherwise = currVal
-    tempState = newTextState wenv node state config stVal newText newPos newSel
+    tempState = (newTextState wenv node state config stVal newText newPos newSel) {
+      _ifsFocusStart = wenv ^. L.timestamp
+    }
     newOffset = _ifsOffset tempState
     history = _ifsHistory tempState
     histIdx = _ifsHistIdx tempState
@@ -683,6 +692,7 @@ makeInputField !config !state = widget where
 
     when caretRequired $
       drawRect renderer caretRect (Just caretColor) Nothing
+
     where
       style = currentStyle wenv node
       placeholderStyle = style

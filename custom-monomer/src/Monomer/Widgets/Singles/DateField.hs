@@ -424,7 +424,8 @@ dateFieldD_ widgetData configs = newNode where
     _ifcDragCursor = Just CursorSizeV,
     _ifcOnFocusReq = _dfcOnFocusReq config,
     _ifcOnBlurReq = _dfcOnBlurReq config,
-    _ifcOnChangeReq = _dfcOnChangeReq config
+    _ifcOnChangeReq = _dfcOnChangeReq config,
+    _ifcOnKeyDownReq = []
   }
   wtype = WidgetType ("dateField-" <> showt (typeOf initialValue))
   newNode = inputField_ wtype inputConfig

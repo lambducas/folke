@@ -52,6 +52,8 @@ import Monomer.Widgets.Singles.Base.InputField
 
 import qualified Monomer.Lens as L
 
+import Monomer.Event.Types (KeyCode, KeyMod)
+
 {-|
 Configuration options for textField:
 
@@ -86,7 +88,9 @@ data TextFieldCfg s e = TextFieldCfg {
   _tfcReadOnly :: Maybe Bool,
   _tfcOnFocusReq :: [Path -> WidgetRequest s e],
   _tfcOnBlurReq :: [Path -> WidgetRequest s e],
-  _tfcOnChangeReq :: [Text -> WidgetRequest s e]
+  _tfcOnChangeReq :: [Text -> WidgetRequest s e],
+
+  _tfcOnKeyDownReq :: [(KeyMod, KeyCode, InputFieldState Text) -> WidgetRequest s e]
 }
 
 instance Default (TextFieldCfg s e) where
@@ -103,7 +107,9 @@ instance Default (TextFieldCfg s e) where
     _tfcReadOnly = Nothing,
     _tfcOnFocusReq = [],
     _tfcOnBlurReq = [],
-    _tfcOnChangeReq = []
+    _tfcOnChangeReq = [],
+
+    _tfcOnKeyDownReq = []
   }
 
 instance Semigroup (TextFieldCfg s e) where
@@ -120,7 +126,9 @@ instance Semigroup (TextFieldCfg s e) where
     _tfcReadOnly = _tfcReadOnly t2 <|> _tfcReadOnly t1,
     _tfcOnFocusReq = _tfcOnFocusReq t1 <> _tfcOnFocusReq t2,
     _tfcOnBlurReq = _tfcOnBlurReq t1 <> _tfcOnBlurReq t2,
-    _tfcOnChangeReq = _tfcOnChangeReq t1 <> _tfcOnChangeReq t2
+    _tfcOnChangeReq = _tfcOnChangeReq t1 <> _tfcOnChangeReq t2,
+
+    _tfcOnKeyDownReq = _tfcOnKeyDownReq t1 <> _tfcOnKeyDownReq t2
   }
 
 instance Monoid (TextFieldCfg s e) where
@@ -201,6 +209,11 @@ instance CmbOnChangeReq (TextFieldCfg s e) s e Text where
     _tfcOnChangeReq = [req]
   }
 
+instance WidgetEvent e => CmbOnKeyDown (TextFieldCfg s e) (KeyMod, KeyCode, InputFieldState Text) e where
+  onKeyDown fn = def {
+    _tfcOnKeyDownReq = [RaiseEvent . fn]
+  }
+
 -- | Replacement character to show instead of real text. Useful for passwords.
 textFieldDisplayChar :: Char -> TextFieldCfg s e
 textFieldDisplayChar char = def {
@@ -275,7 +288,9 @@ textFieldD_ widgetData configs = inputField where
     _ifcDragCursor = Nothing,
     _ifcOnFocusReq = _tfcOnFocusReq config,
     _ifcOnBlurReq = _tfcOnBlurReq config,
-    _ifcOnChangeReq = _tfcOnChangeReq config
+    _ifcOnChangeReq = _tfcOnChangeReq config,
+
+    _ifcOnKeyDownReq = _tfcOnKeyDownReq config
   }
   inputField = inputField_ "textField" inputConfig
 

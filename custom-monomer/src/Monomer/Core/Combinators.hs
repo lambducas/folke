@@ -513,6 +513,10 @@ class CmbOnChangeReq t s e a | t -> s e a where
 class CmbOnChangeIdxReq t s e a | t -> s e a where
   onChangeIdxReq :: (Int -> a -> WidgetRequest s e) -> t
 
+-- | (custom code) On key down event
+class CmbOnKeyDown t a e | t -> e where
+  onKeyDown :: (a -> e) -> t
+
 -- | On load error event.
 class CmbOnLoadError t e a | t -> e a where
   onLoadError :: (a -> e) -> t
