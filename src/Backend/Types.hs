@@ -21,7 +21,7 @@ type Terms  = [Term]
 data Env = Env {
       prems  :: [Formula]
     , refs   :: Map.Map Ref (Integer, Arg)
-    , rules  :: Map.Map String (Env -> [Arg] -> Formula -> Result Formula)
+    , rules  :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
     , consts :: Terms
     , vars   :: Terms
     , funs   :: Terms
