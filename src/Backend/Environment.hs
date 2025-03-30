@@ -175,22 +175,22 @@ addPrem env prem = env { prems = prems env ++ [prem] }
 -- Adds a constant to the environment.
 -- Constants are terms with no arguments.
 addConst :: Env -> String -> Env
-addConst env id =
-    let constTerm = Term id []
+addConst env name =
+    let constTerm = Term name []
     in env { consts = constTerm : consts env }
 
 -- Adds a variable to the environment.
 -- Variables are placeholders that can be used in formulas or terms.
 addVar :: Env -> String -> Env
-addVar env id =
-    let varTerm = Term id []
+addVar env name =
+    let varTerm = Term name []
     in env { vars = varTerm : vars env }
 
 -- Adds a function to the environment.
 -- Functions are terms with arguments.
 addFun :: Env -> String -> [String] -> Env
-addFun env id args =
-    let funTerm = Term id (map (\arg -> Term arg []) args)
+addFun env name args =
+    let funTerm = Term name (map (\arg -> Term arg []) args)
     in env { funs = funTerm : funs env }
 
 -- Adds references to the environment.
@@ -222,10 +222,10 @@ getRefs :: Env -> [Ref] -> Result (Env, [Arg])
 getRefs env [] = Ok [] (env, [])
 getRefs env (x : xs) =
     case getRefs env xs of
-        Error warns error -> Error warns error
+        Error warns err -> Error warns err
         Ok warns1 (env1, args) ->
             case getRef env1 x of
-                Error warns error -> Error (warns++warns1) error
+                Error warns err -> Error (warns++warns1) err
                 Ok warns2 (env2, arg) -> Ok (warns1++warns2) (env2, arg : args)
 
 -- Retrieves the value corresponding to a single reference.
@@ -245,9 +245,9 @@ applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule env name args res =
     case Map.lookup name (rules env) of
         Nothing -> Error [] (RuleNotFoundError env name)
-        Just rule ->
-            case rule (env{rule = name}) (zip [1..] args) res of
-                Error warns error -> Error warns error
+        Just rule_f ->
+            case rule_f (env{rule = name}) (zip [1..] args) res of
+                Error warns err -> Error warns err
                 Ok warns res_t ->
                     if res_t == res then Ok warns res_t
                     else Error warns (RuleConcError env ("Wrong conclusion when using rule, expected " ++ show res_t ++ ", got " ++ show res))
