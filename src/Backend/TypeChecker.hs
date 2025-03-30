@@ -157,7 +157,7 @@ checkArgs env (arg: args) = case checkArgs env args of
     Error warns err -> Error warns err
     Ok warns1 (env1, args_t) -> case checkArg env1 arg of
         Error warns err -> Error (warns++warns1) err
-        Ok warns2 (env2, arg_t) -> Ok (warns1++warns2) (env, arg_t : args_t)
+        Ok warns2 (env2, arg_t) -> Ok (warns1++warns2) (env2, arg_t : args_t)
 
 checkArg :: Env -> Abs.Arg -> Result (Env, Arg)
 checkArg env (Abs.ArgRange i j) = case getRef env (RefRange i j) of
