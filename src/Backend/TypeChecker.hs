@@ -227,6 +227,7 @@ checkForm env f = case f of
         Ok warns1 left_t -> case checkForm env  right of 
             Error warns error -> Error (warns++warns1) error
             Ok warns2 right_t -> Ok (warns1++warns2) (Impl left_t right_t)
+    Abs.FormNil -> Error [] (TypeError "Formula is empty.")
 {-
     Typechecks a predicate
     -params:
