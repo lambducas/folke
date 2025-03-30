@@ -297,6 +297,8 @@ ruleOrEilm env [(_, ArgForm (Or a b)), (j, ArgProof (Proof [p1] c1)), (k, ArgPro
             if c1 == c2 then Ok [] c1 else Error [] (RuleConcError env "The conclusions of the two proofs did not match.")--Not realy conclusion error? 
         else Error [] (RuleArgError env k "The premise of the proof did not match the right hand side of the or statement.")
     else Error [] (RuleArgError env j "The premise of the proof did not match the left hand side of the or statement.")
+ruleOrEilm env [b@(_, ArgProof _), a@(_, ArgForm _), c@(_, ArgProof _)] r = ruleOrEilm env [a, b, c] r
+ruleOrEilm env [b@(_, ArgProof _), c@(_, ArgProof _), a@(_, ArgForm _)] r = ruleOrEilm env [a, b, c] r
 ruleOrEilm env [(_, ArgForm (Or _ _)), (_, ArgProof _), (k, _)] _ = Error [] (RuleArgError env k "Needs to be an proof.")
 ruleOrEilm env [(_, ArgForm (Or _ _)), (j, _), _]          _ = Error [] (RuleArgError env j "Needs to be an proof.")
 ruleOrEilm env [(i, _), _, _]                         _ = Error [] (RuleArgError env i "Needs to be an or formula.")
@@ -312,6 +314,7 @@ ruleImplEilm env [(_, ArgForm a), (j, ArgForm (Impl b c))] r =
     if a == b then
         if c == r then Ok [] r else Error [] (RuleConcError env "Conclusions did not match.")
     else Error [] (RuleArgError env j "Premise did not match argument 1.")
+ruleImplEilm env [b@(_, ArgForm (Impl _ _)), a@(_, ArgForm _)] r = ruleImplEilm env [a,b] r
 ruleImplEilm env [(_, ArgForm _), (j, _)]         _ = Error [] (RuleArgError env j "Needs to be an implication formula.")
 ruleImplEilm env [(i, _)        , _]         _ = Error [] (RuleArgError env i "Needs to be a formula.")
 ruleImplEilm env forms                  _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
@@ -323,6 +326,7 @@ ruleNotIntro env forms                      _ = Error [] (RuleArgCountError env 
 
 ruleNotEilm :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleNotEilm _ [(i, ArgForm a), (j, ArgForm (Not b))] _ = if a == b then Ok [] Bot else Error [] (TypeError ("Argument "++ show j ++" is not the negation of argument "++show i++"."))
+ruleNotEilm env [b@(_, ArgForm (Not _)), a@(_, ArgForm _)] r = ruleNotEilm env [a, b] r;
 ruleNotEilm env [(_, ArgForm _), (j, _)]               _ = Error [] (RuleArgError env j "Needs to be a not formula.")
 ruleNotEilm env [(i, _), _]                       _ = Error [] (RuleArgError env i "Needs to be a formula.")
 ruleNotEilm env forms                        _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
@@ -344,6 +348,7 @@ ruleNotNotElim env forms                   _ = Error [] (RuleArgCountError env (
 
 ruleMT :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleMT env [(i, ArgForm (Impl a b)), (j, ArgForm (Not c))] _ = if b == c then Ok [] (Not a) else Error [] (RuleConcError env ("Conclusion in argument "++show i++" did not match argument "++ show j ++"."))
+ruleMT env [b@(_, ArgForm (Not _)), a@(_, ArgForm (Impl _ _))] r = ruleMT env [a, b] r
 ruleMT env [(_, ArgForm (Impl _ _)), (j, _)]               _ = Error [] (RuleArgError env j "Needs to be a not formula.")
 ruleMT env [(i, _), _]                              _ = Error [] (RuleArgError env i "Needs to be an implication formula.")
 ruleMT env forms                               _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
