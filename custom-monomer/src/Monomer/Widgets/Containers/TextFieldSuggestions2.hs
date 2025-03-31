@@ -8,16 +8,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 
-module Monomer.Widgets.Containers.TextFieldSuggestions (
+module Monomer.Widgets.Containers.TextFieldSuggestions2 (
   -- * Configuration
   DropdownCfg,
   DropdownItem,
   -- * Constructors
-  textFieldSuggestions,
-  textFieldSuggestions_,
-  textFieldSuggestionsV,
-  textFieldSuggestionsV_,
-  textFieldSuggestionsD_
+  textFieldSuggestions2,
+  textFieldSuggestions2_,
+  textFieldSuggestions2V,
+  textFieldSuggestions2V_,
+  textFieldSuggestions2D_
 ) where
 
 import Control.Applicative ((<|>))
@@ -173,18 +173,18 @@ data DropdownMessage
   | OnListBlur
 
 -- | Creates a dropdown using the given lens.
-textFieldSuggestions
+textFieldSuggestions2
   :: (WidgetModel s, WidgetEvent e, Traversable t, DropdownItem a)
   => ALens' s a             -- ^ The lens into the model.
   -> t a                    -- ^ The list of selectable items.
   -> (a -> WidgetNode s e)  -- ^ Function to create the header (always visible).
   -> (a -> WidgetNode s e)  -- ^ Function to create the list (collapsable).
   -> WidgetNode s e         -- ^ The created dropdown.
-textFieldSuggestions field items makeMain makeRow = newNode where
-  newNode = textFieldSuggestions_ field items makeMain makeRow def
+textFieldSuggestions2 field items makeMain makeRow = newNode where
+  newNode = textFieldSuggestions2_ field items makeMain makeRow def
 
 -- | Creates a dropdown using the given lens. Accepts config.
-textFieldSuggestions_
+textFieldSuggestions2_
   :: (WidgetModel s, WidgetEvent e, Traversable t, DropdownItem a)
   => ALens' s a             -- ^ The lens into the model.
   -> t a                    -- ^ The list of selectable items.
@@ -192,12 +192,12 @@ textFieldSuggestions_
   -> (a -> WidgetNode s e)  -- ^ Function to create the list (collapsable).
   -> [DropdownCfg s e a]    -- ^ The config options.
   -> WidgetNode s e         -- ^ The created dropdown.
-textFieldSuggestions_ field items makeMain makeRow configs = newNode where
+textFieldSuggestions2_ field items makeMain makeRow configs = newNode where
   widgetData = WidgetLens field
-  newNode = textFieldSuggestionsD_ widgetData items makeMain makeRow configs
+  newNode = textFieldSuggestions2D_ widgetData items makeMain makeRow configs
 
 -- | Creates a dropdown using the given value and 'onChange' event handler.
-textFieldSuggestionsV
+textFieldSuggestions2V
   :: (WidgetModel s, WidgetEvent e, Traversable t, DropdownItem a)
   => a                      -- ^ The current value.
   -> (Int -> a -> e)        -- ^ The event to raise on change.
@@ -205,12 +205,12 @@ textFieldSuggestionsV
   -> (a -> WidgetNode s e)  -- ^ Function to create the header (always visible).
   -> (a -> WidgetNode s e)  -- ^ Function to create the list (collapsable).
   -> WidgetNode s e         -- ^ The created dropdown.
-textFieldSuggestionsV value handler items makeMain makeRow = newNode where
-  newNode = textFieldSuggestionsV_ value handler items makeMain makeRow def
+textFieldSuggestions2V value handler items makeMain makeRow = newNode where
+  newNode = textFieldSuggestions2V_ value handler items makeMain makeRow def
 
 -- | Creates a dropdown using the given value and 'onChange' event handler.
 -- | Accepts config.
-textFieldSuggestionsV_
+textFieldSuggestions2V_
   :: (WidgetModel s, WidgetEvent e, Traversable t, DropdownItem a)
   => a                      -- ^ The current value.
   -> (Int -> a -> e)        -- ^ The event to raise on change.
@@ -219,12 +219,12 @@ textFieldSuggestionsV_
   -> (a -> WidgetNode s e)  -- ^ Function to create the list (collapsable).
   -> [DropdownCfg s e a]    -- ^ The config options.
   -> WidgetNode s e         -- ^ The created dropdown.
-textFieldSuggestionsV_ value handler items makeMain makeRow configs = newNode where
+textFieldSuggestions2V_ value handler items makeMain makeRow configs = newNode where
   newConfigs = onChangeIdx handler : configs
-  newNode = textFieldSuggestionsD_ (WidgetValue value) items makeMain makeRow newConfigs
+  newNode = textFieldSuggestions2D_ (WidgetValue value) items makeMain makeRow newConfigs
 
 -- | Creates a dropdown providing a WidgetData instance and config.
-textFieldSuggestionsD_
+textFieldSuggestions2D_
   :: forall s e t a . (WidgetModel s, WidgetEvent e, Traversable t, DropdownItem a)
   => WidgetData s a         -- ^ The 'WidgetData' to retrieve the value from.
   -> t a                    -- ^ The list of selectable items.
@@ -232,11 +232,11 @@ textFieldSuggestionsD_
   -> (a -> WidgetNode s e)  -- ^ Function to create the list (collapsable).
   -> [DropdownCfg s e a]    -- ^ The config options.
   -> WidgetNode s e         -- ^ The created dropdown.
-textFieldSuggestionsD_ widgetData items makeMain makeRow configs = newNode where
+textFieldSuggestions2D_ widgetData items makeMain makeRow configs = newNode where
   config = mconcat configs
   newState = DropdownState False def
   newItems = foldl' (|>) Empty items
-  wtype = WidgetType ("textfieldsuggestions-" <> showt (typeRep (undefined :: Proxy a)))
+  wtype = WidgetType ("textfieldsuggestions2-" <> showt (typeRep (undefined :: Proxy a)))
   widget = makeDropdown widgetData newItems makeMain makeRow config newState
   newNode = defaultWidgetNode wtype widget
     & L.info . L.focusable .~ True

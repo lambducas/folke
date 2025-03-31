@@ -104,6 +104,7 @@ library
       Monomer.Widgets.Containers.Split
       Monomer.Widgets.Containers.Stack
       Monomer.Widgets.Containers.TextFieldSuggestions
+      Monomer.Widgets.Containers.TextFieldSuggestions2
       Monomer.Widgets.Containers.ThemeSwitch
       Monomer.Widgets.Containers.Tooltip
       Monomer.Widgets.Containers.ZStack
@@ -230,6 +231,7 @@ test-suite monomer-test
       Monomer.Widgets.Containers.SplitSpec
       Monomer.Widgets.Containers.StackSpec
       Monomer.Widgets.Containers.TextFieldSuggestions
+      Monomer.Widgets.Containers.TextFieldSuggestions2
       Monomer.Widgets.Containers.ThemeSwitchSpec
       Monomer.Widgets.Containers.TooltipSpec
       Monomer.Widgets.Containers.ZStackSpec
