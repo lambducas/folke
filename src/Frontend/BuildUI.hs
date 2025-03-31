@@ -16,7 +16,7 @@ import Monomer
 import qualified Monomer.Lens as L
 import Control.Lens
 import TextShow ( TextShow(showt) )
-import Data.Text (Text, pack, intercalate, splitOn)
+import Data.Text (Text, pack, intercalate, splitOn, isInfixOf, toLower)
 import qualified Data.Text (length)
 import Data.List (sort, groupBy)
 import Data.Default ( Default(def) )
@@ -28,7 +28,7 @@ import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _
 
 import Backend.Environment (newEnv)
 import Backend.Types (Env(Env))
-import Monomer.Widgets.Containers.TextFieldSuggestions (textFieldSuggestions)
+import Monomer.Widgets.Containers.TextFieldSuggestions
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -422,17 +422,15 @@ buildUI _wenv model = widgetTree where
                     `nodeKey` (showt index <> ".rule.keystroke")
                     `styleBasic` [width 300]
 
-                , textFieldSuggestions userLens usernames makeSelected makeRow
-                , textFieldV "" (const NoEvent)
+                , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) usernames (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
               ],
               spacer,
               b
             ] `nodeKey` showt index
 
-          usernames = [model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
-          makeSelected _ = textField userLens
-          makeRow username = label username
-          
+          usernames = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
+            where rules (Env _ _ r _ _ _ _ _) = r
+
           handleFormulaKey, handleRuleKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
           handleFormulaKey (_mod, code, state)
             | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")

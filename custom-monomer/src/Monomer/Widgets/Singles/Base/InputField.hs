@@ -237,7 +237,8 @@ makeInputField !config !state = widget where
   widget = createSingle state def {
     singleFocusOnBtnPressed = False,
     singleUseCustomCursor = True,
-    singleUseScissor = True,
+    -- singleUseScissor = True,
+    singleUseScissor = False,
     singleGetBaseStyle = getBaseStyle,
     singleInit = init,
     singleMerge = merge,
@@ -693,6 +694,11 @@ makeInputField !config !state = widget where
     when caretRequired $
       drawRect renderer caretRect (Just caretColor) Nothing
 
+    when focused $
+      createOverlay renderer $ do
+        drawInTranslation renderer scOffset $ do
+          drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing
+
     where
       style = currentStyle wenv node
       placeholderStyle = style
@@ -710,6 +716,9 @@ makeInputField !config !state = widget where
 
       selColor = styleHlColor style
       selRect = getSelRect state style
+
+      Rect vx vy vw vh = node ^. L.info . L.viewport
+      scOffset = addPoint (Point vx (vy + vh)) (wenv ^. L.offset)
 
 textOffsetY :: TextMetrics -> StyleState -> Double
 textOffsetY (TextMetrics ta td tl tlx) style = offset where
