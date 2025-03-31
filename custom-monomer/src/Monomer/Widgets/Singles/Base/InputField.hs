@@ -39,6 +39,7 @@ import Data.Default
 import Data.Maybe
 import Data.Sequence (Seq(..), (|>))
 import Data.Text (Text)
+import Data.List (foldl')
 import Data.Typeable
 import GHC.Generics
 
@@ -51,6 +52,8 @@ import Monomer.Widgets.Single
 import qualified Monomer.Lens as L
 import Monomer.Graphics.ColorTable (red)
 import Monomer.Widgets.Container (updateWenvOffset)
+import Monomer.Widgets.Singles.Label (label)
+import Monomer.Widgets.Containers.SelectList (selectListD_, selectListV, SelectListItem)
 
 -- | Constraints for a value handled by input field.
 type InputFieldValue a = (Eq a, Show a, Typeable a)
@@ -282,8 +285,21 @@ makeInputField !config !state = widget where
       | otherwise = 0
     newFieldState = newTextState wenv node state config
     newState = newFieldState newValue txtValue txtPos Nothing
+
+    widgetId = node ^. L.info . L.widgetId
+    makeRow a = label ""
+    items :: [Text]
+    items = ["Hello", "world", "test", "1111", "333", "qwqewe"]
+    newItems = foldl' (|>) Data.Sequence.Empty items
+    widgetData = _ifcValue config
+    selectListNode :: (WidgetModel s, WidgetEvent e) => WidgetNode s e
+    selectListNode = selectListV "Hello" (\i v -> undefined) items makeRow
+
     newNode = node
       & L.widget .~ makeInputField config newState
+      & L.children .~ Seq.fromList [label "AAAAAAAA", label "nbbbbbbbbbb"]
+      -- & L.children .~ Seq.fromList [selectListNode]
+
     parsedVal = fromText (toText newValue)
     reqs = setModelValid config (isJust parsedVal)
     result = resultReqs newNode reqs
@@ -699,6 +715,11 @@ makeInputField !config !state = widget where
         drawInTranslation renderer scOffset $ do
           drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing
 
+    -- when focused $
+    --   createOverlay renderer $
+    --     drawInTranslation renderer totalOffset $ do
+    --       renderOverlay renderer wenv listOverlay
+
     where
       style = currentStyle wenv node
       placeholderStyle = style
@@ -719,6 +740,16 @@ makeInputField !config !state = widget where
 
       Rect vx vy vw vh = node ^. L.info . L.viewport
       scOffset = addPoint (Point vx (vy + vh)) (wenv ^. L.offset)
+
+
+      offset = Point vx vy
+      totalOffset = addPoint (wenv ^. L.offset) offset
+      listOverlay = Seq.index (node ^. L.children) 0
+      listOverlayVp = listOverlay ^. L.info . L.viewport
+    
+  renderOverlay renderer wenv overlayNode = renderAction where
+    widget = overlayNode ^. L.widget
+    renderAction = widgetRender widget wenv overlayNode renderer
 
 textOffsetY :: TextMetrics -> StyleState -> Double
 textOffsetY (TextMetrics ta td tl tlx) style = offset where
@@ -839,14 +870,14 @@ genReqsEvents node config !state !newText !newReqs = result where
   !reqs = newReqs ++ reqUpdateModel ++ reqValid ++ reqResize ++ reqOnChange
   !result = (reqs, evtValid)
 
-moveHistory
-  :: (InputFieldValue a, WidgetEvent e)
-  => WidgetEnv s e
-  -> WidgetNode s e
-  -> InputFieldState a
-  -> InputFieldCfg s e a
-  -> Int
-  -> Maybe (WidgetResult s e)
+-- moveHistory
+--   :: (InputFieldValue a, WidgetEvent e)
+--   => WidgetEnv s e
+--   -> WidgetNode s e
+--   -> InputFieldState a
+--   -> InputFieldCfg s e a
+--   -> Int
+--   -> Maybe (WidgetResult s e)
 moveHistory wenv node state config steps = result where
   historyStep = initialHistoryStep (_ifcInitialValue config)
   currHistory = _ifsHistory state

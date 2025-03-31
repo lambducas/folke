@@ -239,7 +239,7 @@ textFieldSuggestionsD_ widgetData items makeMain makeRow configs = newNode where
   wtype = WidgetType ("textfieldsuggestions-" <> showt (typeRep (undefined :: Proxy a)))
   widget = makeDropdown widgetData newItems makeMain makeRow config newState
   newNode = defaultWidgetNode wtype widget
-    & L.info . L.focusable .~ True
+    & L.info . L.focusable .~ False
 
 makeDropdown
   :: forall s e a. (WidgetModel s, WidgetEvent e, DropdownItem a)
@@ -344,19 +344,19 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
         | not validPos && not isArrow = Just resetRes
         | otherwise = Nothing
 
-    ButtonAction _ btn BtnPressed _
-      | btn == wenv ^. L.mainButton && not isOpen -> result where
-        result = Just $ resultReqs node [SetFocus (node ^. L.info . L.widgetId)]
+    -- ButtonAction _ btn BtnPressed _
+    --   | btn == wenv ^. L.mainButton && not isOpen -> result where
+    --     result = Just $ resultReqs node [SetFocus (node ^. L.info . L.widgetId)]
 
-    Click point _ _
-      | openRequired point node -> Just resultOpen
-      | closeRequired point node -> Just resultClose
-      where
-        inVp = isPointInNodeVp node point
-        resultOpen = openDropdown wenv node
-          & L.requests <>~ Seq.fromList [SetCursorIcon widgetId CursorArrow]
-        resultClose = closeDropdown wenv node
-          & L.requests <>~ Seq.fromList ([ResetCursorIcon widgetId | not inVp] ++ [MoveFocus Nothing FocusFwd])
+    -- Click point _ _
+    --   | openRequired point node -> Just resultOpen
+    --   | closeRequired point node -> Just resultClose
+    --   where
+    --     inVp = isPointInNodeVp node point
+    --     resultOpen = openDropdown wenv node
+    --       & L.requests <>~ Seq.fromList [SetCursorIcon widgetId CursorArrow]
+    --     resultClose = closeDropdown wenv node
+    --       & L.requests <>~ Seq.fromList ([ResetCursorIcon widgetId | not inVp] ++ [MoveFocus Nothing FocusFwd])
 
     KeyAction mode code KeyPressed
       | isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
@@ -394,13 +394,13 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     }
     newNode = node
       & L.widget .~ makeDropdown widgetData items makeMain makeRow config newState
-      & L.info . L.focusable .~ False
+      -- & L.info . L.focusable .~ False
     -- selectList is wrapped by a scroll widget
     (slWid, slPath) = scrollListInfo node
     (listWid, _) = selectListInfo node
     scrollMsg = SendMessage listWid SelectListShowSelected
     -- requests = [scrollMsg]
-    requests = [SetOverlay slWid slPath, SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg]
+    requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg]
     -- requests = [SetOverlay slWid slPath, SetFocus listWid, scrollMsg]
 
   closeDropdown wenv node = resultReqs newNode requests where
@@ -413,7 +413,7 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     }
     newNode = node
       & L.widget .~ makeDropdown widgetData items makeMain makeRow config newState
-      & L.info . L.focusable .~ True
+      -- & L.info . L.focusable .~ True
     requests = [ResetOverlay slWid]
     -- requests = [ResetOverlay slWid, SetFocus widgetId]
 
@@ -427,7 +427,7 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     }
     newNode = node
       & L.widget .~ makeDropdown widgetData items makeMain makeRow config newState
-      & L.info . L.focusable .~ True
+      -- & L.info . L.focusable .~ True
     requests = case setFocusToMe of
       Nothing -> [ResetOverlay slWid]
       Just s -> [ResetOverlay slWid, SetFocus s]
