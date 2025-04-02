@@ -21,7 +21,8 @@ import qualified Data.Text (length)
 import Data.List (sort, groupBy)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
-import System.FilePath (takeExtension)
+import System.FilePath (takeExtension, takeFileName)
+import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe)
 import qualified Data.Map
 import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
@@ -200,7 +201,7 @@ buildUI _wenv model = widgetTree where
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
-      isCurrent = (model ^. currentFile) == Just filePath
+      isCurrent = (model ^. currentFile) == Just (model ^. workingDir </> filePath)
       ext = takeExtension filePath
       iconIdent = case ext of
         ".md" -> remixMarkdownFill
@@ -221,15 +222,16 @@ buildUI _wenv model = widgetTree where
     where
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
-          span displayName,
-          box_ [onClick (CloseFile filePath)] (symbolSpan closeText
-            `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
-            `styleHover` [bgColor hoverColor])
+          fastTooltip (pack filePath) $ span displayName,
+          fastTooltip "Close tab" $
+            box_ [onClick (CloseFile filePath)] (symbolSpan closeText
+              `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
+              `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
-            displayName = pack filePath
+            displayName = pack $ takeFileName filePath --pack filePath
             closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
             isCurrent = (model ^. currentFile) == Just filePath

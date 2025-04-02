@@ -240,8 +240,8 @@ makeInputField !config !state = widget where
   widget = createSingle state def {
     singleFocusOnBtnPressed = False,
     singleUseCustomCursor = True,
-    -- singleUseScissor = True,
-    singleUseScissor = False,
+    singleUseScissor = True,
+    -- singleUseScissor = False,
     singleGetBaseStyle = getBaseStyle,
     singleInit = init,
     singleMerge = merge,
@@ -710,10 +710,10 @@ makeInputField !config !state = widget where
     when caretRequired $
       drawRect renderer caretRect (Just caretColor) Nothing
 
-    when (focused && currText /= "") $
-      createOverlay renderer $ do
-        drawInTranslation renderer scOffset $ do
-          drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing
+    -- when (focused && currText /= "") $
+    --   createOverlay renderer $ do
+    --     drawInTranslation renderer scOffset $ do
+    --       drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing
 
     -- when focused $
     --   createOverlay renderer $

@@ -146,32 +146,33 @@ handleEvent wenv node model evt = case evt of
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
-        pContent <- readFile (folderPath </> filePath)
+        let fullPath = folderPath </> filePath
+        pContent <- readFile fullPath
         let pContentText = pack pContent
 
-        if takeExtension filePath == ".md" then
-          sendMsg (OpenFileSuccess $ MarkdownFile filePath pContentText)
-        else if filePath == "Settings.json" && folderPath == "" then
-          sendMsg (OpenFileSuccess $ SettingsFile filePath)
-        else if takeExtension filePath == ".logic" then
+        if takeExtension fullPath == ".md" then
+          sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
+        else if fullPath == "Settings.json" && folderPath == "" then
+          sendMsg (OpenFileSuccess $ SettingsFile fullPath)
+        else if takeExtension fullPath == ".logic" then
           do
             let pIsEdited = False
 
             case pSequent (myLexer pContent) of
               Left _err -> do
                 let seq = parseProofFromSimpleFileFormat pContentText
-                sendMsg (OpenFileSuccess $ ProofFile filePath pContentText seq pIsEdited)
-                -- sendMsg (OpenFileSuccess $ File filePath pContentText Nothing pIsEdited)
+                sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
+                -- sendMsg (OpenFileSuccess $ File fullPath pContentText Nothing pIsEdited)
 
-              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile filePath pContentText pParsedContent pIsEdited)
+              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
                 where pParsedContent = Just (convertSeq seq_t)
 
             -- let pContentText = pack pContent
             --     pParsedContent = Just (parseProofFromSimpleFileFormat pContentText)
             --     pIsEdited = False
-            -- sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
+            -- sendMsg (OpenFileSuccess $ File fullPath pContentText pParsedContent pIsEdited)
         else
-          sendMsg (OpenFileSuccess $ OtherFile filePath pContentText)
+          sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
     ]
     where
