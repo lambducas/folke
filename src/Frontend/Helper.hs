@@ -157,7 +157,7 @@ pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
     stepLength (Line _ _) = 1
 
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
-firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts] (firstKeystroke xs widget)
+firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
 firstKeystroke [] widget = widget
 
 fontListToText :: [String] -> Text
