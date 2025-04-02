@@ -710,7 +710,7 @@ makeInputField !config !state = widget where
     when caretRequired $
       drawRect renderer caretRect (Just caretColor) Nothing
 
-    when focused $
+    when (focused && currText /= "") $
       createOverlay renderer $ do
         drawInTranslation renderer scOffset $ do
           drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing

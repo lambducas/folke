@@ -51,7 +51,11 @@ handleEvent wenv node model evt = case evt of
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddPremise -> applyOnCurrentProof model addPremiseToProof
+  AddPremise -> applyOnCurrentProof model addPremiseToProof ++ focusAction
+    where
+      focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
+      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt idx) ]
+        where idx = length (_premises sequent)
 
   RemovePremise idx -> applyOnCurrentProof model (removePremiseFromProof idx)
 
@@ -106,8 +110,13 @@ handleEvent wenv node model evt = case evt of
           conclusion = _conclusion sequent
           steps = _steps sequent ++ [SubProof [Line "" ""]]
 
-  RemoveLine path -> applyOnCurrentProof model removeLine
-    where removeLine = removeFromProof path
+  RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
+    where
+      removeLine = removeFromProof path
+
+      focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
+      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".rule") ]
+        where l = pathToLineNumber sequent path - 1
 
   EditLine path arg newText -> applyOnCurrentProof model editLine
     where editLine = editFormulaInProof path arg newText

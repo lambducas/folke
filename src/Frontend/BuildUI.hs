@@ -105,8 +105,8 @@ buildUI _wenv model = widgetTree where
         span "without saving. All changes will be lost!",
         spacer,
         hstack_ [childSpacing] [
-          normalStyle $ button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget)),
-          normalStyle $ toggleButton "Cancel" confirmDeletePopup
+          normalStyle $ toggleButton "Cancel" confirmDeletePopup,
+          normalStyle $ button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget))
         ]
       ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ u -2])
     ]
@@ -328,7 +328,10 @@ buildUI _wenv model = widgetTree where
       vstack_ [childSpacing] [
         h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
         spacer,
-        symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+        box_ [alignLeft] (
+          symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+            `styleBasic` [maxWidth 400]
+        )
           --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
       ],
       spacer, spacer,
@@ -344,13 +347,14 @@ buildUI _wenv model = widgetTree where
       box (label "") `styleBasic` [height 1000]
     ]
     where
-      premiseLine premise idx = hstack [
-          symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"],
+      premiseLine premise idx = box_ [alignLeft] (hstack [
+          symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
+            `nodeKey` ("premise.input." <> showt idx),
             --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
           spacer,
           fastTooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
-        ]
+        ] `styleBasic` [maxWidth 400]) `nodeKey` ("premise.line." <> showt idx)
 
       tree = vstack [
           ui,
@@ -397,11 +401,12 @@ buildUI _wenv model = widgetTree where
 
                   ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
                   ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
-                  ("Delete", RemoveLine path, True),
+                  ("Delete", RemoveLine path, trashActive),
+                  ("Backspace", RemoveLine path, canBackspaceToDelete),
                   ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", NextFocus 1, True)
-                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey]
+                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                   `nodeKey` (showt index <> ".statement"))
                     `nodeKey` (showt index <> ".statement.keystroke"), 
 
@@ -414,15 +419,16 @@ buildUI _wenv model = widgetTree where
 
                   ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
                   ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                  ("Delete", RemoveLine path, True),
+                  ("Delete", RemoveLine path, trashActive),
+                  ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
                   ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                   ("Enter", InsertLineAfter path, True)
-                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey]
+                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey, placeholder "No rule"]
                   `nodeKey` (showt index <> ".rule"))
                     `nodeKey` (showt index <> ".rule.keystroke")
                     `styleBasic` [width 300]
 
-                , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) usernames (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
+                -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) usernames (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
               ],
               spacer,
               b
@@ -434,7 +440,7 @@ buildUI _wenv model = widgetTree where
           handleFormulaKey, handleRuleKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
           handleFormulaKey (_mod, code, state)
             | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")
-            | otherwise = Print $ show state
+            | otherwise = NoEvent --Print $ show state
             where
               isAtEnd = cursorPos == textLen
               cursorPos = _ifsCursorPos state
@@ -442,7 +448,7 @@ buildUI _wenv model = widgetTree where
 
           handleRuleKey (_mod, code, state)
             | isKeyLeft code && isAtBeginning = FocusOnKey $ WidgetKey (showt index <> ".statement")
-            | otherwise = Print $ show state
+            | otherwise = NoEvent --Print $ show state
             where
               isAtBeginning = cursorPos == 0
               cursorPos = _ifsCursorPos state
@@ -472,6 +478,7 @@ buildUI _wenv model = widgetTree where
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 
+          canBackspaceToDelete = rule == "" && statement == "" && trashActive
           trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
           pathToParentSubProof = init path
           lastIndex = index + 1
@@ -519,8 +526,8 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-  ruleWindow = vscroll $ vstack_ [childSpacing] [
+  ruleWindow = vscroll (vstack_ [childSpacing] [
       h2 "Rules",
       vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
-    ] `styleBasic` [width 300, padding u]
+    ] `styleBasic` [padding u]) `styleBasic` [width 300]
     where rules (Env _ _ r _ _ _ _ _) = r

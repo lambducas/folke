@@ -49,14 +49,14 @@ customDarkTheme = baseTheme darkThemeColors {
   btnBgDisabled = rgb 40 40 40,
   btnTextDisabled = rgb 70 70 70,
   btnText = rgbHex "#FFFFFF",
-
-  btnMainBgBasic = rgbHex "#EE9000",
-  btnMainBgHover = rgbHex "#0000FF",
-  btnMainBgFocus = rgbHex "#FFA500",
-  btnMainBgActive = rgbHex "#DD8000",
-  btnMainBgDisabled = rgbHex "#BB8800",
-  btnMainText = rgbHex "#FF0000",
   labelText = rgbHex "#FFFFFF"
+
+  -- btnMainBgBasic = rgbHex "#EE9000",
+  -- btnMainBgHover = rgbHex "#0000FF",
+  -- btnMainBgFocus = rgbHex "#FFA500",
+  -- btnMainBgActive = rgbHex "#DD8000",
+  -- btnMainBgDisabled = rgbHex "#BB8800",
+  -- btnMainText = rgbHex "#FF0000"
 }
   & L.userColorMap . at "popupBackground" ?~ rgb 50 50 50
   & L.userColorMap . at "backgroundColor" ?~ rgb 30 30 30
