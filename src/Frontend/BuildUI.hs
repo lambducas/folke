@@ -141,59 +141,75 @@ buildUI _wenv model = widgetTree where
       ruleWindow
     ] `styleBasic` [expandHeight 1000]
 
-  fileWindow = vstack [
-      box_ [expandContent] (hstack [
-          bold (span "File Explorer"),
-          filler,
-          fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
-          fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
-          fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
+  fileWindow = case model ^. preferences . workingDir of
+    Nothing -> vstack [
+        box_ [expandContent] (hstack [
+            bold (span "File Explorer"),
+            filler,
+            fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor]
+          ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          let cep = (CreateEmptyProof $ model ^. newFileName) in
-            popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
-              h2 "Create proof",
-              spacer,
-              span "Enter the name of your proof",
-              spacer,
-              firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
-              spacer,
-              button "+ Create proof" cep
-            ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
-        ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+        vstack_ [childSpacing] [
+          paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
+          box (button "Open Folder" OpenSetWorkingDir)
+        ] `styleBasic` [padding u]
+      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
 
-      vscroll $ fileTreeUI parts 1
-    ] `styleBasic` [ width 250, borderR 1 dividerColor ]
-    where
-      parts = map (\f -> (splitOn "/" (pack f), f)) files
-      files = sort (model ^. filesInDirectory)
+    Just _ -> vstack [
+        box_ [expandContent] (hstack [
+            bold (span "File Explorer"),
+            filler,
+            fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
+            fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
+            fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
 
-      fileTreeUI parts indent = vstack [
-          vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
-          vstack $ map folder groups
-        ]
-        where
-          -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-          partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-          partFolder = filter (\i -> length (fst i) > 1) parts
-          groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+            let cep = (CreateEmptyProof $ model ^. newFileName) in
+              popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
+                h2 "Create proof",
+                spacer,
+                span "Enter the name of your proof",
+                spacer,
+                firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
+                spacer,
+                button "+ Create proof" cep
+              ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
+          ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          folder seqs = vstack [
-              hstack [
-                span ((head . fst . head) seqs),
-                iconLabel remixFolder5Line `styleBasic` [paddingL 8]
-              ] `styleBasic` [paddingL (16 * indent), paddingV 8],
-              fileTreeUI newParts (indent + 1)
-            ]
-            where
-              newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-              -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
-              -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
+        vscroll $ fileTreeUI parts 1
+      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+      where
+        parts = map (\f -> (splitOn "/" (pack f), f)) files
+        files = sort (model ^. filesInDirectory)
+
+        fileTreeUI parts indent = vstack [
+            vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
+            vstack $ map folder groups
+          ]
+          where
+            -- parts = map (\f -> (splitOn "/" (pack f), f)) files
+            partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
+            partFolder = filter (\i -> length (fst i) > 1) parts
+            groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+
+            folder seqs = vstack [
+                hstack [
+                  span ((head . fst . head) seqs),
+                  iconLabel remixFolder5Line `styleBasic` [paddingL 8]
+                ] `styleBasic` [paddingL (16 * indent), paddingV 8],
+                fileTreeUI newParts (indent + 1)
+              ]
+              where
+                newParts = map (\f -> ((tail . fst) f, snd f)) seqs
+                -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
+                -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
   fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ hstack_ [childSpacing] [
       iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
@@ -202,7 +218,9 @@ buildUI _wenv model = widgetTree where
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
-      isCurrent = (model ^. currentFile) == Just (model ^. workingDir </> filePath)
+      isCurrent = case model ^. preferences . workingDir of
+        Nothing -> False
+        Just wd -> (model ^. currentFile) == Just (wd </> filePath)
       ext = takeExtension filePath
       iconIdent
         | ext == ".md" = remixMarkdownFill

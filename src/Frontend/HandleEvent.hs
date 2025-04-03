@@ -38,7 +38,7 @@ handleEvent wenv node model evt = case evt of
   NoEvent -> []
 
   AppInit -> [
-      Producer $ directoryFilesProducer (model ^. workingDir),
+      Producer $ directoryFilesProducer (model ^. preferences . workingDir),
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
@@ -131,24 +131,26 @@ handleEvent wenv node model evt = case evt of
 
   OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
-  CreateEmptyProof input -> [
-      Producer (\sendMsg -> do
-        exists <- doesFileExist filePath
-        if exists then return () else do
-          writeFile filePath emptyProof
-          sendMsg (OpenFile fileName)
-          sendMsg RefreshExplorer
-      ),
-      Model $ model
-        & newFilePopupOpen .~ False
-        & newFileName .~ ""
-    ]
-    where
-      filePath = model ^. workingDir </> fileName
-      fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
-      emptyProof = ";;{ : ;}"
+  CreateEmptyProof input -> case model ^. preferences . workingDir of
+    Nothing -> []
+    Just wd -> [
+        Producer (\sendMsg -> do
+          exists <- doesFileExist filePath
+          if exists then return () else do
+            writeFile filePath emptyProof
+            sendMsg (OpenFile fileName)
+            sendMsg RefreshExplorer
+        ),
+        Model $ model
+          & newFilePopupOpen .~ False
+          & newFileName .~ ""
+      ]
+      where
+        filePath = wd </> fileName
+        fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
+        emptyProof = ";;{ : ;}"
 
-  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. workingDir) ]
+  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. preferences . workingDir) ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
@@ -235,7 +237,8 @@ handleEvent wenv node model evt = case evt of
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
       convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
 
-  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath (model ^. workingDir))
+  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
+    where wd = fromMaybe "" (model ^. preferences . workingDir)
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
@@ -358,9 +361,10 @@ handleEvent wenv node model evt = case evt of
           Just path -> sendMsg (SetWorkingDir path)
 
   SetWorkingDir path -> [
-      Model $ model & workingDir .~ path,
-      Producer (directoryFilesProducer path)
+      Model $ model & preferences . workingDir .~ newWd,
+      Producer (directoryFilesProducer newWd)
     ]
+    where newWd = Just path
 
   Print s -> [ Producer (\_ -> print s) ]
 
@@ -369,10 +373,17 @@ handleEvent wenv node model evt = case evt of
 
 
 
-directoryFilesProducer :: FilePath -> (AppEvent -> IO ()) -> IO ()
+directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
-  allFileNames <- fmap (map (drop (length workingDir + 1))) (listDirectoryRecursive workingDir)
-  sendMsg (SetFilesInDirectory allFileNames)
+  case workingDir of
+    Nothing -> sendMsg (SetFilesInDirectory [])
+    Just wd -> do
+      result <- try (fmap (map (drop (length wd + 1))) (listDirectoryRecursive wd)) :: IO (Either SomeException [[Char]])
+      case result of
+        Left e -> do
+          print e
+          sendMsg (SetFilesInDirectory [])
+        Right allFileNames -> sendMsg (SetFilesInDirectory allFileNames)
 
 applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
 applyOnCurrentProof model f = actions

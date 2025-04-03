@@ -20,7 +20,8 @@ main = do
     _selectNormalFont = ["Regular", "Medium", "Bold"],
     _normalFont = "Regular",
     _logicFont = "Symbol_Regular",
-    _appScale = 1
+    _appScale = 1,
+    _workingDir = Nothing --Just "./myProofs"
   }
   let prefs = fromMaybe defaultPrefs readPrefs
 
@@ -70,7 +71,6 @@ main = do
     model prefs currentFrontendChan currentBackendChan = AppModel {
       _openMenuBarItem = Nothing,
 
-      _workingDir = "./myProofs",
       _newFileName = "",
       _newFilePopupOpen = False,
       _filesInDirectory = [],

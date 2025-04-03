@@ -62,13 +62,14 @@ data Preferences = Preferences {
   _selectNormalFont :: [String],
   _normalFont :: String,
   _logicFont :: String,
-  _appScale :: Double
+  _appScale :: Double,
+
+  _workingDir :: Maybe FilePath
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
 
-  _workingDir :: FilePath,
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
