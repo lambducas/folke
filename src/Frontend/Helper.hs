@@ -27,6 +27,7 @@ import Data.List (find, dropWhileEnd)
 import TextShow (showt)
 import Text.Printf
 import System.Random
+import System.FilePath.Posix (equalFilePath)
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
@@ -60,7 +61,7 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
     tabs n = pack $ replicate n '\t'
 
 getProofFileByPath :: [File] -> FilePath -> Maybe File
-getProofFileByPath allFiles filePath = find (\f -> _path f == filePath) allFiles
+getProofFileByPath allFiles filePath = find (\f -> _path f `equalFilePath` filePath) allFiles
 
 evalPath :: FESequent -> FormulaPath -> FEStep
 evalPath sequent formulaPath = ep formulaPath (SubProof $ _steps sequent)

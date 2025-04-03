@@ -242,11 +242,11 @@ handleEvent wenv node model evt = case evt of
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
-        & openFiles %~ doOpenFile
-        & tmpLoadedFiles %~ createNew file
+        & preferences . openFiles %~ doOpenFile
+        & preferences . tmpLoadedFiles %~ createNew file
 
-      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. openFiles]
-      createNew newFile oldFiles = if _path newFile `elem` (model ^. openFiles) then
+      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. preferences . openFiles]
+      createNew newFile oldFiles = if _path newFile `elem` (model ^. preferences . openFiles) then
           oldFiles else
           filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
       filePath = _path file
@@ -262,7 +262,7 @@ handleEvent wenv node model evt = case evt of
           & confirmDeletePopup .~ True
           & confirmDeleteTarget ?~ filePath
       ] else handleEvent wenv node model (CloseFileSuccess filePath))
-    where file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
     where
@@ -273,9 +273,9 @@ handleEvent wenv node model evt = case evt of
             Right _ -> return ()
         ) | "/_tmp/" `isInfixOf` filePath]
       finalModel = modelWithClosedFile
-        & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. openFiles) else cf)
+        & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
       modelWithClosedFile = model
-        & openFiles %~ filter (filePath/=)
+        & preferences . openFiles %~ filter (filePath/=)
         & confirmDeleteTarget .~ Nothing
         & confirmDeletePopup .~ False
       cf = model ^. currentFile
@@ -286,7 +286,7 @@ handleEvent wenv node model evt = case evt of
       Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
       Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
-      where currentFile = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
 
   SaveFile f -> case f of
     PreferenceFile {} -> handleEvent wenv node model SavePreferences
@@ -332,8 +332,8 @@ handleEvent wenv node model evt = case evt of
   SaveFileSuccess f -> actions
     where
       actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      getActions fileIndex = [ Model $ model & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
-      fileIndex = getProofFileIndexByPath (model ^. tmpLoadedFiles) (_path f)
+      getActions fileIndex = [ Model $ model & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
+      fileIndex = getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles) (_path f)
 
   SetCurrentFile filePath -> [
       Model $ model
@@ -417,13 +417,13 @@ applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse Ap
 applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
     cf = model ^. currentFile
 
     getActions fileIndex = [
         Model $ model
-          & tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
-          & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+          & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
+          & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
       ]
 
     maybeF (Just s) = Just (f s)
@@ -536,10 +536,10 @@ getCurrentSequent :: AppModel -> Maybe FESequent
 getCurrentSequent model = sequent
   where
     sequent = fileIndex >>= getSequent
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. tmpLoadedFiles)
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
     cf = model ^. currentFile
 
-    getSequent fileIndex = case model ^. tmpLoadedFiles . singular (ix fileIndex) of
+    getSequent fileIndex = case model ^. preferences . tmpLoadedFiles . singular (ix fileIndex) of
       f@ProofFile {} -> _parsedSequent f
       _ -> Nothing
 

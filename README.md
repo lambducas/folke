@@ -39,7 +39,6 @@
 ### Frontend
 - [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
-- [ ] Save currenly opened files to disk
 - [ ] Fix nativefiledialog on mac
 - [ ] Display warnings and errors on the lines they appear on
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
@@ -50,6 +49,7 @@
 - [ ] When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
 - [ ] Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)
+- [x] ~~Save currenly opened files to disk~~
 - [x] ~~When creating a new proof, open a temporary unnamed proof file first and then when the user saves it, open a file dialog and save to disk~~
 - [x] ~~All UI elements should scale not only text~~
 

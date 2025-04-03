@@ -232,7 +232,7 @@ buildUI _wenv model = widgetTree where
         | otherwise = Nothing
 
   editWindow = vstack [
-      fileNavBar (model ^. openFiles),
+      fileNavBar (model ^. preferences . openFiles),
       proofWindow (model ^. currentFile)
     ]
 
@@ -252,13 +252,13 @@ buildUI _wenv model = widgetTree where
           where
             displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
-            file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+            file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
             isCurrent = (model ^. currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
 
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
-    Nothing -> span "Filepath not loaded"
+    Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> hstack [
       vstack [
           h3 "App scale",
@@ -292,7 +292,7 @@ buildUI _wenv model = widgetTree where
         ] `styleBasic` [maxWidth 1024]
       ] `styleBasic` [padding 30]
       where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
-    
+
     -- Proof files on disk
     Just file@(ProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
@@ -333,7 +333,7 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
-    
+
     -- Temporary proof files
     Just file@(TemporaryProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
@@ -377,13 +377,13 @@ buildUI _wenv model = widgetTree where
 
     -- Markdown
     Just (MarkdownFile _p content) -> vscroll_ [wheelRate 50] (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
-    
+
     -- Other files
     Just (OtherFile p content) -> vscroll_ [wheelRate 50] $ vstack_ [childSpacing] [
         label $ pack p <> ": This file type is not supported",
         paragraph content
       ] `styleBasic` [padding u]
-    where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
+    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
@@ -484,7 +484,7 @@ buildUI _wenv model = widgetTree where
                   ("Enter", NextFocus 1, True)
                 ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                   `nodeKey` (showt index <> ".statement"))
-                    `nodeKey` (showt index <> ".statement.keystroke"), 
+                    `nodeKey` (showt index <> ".statement.keystroke"),
 
                 spacer,
 
@@ -542,15 +542,15 @@ buildUI _wenv model = widgetTree where
 
                 fastTooltip "Convert line to subproof" $
                   button "→☐" (SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-                
+
                 widgetIf isSubProofSingleton $
                   fastTooltip "Undo subproof" $
                     button "☒" (SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-                
+
                 widgetIf (isLastLine && nextIndexExists) $
                   fastTooltip "Close subproof" $
                     button "⏎" (InsertLineAfter pathToParentSubProof) `styleBasic` [textSize u]
-                
+
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 

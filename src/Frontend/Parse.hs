@@ -22,8 +22,6 @@ data FEDocument = FEDocument {
   _sequent :: FESequent
 } deriving (Show, Eq)
 
-$(deriveJSON defaultOptions ''FEStep)
-$(deriveJSON defaultOptions ''FESequent)
 $(deriveJSON defaultOptions ''FEDocument)
 
 parseProofToJSON :: FESequent -> T.Text
