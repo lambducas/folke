@@ -1,7 +1,12 @@
 # Heading 1
 ## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
 Some text
 
+0. Zeroth
 1. A list
 2. Second
 3. Third
@@ -11,6 +16,46 @@ Some text
 * 3
 
 Another bit of text
+[Our Github](https://github.com/lambducas/bsc-project)
+
+![Some image](https://commonmark.org/help/images/favicon.png)
+
+
+
+Normal text
+**Bold text**
+*Italic text*
+_Italic second way_
+~~Strike through~~
+
+> Quote?
+> Very long
+> TEst
+
+```python
+# Code block
+def a():
+```
+
+    Another codeblock
+    Maybe
+    Test
+
+* A
+  * Bruh
+  * 2
+* b
+  * Indent
+* 3
+
+Another test\
+with linebreak
+
+Another test
+without linebreak
+
+> Quote?
+> > Double
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec varius tortor egestas vulputate tincidunt. Maecenas in justo vitae lorem blandit iaculis in non dui. Donec lacus ante, maximus sed leo et, viverra pulvinar ex. In nec odio mauris. Sed iaculis posuere dui, sed tincidunt dui interdum sit amet. Aliquam erat volutpat. Quisque luctus viverra ornare. Donec convallis, quam eget semper aliquam, odio neque interdum risus, sit amet dignissim lacus libero a nulla. Nunc sit amet dignissim risus, id vulputate massa. Phasellus vehicula nisl at nisl lobortis, eget ultrices diam euismod. Maecenas a ullamcorper massa. Sed id dui mattis, scelerisque tellus quis, tempus est. Maecenas hendrerit nulla sagittis fermentum ultrices.
 
