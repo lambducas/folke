@@ -19,7 +19,7 @@ import Control.Exception (try, SomeException)
 import Control.Concurrent (newChan)
 import Control.Monad (filterM)
 import Data.Maybe (fromMaybe, catMaybes)
-import Data.List (findIndex)
+import Data.List (findIndex, isInfixOf)
 import Data.Text (Text, unpack, pack, intercalate)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile )
@@ -82,8 +82,8 @@ handleEvent wenv node model evt = case evt of
   SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
-        SubProof p -> head p
-        _ -> error ""
+          SubProof p -> head p
+          _ -> error ""
         ) p
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
@@ -133,7 +133,7 @@ handleEvent wenv node model evt = case evt of
 
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
-        let randomFileName = "veryberyRandom"
+        randomFileName <- getTmpFileName
         let randomPath = ("./_tmp/" <> randomFileName) FPP.<.> "tmp"
 
         result <- try (writeFile randomPath "") :: IO (Either SomeException ())
@@ -146,26 +146,10 @@ handleEvent wenv node model evt = case evt of
       )
     ]
 
-  -- CreateEmptyProof -> case model ^. preferences . workingDir of
-  --   Nothing -> []
-  --   Just wd -> [
-  --       Producer (\sendMsg -> do
-  --         exists <- doesFileExist filePath
-  --         if exists then return () else do
-  --           writeFile filePath emptyProof
-  --           sendMsg (OpenFile fileName)
-  --           sendMsg RefreshExplorer
-  --       ),
-  --       Model $ model
-  --         & newFilePopupOpen .~ False
-  --         & newFileName .~ ""
-  --     ]
-  --     where
-  --       filePath = wd </> fileName
-  --       fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
-  --       emptyProof = ";;{ : ;}"
-
-  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. preferences . workingDir) ]
+  RefreshExplorer -> [
+      Model $ model & filesInDirectory .~ [],
+      Producer $ directoryFilesProducer (model ^. preferences . workingDir)
+    ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
@@ -280,18 +264,14 @@ handleEvent wenv node model evt = case evt of
       ] else handleEvent wenv node model (CloseFileSuccess filePath))
     where file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
 
-  -- CloseFile filePath -> case file of
-  --   Just file@ProofFile {} -> if _isEdited file then [
-  --       Model $ model
-  --         & confirmDeletePopup .~ True
-  --         & confirmDeleteTarget .~ Just filePath
-  --     ] else handleEvent wenv node model (CloseFileSuccess filePath)
-  --   Just _ -> handleEvent wenv node model (CloseFileSuccess filePath)
-  --   Nothing -> []
-  --   where file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
-
-  CloseFileSuccess filePath -> [ Model finalModel ]
+  CloseFileSuccess filePath -> Model finalModel : deleteTmp
     where
+      deleteTmp = [ Producer (\_ -> do
+          result <- try (removeFile filePath) :: IO (Either SomeException ())
+          case result of
+            Left e -> print e
+            Right _ -> return ()
+        ) | "/_tmp/" `isInfixOf` filePath]
       finalModel = modelWithClosedFile
         & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. openFiles) else cf)
       modelWithClosedFile = model
@@ -337,13 +317,13 @@ handleEvent wenv node model evt = case evt of
                   Left e -> print e
                   Right _ -> do
                     let tmpPath = _path f
-                    result <- try (removeFile tmpPath) :: IO (Either SomeException ())
-                    case result of
-                      Left e -> print e
-                      Right _ -> return ()
+                    -- result <- try (removeFile tmpPath) :: IO (Either SomeException ())
+                    -- case result of
+                    --   Left e -> print e
+                    --   Right _ -> return ()
                     sendMsg (SaveFileSuccess f)
-                    sendMsg (CloseFile tmpPath)
-                    sendMsg (RefreshExplorer)
+                    sendMsg (CloseFileSuccess tmpPath)
+                    sendMsg RefreshExplorer
                     sendMsg (OpenFile_ newPath "")
           )
         ]

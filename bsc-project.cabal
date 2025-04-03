@@ -92,6 +92,7 @@ executable bsc
                     , array
                     , aeson
                     , bytestring
+                    , random
                     , nativefiledialog
     other-modules:
                       Backend.TypeChecker

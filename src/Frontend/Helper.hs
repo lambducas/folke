@@ -14,7 +14,8 @@ module Frontend.Helper (
   firstKeystroke,
   fontListToText,
   parseProofForBackend,
-  showDecimals
+  showDecimals,
+  getTmpFileName
 ) where
 
 import Frontend.SpecialCharacters
@@ -25,6 +26,7 @@ import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd)
 import TextShow (showt)
 import Text.Printf
+import System.Random
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
@@ -118,3 +120,10 @@ trimExtension ext text
 
 showDecimals :: (PrintfArg t2) => Integer -> t2 -> Text
 showDecimals decimals number = pack (printf "%0.*f" decimals number)
+
+getTmpFileName :: IO String
+getTmpFileName = do
+  r01 <- randomIO :: IO Float
+  let num = round (r01 * 1e6) :: Integer
+  let t = "untitled_" <> show num
+  return t
