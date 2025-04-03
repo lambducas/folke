@@ -11,10 +11,8 @@ module Backend.Environment (
     applyRule,
     addConst,
     addVar,
-    addFun,
     getConsts,
-    getVars,
-    getFuns
+    getVars
 ) where
 
 import qualified Data.Map as Map
@@ -155,7 +153,6 @@ newEnv = Env {
     ],
     consts = [],
     vars = [],
-    funs = [],
     pos  = [],
     rule = ""
 }
@@ -174,24 +171,13 @@ addPrem env prem = env { prems = prems env ++ [prem] }
 
 -- Adds a constant to the environment.
 -- Constants are terms with no arguments.
-addConst :: Env -> String -> Env
-addConst env name =
-    let constTerm = Term name []
-    in env { consts = constTerm : consts env }
+addConst :: Env -> Term -> Result Env
+addConst env c = Ok [] env { consts = c : consts env } -- TODO check if const overides another constanct?
 
 -- Adds a variable to the environment.
 -- Variables are placeholders that can be used in formulas or terms.
-addVar :: Env -> String -> Env
-addVar env name =
-    let varTerm = Term name []
-    in env { vars = varTerm : vars env }
-
--- Adds a function to the environment.
--- Functions are terms with arguments.
-addFun :: Env -> String -> [String] -> Env
-addFun env name args =
-    let funTerm = Term name (map (\arg -> Term arg []) args)
-    in env { funs = funTerm : funs env }
+addVar :: Env -> Term -> Result Env
+addVar env v = Ok []  env { vars = v : vars env } -- TODO check if var overides another variable?
 
 -- Adds references to the environment.
 -- References map labels to arguments (e.g., proofs, formulas, or terms).
@@ -211,10 +197,6 @@ getConsts = consts
 -- Retrieves all variables in the environment.
 getVars :: Env -> [Term]
 getVars = vars
-
--- Retrieves all functions in the environment.
-getFuns :: Env -> [Term]
-getFuns = funs
 
 -- Retrieves the values corresponding to a list of references.
 -- Returns an error if any reference is invalid.
@@ -291,7 +273,7 @@ ruleOrIntroRight env [_]            (Or _ _) = Error [] (RuleArgError env 1 "nee
 ruleOrIntroRight env forms                 _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 ruleOrEilm :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleOrEilm env [(_, ArgForm (Or a b)), (j, ArgProof (Proof [p1] c1)), (k, ArgProof (Proof [p2] c2))] _ =
+ruleOrEilm env [(_, ArgForm (Or a b)), (j, ArgProof (Proof _ [p1] c1)), (k, ArgProof (Proof _ [p2] c2))] _ =
     if a == p1 then
         if b == p2 then
             if c1 == c2 then Ok [] c1 else Error [] (RuleConcError env "The conclusions of the two proofs did not match.")--Not realy conclusion error? 
@@ -305,7 +287,7 @@ ruleOrEilm env [(i, _), _, _]                         _ = Error [] (RuleArgError
 ruleOrEilm env forms                             _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 3 )
 
 ruleImplIntro :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleImplIntro _ [(_, ArgProof (Proof [a] b))] _ = Ok [] (Impl a b)
+ruleImplIntro _ [(_, ArgProof (Proof _ [a] b))] _ = Ok [] (Impl a b)
 ruleImplIntro env [_]                      _ = Error [] (RuleArgError env 1 "Needs to be an proof.")
 ruleImplIntro env forms                    _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
@@ -320,7 +302,7 @@ ruleImplEilm env [(i, _)        , _]         _ = Error [] (RuleArgError env i "N
 ruleImplEilm env forms                  _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
 
 ruleNotIntro :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleNotIntro _ [(_, ArgProof (Proof [a] Bot))] _ = Ok [] (Not a)
+ruleNotIntro _ [(_, ArgProof (Proof _ [a] Bot))] _ = Ok [] (Not a)
 ruleNotIntro env [_]                        _ = Error [] (RuleArgError env 1 "Needs to be a proof with the conclusion of bot.")
 ruleNotIntro env forms                      _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
@@ -354,9 +336,9 @@ ruleMT env [(i, _), _]                              _ = Error [] (RuleArgError e
 ruleMT env forms                               _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 rulePBC :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-rulePBC _ [(_, ArgProof (Proof [Not a] Bot))] _ = Ok [] a
-rulePBC env [(_, ArgProof (Proof [Not _] _))]   _ = Error [] (RuleArgError env 1 "Conclusion needs to be a bot formula.")
-rulePBC env [(_, ArgProof (Proof [_] _))]       _ = Error [] (RuleArgError env 1 "Premise needs to be a not formula.")
+rulePBC _ [(_, ArgProof (Proof _ [Not a] Bot))] _ = Ok [] a
+rulePBC env [(_, ArgProof (Proof _ [Not _] _))]   _ = Error [] (RuleArgError env 1 "Conclusion needs to be a bot formula.")
+rulePBC env [(_, ArgProof (Proof _ [_] _))]       _ = Error [] (RuleArgError env 1 "Premise needs to be a not formula.")
 rulePBC env [_]                            _ = Error [] (RuleArgError env 1 "Needs to be a proof.")
 rulePBC env forms                          _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
@@ -372,15 +354,41 @@ ruleEqI env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length f
 
 ruleEqE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleEqE _ _ _ = Error [] (UnknownError "Unimplemented.")
+ruleEqE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 0 )
 
 ruleAllE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllE _ _ _ = Error [] (UnknownError "Unimplemented.")
+ruleAllE env [(_, ArgForm (All x a)), (j, ArgTerm t@(Term _ []))] _ = replaceFree env x t a
+ruleAllE env [(_, ArgForm (All _ _)), (j, _)] _ = Error [] (RuleArgError env j  "Must be an free variable.")
+ruleAllE env [(i, _), (_, _)] _ = Error [] (RuleArgError env i  "Must be an for all formula.")
+ruleAllE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
 
 ruleAllI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllI _ _ _ = Error [] (UnknownError "Unimplemented.")
+ruleAllI env [(_, ArgProof (Proof [t] [] a))] r@(All x b) = case replaceFree env x t b of 
+    Error warns err -> Error warns err --TODO specify argument error?
+    Ok warns c -> if a==c then Ok warns (All x b) else Error [] (RuleConcError env "The given formula did not match the conclusion.")
+ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = Error []  (RuleConcError env "The conclusion must be an for all formula.")
+ruleAllI env [(i, _)] _ = Error [] (RuleArgError env i  "Must be an box.")
+ruleAllI env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 1 )
 
 ruleSomeE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeE _ _ _ = Error [] (UnknownError "Unimplemented.")
+ruleSomeE env [(_,ArgForm (Some x a)), (_, ArgProof(Proof [t] [b] c))] _ = case replaceFree env t x a of
+    Error warns err -> Error warns err --TODO specify argument error?
+    Ok warn d -> if b == d then Ok [] c else Error [] (RuleConcError env "The given formula did not match the conclusion.")
+ruleSomeE env [(_,ArgForm (Some _ _)), (j, _)] _ = Error [] (RuleArgError env j  "Must be an proof.")
+ruleSomeE env [(i,_), (j, _)] _ = Error [] (RuleArgError env j  "Must be an formula some formula.")
+ruleSomeE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
 
 ruleSomeI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeI _ _ _ = Error [] (UnknownError "Unimplemented.")
+ruleSomeI env [(_, ArgForm a),  (_, ArgTerm t@(Term _ []))] r@(Some x b) = case replaceFree env x t b of
+    Error warns err -> Error warns err --TODO specify argument error?
+    Ok warns c -> if a == c then Ok warns (Some x a) else Error [] (RuleConcError env "The given formula did not match the conclusion.")
+ruleSomeI env [(_, ArgForm _),  (_, ArgTerm (Term _ []))] _ = Error []  (RuleConcError env "The conclusion must be an exist formula.")
+ruleSomeI env [(_, ArgForm _), (j, _)] _ = Error [] (RuleArgError env j  "Must be an free variable.")
+ruleSomeI env [(i, _), (_, _)] _ = Error [] (RuleArgError env i  "Must be an formula.")
+ruleSomeI env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
+
+isFree:: Env -> Term -> Bool
+isFree _ _  = False
+
+replaceFree:: Env -> Term -> Term -> Formula -> Result Formula 
+replaceFree _ _ _ _ = Error [] (UnknownError "replaceFree is unimplemented.")

@@ -10,8 +10,6 @@ module Backend.Types (
     Warning,
     Error(..),
     Env(..),
-    replaceTerm
-
 ) where
 
 import Data.Map as Map ( Map )
@@ -24,7 +22,6 @@ data Env = Env {
     , rules  :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
     , consts :: Terms
     , vars   :: Terms
-    , funs   :: Terms
     , pos    :: [Ref]
     , rule   :: String
 }
@@ -64,11 +61,13 @@ instance Show Arg where
     show (ArgTerm t) = show t
 
 -- Represents a proof with premises and a conclusion.
-data Proof = Proof [Formula] Formula
+data Proof = Proof [Term] [Formula] Formula
 instance Show Proof where
-    show (Proof prems conc) = show prems ++ "|-" ++ show conc
+    show (Proof [] prems conc) = show prems ++ "|-" ++ show conc
+    show (Proof terms prems conc) = show terms ++ show prems ++ "|-" ++ show conc
 instance Eq Proof where 
-    Proof prems1 conc1 == Proof prems2 conc2 = prems1 == prems2 && conc1 == conc2
+    (==) :: Proof -> Proof -> Bool
+    Proof terms1 prems1 conc1 == Proof terms2 prems2 conc2 = terms1 == terms2 && prems1 == prems2 && conc1 == conc2
 
 -- Represents a logical formula.
 data Formula = 
@@ -122,16 +121,3 @@ instance Show Term where
     show (Term name terms) = name ++ "(" ++ show terms ++ ")"
 instance Eq Term where 
     Term a as == Term b bs = a == b && as == bs
-
-
--- Replaces all instances of a term `t` in a formula `f` with another term `x`.
-replaceTerm :: Term -> Term -> Formula -> Formula
-replaceTerm t x f = case f of
-    Pred p -> Pred p
-    And l r -> And (replaceTerm t x l) (replaceTerm t x r)
-    Or l r -> Or (replaceTerm t x l) (replaceTerm t x r)
-    Impl l r -> Impl (replaceTerm t x l) (replaceTerm t x r)
-    Eq l r -> Eq (if l == t then x else l) (if r == t then x else r)
-    Not a -> Not (replaceTerm t x a)
-    Bot -> Bot
-    Nil -> Nil

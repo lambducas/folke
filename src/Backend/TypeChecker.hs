@@ -69,7 +69,7 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) =
                 Ok warns2 conc_t -> case checkProof env proof of
                     Error warns err -> Error (warns ++ warns1 ++ warns2) err
                     Ok warns3 proof_t -> do
-                        let seq_t = Proof prems_t conc_t
+                        let seq_t = Proof [] prems_t conc_t -- TODO special check for variables?
                         if proof_t == seq_t
                             then Ok (warns1 ++ warns2 ++ warns3) seq_t
                             else Error (warns1 ++ warns2 ++ warns3) (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
@@ -81,14 +81,14 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) =
     -return: The type of the proof
 -}
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
-checkProof env [] = Ok [] (Proof (getPrems env) Nil)
+checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
 checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
     Error warns err -> Error warns err
     Ok warns1 refs -> case checkStep (pushPos env refs) step of
         Error warns err -> Error (warns++warns1) err
         Ok warns2 (_, ArgProof _) -> Error (warns1++warns2) (TypeError "Last step in proof was another proof.")
         Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) (TypeError "Check step could not return an term.")
-        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getPrems new_env) step_t)
+        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof [] (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns err -> Error warns err
     Ok warns1 refs -> case checkStep (pushPos env refs) step of 
@@ -119,18 +119,18 @@ checkStep env step = case step of
         case checkForm env form of
             Error warns err -> Error warns err
             Ok warns form_t -> Ok warns (addPrem env form_t, ArgForm form_t)
-    Abs.StepDecConst id -> 
-        let updatedEnv = addConst env (identToString id)
-            constTerm = Term (identToString id) []
-        in Ok [] (updatedEnv, ArgTerm constTerm)
-    Abs.StepDecVar id -> 
-        let updatedEnv = addVar env (identToString id)
-            varTerm = Term (identToString id) []
-        in Ok [] (updatedEnv, ArgTerm varTerm)
+    Abs.StepDecConst id -> do
+        let c = Term (identToString id) []
+        case addConst env c of
+            Error warns err -> Error warns err
+            Ok warns env -> Ok warns (env, ArgTerm c)
+    Abs.StepDecVar id -> do
+        let c = Term (identToString id) []
+        case addVar env c of
+            Error warns err -> Error warns err
+            Ok warns env -> Ok warns (env, ArgTerm c)
     Abs.StepDecFun id ids -> 
-        let updatedEnv = addFun env (identToString id) (map identToString ids)
-            funTerm = Term (identToString id) (map (\arg -> Term (identToString arg) []) ids)
-        in Ok [] (updatedEnv, ArgTerm funTerm)
+        Error [] (UnknownError "Functions are currently not supported.")
     Abs.StepAssume form -> 
         case checkForm env form of
             Error warns err -> Error warns err
