@@ -37,15 +37,31 @@
 | SomeI     | existsI, ∃I              |
 
 ### Frontend
-- All UI elements should scale not only text 
+- [ ] Give suggestions on which rules to use when user is inputting rule
+- [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
+- [ ] Save currenly opened files to disk
+- [ ] When creating a new proof, open a temporary unnamed proof file first and then when the user saves it, open a file dialog and save to disk
+- [ ] Fix nativefiledialog on mac
+- [ ] Display warnings and errors on the lines they appear on
+- [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
+- [ ] Display all available rules nicely on the side
+- [ ] Fix full Markdown support
+- [ ] Let the user hide both the 'File Explorer' and rule-lookup-guide like VSCode using Ctrl+B or GUI button
+- [ ] Fix menubar for better UX
+- [ ] When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'
+- [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
+- [ ] Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)
+- [x] ~~All UI elements should scale not only text~~
 
 ### Other
-_Empty for now_
+- Test frontend to improve UX
+- Write help guide
 
 ## IDEAS
 - Use reference counting to check that all parts of the proof is used.
 - Latex output for proofs.
 - Support for subscript in front end, nice if x_0 renders fancy.
+
 ## Directory Structure
 
 ```
