@@ -28,6 +28,7 @@ import Text.Printf
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
+isFileEdited (Just f@TemporaryProofFile {}) = _isEdited f
 isFileEdited (Just f@PreferenceFile {}) = _isEdited f
 isFileEdited Nothing = False
 isFileEdited _ = False

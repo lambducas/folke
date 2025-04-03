@@ -52,6 +52,11 @@ data File
     _parsedSequent :: Maybe FESequent,
     _isEdited :: Bool
   }
+  | TemporaryProofFile {
+    _path :: FilePath,
+    _parsedSequent :: Maybe FESequent,
+    _isEdited :: Bool
+  }
   deriving (Eq, Show)
 
 data SelectableTheme = Light | Dark
@@ -140,7 +145,7 @@ data AppEvent
 
   -- Handle creation of proof
   | OpenCreateProofPopup
-  | CreateEmptyProof Text
+  | CreateEmptyProof
 
   -- Proof checking
   | CheckProof File

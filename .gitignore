@@ -17,3 +17,4 @@ dist-newstyle/
 
 # Ignore proof editor preferences/settings
 Settings.json
+_tmp/
