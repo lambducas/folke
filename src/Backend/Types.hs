@@ -51,7 +51,10 @@ instance Show Error where
     show (UnknownError msg) = "UnknownError: "++msg
 
 -- Represents a reference in a proof, either a range or a single line.
-data Ref = RefRange Integer Integer | RefLine Integer deriving (Show, Eq, Ord)
+data Ref = RefRange Integer Integer | RefLine Integer deriving (Eq, Ord)
+instance Show Ref where 
+    show (RefRange i j) = show i ++ "-" ++ show j
+    show (RefLine i) = show i
 
 -- Represents an argument in a proof, which can be a proof, formula, or term.
 data Arg = ArgProof Proof | ArgForm Formula | ArgTerm Term
