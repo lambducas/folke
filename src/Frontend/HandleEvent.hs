@@ -6,9 +6,9 @@ module Frontend.HandleEvent (
 
 import Frontend.Types
 import Frontend.Helper
-import Frontend.Themes
 import Frontend.Communication (startCommunication, evaluateProofString)
 import Frontend.Parse
+import Frontend.Preferences
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
@@ -38,13 +38,20 @@ handleEvent wenv node model evt = case evt of
   NoEvent -> []
 
   AppInit -> [
-      Producer $ directoryFilesProducer (model ^. workingDir),
+      Producer $ directoryFilesProducer (model ^. preferences . workingDir),
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
         answer <- startCommunication frontendChan backendChan
         return $ BackendResponse answer
     ]
+
+  AppBeforeExit -> [
+      cancelExitApplication,
+      Producer (savePreferences model ExitApp)
+    ]
+
+  ExitApp -> [ exitApplication ]
 
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
 
@@ -68,9 +75,9 @@ handleEvent wenv node model evt = case evt of
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-      focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
+      -- focusAction = fromMaybe [] maybeFocusAction
+      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
 
   SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
     where
@@ -81,9 +88,9 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-      focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
+      -- focusAction = fromMaybe [] maybeFocusAction
+      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
@@ -124,24 +131,26 @@ handleEvent wenv node model evt = case evt of
 
   OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
-  CreateEmptyProof input -> [
-      Producer (\sendMsg -> do
-        exists <- doesFileExist filePath
-        if exists then return () else do
-          writeFile filePath emptyProof
-          sendMsg (OpenFile fileName)
-          sendMsg RefreshExplorer
-      ),
-      Model $ model
-        & newFilePopupOpen .~ False
-        & newFileName .~ ""
-    ]
-    where
-      filePath = model ^. workingDir </> fileName
-      fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
-      emptyProof = ";;{ : ;}"
+  CreateEmptyProof input -> case model ^. preferences . workingDir of
+    Nothing -> []
+    Just wd -> [
+        Producer (\sendMsg -> do
+          exists <- doesFileExist filePath
+          if exists then return () else do
+            writeFile filePath emptyProof
+            sendMsg (OpenFile fileName)
+            sendMsg RefreshExplorer
+        ),
+        Model $ model
+          & newFilePopupOpen .~ False
+          & newFileName .~ ""
+      ]
+      where
+        filePath = wd </> fileName
+        fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
+        emptyProof = ";;{ : ;}"
 
-  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. workingDir) ]
+  RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. preferences . workingDir) ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
@@ -154,8 +163,8 @@ handleEvent wenv node model evt = case evt of
 
         if takeExtension fullPath == ".md" then
           sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
-        else if fullPath == "Settings.json" && folderPath == "" then
-          sendMsg (OpenFileSuccess $ SettingsFile fullPath)
+        else if fullPath == preferencePath && folderPath == "" then
+          sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
         else if  takeExtension fullPath == "." <> feFileExt then
           do
             let seq = parseProofFromJSON pContentText
@@ -228,7 +237,8 @@ handleEvent wenv node model evt = case evt of
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
       convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
 
-  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath (model ^. workingDir))
+  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
+    where wd = fromMaybe "" (model ^. preferences . workingDir)
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
@@ -269,25 +279,29 @@ handleEvent wenv node model evt = case evt of
   SaveCurrentFile -> case model ^. currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent wenv node model (SaveProof file)
+      Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
+      Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. tmpLoadedFiles) filePath
 
-  SaveProof f -> case _parsedSequent f of
-    Nothing -> []
-    Just seq -> [
-        Producer (\sendMsg -> do
-          let content = (unpack . parseProofToJSON) seq
-              fileName = _path f
+  SaveFile f -> case f of
+    PreferenceFile {} -> handleEvent wenv node model SavePreferences
+    f@ProofFile {} -> case _parsedSequent f of
+      Nothing -> []
+      Just seq -> [
+          Producer (\sendMsg -> do
+            let content = (unpack . parseProofToJSON) seq
+                fileName = _path f
 
-          result <- try (writeFile fileName content) :: IO (Either SomeException ())
-          case result of
-            Left e -> print e
-            Right _ -> sendMsg (SaveProofSuccess f)
-        )
-      ]
+            result <- try (writeFile fileName content) :: IO (Either SomeException ())
+            case result of
+              Left e -> print e
+              Right _ -> sendMsg (SaveFileSuccess f)
+          )
+        ]
+    f -> error $ "Cannot save file of type " ++ show f
 
-  SaveProofSuccess f -> actions
+  SaveFileSuccess f -> actions
     where
       actions = fromMaybe [] (fileIndex >>= Just . getActions)
       getActions fileIndex = [ Model $ model & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
@@ -299,24 +313,20 @@ handleEvent wenv node model evt = case evt of
         & proofStatus .~ Nothing
     ]
 
+  -- Preferences
   SwitchTheme -> [
-      Model $ model & selectedTheme %~ switchTheme
+      Model $ model & preferences . selectedTheme %~ switchTheme
     ]
     where
-      switchTheme oldTheme
-        | oldTheme == customLightTheme = customDarkTheme
-        | oldTheme == customDarkTheme = customLightTheme
-        | otherwise = customLightTheme
+      switchTheme Light = Dark
+      switchTheme Dark = Light
+        
+  UpdateFont s -> [Model $ model & preferences . normalFont .~ head s]
 
-  UpdateFont s -> [Model $ model & normalFont .~ head s]
+  ReadPreferences -> [ Producer readAndApplyPreferences ]
+  ReadPreferences_ prefs -> [ Model $ model & preferences .~ prefs ]
 
-  ReadSettings -> [
-      Producer (\sendMsg -> do
-        pContent <- readFile "Settings.json"
-        sendMsg (ReadSettings_ pContent)
-      )
-    ]
-  ReadSettings_ settings -> [Model $ model & testSetting .~ pack settings]
+  SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
   -- Backend events
   CheckProof file -> [
@@ -351,9 +361,10 @@ handleEvent wenv node model evt = case evt of
           Just path -> sendMsg (SetWorkingDir path)
 
   SetWorkingDir path -> [
-      Model $ model & workingDir .~ path,
-      Producer (directoryFilesProducer path)
+      Model $ model & preferences . workingDir .~ newWd,
+      Producer (directoryFilesProducer newWd)
     ]
+    where newWd = Just path
 
   Print s -> [ Producer (\_ -> print s) ]
 
@@ -362,10 +373,17 @@ handleEvent wenv node model evt = case evt of
 
 
 
-directoryFilesProducer :: FilePath -> (AppEvent -> IO ()) -> IO ()
+directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
-  allFileNames <- fmap (map (drop (length workingDir + 1))) (listDirectoryRecursive workingDir)
-  sendMsg (SetFilesInDirectory allFileNames)
+  case workingDir of
+    Nothing -> sendMsg (SetFilesInDirectory [])
+    Just wd -> do
+      result <- try (fmap (map (drop (length wd + 1))) (listDirectoryRecursive wd)) :: IO (Either SomeException [[Char]])
+      case result of
+        Left e -> do
+          print e
+          sendMsg (SetFilesInDirectory [])
+        Right allFileNames -> sendMsg (SetFilesInDirectory allFileNames)
 
 applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
 applyOnCurrentProof model f = actions

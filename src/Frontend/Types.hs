@@ -11,6 +11,8 @@ import Data.Text (Text)
 import Control.Concurrent (Chan)
 import Control.Lens ( makeLenses )
 import Shared.Messages ( BackendMessage, FrontendMessage )
+import Data.Aeson
+import Data.Aeson.TH
 
 type SymbolDict = [(Text, Text)]
 type FormulaPath = [Int]
@@ -36,8 +38,9 @@ data File
     _path :: FilePath,
     _content :: Text
   }
-  | SettingsFile {
-    _path :: FilePath
+  | PreferenceFile {
+    _path :: FilePath,
+    _isEdited :: Bool
   }
   | MarkdownFile {
     _path :: FilePath,
@@ -51,10 +54,22 @@ data File
   }
   deriving (Eq, Show)
 
+data SelectableTheme = Light | Dark
+  deriving (Eq, Show)
+
+data Preferences = Preferences {
+  _selectedTheme :: SelectableTheme,
+  _selectNormalFont :: [String],
+  _normalFont :: String,
+  _logicFont :: String,
+  _appScale :: Double,
+
+  _workingDir :: Maybe FilePath
+} deriving (Eq, Show)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
 
-  _workingDir :: FilePath,
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
@@ -67,18 +82,8 @@ data AppModel = AppModel {
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe (Either String ()),
-  -- _proofStatus :: Maybe Bool,
 
-  _selectedTheme :: Theme,
-  --Albin Settings v
-  _selectNormalFont :: [String],
-  _normalFont :: String,
-  _logicFont :: String,
-  _fontSize :: Double,
-  _testSetting :: Text,
-
-  -- Test
-  _userLens :: Text
+  _preferences :: Preferences
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -88,6 +93,8 @@ instance Show (Chan a) where
 data AppEvent
   = NoEvent
   | AppInit
+  | AppBeforeExit
+  | ExitApp
   | Print String
 
   -- Menu bar
@@ -127,8 +134,8 @@ data AppEvent
   | CloseFileSuccess FilePath
   | CloseCurrentFile
   | SaveCurrentFile
-  | SaveProof File
-  | SaveProofSuccess File
+  | SaveFile File
+  | SaveFileSuccess File
   | SetCurrentFile FilePath
 
   -- Handle creation of proof
@@ -142,13 +149,19 @@ data AppEvent
   -- Theme
   | SwitchTheme
 
-  -- Settings
+  -- Preferences
   | UpdateFont [String]
-  | ReadSettings
-  | ReadSettings_ String
+  | ReadPreferences
+  | ReadPreferences_ Preferences
+  | SavePreferences
   deriving (Eq, Show)
 
+makeLenses 'Preferences
 makeLenses 'ProofFile
 makeLenses 'AppModel
 
+feFileExt :: String
 feFileExt = "json"
+
+$(deriveJSON defaultOptions ''SelectableTheme)
+$(deriveJSON defaultOptions ''Preferences)

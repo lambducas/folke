@@ -13,7 +13,8 @@ module Frontend.Helper (
   trimExtension,
   firstKeystroke,
   fontListToText,
-  parseProofForBackend
+  parseProofForBackend,
+  showDecimals
 ) where
 
 import Frontend.SpecialCharacters
@@ -23,9 +24,11 @@ import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd)
 import TextShow (showt)
+import Text.Printf
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
+isFileEdited (Just f@PreferenceFile {}) = _isEdited f
 isFileEdited Nothing = False
 isFileEdited _ = False
 
@@ -111,3 +114,6 @@ trimExtension ext text
   where
     hasExt = length split >= 2 && last split == ""
     split = splitOn ext (trimText text)
+
+showDecimals :: (PrintfArg t2) => Integer -> t2 -> Text
+showDecimals decimals number = pack (printf "%0.*f" decimals number)

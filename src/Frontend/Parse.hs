@@ -9,12 +9,12 @@ module Frontend.Parse (
   parseProofFromSimpleFileFormat
 ) where
 
-import Frontend.Types
-import Frontend.SpecialCharacters
-import Frontend.Helper
+import Frontend.Types ( FEStep(SubProof, Line), FESequent(..) )
+import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse )
+import Frontend.Helper ( slice, trimText )
 
-import Data.Aeson
-import Data.Aeson.TH
+import Data.Aeson ( encode, decode, defaultOptions )
+import Data.Aeson.TH ( deriveJSON )
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as BL
 
@@ -22,43 +22,9 @@ data FEDocument = FEDocument {
   _sequent :: FESequent
 } deriving (Show, Eq)
 
-data Address = Address
-    { house  :: Integer
-    , street :: String
-    , city   :: String
-    , state  :: Maybe String
-    , zip    :: Integer
-    } deriving (Show, Eq)
-
-data Person = Person
-    { name    :: String
-    , age     :: Integer
-    , address :: Address
-    } deriving (Show, Eq)
-
 $(deriveJSON defaultOptions ''FEStep)
 $(deriveJSON defaultOptions ''FESequent)
 $(deriveJSON defaultOptions ''FEDocument)
-
--- $(deriveJSON defaultOptions ''Address)
--- $(deriveJSON defaultOptions ''Person)
-
--- aa :: BL.ByteString
--- aa = "{\"name\": \"some body\", \"age\" : 23, \"address\" : {\"house\" : 285, \"street\" : \"7th Ave.\", \"city\" : \"New York\", \"state\" : \"New York\", \"zip\" : 10001}}"
-
--- testDecode :: IO ()
--- testDecode = print (decode aa :: Maybe Person)
-
--- testEncode :: IO ()
--- testEncode = do
---   let s = FESequent premises conclusion steps
---   print (encode s)
---   where
---     premises = ["a", "b"]
---     conclusion = "b"
---     steps = [ stepA, stepB ]
---     stepA = Line "a -> b" "assume"
---     stepB = SubProof [ stepA, stepA ]
 
 parseProofToJSON :: FESequent -> T.Text
 parseProofToJSON = T.pack . BL.unpack . encode . FEDocument

@@ -9,14 +9,16 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.SpecialCharacters
 import Frontend.Helper
+import Frontend.Themes
 import Frontend.Components.Labels
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 
 import Monomer
+import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
 import qualified Monomer.Lens as L
 import Control.Lens
 import TextShow ( TextShow(showt) )
-import Data.Text (Text, pack, intercalate, splitOn, isInfixOf, toLower)
+import Data.Text (Text, pack, intercalate, splitOn)
 import qualified Data.Text (length)
 import Data.List (sort, groupBy)
 import Data.Default ( Default(def) )
@@ -25,11 +27,12 @@ import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe)
 import qualified Data.Map
-import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
 
 import Backend.Environment (newEnv)
 import Backend.Types (Env(Env))
-import Monomer.Widgets.Containers.TextFieldSuggestions
+import Frontend.Preferences (preferencePath)
+
+-- import Monomer.Widgets.Containers.TextFieldSuggestions
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -46,8 +49,7 @@ menuBarCategories = [
       ("Close Subproof", "Ctrl+Enter", NoEvent)
     ]),
     ("Preferences", [
-      ("Open Preferences", "Ctrl+Shift+P", OpenFile_ "Settings.json" ""),
-      ("Apply Preferences", "", ReadSettings)
+      ("Open Preferences", "Ctrl+Shift+P", OpenFile_ preferencePath "")
     ]),
     ("Help", [
       ("Open Guide", "", OpenFile_ "user_guide_en.md" "./docs")
@@ -59,7 +61,7 @@ buildUI
   -> AppModel
   -> WidgetNode AppModel AppEvent
 buildUI _wenv model = widgetTree where
-  selTheme = model ^. selectedTheme
+  selTheme = getActualTheme $ model ^. preferences . selectedTheme
   popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
   backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
@@ -67,10 +69,9 @@ buildUI _wenv model = widgetTree where
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
-  u = model ^. fontSize
-
   h1 = Frontend.Components.Labels.h1 model
   h2 = Frontend.Components.Labels.h2 model
+  h3 = Frontend.Components.Labels.h3 model
   span = Frontend.Components.Labels.span model
   span_ = Frontend.Components.Labels.span_ model
   symbolSpan = Frontend.Components.Labels.symbolSpan model
@@ -91,7 +92,7 @@ buildUI _wenv model = widgetTree where
       ("Ctrl-n", OpenCreateProofPopup, True),
       ("Ctrl-s", SaveCurrentFile, True),
       ("Ctrl-w", CloseCurrentFile, True),
-      ("Ctrl-Shift-p", OpenFile_ "Settings.json" "", True)
+      ("Ctrl-Shift-p", OpenFile_ preferencePath "", True)
     ]
 
   widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [
@@ -140,59 +141,75 @@ buildUI _wenv model = widgetTree where
       ruleWindow
     ] `styleBasic` [expandHeight 1000]
 
-  fileWindow = vstack [
-      box_ [expandContent] (hstack [
-          bold (span "File Explorer"),
-          filler,
-          fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
-          fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
-          fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
-            `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-            `styleHover` [bgColor hoverColor],
+  fileWindow = case model ^. preferences . workingDir of
+    Nothing -> vstack [
+        box_ [expandContent] (hstack [
+            bold (span "File Explorer"),
+            filler,
+            fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor]
+          ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          let cep = (CreateEmptyProof $ model ^. newFileName) in
-            popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
-              h2 "Create proof",
-              spacer,
-              span "Enter the name of your proof",
-              spacer,
-              firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
-              spacer,
-              button "+ Create proof" cep
-            ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
-        ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+        vstack_ [childSpacing] [
+          paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
+          box (button "Open Folder" OpenSetWorkingDir)
+        ] `styleBasic` [padding u]
+      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
 
-      vscroll $ fileTreeUI parts 1
-    ] `styleBasic` [ width 250, borderR 1 dividerColor ]
-    where
-      parts = map (\f -> (splitOn "/" (pack f), f)) files
-      files = sort (model ^. filesInDirectory)
+    Just _ -> vstack [
+        box_ [expandContent] (hstack [
+            bold (span "File Explorer"),
+            filler,
+            fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
+            fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
+            fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+              `styleHover` [bgColor hoverColor],
 
-      fileTreeUI parts indent = vstack [
-          vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
-          vstack $ map folder groups
-        ]
-        where
-          -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-          partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-          partFolder = filter (\i -> length (fst i) > 1) parts
-          groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+            let cep = (CreateEmptyProof $ model ^. newFileName) in
+              popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
+                h2 "Create proof",
+                spacer,
+                span "Enter the name of your proof",
+                spacer,
+                firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
+                spacer,
+                button "+ Create proof" cep
+              ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
+          ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          folder seqs = vstack [
-              hstack [
-                span ((head . fst . head) seqs),
-                iconLabel remixFolder5Line `styleBasic` [paddingL 8]
-              ] `styleBasic` [paddingL (16 * indent), paddingV 8],
-              fileTreeUI newParts (indent + 1)
-            ]
-            where
-              newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-              -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
-              -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
+        vscroll $ fileTreeUI parts 1
+      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+      where
+        parts = map (\f -> (splitOn "/" (pack f), f)) files
+        files = sort (model ^. filesInDirectory)
+
+        fileTreeUI parts indent = vstack [
+            vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
+            vstack $ map folder groups
+          ]
+          where
+            -- parts = map (\f -> (splitOn "/" (pack f), f)) files
+            partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
+            partFolder = filter (\i -> length (fst i) > 1) parts
+            groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+
+            folder seqs = vstack [
+                hstack [
+                  span ((head . fst . head) seqs),
+                  iconLabel remixFolder5Line `styleBasic` [paddingL 8]
+                ] `styleBasic` [paddingL (16 * indent), paddingV 8],
+                fileTreeUI newParts (indent + 1)
+              ]
+              where
+                newParts = map (\f -> ((tail . fst) f, snd f)) seqs
+                -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
+                -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
   fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ hstack_ [childSpacing] [
       iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
@@ -201,7 +218,9 @@ buildUI _wenv model = widgetTree where
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
-      isCurrent = (model ^. currentFile) == Just (model ^. workingDir </> filePath)
+      isCurrent = case model ^. preferences . workingDir of
+        Nothing -> False
+        Just wd -> (model ^. currentFile) == Just (wd </> filePath)
       ext = takeExtension filePath
       iconIdent
         | ext == ".md" = remixMarkdownFill
@@ -225,7 +244,7 @@ buildUI _wenv model = widgetTree where
           fastTooltip (pack filePath) $ span displayName,
           fastTooltip "Close tab" $
             box_ [onClick (CloseFile filePath)] (symbolSpan closeText
-              `styleBasic` [textFont $ fromString $ model ^. logicFont, textSize (1.5*u), radius 8, padding 4]
+              `styleBasic` [textSize (1.5*u), radius 8, padding 4]
               `styleHover` [bgColor hoverColor])
         ]
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
@@ -239,29 +258,35 @@ buildUI _wenv model = widgetTree where
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
     Nothing -> span "Filepath not loaded"
-    Just (SettingsFile _) -> hstack [
+    Just (PreferenceFile _ _) -> hstack [
       vstack [
-          label $ model ^. testSetting,
-          span "Set zoom",
-          hslider_ fontSize 8 32 [thumbVisible],
+          h3 "App scale",
+          hstack_ [childSpacing] [
+            symbolSpan (showDecimals 2 (model ^. preferences . appScale)),
+            hslider_ (preferences . appScale) 0.25 2 [thumbVisible]
+          ],
           spacer, spacer,
-          span "Choose font:",
-          textDropdown_ selectNormalFont [
+
+          h3 "Choose font:",
+          textDropdown_ (preferences . selectNormalFont) [
             ["Regular","Medium","Bold"],
             ["Dyslexic"],
             ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
-            ["Comic_Sans_Regular", "Comic_Sans_Thin", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+            ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
             ] fontListToText [onChange UpdateFont] `styleBasic` [textSize u],
           spacer,
-          span "Set font thickness:",
-          textDropdown_ normalFont (model ^. selectNormalFont) pack [] `styleBasic` [textSize u],
-          vstack $ map illustThickness (model ^. selectNormalFont),
-          spacer,
-          spacer,
-          symbolSpan "Set symbolic font thickness (the font used in logic proofs):",
-          textDropdown_ logicFont ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
-          spacer,
-          spacer,
+
+          h3 "Set font thickness:",
+          textDropdown_ (preferences . normalFont) (model ^. preferences . selectNormalFont) pack [] `styleBasic` [textSize u],
+          vstack $ map illustThickness (model ^. preferences . selectNormalFont),
+          spacer, spacer,
+
+          h3 "Set symbolic font thickness:",
+          paragraph "The symbolic font is the font used in logic proofs",
+          textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
+          spacer, spacer,
+
+          h3 "Theme",
           normalStyle $ button "Switch light/dark mode" SwitchTheme
         ] `styleBasic` [maxWidth 1024]
       ] `styleBasic` [padding 30]
@@ -280,7 +305,7 @@ buildUI _wenv model = widgetTree where
             symbolSpan_ (_content file) [multiline]
           ]) `styleBasic` [padding 10]
         ]
-      Just parsedSequent -> keystroke [("Ctrl-s", SaveProof file)] $ vstack [
+      Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
           vstack [
             h1 heading,
             spacer,
@@ -290,7 +315,7 @@ buildUI _wenv model = widgetTree where
           hstack [
             proofStatusLabel,
             filler,
-            button "Save proof" (SaveProof file) `styleBasic` [textSize u],
+            button "Save proof" (SaveFile file) `styleBasic` [textSize u],
             spacer,
             button "Check proof" (CheckProof file) `styleBasic` [textSize u]
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
@@ -320,7 +345,7 @@ buildUI _wenv model = widgetTree where
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
       vstack_ [childSpacing] [
-        h2 "Premises" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+        h2 "Premises",
         vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
         widgetIf (null $ _premises sequent) (span "No premises")
       ],
@@ -329,7 +354,7 @@ buildUI _wenv model = widgetTree where
       spacer, spacer,
 
       vstack_ [childSpacing] [
-        h2 "Conclusion" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+        h2 "Conclusion",
         spacer,
         box_ [alignLeft] (
           symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
@@ -339,7 +364,7 @@ buildUI _wenv model = widgetTree where
       ],
       spacer, spacer,
 
-      h2 "Proof" `styleBasic` [textFont $ fromString $ last $ model ^. selectNormalFont],
+      h2 "Proof",
       spacer,
       hstack [
         lineNumbers,
@@ -431,14 +456,14 @@ buildUI _wenv model = widgetTree where
                     `nodeKey` (showt index <> ".rule.keystroke")
                     `styleBasic` [width 300]
 
-                -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) usernames (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
+                -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
               ],
               spacer,
               b
             ] `nodeKey` showt index
 
-          usernames = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
-            where rules (Env _ _ r _ _ _ _ _) = r
+          -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
+          --   where rules (Env _ _ r _ _ _ _ _) = r
 
           handleFormulaKey, handleRuleKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
           handleFormulaKey (_mod, code, state)
