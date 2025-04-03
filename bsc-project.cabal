@@ -84,6 +84,7 @@ executable bsc
                     , data-default
                     , lens
                     , monomer
+                    , cmark
                     , text
                     , text-show
                     , directory
