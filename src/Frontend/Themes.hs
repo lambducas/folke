@@ -1,8 +1,10 @@
 module Frontend.Themes (
   customLightTheme,
-  customDarkTheme
+  customDarkTheme,
+  getActualTheme
 ) where
 
+import Frontend.Types
 import Monomer
 import Monomer.Core.Themes.BaseTheme
 import qualified Monomer.Lens as L
@@ -64,3 +66,7 @@ customDarkTheme = baseTheme darkThemeColors {
   & L.userColorMap . at "selectedFileBg" ?~ rgba 255 255 255 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 255 255 255 0.1
   & L.userColorMap . at "proofBoxColor" ?~ rgba 255 255 255 0.3
+
+getActualTheme :: SelectableTheme -> Theme
+getActualTheme Light = customLightTheme
+getActualTheme Dark = customDarkTheme

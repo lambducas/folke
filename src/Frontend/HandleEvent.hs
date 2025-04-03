@@ -6,9 +6,9 @@ module Frontend.HandleEvent (
 
 import Frontend.Types
 import Frontend.Helper
-import Frontend.Themes
 import Frontend.Communication (startCommunication, evaluateProofString)
 import Frontend.Parse
+import Frontend.Preferences
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
@@ -46,6 +46,13 @@ handleEvent wenv node model evt = case evt of
         return $ BackendResponse answer
     ]
 
+  AppBeforeExit -> [
+      cancelExitApplication,
+      Producer (savePreferences model ExitApp)
+    ]
+
+  ExitApp -> [ exitApplication ]
+
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
 
   FocusOnKey key -> [ SetFocusOnKey key ]
@@ -68,9 +75,9 @@ handleEvent wenv node model evt = case evt of
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-      focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
+      -- focusAction = fromMaybe [] maybeFocusAction
+      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
 
   SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
     where
@@ -81,9 +88,9 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-      focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
+      -- focusAction = fromMaybe [] maybeFocusAction
+      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
+      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
@@ -154,8 +161,8 @@ handleEvent wenv node model evt = case evt of
 
         if takeExtension fullPath == ".md" then
           sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
-        else if fullPath == "Settings.json" && folderPath == "" then
-          sendMsg (OpenFileSuccess $ SettingsFile fullPath)
+        else if fullPath == preferencePath && folderPath == "" then
+          sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
         else if  takeExtension fullPath == "." <> feFileExt then
           do
             let seq = parseProofFromJSON pContentText
@@ -269,25 +276,29 @@ handleEvent wenv node model evt = case evt of
   SaveCurrentFile -> case model ^. currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent wenv node model (SaveProof file)
+      Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
+      Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. tmpLoadedFiles) filePath
 
-  SaveProof f -> case _parsedSequent f of
-    Nothing -> []
-    Just seq -> [
-        Producer (\sendMsg -> do
-          let content = (unpack . parseProofToJSON) seq
-              fileName = _path f
+  SaveFile f -> case f of
+    PreferenceFile {} -> handleEvent wenv node model SavePreferences
+    f@ProofFile {} -> case _parsedSequent f of
+      Nothing -> []
+      Just seq -> [
+          Producer (\sendMsg -> do
+            let content = (unpack . parseProofToJSON) seq
+                fileName = _path f
 
-          result <- try (writeFile fileName content) :: IO (Either SomeException ())
-          case result of
-            Left e -> print e
-            Right _ -> sendMsg (SaveProofSuccess f)
-        )
-      ]
+            result <- try (writeFile fileName content) :: IO (Either SomeException ())
+            case result of
+              Left e -> print e
+              Right _ -> sendMsg (SaveFileSuccess f)
+          )
+        ]
+    f -> error $ "Cannot save file of type " ++ show f
 
-  SaveProofSuccess f -> actions
+  SaveFileSuccess f -> actions
     where
       actions = fromMaybe [] (fileIndex >>= Just . getActions)
       getActions fileIndex = [ Model $ model & tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
@@ -299,24 +310,20 @@ handleEvent wenv node model evt = case evt of
         & proofStatus .~ Nothing
     ]
 
+  -- Preferences
   SwitchTheme -> [
-      Model $ model & selectedTheme %~ switchTheme
+      Model $ model & preferences . selectedTheme %~ switchTheme
     ]
     where
-      switchTheme oldTheme
-        | oldTheme == customLightTheme = customDarkTheme
-        | oldTheme == customDarkTheme = customLightTheme
-        | otherwise = customLightTheme
+      switchTheme Light = Dark
+      switchTheme Dark = Light
+        
+  UpdateFont s -> [Model $ model & preferences . normalFont .~ head s]
 
-  UpdateFont s -> [Model $ model & normalFont .~ head s]
+  ReadPreferences -> [ Producer readAndApplyPreferences ]
+  ReadPreferences_ prefs -> [ Model $ model & preferences .~ prefs ]
 
-  ReadSettings -> [
-      Producer (\sendMsg -> do
-        pContent <- readFile "Settings.json"
-        sendMsg (ReadSettings_ pContent)
-      )
-    ]
-  ReadSettings_ settings -> [Model $ model & testSetting .~ pack settings]
+  SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
   -- Backend events
   CheckProof file -> [
