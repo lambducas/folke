@@ -150,3 +150,5 @@ data AppEvent
 
 makeLenses 'ProofFile
 makeLenses 'AppModel
+
+feFileExt = "json"

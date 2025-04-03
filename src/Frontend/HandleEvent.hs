@@ -8,6 +8,7 @@ import Frontend.Types
 import Frontend.Helper
 import Frontend.Themes
 import Frontend.Communication (startCommunication, evaluateProofString)
+import Frontend.Parse
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
@@ -137,7 +138,7 @@ handleEvent wenv node model evt = case evt of
     ]
     where
       filePath = model ^. workingDir </> fileName
-      fileName = unpack (trimExtension ".logic" input) <> ".logic"
+      fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
       emptyProof = ";;{ : ;}"
 
   RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. workingDir) ]
@@ -149,28 +150,26 @@ handleEvent wenv node model evt = case evt of
         let fullPath = folderPath </> filePath
         pContent <- readFile fullPath
         let pContentText = pack pContent
+        let pIsEdited = False
 
         if takeExtension fullPath == ".md" then
           sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
         else if fullPath == "Settings.json" && folderPath == "" then
           sendMsg (OpenFileSuccess $ SettingsFile fullPath)
+        else if  takeExtension fullPath == "." <> feFileExt then
+          do
+            let seq = parseProofFromJSON pContentText
+            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
         else if takeExtension fullPath == ".logic" then
           do
-            let pIsEdited = False
-
             case pSequent (myLexer pContent) of
               Left _err -> do
-                let seq = parseProofFromSimpleFileFormat pContentText
-                sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
-                -- sendMsg (OpenFileSuccess $ File fullPath pContentText Nothing pIsEdited)
+                case parseProofFromSimpleFileFormat pContentText of
+                  seq@(Just _) -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
+                  Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited)
 
               Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
                 where pParsedContent = Just (convertSeq seq_t)
-
-            -- let pContentText = pack pContent
-            --     pParsedContent = Just (parseProofFromSimpleFileFormat pContentText)
-            --     pIsEdited = False
-            -- sendMsg (OpenFileSuccess $ File fullPath pContentText pParsedContent pIsEdited)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
@@ -278,13 +277,12 @@ handleEvent wenv node model evt = case evt of
     Nothing -> []
     Just seq -> [
         Producer (\sendMsg -> do
-          let content = (unpack . parseProofToSimpleFileFormat) seq
-          -- let content = (unpack . parseProofForBackend) seq
+          let content = (unpack . parseProofToJSON) seq
               fileName = _path f
 
-          result <- try (writeFile (model ^. workingDir </> fileName) content) :: IO (Either SomeException ())
+          result <- try (writeFile fileName content) :: IO (Either SomeException ())
           case result of
-            Left _ -> return ()
+            Left e -> print e
             Right _ -> sendMsg (SaveProofSuccess f)
         )
       ]

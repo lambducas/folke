@@ -759,7 +759,9 @@ makeScroll config state = widget where
       | otherwise = (nch, max nch childH)
 
     newDx = scrollAxis dx areaW maxW
-    newDy = scrollAxis dy areaH maxH
+    -- Fixes bug where scrolling multiline labels
+    -- causes scroll to reset. This breaks resizing!
+    newDy = dy--scrollAxis dy areaH maxH
 
     scissor = Rect cl ct maxW maxH
     cViewport = Rect cl ct areaW areaH

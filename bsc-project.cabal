@@ -90,6 +90,8 @@ executable bsc
                     , filepath
                     , containers
                     , array
+                    , aeson
+                    , bytestring
                     , nativefiledialog
     other-modules:
                       Backend.TypeChecker
@@ -108,6 +110,7 @@ executable bsc
                     , Frontend.SpecialCharacters
                     , Frontend.Helper
                     , Frontend.Themes
+                    , Frontend.Parse
                     , Frontend.Components.RenderMarkdown
                     , Frontend.Components.Labels
                     , Shared.Messages

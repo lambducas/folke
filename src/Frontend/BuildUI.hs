@@ -21,7 +21,7 @@ import qualified Data.Text (length)
 import Data.List (sort, groupBy)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
-import System.FilePath (takeExtension, takeFileName)
+import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe)
 import qualified Data.Map
@@ -203,14 +203,14 @@ buildUI _wenv model = widgetTree where
     where
       isCurrent = (model ^. currentFile) == Just (model ^. workingDir </> filePath)
       ext = takeExtension filePath
-      iconIdent = case ext of
-        ".md" -> remixMarkdownFill
-        ".logic" -> remixSurveyFill
-        _ -> remixMenu2Line
-      iconColor = case ext of
-        ".md" -> Just $ rgb 94 156 255
-        ".logic" -> Just $ rgb 255 130 0
-        _ -> Nothing
+      iconIdent
+        | ext == ".md" = remixMarkdownFill
+        | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
+        | otherwise = remixMenu2Line
+      iconColor
+        | ext == ".md" = Just $ rgb 94 156 255
+        | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
+        | otherwise = Nothing
 
   editWindow = vstack [
       fileNavBar (model ^. openFiles),
@@ -282,7 +282,7 @@ buildUI _wenv model = widgetTree where
         ]
       Just parsedSequent -> keystroke [("Ctrl-s", SaveProof file)] $ vstack [
           vstack [
-            h1 $ pack $ _path file,
+            h1 heading,
             spacer,
             subheading
           ] `styleBasic` [padding 10, borderB 1 dividerColor],
@@ -296,6 +296,7 @@ buildUI _wenv model = widgetTree where
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where
+          heading = (pack . takeBaseName . _path) file
           subheading
             | null premises && conclusion == "" = span "Empty proof"
             | otherwise = symbolSpan prettySequent
@@ -304,8 +305,8 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
-    Just (MarkdownFile _p content) -> vscroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
-    Just (OtherFile p content) -> vscroll $ vstack_ [childSpacing] [
+    Just (MarkdownFile _p content) -> vscroll_ [wheelRate 50] (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+    Just (OtherFile p content) -> vscroll_ [wheelRate 50] $ vstack_ [childSpacing] [
         label $ pack p <> ": This file type is not supported",
         paragraph content
       ] `styleBasic` [padding u]
