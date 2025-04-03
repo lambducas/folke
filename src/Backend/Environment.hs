@@ -354,16 +354,16 @@ ruleEqI env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length f
 
 ruleEqE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleEqE _ _ _ = Error [] (UnknownError "Unimplemented.")
-ruleEqE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 0 )
+--ruleEqE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 0 )
 
 ruleAllE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllE env [(_, ArgForm (All x a)), (j, ArgTerm t@(Term _ []))] _ = replaceFree env x t a
+ruleAllE env [(_, ArgForm (All x a)), (_, ArgTerm t@(Term _ []))] _ = replaceFree env x t a
 ruleAllE env [(_, ArgForm (All _ _)), (j, _)] _ = Error [] (RuleArgError env j  "Must be an free variable.")
 ruleAllE env [(i, _), (_, _)] _ = Error [] (RuleArgError env i  "Must be an for all formula.")
 ruleAllE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
 
 ruleAllI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllI env [(_, ArgProof (Proof [t] [] a))] r@(All x b) = case replaceFree env x t b of 
+ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) = case replaceFree env x t b of 
     Error warns err -> Error warns err --TODO specify argument error?
     Ok warns c -> if a==c then Ok warns (All x b) else Error [] (RuleConcError env "The given formula did not match the conclusion.")
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = Error []  (RuleConcError env "The conclusion must be an for all formula.")
@@ -373,9 +373,9 @@ ruleAllI env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length 
 ruleSomeE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeE env [(_,ArgForm (Some x a)), (_, ArgProof(Proof [t] [b] c))] _ = case replaceFree env t x a of
     Error warns err -> Error warns err --TODO specify argument error?
-    Ok warn d -> if b == d then Ok [] c else Error [] (RuleConcError env "The given formula did not match the conclusion.")
+    Ok warns d -> if b == d then Ok [] c else Error warns (RuleConcError env "The given formula did not match the conclusion.")
 ruleSomeE env [(_,ArgForm (Some _ _)), (j, _)] _ = Error [] (RuleArgError env j  "Must be an proof.")
-ruleSomeE env [(i,_), (j, _)] _ = Error [] (RuleArgError env j  "Must be an formula some formula.")
+ruleSomeE env [(_,_), (j, _)] _ = Error [] (RuleArgError env j  "Must be an formula some formula.")
 ruleSomeE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 2 )
 
 ruleSomeI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula

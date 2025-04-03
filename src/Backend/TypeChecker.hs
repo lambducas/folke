@@ -5,14 +5,11 @@ module Backend.TypeChecker (
     handleFrontendMessage,
 ) where
 
-import qualified Data.Map as Map
-
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 import Shared.Messages
 import Backend.Environment
 import Backend.Types 
-import qualified Data.List as List
 {-
     Runs the parser and then the typechecker on a given string
     -params:
@@ -123,12 +120,12 @@ checkStep env step = case step of
         let c = Term (identToString ident) []
         case addConst env c of
             Error warns err -> Error warns err
-            Ok warns env -> Ok warns (env, ArgTerm c)
+            Ok warns new_env -> Ok warns (new_env, ArgTerm c)
     Abs.StepDecVar ident -> do
         let c = Term (identToString ident) []
         case addVar env c of
             Error warns err -> Error warns err
-            Ok warns env -> Ok warns (env, ArgTerm c)
+            Ok warns new_env -> Ok warns (new_env, ArgTerm c)
     Abs.StepDecFun ident idents -> 
         Error [] (UnknownError "Functions are currently not supported.")
     Abs.StepAssume form -> 

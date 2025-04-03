@@ -66,8 +66,8 @@ instance Show Arg where
 -- Represents a proof with premises and a conclusion.
 data Proof = Proof [Term] [Formula] Formula
 instance Show Proof where
-    show (Proof [] prems conc) = show prems ++ "|-" ++ show conc
-    show (Proof terms prems conc) = show terms ++ show prems ++ "|-" ++ show conc
+    show (Proof [] premises conc) = show premises ++ "|-" ++ show conc
+    show (Proof terms premises conc) = show terms ++ show premises ++ "|-" ++ show conc
 instance Eq Proof where 
     (==) :: Proof -> Proof -> Bool
     Proof terms1 prems1 conc1 == Proof terms2 prems2 conc2 = terms1 == terms2 && prems1 == prems2 && conc1 == conc2
