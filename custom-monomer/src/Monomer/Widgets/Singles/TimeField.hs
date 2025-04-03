@@ -401,7 +401,8 @@ timeFieldD_ widgetData configs = newNode where
     _ifcDragCursor = Just CursorSizeV,
     _ifcOnFocusReq = _tfcOnFocusReq config,
     _ifcOnBlurReq = _tfcOnBlurReq config,
-    _ifcOnChangeReq = _tfcOnChangeReq config
+    _ifcOnChangeReq = _tfcOnChangeReq config,
+    _ifcOnKeyDownReq = []
   }
   wtype = WidgetType ("timeField-" <> showt (typeOf initialValue))
   newNode = inputField_ wtype inputConfig

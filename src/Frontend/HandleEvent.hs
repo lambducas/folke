@@ -8,6 +8,7 @@ import Frontend.Types
 import Frontend.Helper
 import Frontend.Themes
 import Frontend.Communication (startCommunication, evaluateProofString)
+import Frontend.Parse
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
@@ -51,7 +52,11 @@ handleEvent wenv node model evt = case evt of
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddPremise -> applyOnCurrentProof model addPremiseToProof
+  AddPremise -> applyOnCurrentProof model addPremiseToProof ++ focusAction
+    where
+      focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
+      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt idx) ]
+        where idx = length (_premises sequent)
 
   RemovePremise idx -> applyOnCurrentProof model (removePremiseFromProof idx)
 
@@ -59,15 +64,15 @@ handleEvent wenv node model evt = case evt of
 
   EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
 
-  SwitchLineToSubProof path -> applyOnCurrentProof model switch ++ focusAction
+  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusBwd]-- focusAction
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusBwd ]
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
 
-  SwitchSubProofToLine path -> applyOnCurrentProof model switch ++ focusAction
+  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
         SubProof p -> head p
@@ -78,7 +83,7 @@ handleEvent wenv node model evt = case evt of
 
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd ]
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
@@ -106,8 +111,13 @@ handleEvent wenv node model evt = case evt of
           conclusion = _conclusion sequent
           steps = _steps sequent ++ [SubProof [Line "" ""]]
 
-  RemoveLine path -> applyOnCurrentProof model removeLine
-    where removeLine = removeFromProof path
+  RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
+    where
+      removeLine = removeFromProof path
+
+      focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
+      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".rule") ]
+        where l = pathToLineNumber sequent path - 1
 
   EditLine path arg newText -> applyOnCurrentProof model editLine
     where editLine = editFormulaInProof path arg newText
@@ -120,6 +130,7 @@ handleEvent wenv node model evt = case evt of
         if exists then return () else do
           writeFile filePath emptyProof
           sendMsg (OpenFile fileName)
+          sendMsg RefreshExplorer
       ),
       Model $ model
         & newFilePopupOpen .~ False
@@ -127,7 +138,7 @@ handleEvent wenv node model evt = case evt of
     ]
     where
       filePath = model ^. workingDir </> fileName
-      fileName = unpack (trimExtension ".logic" input) <> ".logic"
+      fileName = unpack (trimExtension (pack feFileExt) input) <> feFileExt
       emptyProof = ";;{ : ;}"
 
   RefreshExplorer -> [ Producer $ directoryFilesProducer (model ^. workingDir) ]
@@ -136,32 +147,31 @@ handleEvent wenv node model evt = case evt of
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
-        pContent <- readFile (folderPath </> filePath)
+        let fullPath = folderPath </> filePath
+        pContent <- readFile fullPath
         let pContentText = pack pContent
+        let pIsEdited = False
 
-        if takeExtension filePath == ".md" then
-          sendMsg (OpenFileSuccess $ MarkdownFile filePath pContentText)
-        else if filePath == "Settings.json" && folderPath == "" then
-          sendMsg (OpenFileSuccess $ SettingsFile filePath)
-        else if takeExtension filePath == ".logic" then
+        if takeExtension fullPath == ".md" then
+          sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
+        else if fullPath == "Settings.json" && folderPath == "" then
+          sendMsg (OpenFileSuccess $ SettingsFile fullPath)
+        else if  takeExtension fullPath == "." <> feFileExt then
           do
-            let pIsEdited = False
-
+            let seq = parseProofFromJSON pContentText
+            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
+        else if takeExtension fullPath == ".logic" then
+          do
             case pSequent (myLexer pContent) of
               Left _err -> do
-                let seq = parseProofFromSimpleFileFormat pContentText
-                sendMsg (OpenFileSuccess $ ProofFile filePath pContentText seq pIsEdited)
-                -- sendMsg (OpenFileSuccess $ File filePath pContentText Nothing pIsEdited)
+                case parseProofFromSimpleFileFormat pContentText of
+                  seq@(Just _) -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
+                  Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited)
 
-              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile filePath pContentText pParsedContent pIsEdited)
+              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
                 where pParsedContent = Just (convertSeq seq_t)
-
-            -- let pContentText = pack pContent
-            --     pParsedContent = Just (parseProofFromSimpleFileFormat pContentText)
-            --     pIsEdited = False
-            -- sendMsg (OpenFileSuccess $ File filePath pContentText pParsedContent pIsEdited)
         else
-          sendMsg (OpenFileSuccess $ OtherFile filePath pContentText)
+          sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
     ]
     where
@@ -200,6 +210,7 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormEq _ _) = error "= not implemented"
       convertForm (Abs.FormAll _ _) = error "forall not implemented"
       convertForm (Abs.FormSome _ _) = error "exists not implemented"
+      convertForm Abs.FormNil = error "FormNil not implemented"
 
       convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
@@ -255,17 +266,23 @@ handleEvent wenv node model evt = case evt of
         & confirmDeletePopup .~ False
       cf = model ^. currentFile
 
+  SaveCurrentFile -> case model ^. currentFile of
+    Nothing -> []
+    Just filePath -> case currentFile of
+      Just file@ProofFile {} -> handleEvent wenv node model (SaveProof file)
+      _ -> []
+      where currentFile = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+
   SaveProof f -> case _parsedSequent f of
     Nothing -> []
     Just seq -> [
         Producer (\sendMsg -> do
-          let content = (unpack . parseProofToSimpleFileFormat) seq
-          -- let content = (unpack . parseProofForBackend) seq
+          let content = (unpack . parseProofToJSON) seq
               fileName = _path f
 
-          result <- try (writeFile (model ^. workingDir </> fileName) content) :: IO (Either SomeException ())
+          result <- try (writeFile fileName content) :: IO (Either SomeException ())
           case result of
-            Left _ -> return ()
+            Left e -> print e
             Right _ -> sendMsg (SaveProofSuccess f)
         )
       ]
@@ -337,6 +354,8 @@ handleEvent wenv node model evt = case evt of
       Model $ model & workingDir .~ path,
       Producer (directoryFilesProducer path)
     ]
+
+  Print s -> [ Producer (\_ -> print s) ]
 
   -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]

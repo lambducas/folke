@@ -19,9 +19,11 @@ import Prelude hiding (span)
 
 import Frontend.Types
 import Monomer
+import qualified Monomer.Lens as L
 import Control.Lens
 import Data.Text (Text)
 import Data.String (fromString)
+import Data.Default (def)
 
 -- Base unit for fonts. Use instead of pixels (1u = 16px)
 -- u :: Double
@@ -73,12 +75,18 @@ iconLabel_ model iconIdent cfg = label_ iconIdent cfg `styleBasic` [textFont "Re
 -- For rendering icons inside buttons
 iconButton :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
 iconButton model iconIdent action = button iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 0 transparent, textSize $ model ^. fontSize]
+  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 1 transparent, textSize $ model ^. fontSize]
 
 -- Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent
 trashButton model action = iconButton model remixDeleteBinFill action
   `styleBasic` [textColor orangeRed, textSize $ model ^. fontSize]
+  `styleFocus` [border 1 (rgba 255 20 0 0.75)]
+  `styleHover` [bgColor hoverColor]
+  `styleDisabled` [textColor (rgba 255 220 200 0.3)]
+  where
+    hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+    selTheme = model ^. selectedTheme
 
 -- Make widget bold
 bold :: CmbStyleBasic t => AppModel -> t -> t

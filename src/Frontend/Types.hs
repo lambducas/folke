@@ -75,7 +75,10 @@ data AppModel = AppModel {
   _normalFont :: String,
   _logicFont :: String,
   _fontSize :: Double,
-  _testSetting :: Text
+  _testSetting :: Text,
+
+  -- Test
+  _userLens :: Text
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -85,6 +88,7 @@ instance Show (Chan a) where
 data AppEvent
   = NoEvent
   | AppInit
+  | Print String
 
   -- Menu bar
   | SetOpenMenuBarItem (Maybe Integer)
@@ -108,8 +112,8 @@ data AppEvent
   | InsertSubProofAfter FormulaPath
   | RemoveLine FormulaPath
   | EditLine FormulaPath Int Text
-  | SwitchLineToSubProof FormulaPath
-  | SwitchSubProofToLine FormulaPath
+  | SwitchLineToSubProof FormulaPath WidgetKey
+  | SwitchSubProofToLine FormulaPath WidgetKey
 
   -- Handle files
   | RefreshExplorer
@@ -122,6 +126,7 @@ data AppEvent
   | CloseFile FilePath
   | CloseFileSuccess FilePath
   | CloseCurrentFile
+  | SaveCurrentFile
   | SaveProof File
   | SaveProofSuccess File
   | SetCurrentFile FilePath
@@ -145,3 +150,5 @@ data AppEvent
 
 makeLenses 'ProofFile
 makeLenses 'AppModel
+
+feFileExt = "json"

@@ -39,6 +39,7 @@ import Data.Default
 import Data.Maybe
 import Data.Sequence (Seq(..), (|>))
 import Data.Text (Text)
+import Data.List (foldl')
 import Data.Typeable
 import GHC.Generics
 
@@ -49,6 +50,10 @@ import Monomer.Helper
 import Monomer.Widgets.Single
 
 import qualified Monomer.Lens as L
+import Monomer.Graphics.ColorTable (red)
+import Monomer.Widgets.Container (updateWenvOffset)
+import Monomer.Widgets.Singles.Label (label)
+import Monomer.Widgets.Containers.SelectList (selectListD_, selectListV, SelectListItem)
 
 -- | Constraints for a value handled by input field.
 type InputFieldValue a = (Eq a, Show a, Typeable a)
@@ -134,7 +139,10 @@ data InputFieldCfg s e a = InputFieldCfg {
   -- | 'WidgetRequest' to generate when focus is lost.
   _ifcOnBlurReq :: [Path -> WidgetRequest s e],
   -- | 'WidgetRequest' to generate when value changes.
-  _ifcOnChangeReq :: [a -> WidgetRequest s e]
+  _ifcOnChangeReq :: [a -> WidgetRequest s e],
+
+  -- | 'WidgetRequest' to generate when key is pressed.
+  _ifcOnKeyDownReq :: [(KeyMod, KeyCode, InputFieldState a) -> WidgetRequest s e]
 }
 
 -- | Snapshot of a point in history of the input.
@@ -233,6 +241,7 @@ makeInputField !config !state = widget where
     singleFocusOnBtnPressed = False,
     singleUseCustomCursor = True,
     singleUseScissor = True,
+    -- singleUseScissor = False,
     singleGetBaseStyle = getBaseStyle,
     singleInit = init,
     singleMerge = merge,
@@ -276,8 +285,21 @@ makeInputField !config !state = widget where
       | otherwise = 0
     newFieldState = newTextState wenv node state config
     newState = newFieldState newValue txtValue txtPos Nothing
+
+    widgetId = node ^. L.info . L.widgetId
+    makeRow a = label ""
+    items :: [Text]
+    items = ["Hello", "world", "test", "1111", "333", "qwqewe"]
+    newItems = foldl' (|>) Data.Sequence.Empty items
+    widgetData = _ifcValue config
+    selectListNode :: (WidgetModel s, WidgetEvent e) => WidgetNode s e
+    selectListNode = selectListV "Hello" (\i v -> undefined) items makeRow
+
     newNode = node
       & L.widget .~ makeInputField config newState
+      & L.children .~ Seq.fromList [label "AAAAAAAA", label "nbbbbbbbbbb"]
+      -- & L.children .~ Seq.fromList [selectListNode]
+
     parsedVal = fromText (toText newValue)
     reqs = setModelValid config (isJust parsedVal)
     result = resultReqs newNode reqs
@@ -363,13 +385,13 @@ makeInputField !config !state = widget where
       isEnd = isKeyEnd code
       isWordMod
         | isMacOS wenv = _kmLeftAlt mod
-        | otherwise = _kmLeftCtrl mod
+        | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
       isLineMod
-        | isMacOS wenv = _kmLeftCtrl mod || _kmLeftGUI mod
+        | isMacOS wenv = _kmLeftCtrl mod || _kmRightCtrl mod || _kmLeftGUI mod
         | otherwise = _kmLeftAlt mod
       isAllMod
         | isMacOS wenv = _kmLeftGUI mod
-        | otherwise = _kmLeftCtrl mod
+        | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
       isBackspace = isKeyBackspace code && (tp > 0 || isJust currSel)
       isDelete = isKeyDelete code && (tp < T.length currText || isJust currSel)
       isDelBackWord = isBackspace && isWordMod
@@ -522,7 +544,9 @@ makeInputField !config !state = widget where
       | otherwise -> fmap handleKeyRes keyRes <|> cursorRes where
           !keyRes = handleKeyPress wenv mod code
           handleKeyRes (!newText, !newPos, !newSel) = result where
-            result = genInputResult wenv node False newText newPos newSel []
+            -- result = genInputResult wenv node False newText newPos newSel []
+            result = genInputResult wenv node False newText newPos newSel keyDownReqs
+            keyDownReqs = fmap ($ (mod, code, state)) (_ifcOnKeyDownReq config)
           cursorReq = changeCursorReq validCursor
           cursorRes
             | not (null cursorReq) = Just (resultReqs node cursorReq)
@@ -626,7 +650,9 @@ makeInputField !config !state = widget where
     stVal
       | isValid = fromMaybe currVal newVal
       | otherwise = currVal
-    tempState = newTextState wenv node state config stVal newText newPos newSel
+    tempState = (newTextState wenv node state config stVal newText newPos newSel) {
+      _ifsFocusStart = wenv ^. L.timestamp
+    }
     newOffset = _ifsOffset tempState
     history = _ifsHistory tempState
     histIdx = _ifsHistIdx tempState
@@ -683,6 +709,17 @@ makeInputField !config !state = widget where
 
     when caretRequired $
       drawRect renderer caretRect (Just caretColor) Nothing
+
+    -- when (focused && currText /= "") $
+    --   createOverlay renderer $ do
+    --     drawInTranslation renderer scOffset $ do
+    --       drawRect renderer (Rect 0 0 vw 200) (Just red) Nothing
+
+    -- when focused $
+    --   createOverlay renderer $
+    --     drawInTranslation renderer totalOffset $ do
+    --       renderOverlay renderer wenv listOverlay
+
     where
       style = currentStyle wenv node
       placeholderStyle = style
@@ -700,6 +737,19 @@ makeInputField !config !state = widget where
 
       selColor = styleHlColor style
       selRect = getSelRect state style
+
+      Rect vx vy vw vh = node ^. L.info . L.viewport
+      scOffset = addPoint (Point vx (vy + vh)) (wenv ^. L.offset)
+
+
+      offset = Point vx vy
+      totalOffset = addPoint (wenv ^. L.offset) offset
+      listOverlay = Seq.index (node ^. L.children) 0
+      listOverlayVp = listOverlay ^. L.info . L.viewport
+    
+  renderOverlay renderer wenv overlayNode = renderAction where
+    widget = overlayNode ^. L.widget
+    renderAction = widgetRender widget wenv overlayNode renderer
 
 textOffsetY :: TextMetrics -> StyleState -> Double
 textOffsetY (TextMetrics ta td tl tlx) style = offset where
@@ -820,14 +870,14 @@ genReqsEvents node config !state !newText !newReqs = result where
   !reqs = newReqs ++ reqUpdateModel ++ reqValid ++ reqResize ++ reqOnChange
   !result = (reqs, evtValid)
 
-moveHistory
-  :: (InputFieldValue a, WidgetEvent e)
-  => WidgetEnv s e
-  -> WidgetNode s e
-  -> InputFieldState a
-  -> InputFieldCfg s e a
-  -> Int
-  -> Maybe (WidgetResult s e)
+-- moveHistory
+--   :: (InputFieldValue a, WidgetEvent e)
+--   => WidgetEnv s e
+--   -> WidgetNode s e
+--   -> InputFieldState a
+--   -> InputFieldCfg s e a
+--   -> Int
+--   -> Maybe (WidgetResult s e)
 moveHistory wenv node state config steps = result where
   historyStep = initialHistoryStep (_ifcInitialValue config)
   currHistory = _ifsHistory state

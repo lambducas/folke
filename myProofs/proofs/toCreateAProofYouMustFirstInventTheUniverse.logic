@@ -1,4 +1,0 @@
-bot |- P {
-	1:prem bot;
-	2:BotE [1] P;
-}
