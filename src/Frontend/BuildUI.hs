@@ -606,4 +606,4 @@ buildUI _wenv model = widgetTree where
       h2 "Rules",
       vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
     ] `styleBasic` [padding u]) `styleBasic` [width 300]
-    where rules (Env _ _ r _ _ _ _ _) = r
+    where rules (Env _ _ r _ _ _ _) = r
