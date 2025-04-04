@@ -31,7 +31,10 @@ data Step
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Arg
-    = ArgRange Integer Integer | ArgLine Integer | ArgTerm Term
+    = ArgRange Integer Integer
+    | ArgLine Integer
+    | ArgTerm Term
+    | ArgForm Term Form
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form
