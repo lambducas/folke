@@ -49,3 +49,26 @@ nfdchar_t* pickFolder( void )
 
     return "";
 }
+
+nfdchar_t* saveDialog( void )
+{
+    nfdchar_t *savePath = NULL;
+    nfdresult_t result = NFD_SaveDialog( "*", NULL, &savePath );
+    if ( result == NFD_OKAY )
+    {
+        // puts("Success!");
+        // puts(savePath);
+        // free(savePath);
+        return savePath;
+    }
+    else if ( result == NFD_CANCEL )
+    {
+        // puts("User pressed cancel.");
+    }
+    else 
+    {
+        printf("Error: %s\n", NFD_GetError() );
+    }
+
+    return "";
+}

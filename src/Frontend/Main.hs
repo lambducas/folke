@@ -21,7 +21,10 @@ main = do
     _normalFont = "Regular",
     _logicFont = "Symbol_Regular",
     _appScale = 1,
-    _workingDir = Nothing --Just "./myProofs"
+
+    _workingDir = Nothing, --Just "./myProofs",
+    _openFiles = [],
+    _tmpLoadedFiles = []
   }
   let prefs = fromMaybe defaultPrefs readPrefs
 
@@ -74,8 +77,6 @@ main = do
       _newFileName = "",
       _newFilePopupOpen = False,
       _filesInDirectory = [],
-      _tmpLoadedFiles = [],
-      _openFiles = [],
       _currentFile = Nothing,
       _confirmDeletePopup = False,
       _confirmDeleteTarget = Nothing,

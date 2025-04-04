@@ -52,6 +52,11 @@ data File
     _parsedSequent :: Maybe FESequent,
     _isEdited :: Bool
   }
+  | TemporaryProofFile {
+    _path :: FilePath,
+    _parsedSequent :: Maybe FESequent,
+    _isEdited :: Bool
+  }
   deriving (Eq, Show)
 
 data SelectableTheme = Light | Dark
@@ -64,7 +69,9 @@ data Preferences = Preferences {
   _logicFont :: String,
   _appScale :: Double,
 
-  _workingDir :: Maybe FilePath
+  _workingDir :: Maybe FilePath,
+  _openFiles :: [FilePath],
+  _tmpLoadedFiles :: [File]
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
@@ -73,8 +80,6 @@ data AppModel = AppModel {
   _newFilePopupOpen :: Bool,
   _newFileName :: Text,
   _filesInDirectory :: [FilePath],
-  _tmpLoadedFiles :: [File],
-  _openFiles :: [FilePath],
   _currentFile :: Maybe FilePath,
   _confirmDeletePopup :: Bool,
   _confirmDeleteTarget :: Maybe FilePath,
@@ -140,7 +145,7 @@ data AppEvent
 
   -- Handle creation of proof
   | OpenCreateProofPopup
-  | CreateEmptyProof Text
+  | CreateEmptyProof
 
   -- Proof checking
   | CheckProof File
@@ -164,4 +169,7 @@ feFileExt :: String
 feFileExt = "json"
 
 $(deriveJSON defaultOptions ''SelectableTheme)
+$(deriveJSON defaultOptions ''FEStep)
+$(deriveJSON defaultOptions ''FESequent)
+$(deriveJSON defaultOptions ''File)
 $(deriveJSON defaultOptions ''Preferences)

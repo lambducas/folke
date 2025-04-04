@@ -25,10 +25,10 @@ If you need to create a subproof below the current line, first insert a line and
 2. Press `Ctrl+Tab` or "→☐" to convert the newly created line into a subproof.
 
 #### Symbol table
-| Name | Accepted Symbols |
+<!-- | Name | Accepted Symbols |
 |---|---|
 | And | & |
 | Or | \| |
-| Implies | -> |
+| Implies | -> | -->
 
 #### Rules

@@ -20,7 +20,7 @@ import Control.Lens
 import TextShow ( TextShow(showt) )
 import Data.Text (Text, pack, intercalate, splitOn)
 import qualified Data.Text (length)
-import Data.List (sort, groupBy)
+import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeExtension, takeFileName, takeBaseName)
@@ -161,7 +161,7 @@ buildUI _wenv model = widgetTree where
         box_ [expandContent] (hstack [
             bold (span "File Explorer"),
             filler,
-            fastTooltip "Create new proof" $ iconButton remixFileAddLine OpenCreateProofPopup
+            fastTooltip "Create new proof" $ iconButton remixFileAddLine CreateEmptyProof
               `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
               `styleHover` [bgColor hoverColor],
             fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
@@ -169,18 +169,18 @@ buildUI _wenv model = widgetTree where
               `styleHover` [bgColor hoverColor],
             fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
               `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-              `styleHover` [bgColor hoverColor],
+              `styleHover` [bgColor hoverColor]
 
-            let cep = (CreateEmptyProof $ model ^. newFileName) in
-              popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
-                h2 "Create proof",
-                spacer,
-                span "Enter the name of your proof",
-                spacer,
-                firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
-                spacer,
-                button "+ Create proof" cep
-              ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
+            -- let cep = (CreateEmptyProof $ model ^. newFileName) in
+            --   popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
+            --     h2 "Create proof",
+            --     spacer,
+            --     span "Enter the name of your proof",
+            --     spacer,
+            --     firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
+            --     spacer,
+            --     button "+ Create proof" cep
+            --   ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
           ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
         vscroll $ fileTreeUI parts 1
@@ -232,7 +232,7 @@ buildUI _wenv model = widgetTree where
         | otherwise = Nothing
 
   editWindow = vstack [
-      fileNavBar (model ^. openFiles),
+      fileNavBar (model ^. preferences . openFiles),
       proofWindow (model ^. currentFile)
     ]
 
@@ -250,14 +250,15 @@ buildUI _wenv model = widgetTree where
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
-            displayName = pack $ takeFileName filePath --pack filePath
+            displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
-            file = getProofFileByPath (model ^. tmpLoadedFiles) filePath
+            file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
             isCurrent = (model ^. currentFile) == Just filePath
+            isTemp = "/_tmp/" `isInfixOf` filePath
 
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
-    Nothing -> span "Filepath not loaded"
+    Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> hstack [
       vstack [
           h3 "App scale",
@@ -291,6 +292,8 @@ buildUI _wenv model = widgetTree where
         ] `styleBasic` [maxWidth 1024]
       ] `styleBasic` [padding 30]
       where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
+
+    -- Proof files on disk
     Just file@(ProofFile {}) -> case parsedSequent of
       Nothing -> vstack [
           vstack [
@@ -330,12 +333,57 @@ buildUI _wenv model = widgetTree where
           premises = map replaceSpecialSymbols (_premises parsedSequent)
       where
         parsedSequent = _parsedSequent file
+
+    -- Temporary proof files
+    Just file@(TemporaryProofFile {}) -> case parsedSequent of
+      Nothing -> vstack [
+          vstack [
+            h1 $ pack $ _path file,
+            spacer
+          ] `styleBasic` [padding 10, borderB 1 dividerColor],
+          vscroll_ [wheelRate 50] (vstack [
+            paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
+            spacer,
+            paragraph "File preview:",
+            spacer,
+            symbolSpan_ (_content file) [multiline]
+          ]) `styleBasic` [padding 10]
+        ]
+      Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
+          vstack [
+            h1 heading,
+            spacer,
+            subheading
+          ] `styleBasic` [padding 10, borderB 1 dividerColor],
+          scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
+          hstack [
+            proofStatusLabel,
+            filler,
+            button "Save proof" (SaveFile file) `styleBasic` [textSize u],
+            spacer,
+            button "Check proof" (CheckProof file) `styleBasic` [textSize u]
+          ] `styleBasic` [padding 10, borderT 1 dividerColor]
+        ]
+        where
+          heading = "[Untitled proof]"
+          subheading
+            | null premises && conclusion == "" = span "Empty proof"
+            | otherwise = symbolSpan prettySequent
+          prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
+          conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
+          premises = map replaceSpecialSymbols (_premises parsedSequent)
+      where
+        parsedSequent = _parsedSequent file
+
+    -- Markdown
     Just (MarkdownFile _p content) -> vscroll_ [wheelRate 50] (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+
+    -- Other files
     Just (OtherFile p content) -> vscroll_ [wheelRate 50] $ vstack_ [childSpacing] [
         label $ pack p <> ": This file type is not supported",
         paragraph content
       ] `styleBasic` [padding u]
-    where file = getProofFileByPath (model ^. tmpLoadedFiles) fileName
+    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) fileName
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
@@ -436,7 +484,7 @@ buildUI _wenv model = widgetTree where
                   ("Enter", NextFocus 1, True)
                 ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                   `nodeKey` (showt index <> ".statement"))
-                    `nodeKey` (showt index <> ".statement.keystroke"), 
+                    `nodeKey` (showt index <> ".statement.keystroke"),
 
                 spacer,
 
@@ -494,15 +542,15 @@ buildUI _wenv model = widgetTree where
 
                 fastTooltip "Convert line to subproof" $
                   button "→☐" (SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-                
+
                 widgetIf isSubProofSingleton $
                   fastTooltip "Undo subproof" $
                     button "☒" (SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-                
+
                 widgetIf (isLastLine && nextIndexExists) $
                   fastTooltip "Close subproof" $
                     button "⏎" (InsertLineAfter pathToParentSubProof) `styleBasic` [textSize u]
-                
+
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 300]
 
