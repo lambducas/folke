@@ -55,21 +55,28 @@ check seq_t = do
     -return: The type of the proof
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) =
-    -- Check if the conclusion is empty
-    case conc of
-        Abs.FormNil -> Error [] (TypeError "Conclusion is empty.")
-        _ -> case checkForms env prems of
-            Error warns err -> Error warns err
-            Ok warns1 prems_t -> case checkForm env conc of
-                Error warns err -> Error (warns ++ warns1) err
-                Ok warns2 conc_t -> case checkProof env proof of
-                    Error warns err -> Error (warns ++ warns1 ++ warns2) err
-                    Ok warns3 proof_t -> do
-                        let seq_t = Proof [] prems_t conc_t -- TODO special check for variables?
-                        if proof_t == seq_t
-                            then Ok (warns1 ++ warns2 ++ warns3) seq_t
-                            else Error (warns1 ++ warns2 ++ warns3) (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+checkSequent env (Abs.Seq _ Abs.FormNil (Abs.Proof _)) = Error [] (TypeError "Conclusion is empty.")
+checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkPrems env prems of
+    Error warns err -> Error warns err
+    Ok warns1 prems_t -> case checkForm env conc of
+        Error warns err -> Error (warns ++ warns1) err
+        Ok warns2 conc_t -> case checkProof env proof of
+            Error warns err -> Error (warns ++ warns1 ++ warns2) err
+            Ok warns3 proof_t -> do
+                let seq_t = Proof [] prems_t conc_t -- TODO special check for variables?
+                if proof_t == seq_t
+                    then Ok (warns1 ++ warns2 ++ warns3) seq_t
+                    else Error (warns1 ++ warns2 ++ warns3) (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+
+checkPrems :: Env -> [Abs.Form] -> Result [Formula]
+checkPrems _ []           = Ok [] []
+checkPrems _ [Abs.FormNil] = Ok [] []
+checkPrems env (form:forms) = case checkForm env form of
+    Error warns err -> Error warns err
+    Ok warns1 form_t      -> case checkPrems env forms of
+        Error warns err -> Error (warns++warns1) err
+        Ok warns2 forms_t     -> Ok (warns1++warns2) (form_t : forms_t)
+
 {-
     Typechecks a given proof
     -params:
@@ -166,6 +173,7 @@ checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of
 checkArg env (Abs.ArgTerm term) = case checkTerm env term of
     Error warns err -> Error warns err
     Ok warns term_t -> Ok warns (env, ArgTerm term_t)
+checkArg env (Abs.ArgForm t f) = Error [] (UnknownError "Not yet implemented.")
 {-
     Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
     -params:
