@@ -8,7 +8,7 @@ S->some x (P(x) & !Q(x)), all x (P(x)->Q(x))|- !S {
             5: var x_0;
             6: assume P(x_0)&!Q(x_0);
             7: AndEL[6] P(x_0);
-            8: AndEL[6] !Q(x_0);
+            8: AndER[6] !Q(x_0);
             9: AllE[2, x_0] P(x_0)&Q(x_0);
             10: ImplE[9,7] Q(x_0);
             11: NotE[8,10] bot;

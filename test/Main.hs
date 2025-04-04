@@ -5,13 +5,14 @@ import System.Directory
 
 import Backend.TypeChecker
 import Backend.Types
+import Backend.Environment
 
 import Logic.Par (pSequent, myLexer)
 
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error _ _ err -> assertBool (show err) False
+            Error _ env err -> assertBool (showPos env ++ show err) False
             Ok _ _ -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test

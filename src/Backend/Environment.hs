@@ -12,7 +12,8 @@ module Backend.Environment (
     addConst,
     addVar,
     getConsts,
-    getVars
+    getVars,
+    showPos
 ) where
 
 import qualified Data.Map as Map
@@ -65,35 +66,6 @@ newEnv = Env {
 
         ("ImplI", ruleImplIntro),
         ("IfI", ruleImplIntro),
-        ("->I", ruleImplIntro),
-        ("→I", ruleImplIntro),
-
-        ("ImplE", ruleImplEilm),
-        ("IfE", ruleImplEilm),
-        ("->E", ruleImplEilm),
-        ("→E", ruleImplEilm),
-
-        ("ImplI", ruleImplIntro),
-        ("IfI", ruleImplIntro),
-        ("->I", ruleImplIntro),
-        ("→I", ruleImplIntro),
-
-        ("ImplE", ruleImplEilm),
-        ("IfE", ruleImplEilm),
-        ("->E", ruleImplEilm),
-        ("→E", ruleImplEilm),
-
-        ("ImplI", ruleImplIntro),
-        ("IfI", ruleImplIntro),
-        ("->I", ruleImplIntro),
-        ("→I", ruleImplIntro),
-
-        ("ImplE", ruleImplEilm),
-        ("IfE", ruleImplEilm),
-        ("->E", ruleImplEilm),
-        ("→E", ruleImplEilm),
-
-        ("ImplI", ruleImplIntro),
         ("->I", ruleImplIntro),
         ("→I", ruleImplIntro),
 
@@ -156,6 +128,12 @@ newEnv = Env {
     pos  = [],
     rule = ""
 }
+
+showPos:: Env -> String
+showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
+    where p = "[" ++ List.intercalate " " (reverse [show x| x <-  pos env]) ++ "]"
+          r = rule env
+
 
 -- Pushes a new context to the environment (used when entering a subproof or box).
 -- This resets the list of premises for the new scope.
@@ -224,7 +202,7 @@ pushPos env r = env {pos = r ++ pos env}
 -- If the rule application succeeds, the resulting formula is returned.
 -- Otherwise, an error is returned.
 applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
-applyRule env name args res =
+applyRule e name args res =
     case Map.lookup name (rules env) of
         Nothing -> Error [] env (RuleNotFoundError name)
         Just rule_f ->
@@ -233,7 +211,7 @@ applyRule env name args res =
                 Ok warns res_t ->
                     if res_t == res then Ok warns res_t
                     else Error warns env (RuleConcError ("Wrong conclusion when using rule, expected " ++ show res_t ++ ", got " ++ show res))
-
+    where env = e{rule=name}
 -- All predefined rules.
 -- Rules are functions that take:
 --   - A list of arguments (e.g., proofs, formulas, or terms).

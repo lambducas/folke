@@ -98,7 +98,6 @@ checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns env err -> Error warns env err
     Ok warns1 refs -> case checkStep (pushPos env refs) step of 
         Error warns env err -> Error (warns++warns1) env err
-        Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) env (UnknownError "Check step could not return an term.")
         Ok warns2 (new_env, step_t) -> case checkProof (addRefs new_env refs step_t) elems of
             Error warns env err -> Error (warns++warns1++warns2) env err
             Ok warns3 seq_t -> Ok (warns1++warns2++warns3) seq_t
