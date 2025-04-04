@@ -89,8 +89,8 @@ instance Show Formula where
     show (Or a b) = show a ++ "|" ++ show b
     show (Impl a b) = show a ++ "->" ++ show b
     show (Eq a b) = show a ++ "=" ++ show b
-    show (All x a) = "All " ++ show x ++  show a
-    show (Some x a) = "Some " ++ show x ++  show a
+    show (All x a) = "All " ++ show x ++ " " ++  show a
+    show (Some x a) = "Some " ++ show x ++ " " ++  show a
     show (Not a) = "!" ++ show a
     show Bot = "bot"
     show Nil = "Nil"

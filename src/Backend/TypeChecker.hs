@@ -10,7 +10,8 @@ import Logic.Par (pSequent, myLexer)
 import Shared.Messages
 import Backend.Environment
 import Backend.Types 
-import Data.Text.Internal.Fusion (Stream)
+import qualified Data.Map as Map
+import qualified Data.List as List
 {-
     Runs the parser and then the typechecker on a given string
     -params:
@@ -98,7 +99,7 @@ checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns env err -> Error warns env err
     Ok warns1 refs -> case checkStep (pushPos env refs) step of 
         Error warns env err -> Error (warns++warns1) env err
-        Ok warns2 (new_env, step_t) -> case checkProof (addRefs new_env refs step_t) elems of
+        Ok warns2 (new_env, step_t) -> case checkProof (popPos (addRefs new_env refs step_t) (toInteger $ List.length refs)) elems of
             Error warns env err -> Error (warns++warns1++warns2) env err
             Ok warns3 seq_t -> Ok (warns1++warns2++warns3) seq_t
 
