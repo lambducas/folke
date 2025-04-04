@@ -21,9 +21,7 @@ data ProofElem = ProofElem [Label] Step
 
 data Step
     = StepPrem Form
-    | StepDecConst Ident
-    | StepDecVar Ident
-    | StepDecFun Ident [Ident]
+    | StepFree Ident
     | StepAssume Form
     | StepProof Proof
     | StepForm Ident [Arg] Form

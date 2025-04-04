@@ -93,7 +93,7 @@ checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
         Error warns env err -> Error (warns++warns1) env err
         Ok warns2 (_, ArgProof _) -> Error (warns1++warns2) env (TypeError "Last step in proof was another proof.")
         Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) env (TypeError "Check step could not return an term.")
-        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof [] (getPrems new_env) step_t)
+        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getFrees new_env) (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns env err -> Error warns env err
     Ok warns1 refs -> case checkStep (pushPos env refs) step of 
@@ -123,18 +123,8 @@ checkStep env step = case step of
         case checkForm env form of
             Error warns env err -> Error warns env err
             Ok warns form_t -> Ok warns (addPrem env form_t, ArgForm form_t)
-    Abs.StepDecConst ident -> do
-        let c = Term (identToString ident) []
-        case addConst env c of
-            Error warns env err -> Error warns env err
-            Ok warns new_env -> Ok warns (new_env, ArgTerm c)
-    Abs.StepDecVar ident -> do
-        let c = Term (identToString ident) []
-        case addVar env c of
-            Error warns env err -> Error warns env err
-            Ok warns new_env -> Ok warns (new_env, ArgTerm c)
-    Abs.StepDecFun ident idents -> 
-        Error [] env (UnknownError "Functions are currently not supported.")
+    Abs.StepFree ident -> Ok [] (addFree env t, ArgTerm t)
+        where t = Term (identToString ident) []
     Abs.StepAssume form -> 
         case checkForm env form of
             Error warns env err -> Error warns env err
@@ -213,7 +203,7 @@ checkForm env f = case f of
         Ok warns term_t -> Ok warns (All (Term (identToString ident) []) term_t)
     Abs.FormSome ident form -> case checkForm env form of
         Error warns env err -> Error warns env err
-        Ok warns term_t -> Ok warns (All (Term (identToString ident) []) term_t)
+        Ok warns term_t -> Ok warns (Some (Term (identToString ident) []) term_t)
     Abs.FormNot form        -> case checkForm env form of
         Error warns env err -> Error warns env err
         Ok warns form_t -> Ok warns (Not form_t)
@@ -245,31 +235,7 @@ checkPred env (Abs.Pred ident (Abs.Params terms)) = do
     -- Check all terms in the predicate
     case checkTerms env terms of
         Error warns env err -> Error warns env err
-        Ok warns1 terms_t -> 
-            -- Add missing variables to the environment
-            case addMissingVars env terms_t of
-                Error warns env err -> Error (warns++warns1) env err
-                Ok warns2 updatedEnv -> Ok (warns1++warns2) (updatedEnv, Predicate (identToString ident) terms_t)
-
--- Helper function to add missing variables to the environment
-addMissingVars :: Env -> [Term] -> Result Env
-addMissingVars env terms = 
-    let envVars = map termToString (getVars env)
-        termVars = concatMap extractVars terms  
-        missingVars = filter (`notElem` envVars) termVars
-        updatedEnv = foldl addVarToEnv env missingVars  
-    in Ok [] updatedEnv
-
--- Helper function to add a variable to the environment
-addVarToEnv :: Env -> String -> Env
-addVarToEnv env var = env { vars = Term var [] : vars env }
-
--- Helper function to extract variables from a term
-extractVars :: Term -> [String]
-extractVars (Term name subterms) = name : concatMap extractVars subterms
-
-termToString :: Term -> String
-termToString (Term name _) = name
+        Ok warns terms_t -> Ok warns (env, Predicate (identToString ident) terms_t)
 
 {-
     Typechecks a term

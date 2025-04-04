@@ -18,10 +18,9 @@ type Terms  = [Term]
 
 data Env = Env {
       prems  :: [Formula]
+    , frees  :: Terms
     , refs   :: Map.Map Ref (Integer, Arg)
     , rules  :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
-    , consts :: Terms
-    , vars   :: Terms
     , pos    :: [Ref]
     , rule   :: String
 }
@@ -102,7 +101,7 @@ instance Eq Formula where
     Impl a1 a2 == Impl b1 b2 = a1 == b1 && a2 == b2
     Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2
     All x a == All y b = x == y && a == b 
-    Some x a == All y b = x == y && a == b 
+    Some x a == Some y b = x == y && a == b 
     Not a == Not b = a == b
     Bot == Bot = True
     Nil == Nil = True

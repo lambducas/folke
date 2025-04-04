@@ -228,9 +228,7 @@ handleEvent wenv node model evt = case evt of
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
-      convertStep (Abs.StepDecConst _) = error "StepDecConst not implemented"
-      convertStep (Abs.StepDecVar _) = error "StepDecVar not implemented"
-      convertStep (Abs.StepDecFun _ _) = error "StepDecFun not implemented"
+      convertStep (Abs.StepFree _) = error "StepFree not implemented"
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
