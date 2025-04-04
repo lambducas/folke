@@ -11,14 +11,14 @@ import Logic.Par (pSequent, myLexer)
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error _ err -> assertBool (show err) False
+            Error _ _ err -> assertBool (show err) False
             Ok _ _ -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test
 testProofBadType proof = TestCase(do
         case checkString proof of
-            Error _ err@(SyntaxError _) ->  assertBool (show err) True
-            Error _ _ -> assertBool "Dummy msg" True
+            Error _ _ err@(SyntaxError _) ->  assertBool (show err) True
+            Error _ _ _ -> assertBool "Dummy msg" True
             Ok _ _ -> assertBool "Did not fail as expected" False)
 
 testProofs :: (String -> Test) -> [String] -> [String]-> [Test]

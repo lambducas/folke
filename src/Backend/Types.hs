@@ -8,7 +8,7 @@ module Backend.Types (
     Term(Term),
     Result(Ok, Error),
     Warning,
-    Error(..),
+    ErrorKind(..),
     Env(..),
 ) where
 
@@ -27,27 +27,27 @@ data Env = Env {
 }
 
 -- Represents the result of an operation, which can either succeed (Ok) or fail (Error).
-data Result t = Ok [Warning] t | Error [Warning] Error
+data Result t = Ok [Warning] t | Error [Warning] Env ErrorKind 
 
 data Warning = Warning Env String
 
 -- Represents the kinds of errors that can occur.
-data Error = 
+data ErrorKind = 
     TypeError String | 
     SyntaxError String | 
-    RuleNotFoundError Env String |
-    RuleConcError Env String |
-    RuleArgError Env Integer String |
-    RuleArgCountError Env Integer Integer |
+    RuleNotFoundError String |
+    RuleConcError String |
+    RuleArgError Integer String |
+    RuleArgCountError Integer Integer |
     UnknownError String
 
-instance Show Error where 
+instance Show ErrorKind where 
     show (TypeError msg) = "TypeError: "++msg 
     show (SyntaxError msg) = "SyntaxError: "++msg
-    show (RuleNotFoundError _ name) = "RuleNotFoundError: No rule named " ++ name ++ " exists."
-    show (RuleConcError _ msg) = "RuleConcError: Error in conclusion: " ++ msg 
-    show (RuleArgError _ arg msg) = "RuleArgError: Error in argument "++ show arg ++ " : "++ msg
-    show (RuleArgCountError _ arg_c arg_e ) = "RuleArgError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments expected " ++ show arg_e ++ " not " ++ show arg_c ++ "." 
+    show (RuleNotFoundError name) = "RuleNotFoundError: No rule named " ++ name ++ " exists."
+    show (RuleConcError msg) = "RuleConcError: Error in conclusion: " ++ msg 
+    show (RuleArgError arg msg) = "RuleArgError: Error in argument "++ show arg ++ " : "++ msg
+    show (RuleArgCountError arg_c arg_e ) = "RuleArgError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments expected " ++ show arg_e ++ " not " ++ show arg_c ++ "." 
     show (UnknownError msg) = "UnknownError: "++msg
 
 -- Represents a reference in a proof, either a range or a single line.
