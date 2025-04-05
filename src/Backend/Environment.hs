@@ -12,7 +12,10 @@ module Backend.Environment (
     pushPos,
     popPos,
     applyRule,
-    showPos
+    showPos,
+    replaceInFormula,
+    replaceInTerms,
+    replaceInTerm
 ) where
 
 import qualified Data.Map as Map
@@ -346,7 +349,7 @@ ruleSomeE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length
 ruleSomeI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeI env [(_, ArgForm a),  (_, ArgTerm t@(Term _ []))] r@(Some x b) = case replaceInFormula env x t b of
     Error warns env err -> Error warns env err --TODO specify argument error?
-    Ok warns c -> if a == c then Ok warns (Some x a) else Error [] env (RuleConcError "The given formula did not match the conclusion.")
+    Ok warns c -> if a == c then Ok warns (Some x b) else Error [] env (RuleConcError (show b ++ "[" ++ show x ++ "/" ++show t ++ "] resulted in " ++ show c ++ " and not " ++ show a ++" as expected." ))
 ruleSomeI env [(_, ArgForm _),  (_, ArgTerm (Term _ []))] _ = Error [] env (RuleConcError "The conclusion must be an exist formula.")
 ruleSomeI env [(_, ArgForm _), (j, _)] _ = Error [] env (RuleArgError j  "Must be an free variable.")
 ruleSomeI env [(i, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be an formula.")

@@ -29,7 +29,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Map
 
 import Backend.Environment (newEnv)
-import Backend.Types (Env(Env))
+import Backend.Types
 import Frontend.Preferences (preferencePath)
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
