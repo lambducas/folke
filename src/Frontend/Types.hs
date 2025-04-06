@@ -67,7 +67,7 @@ data Preferences = Preferences {
   _selectNormalFont :: [String],
   _normalFont :: String,
   _logicFont :: String,
-  _appScale :: Double,
+  _fontSize :: Double,
 
   _workingDir :: Maybe FilePath,
   _openFiles :: [FilePath],

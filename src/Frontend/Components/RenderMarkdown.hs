@@ -29,20 +29,20 @@ renderMarkdown model markdown = widgetTree
 
     convert (Node _ DOCUMENT children) = vstack_ [childSpacing] (map convert children)
     convert (Node _ (HEADING n) [Node _ (TEXT t) _])
-      | n == 1 = box_ [alignLeft, expandContent] (h1 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
-      | n == 2 = box_ [alignLeft, expandContent] (h2 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
-      | n == 3 = box_ [alignLeft, expandContent] (h3 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
-      | n == 4 = box_ [alignLeft, expandContent] (h4 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
-      | n == 5 = box_ [alignLeft, expandContent] (h5 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
-      | otherwise = box_ [alignLeft, expandContent] (h6 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u)]) `styleBasic` [paddingV (0.25*u)]
+      | n == 1 = box_ [alignLeft, expandContent] (h1 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
+      | n == 2 = box_ [alignLeft, expandContent] (h2 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
+      | n == 3 = box_ [alignLeft, expandContent] (h3 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
+      | n == 4 = box_ [alignLeft, expandContent] (h4 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
+      | n == 5 = box_ [alignLeft, expandContent] (h5 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
+      | otherwise = box_ [alignLeft, expandContent] (h6 model t `styleBasic` [borderB 1 dividerColor, paddingB (0.5 * u model)]) `styleBasic` [paddingV (0.25*u model)]
       -- | otherwise = error "Invalid heading level"
 
     convert (Node _ PARAGRAPH children) = hstack (map convert children)
     convert (Node _ STRONG [Node _ (TEXT t) _]) = bold model $ paragraph model t
     convert (Node _ EMPH [Node _ (TEXT t) _]) = paragraph model t
     convert (Node _ (TEXT t) _) = paragraph model t
-    convert (Node _ (CODE t) _) = symbolSpan model t `styleBasic` [bgColor hoverColor, paddingV (0.25*u), paddingH (0.5*u), radius 8]
-    convert (Node _ (LIST attr) children) = vstack_ [childSpacing_ (0.5*u)] (zipWith (\f i -> hstack [span model (getBullet i), convert f]) children [startNumber..]) `styleBasic` [paddingL (2*u)]
+    convert (Node _ (CODE t) _) = symbolSpan model t `styleBasic` [bgColor hoverColor, paddingV (0.25 * u model), paddingH (0.5 * u model), radius 8]
+    convert (Node _ (LIST attr) children) = vstack_ [childSpacing_ (0.5 * u model)] (zipWith (\f i -> hstack [span model (getBullet i), convert f]) children [startNumber..]) `styleBasic` [paddingL (2 * u model)]
       where
         getBullet i
           | lt == BULLET_LIST = "• "
@@ -53,8 +53,8 @@ renderMarkdown model markdown = widgetTree
     convert (Node _ ITEM children) = vstack (map convert children)
     convert (Node _ (LINK url _) [Node _ (TEXT t) _]) = externalLink t url
     convert (Node _ (IMAGE url _) _) = image url
-    convert (Node _ BLOCK_QUOTE children) = vstack_ [childSpacing] (map convert children) `styleBasic` [paddingH u, paddingV (0.5*u), bgColor hoverColor, border 1 dividerColor, radius 8]
-    convert (Node _ (CODE_BLOCK _language content) _) = paragraph model content `styleBasic` [bgColor hoverColor, radius 8, padding u]
+    convert (Node _ BLOCK_QUOTE children) = vstack_ [childSpacing] (map convert children) `styleBasic` [paddingH (u model), paddingV (0.5*u model), bgColor hoverColor, border 1 dividerColor, radius 8]
+    convert (Node _ (CODE_BLOCK _language content) _) = paragraph model content `styleBasic` [bgColor hoverColor, radius 8, padding (u model)]
 
     -- TODO
     convert (Node _ (CUSTOM_BLOCK _ _) _) = label ""

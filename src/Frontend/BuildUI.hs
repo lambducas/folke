@@ -84,6 +84,7 @@ buildUI _wenv model = widgetTree where
   bold = Frontend.Components.Labels.bold model
   normalStyle = Frontend.Components.Labels.normalStyle model
   symbolStyle = Frontend.Components.Labels.symbolStyle model
+  u = model ^. preferences . fontSize
 
   button a b = Monomer.button a b `styleBasic` [textSize u]
   fastTooltip tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize u]
@@ -231,6 +232,7 @@ buildUI _wenv model = widgetTree where
         | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
         | otherwise = Nothing
 
+  editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
       fileNavBar (model ^. preferences . openFiles),
       proofWindow (model ^. currentFile)
@@ -256,16 +258,14 @@ buildUI _wenv model = widgetTree where
             isCurrent = (model ^. currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
 
+  proofWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
   proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   proofWindow (Just fileName) = case file of
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> hstack [
       vstack [
           h3 "App scale",
-          hstack_ [childSpacing] [
-            symbolSpan (showDecimals 2 (model ^. preferences . appScale)),
-            hslider_ (preferences . appScale) 0.25 2 [thumbVisible]
-          ],
+          hslider_ (preferences . fontSize) 8 32 [thumbVisible],
           spacer, spacer,
 
           h3 "Choose font:",
@@ -282,8 +282,8 @@ buildUI _wenv model = widgetTree where
           vstack $ map illustThickness (model ^. preferences . selectNormalFont),
           spacer, spacer,
 
-          h3 "Set symbolic font thickness:",
-          paragraph "The symbolic font is the font used in logic proofs",
+          h3 "Set symbolic font thickness:" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
+          paragraph "The symbolic font is the font used in logic proofs" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
           textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
           spacer, spacer,
 

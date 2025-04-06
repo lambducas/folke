@@ -20,7 +20,7 @@ main = do
     _selectNormalFont = ["Regular", "Medium", "Bold"],
     _normalFont = "Regular",
     _logicFont = "Symbol_Regular",
-    _appScale = 1,
+    _fontSize = 16,
 
     _workingDir = Nothing, --Just "./myProofs",
     _openFiles = [],
@@ -38,7 +38,7 @@ main = do
 
   where
     config prefs = [
-      appScaleFactor (_appScale prefs),
+      --appScaleFactor (_appScale prefs),
 
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
