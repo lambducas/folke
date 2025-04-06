@@ -9,7 +9,7 @@ module Backend.Types (
     Result(Ok, Error),
     Warning,
     ErrorKind(..),
-    Env(..),
+    Env(..)
 ) where
 
 import Data.Map as Map ( Map )
@@ -23,6 +23,7 @@ data Env = Env {
     , rules  :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
     , pos    :: [Ref]
     , rule   :: String
+    , bound  :: Map.Map String ()
 }
 
 -- Represents the result of an operation, which can either succeed (Ok) or fail (Error).

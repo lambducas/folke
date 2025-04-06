@@ -64,21 +64,21 @@ testReplace = do
             TestLabel "Test Predicate 1" (testReplaceInFormula (Term "x" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "t" [], Term "y" []]))),
             TestLabel "Test Predicate 2" (testReplaceInFormula (Term "y" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "x" [], Term "t" []]))),
 
-            TestLabel "Test For All 1" (testReplaceInFormula 
+            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace becasue x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
-                (All (Term "t" []) (Pred (Predicate "P" [Term "t" []])))),
+                (All (Term "x" []) (Pred (Predicate "P" [Term "x" []])))),
             TestLabel "Test For All 2" (testReplaceInFormula 
                 (Term "y" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "y" []]))) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "t" []])))),
-            TestLabel "Test For All 3" (testReplaceInFormula 
+            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace becasue x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
-                (All (Term "t" []) (Pred (Predicate "P" [Term "t" []]))))
+                (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))))
             ]
     TestList [ TestLabel "In Term" inTermTests, TestLabel "In Terms" inTermsTests, TestLabel "In Formula" inFormulaTests]
 main :: IO ()

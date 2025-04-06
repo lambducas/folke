@@ -94,6 +94,7 @@ checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
         Error warns env err -> Error (warns++warns1) env err
         Ok warns2 (_, ArgProof _) -> Error (warns1++warns2) env (TypeError "Last step in proof was another proof.")
         Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) env (TypeError "Check step could not return an term.")
+        Ok warns2 (_, ArgFormWith _ _) -> Error (warns1++warns2) env (TypeError "Check step could not return an form with.")
         Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getFrees new_env) (getPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns env err -> Error warns env err
@@ -124,7 +125,9 @@ checkStep env step = case step of
         case checkForm env form of
             Error warns env err -> Error warns env err
             Ok warns form_t -> Ok warns (addPrem env form_t, ArgForm form_t)
-    Abs.StepFree ident -> Ok [] (addFree env t, ArgTerm t)
+    Abs.StepFree ident -> case addFree env t of
+        Error warns env err -> Error warns env err
+        Ok warns new_env -> Ok warns (new_env, ArgTerm t)
         where t = Term (identToString ident) []
     Abs.StepAssume form -> 
         case checkForm env form of
@@ -169,20 +172,6 @@ checkArg env (Abs.ArgForm term form) =case checkTerm env term of
     Ok warns1 term_t -> case checkForm env form of 
         Error warns env err -> Error (warns++warns1) env err
         Ok warns2 form_t -> Ok (warns1++warns2) (env, ArgFormWith term_t form_t)
-{-
-    Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
-    -params:
-        - Environment
-        - Formulas to check 
-    -return: List with the types of the formulas
--}
-checkForms :: Env -> [Abs.Form] -> Result [Formula]
-checkForms _ []           = Ok [] []
-checkForms env (form:forms) = case checkForm env form of
-    Error warns env err -> Error warns env err
-    Ok warns1 form_t      -> case checkForms env forms of
-        Error warns env err -> Error (warns++warns1) env err
-        Ok warns2 forms_t     -> Ok (warns1++warns2) (form_t : forms_t)
         
 {-
     Typechecks a formula
@@ -203,12 +192,18 @@ checkForm env f = case f of
     Abs.FormPred pred -> case checkPred env pred of
         Error warns env err -> Error warns env err
         Ok warns (_, pred')      -> Ok warns (Pred pred')
-    Abs.FormAll ident form -> case checkForm env form of
+    Abs.FormAll ident form -> case bindVar env x of
         Error warns env err -> Error warns env err
-        Ok warns term_t -> Ok warns (All (Term (identToString ident) []) term_t)
-    Abs.FormSome ident form -> case checkForm env form of
+        Ok warns1 new_env -> case checkForm new_env form of
+            Error warns env err -> Error (warns++warns1) env err
+            Ok warns2 term_t -> Ok (warns1++warns2) (All x term_t)
+        where x = Term (identToString ident) []
+    Abs.FormSome ident form -> case bindVar env x of
         Error warns env err -> Error warns env err
-        Ok warns term_t -> Ok warns (Some (Term (identToString ident) []) term_t)
+        Ok warns1 new_env -> case checkForm new_env form of
+            Error warns env err -> Error (warns++warns1) env err
+            Ok warns2 term_t -> Ok (warns1++warns2) (Some x term_t)
+        where x = Term (identToString ident) []
     Abs.FormNot form        -> case checkForm env form of
         Error warns env err -> Error warns env err
         Ok warns form_t -> Ok warns (Not form_t)
