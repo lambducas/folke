@@ -268,12 +268,12 @@ handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent text) =
     let result = checkString text
     in case result of
-        Error _ _ err -> StringSequentChecked (Left (show err))
+        Error _ env err -> StringSequentChecked (Left ("[DEBUG POS NEED TO FIX!!!]"++ showPos env ++ show err))
         Ok _ _ -> StringSequentChecked (Right ())
 handleFrontendMessage (CheckSequent sequent) =
     let result = check sequent
     in case result of
-        Error _ _ err -> StringSequentChecked (Left (show err))
+        Error _ env err -> StringSequentChecked (Left ("[DEBUG POS NEED TO FIX!!!]"++showPos env ++ show err))
         Ok _ _ -> SequentChecked (Right ())
 handleFrontendMessage (CheckStep _) =
     StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
