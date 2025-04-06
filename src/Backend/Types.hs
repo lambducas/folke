@@ -1,7 +1,7 @@
 {-# LANGUAGE InstanceSigs #-}
 module Backend.Types (
     Ref(RefRange, RefLine),
-    Arg(ArgProof, ArgForm, ArgTerm),
+    Arg(..),
     Proof(Proof),
     Formula(Pred, And, Or, Impl , Eq, All, Some, Not, Bot, Nil),
     Predicate(Predicate),
@@ -56,11 +56,12 @@ instance Show Ref where
     show (RefLine i) = show i
 
 -- Represents an argument in a proof, which can be a proof, formula, or term.
-data Arg = ArgProof Proof | ArgForm Formula | ArgTerm Term
+data Arg = ArgProof Proof | ArgForm Formula | ArgTerm Term | ArgFormWith Term Formula
 instance Show Arg where 
     show (ArgProof p) = show p 
     show (ArgForm f) = show f 
     show (ArgTerm t) = show t
+    show (ArgFormWith x phi) = "phi("++show x++"):=" ++show phi 
 
 -- Represents a proof with premises and a conclusion.
 data Proof = Proof [Term] [Formula] Formula

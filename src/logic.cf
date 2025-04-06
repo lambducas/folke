@@ -17,7 +17,7 @@ StepNil.        Step ::= ";";
 ArgRange. Arg   ::= Integer "-" Integer;
 ArgLine.  Arg   ::= Integer;
 ArgTerm.  Arg   ::= Term;
-ArgForm.  Arg   ::= Term "::=" Form;
+ArgForm.  Arg   ::= Term ":=" Form;
 separator Arg   ",";
 
 FormPar.  Form5 ::= "(" Form ")";

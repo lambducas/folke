@@ -164,7 +164,11 @@ checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of
 checkArg env (Abs.ArgTerm term) = case checkTerm env term of
     Error warns env err -> Error warns env err
     Ok warns term_t -> Ok warns (env, ArgTerm term_t)
-checkArg env (Abs.ArgForm t f) = Error [] env (UnknownError "Not yet implemented.")
+checkArg env (Abs.ArgForm term form) =case checkTerm env term of
+    Error warns env err -> Error warns env err
+    Ok warns1 term_t -> case checkForm env form of 
+        Error warns env err -> Error (warns++warns1) env err
+        Ok warns2 form_t -> Ok (warns1++warns2) (env, ArgFormWith term_t form_t)
 {-
     Typechecks a list of formulas, helper function when we need to check several formuals at the same time.
     -params:

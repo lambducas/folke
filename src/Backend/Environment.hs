@@ -321,8 +321,16 @@ ruleEqI env [] _  = Error [] env (RuleConcError "The conclusion must be an eq st
 ruleEqI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 0 )
 
 ruleEqE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleEqE env _ _ = Error [] env (UnknownError "Unimplemented.")
---ruleEqE env forms _ = Error [] (RuleArgCountError env (toInteger $ List.length forms) 0 )
+ruleEqE env [(_, ArgForm (Eq t1 t2)), (j, ArgForm a), (_, ArgFormWith u phi)] _ = case replaceInFormula env u t1 phi of
+    Error warns env err -> Error warns env err
+    Ok warns1 b -> if a /= b then Error [] env (RuleArgError j ("Do not match "++show phi++"["++ show t1 ++"/"++ show u ++"].")) else 
+        case replaceInFormula env u t2 phi of
+            Error warns env err -> Error warns env err
+            Ok warns2 c -> Ok (warns1++warns2) c
+ruleEqE env [(_, ArgForm (Eq _ _)), (_, ArgForm _), (k, _)] _ = Error [] env (RuleArgError k  "Must be an formula.")
+ruleEqE env [(_, ArgForm (Eq _ _)), (j, _), (_, _)] _ = Error [] env (RuleArgError j  "Must be an formula.")
+ruleEqE env [(i, _), (_, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be an equality.")
+ruleEqE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 3 )
 
 ruleAllE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAllE env [(_, ArgForm (All x a)), (_, ArgTerm t@(Term _ []))] _ = replaceInFormula env x t a

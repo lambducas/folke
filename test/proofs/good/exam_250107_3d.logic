@@ -1,0 +1,33 @@
+some x (P(x) & Q(x)), some x (P(x) & all y (P(y)->x=y))|- all x(P(x)->Q(x)){
+    1: prem some x (P(x) & Q(x));
+    2: prem some x (P(x) & all y (P(y)->x=y));
+    3-22: {
+        3: free x_0;
+        4-21: {
+            4: assume P(x_0);
+            5-20: {
+                5: free x_1;
+                6: assume P(x_1) & Q(x_1);
+                7: AndEL[6] P(x_1);
+                8: AndER[6] Q(x_1);
+                9-19: {
+                    9:  free x_2;
+                    10: assume P(x_2) & all y (P(y)->x_2=y);
+                    11: AndER[10] all y (P(y)->x_2=y);
+                    12: AllE[11, x_0] P(x_0)->x_2=x_0;
+                    13: ImplE[12,4] x_2=x_0;
+                    14: AllE[11, x_1] P(x_1)->x_2=x_1;
+                    15: ImplE[14,7] x_2=x_1;
+                    16: EqI[] x_2=x_2;
+                    17: EqE[15,16, u:=u = x_2] x_1=x_2;
+                    18: EqE[13,17, u:=x_1=u] x_1=x_0;
+                    19: EqE[18,8, u:=Q(u)] Q(x_0);
+                }
+                20: SomeE[2, 9-19] Q(x_0);
+            }
+            21: SomeE[1, 5-20] Q(x_0);
+        }
+        22: ImplI[4-21] P(x_0)->Q(x_0) ;
+    }
+    23: AllI[3-22] all x (P(x)->Q(x));
+}
