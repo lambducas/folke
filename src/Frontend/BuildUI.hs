@@ -156,7 +156,7 @@ buildUI _wenv model = widgetTree where
           paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
           box (button "Open Folder" OpenSetWorkingDir)
         ] `styleBasic` [padding u]
-      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+      ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
 
     Just _ -> vstack [
         box_ [expandContent] (hstack [
@@ -185,7 +185,7 @@ buildUI _wenv model = widgetTree where
           ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
         vscroll $ fileTreeUI parts 1
-      ] `styleBasic` [ width 250, borderR 1 dividerColor ]
+      ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
       where
         parts = map (\f -> (splitOn "/" (pack f), f)) files
         files = sort (model ^. filesInDirectory)
@@ -266,6 +266,7 @@ buildUI _wenv model = widgetTree where
       vstack [
           h3 "App scale",
           hslider_ (preferences . fontSize) 8 32 [thumbVisible],
+          button "Reset scale" ResetFontSize,
           spacer, spacer,
 
           h3 "Choose font:",
@@ -282,9 +283,10 @@ buildUI _wenv model = widgetTree where
           vstack $ map illustThickness (model ^. preferences . selectNormalFont),
           spacer, spacer,
 
-          h3 "Set symbolic font thickness:" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
-          paragraph "The symbolic font is the font used in logic proofs" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
+          h3 "Set symbolic font thickness:",
+          paragraph "The symbolic font is the font used in logic proofs",
           textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
+          label "I think ⊢ I am" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
           spacer, spacer,
 
           h3 "Theme",
@@ -406,7 +408,7 @@ buildUI _wenv model = widgetTree where
         spacer,
         box_ [alignLeft] (
           symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
-            `styleBasic` [maxWidth 400]
+            `styleBasic` [maxWidth 600]
         )
           --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
       ],
@@ -605,4 +607,4 @@ buildUI _wenv model = widgetTree where
   ruleWindow = vscroll (vstack_ [childSpacing] [
       h2 "Rules",
       vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
-    ] `styleBasic` [padding u]) `styleBasic` [width 300]
+    ] `styleBasic` [padding u]) `styleBasic` [maxWidth 300]

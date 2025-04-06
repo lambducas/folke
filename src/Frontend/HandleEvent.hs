@@ -348,6 +348,7 @@ handleEvent wenv node model evt = case evt of
       switchTheme Dark = Light
 
   UpdateFont s -> [Model $ model & preferences . normalFont .~ head s]
+  ResetFontSize -> [Model $ model & preferences . fontSize .~ 16]
 
   ReadPreferences -> [ Producer readAndApplyPreferences ]
   ReadPreferences_ prefs -> [ Model $ model & preferences .~ prefs ]

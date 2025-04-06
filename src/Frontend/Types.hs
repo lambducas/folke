@@ -159,6 +159,7 @@ data AppEvent
   | ReadPreferences
   | ReadPreferences_ Preferences
   | SavePreferences
+  | ResetFontSize
   deriving (Eq, Show)
 
 makeLenses 'Preferences
