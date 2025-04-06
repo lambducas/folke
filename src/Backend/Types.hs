@@ -61,13 +61,13 @@ instance Show Arg where
     show (ArgProof p) = show p 
     show (ArgForm f) = show f 
     show (ArgTerm t) = show t
-    show (ArgFormWith x phi) = "phi("++show x++"):=" ++show phi 
+    show (ArgFormWith x phi) = "phi("++show x++")≡" ++show phi 
 
 -- Represents a proof with premises and a conclusion.
 data Proof = Proof [Term] [Formula] Formula
 instance Show Proof where
-    show (Proof [] premises conc) = show premises ++ "|-" ++ show conc
-    show (Proof terms premises conc) = show terms ++ show premises ++ "|-" ++ show conc
+    show (Proof [] premises conc) = show premises ++ "⊢" ++ show conc
+    show (Proof terms premises conc) = show terms ++ show premises ++ "⊢" ++ show conc
 instance Eq Proof where 
     (==) :: Proof -> Proof -> Bool
     Proof terms1 prems1 conc1 == Proof terms2 prems2 conc2 = terms1 == terms2 && prems1 == prems2 && conc1 == conc2
@@ -86,14 +86,14 @@ data Formula =
     Nil
 instance Show Formula where
     show (Pred a) = show a
-    show (And a b) = show a ++ "&" ++ show b
-    show (Or a b) = show a ++ "|" ++ show b
-    show (Impl a b) = show a ++ "->" ++ show b
+    show (And a b) = show a ++ "∧" ++ show b
+    show (Or a b) = show a ++ "∨" ++ show b
+    show (Impl a b) = show a ++ "→" ++ show b
     show (Eq a b) = show a ++ "=" ++ show b
-    show (All x a) = "All " ++ show x ++ " " ++  show a
-    show (Some x a) = "Some " ++ show x ++ " " ++  show a
-    show (Not a) = "!" ++ show a
-    show Bot = "bot"
+    show (All x a) = "∀" ++ show x ++ " " ++  show a
+    show (Some x a) = "∃" ++ show x ++ " " ++  show a
+    show (Not a) = "¬" ++ show a
+    show Bot = "⊥"
     show Nil = "Nil"
 instance Eq Formula where 
     Pred a == Pred b = a == b
