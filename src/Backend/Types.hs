@@ -61,7 +61,7 @@ instance Show Arg where
     show (ArgProof p) = show p 
     show (ArgForm f) = show f 
     show (ArgTerm t) = show t
-    show (ArgFormWith x phi) = "phi("++show x++")≡" ++show phi 
+    show (ArgFormWith x phi) = "φ("++show x++")≡" ++show phi 
 
 -- Represents a proof with premises and a conclusion.
 data Proof = Proof [Term] [Formula] Formula
