@@ -2,8 +2,6 @@
 ### Backend
 - Write bad tests and make them fail
 - Implement last rules and start testing FOL proofs
-- Improve error type
-- Rename If to Imp?
 - Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
