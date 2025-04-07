@@ -455,7 +455,7 @@ buildUI _wenv model = widgetTree where
               filler,
               symbolSpan "premise" `styleBasic` [width 300, paddingH 10, textSize u],
               spacer,
-              vstack [] `styleBasic` [width 300]
+              vstack [] `styleBasic` [width 250]
             ] `styleBasic` [height 34]
             where pp = replaceSpecialSymbols premise
 

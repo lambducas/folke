@@ -213,12 +213,12 @@ handleEvent wenv node model evt = case evt of
 
       convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
       convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
-      convertForm Abs.FormBot = "bot"
       convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
-      convertForm (Abs.FormEq _ _) = error "= not implemented"
-      convertForm (Abs.FormAll _ _) = error "forall not implemented"
-      convertForm (Abs.FormSome _ _) = error "exists not implemented"
-      convertForm Abs.FormNil = error "FormNil not implemented"
+      convertForm (Abs.FormEq a b) = convertTerm a <> "=" <> convertTerm b
+      convertForm (Abs.FormAll (Abs.Ident i) a) = "all " <> pack i <> " " <> convertForm a
+      convertForm (Abs.FormSome (Abs.Ident i) a) = "some " <> pack i <> " " <> convertForm a
+      convertForm Abs.FormBot = "bot"
+      convertForm Abs.FormNil = ""
 
       convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
@@ -228,11 +228,15 @@ handleEvent wenv node model evt = case evt of
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
-      convertStep (Abs.StepFree _) = error "StepFree not implemented"
+      convertStep (Abs.StepFree (Abs.Ident i)) = [Line (pack i) "free"]
+
+      convertTerm (Abs.Term (Abs.Ident i) (Abs.Params [])) = pack i
+      convertTerm (Abs.Term (Abs.Ident i) (Abs.Params ts)) = pack i <> "(" <> intercalate ", " (map convertTerm ts) <> ")"
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
-      convertArg (Abs.ArgTerm (Abs.Term (Abs.Ident i) _)) = pack i
+      convertArg (Abs.ArgTerm t) = convertTerm t
+      convertArg (Abs.ArgForm t f) = convertTerm t <> ":=" <> convertForm f
 
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
     where wd = fromMaybe "" (model ^. preferences . workingDir)
