@@ -36,6 +36,14 @@
 | SomeI     | existsI, ∃I              |
 
 ### Frontend
+- [ ] Update linenumber references when deleting or inserting line
+- [ ] Ctrl Z support
+- [ ] Add \forall and \exists to symbol conversion table
+- [ ] Keybinding for check proof button
+- [ ] Fix focus not updating correcly when inserting new line/removing line
+- [ ] Add textfield for every argument in rule instead of brackets in single textfield
+- [ ] `+ New line` should insert the line after the last line in same box as the last line
+- [ ] Catch syntax errors before backend parser so we don't get syntax errors that aren't helpful for the user
 - [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
 - [ ] Fix nativefiledialog on mac
