@@ -19,11 +19,12 @@ import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _
 import qualified Monomer.Lens as L
 import Control.Lens
 import TextShow ( TextShow(showt) )
-import Data.Text (Text, pack, intercalate, splitOn)
+import Data.Text (Text, unpack, pack, intercalate, splitOn)
 import qualified Data.Text (length)
 import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
+import Data.Either (isLeft)
 import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe)
@@ -32,6 +33,7 @@ import qualified Data.Map
 import Backend.Environment (newEnv)
 import Backend.Types
 import Shared.Messages (FEResult(..))
+import Logic.Par (myLexer, pForm, pStep)
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
@@ -473,6 +475,9 @@ buildUI _wenv model = widgetTree where
           ui = vstack [
               hstack [
                 hstack [
+                  -- span (pack (show (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement)))))),
+                  -- span (replaceSpecialSymbolsInverse statement),
+
                   -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
                   -- spacer,
 
@@ -491,7 +496,7 @@ buildUI _wenv model = widgetTree where
                     ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
-                    `styleBasic` [styleIf isError (border 1 red)]
+                    `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
                       `nodeKey` (showt index <> ".statement.keystroke"),
 
@@ -509,7 +514,7 @@ buildUI _wenv model = widgetTree where
                     ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                     ("Enter", InsertLineAfter path, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey, placeholder "No rule"]
-                    `styleBasic` [styleIf isError (border 1 red)]
+                    `styleBasic` [styleIf isRuleError (border 1 red)]
                     `nodeKey` (showt index <> ".rule"))
                       `nodeKey` (showt index <> ".rule.keystroke")
                       `styleBasic` [width 300]
@@ -568,6 +573,8 @@ buildUI _wenv model = widgetTree where
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 250]
 
+          isStatementError = isError || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement))))
+          isRuleError = isError || (rule /= "" && not isStatementError && isLeft (pStep (myLexer (unpack (replaceSpecialSymbolsInverse rule <> " " <> replaceSpecialSymbolsInverse statement <> ";")))))
           isError = isErrorLine lineNumber (model ^. proofStatus)
           lineNumber = index + toInteger (length (_premises sequent))
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
