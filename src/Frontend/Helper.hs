@@ -15,11 +15,15 @@ module Frontend.Helper (
   fontListToText,
   parseProofForBackend,
   showDecimals,
-  getTmpFileName
+  getTmpFileName,
+  isErrorLine,
+  extractErrorMsg,
+  isErrorSubProof
 ) where
 
 import Frontend.SpecialCharacters
 import Frontend.Types
+import Shared.Messages
 import Monomer
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
@@ -28,6 +32,7 @@ import TextShow (showt)
 import Text.Printf
 import System.Random
 import System.FilePath.Posix (equalFilePath)
+import Backend.Types (Ref(RefRange, RefLine))
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
@@ -128,3 +133,23 @@ getTmpFileName = do
   let num = round (r01 * 1e6) :: Integer
   let t = "untitled_" <> show num
   return t
+
+isErrorSubProof :: Integer -> Integer -> Maybe FEResult -> Bool
+isErrorSubProof start end (Just (FEError _ (FELocal (RefRange a b) _))) = start == a && end == b
+isErrorSubProof _ _ (Just (FEError _ (FELocal (RefLine _) _))) = False
+isErrorSubProof _ _ (Just (FEError _ (FEGlobal {}))) = False
+isErrorSubProof _ _ (Just (FEOk _)) = False
+isErrorSubProof _ _ Nothing = False
+
+isErrorLine :: Integer -> Maybe FEResult -> Bool
+isErrorLine lineNumber (Just (FEError _ (FELocal (RefRange a b) _))) = lineNumber >= a && lineNumber <= b
+isErrorLine lineNumber (Just (FEError _ (FELocal (RefLine line) _))) = line == lineNumber
+isErrorLine _ (Just (FEError _ (FEGlobal {}))) = False
+isErrorLine _ (Just (FEOk _)) = False
+isErrorLine _ Nothing = False
+
+extractErrorMsg :: Maybe FEResult -> String
+extractErrorMsg Nothing = ""
+extractErrorMsg (Just (FEOk _)) = ""
+extractErrorMsg (Just (FEError _ (FELocal _ msg))) = msg
+extractErrorMsg (Just (FEError _ (FEGlobal msg))) = msg

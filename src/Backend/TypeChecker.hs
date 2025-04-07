@@ -12,6 +12,9 @@ import Backend.Environment
 import Backend.Types 
 import qualified Data.Map as Map
 import qualified Data.List as List
+
+import Data.Maybe (fromMaybe)
+
 {-
     Runs the parser and then the typechecker on a given string
     -params:
@@ -263,18 +266,28 @@ checkTerms env (x: xs) = case checkTerm env x of
 identToString :: Abs.Ident -> String
 identToString (Abs.Ident str) = str
 
+{-
+    Allow frontend to check sequents in background-thread
+-}
 handleFrontendMessage :: FrontendMessage -> BackendMessage
-handleFrontendMessage (CheckStringSequent text) =
-    let result = checkString text
-    in case result of
-        Error _ env err -> StringSequentChecked (Left ("[DEBUG POS NEED TO FIX!!!]"++ showPos env ++ show err))
-        Ok _ _ -> StringSequentChecked (Right ())
-handleFrontendMessage (CheckSequent sequent) =
-    let result = check sequent
-    in case result of
-        Error _ env err -> StringSequentChecked (Left ("[DEBUG POS NEED TO FIX!!!]"++showPos env ++ show err))
-        Ok _ _ -> SequentChecked (Right ())
-handleFrontendMessage (CheckStep _) =
-    StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
-handleFrontendMessage (OtherFrontendMessage text) =
-    OtherBackendMessage text
+handleFrontendMessage (CheckStringSequent text) = StringSequentChecked (convertToFEError (checkString text))
+handleFrontendMessage (CheckSequent sequent) = SequentChecked (convertToFEError (check sequent))
+handleFrontendMessage (CheckStep _) = StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
+handleFrontendMessage (OtherFrontendMessage text) = OtherBackendMessage text
+
+-- Sending `Result` directly to frontend freezes the program
+-- (because of env?) so we use env to calculate line numbers
+-- first and then send back error without env in it
+convertToFEError :: Result t -> FEResult
+convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
+convertToFEError (Error warns env errorKind) = FEError (map convertWarning warns) (FELocal (getErrorLine env) (show errorKind))
+
+convertWarning :: Warning -> FEErrorWhere
+convertWarning (Warning env msg) = FELocal (getErrorLine env) msg
+
+getErrorLine :: Env -> Ref
+getErrorLine env = fromMaybe (RefLine (-1)) (maybeHead (pos env))
+
+maybeHead :: [a] -> Maybe a
+maybeHead [] = Nothing
+maybeHead (h:_) = Just h

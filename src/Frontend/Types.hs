@@ -10,7 +10,7 @@ import Monomer
 import Data.Text (Text)
 import Control.Concurrent (Chan)
 import Control.Lens ( makeLenses )
-import Shared.Messages ( BackendMessage, FrontendMessage )
+import Shared.Messages ( BackendMessage, FrontendMessage, FEResult )
 import Data.Aeson
 import Data.Aeson.TH
 
@@ -86,7 +86,7 @@ data AppModel = AppModel {
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
-  _proofStatus :: Maybe (Either String ()),
+  _proofStatus :: Maybe FEResult,
 
   _preferences :: Preferences
 } deriving (Eq, Show)

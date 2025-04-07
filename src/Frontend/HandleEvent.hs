@@ -361,13 +361,8 @@ handleEvent wenv node model evt = case evt of
       Producer (evaluateCurrentProof model file)
     ]
 
-  BackendResponse (StringSequentChecked result) -> case result of
-    Left error -> [ Model $ model & proofStatus ?~ Left error ]
-    Right _ -> [ Model $ model & proofStatus ?~ Right () ]
-
-  BackendResponse (SequentChecked result) -> case result of
-    Left error -> [ Model $ model & proofStatus ?~ Left error ]
-    Right _ -> [ Model $ model & proofStatus ?~ Right () ]
+  BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
+  BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
 
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
 

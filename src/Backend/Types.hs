@@ -7,7 +7,7 @@ module Backend.Types (
     Predicate(Predicate),
     Term(Term),
     Result(Ok, Error),
-    Warning,
+    Warning(Warning),
     ErrorKind(..),
     Env(..)
 ) where
@@ -47,7 +47,7 @@ instance Show ErrorKind where
     show (RuleNotFoundError name) = "RuleNotFoundError: No rule named " ++ name ++ " exists."
     show (RuleConcError msg) = "RuleConcError: Error in conclusion: " ++ msg 
     show (RuleArgError arg msg) = "RuleArgError: Error in argument "++ show arg ++ " : "++ msg
-    show (RuleArgCountError arg_c arg_e ) = "RuleArgError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments expected " ++ show arg_e ++ " not " ++ show arg_c ++ "." 
+    show (RuleArgCountError arg_c arg_e ) = "RuleArgCountError: To " ++ (if arg_c < arg_e then "few" else "many") ++ " arguments, expected " ++ show arg_e ++ " not " ++ show arg_c ++ "."
     show (UnknownError msg) = "UnknownError: "++msg
 
 -- Represents a reference in a proof, either a range or a single line.

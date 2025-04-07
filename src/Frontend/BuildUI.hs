@@ -10,6 +10,7 @@ import Frontend.Types
 import Frontend.SpecialCharacters
 import Frontend.Helper
 import Frontend.Themes
+import Frontend.Preferences (preferencePath)
 import Frontend.Components.Labels
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 
@@ -30,7 +31,7 @@ import qualified Data.Map
 
 import Backend.Environment (newEnv)
 import Backend.Types
-import Frontend.Preferences (preferencePath)
+import Shared.Messages (FEResult(..))
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
@@ -389,8 +390,8 @@ buildUI _wenv model = widgetTree where
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
-    Just (Left error) -> span ("Proof is incorrect: " <> pack error) `styleBasic` [textColor red]
-    Just (Right _) -> span "Proof is correct :)" `styleBasic` [textColor lime]
+    Just (FEError _warns error) -> span ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
+    Just (FEOk _warns) -> span "Proof is correct :)" `styleBasic` [textColor lime]
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
@@ -459,57 +460,68 @@ buildUI _wenv model = widgetTree where
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 proofBoxColor, borderR 0 transparent, paddingV 8, paddingL 24]
+          ui = vstack_ [childSpacing] (map fst s)
+            `styleBasic` [border 1 proofBoxColor, styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24]
+          isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
+          rStart = index + toInteger (length (_premises sequent))
+          rEnd = lastIndex - 1 + toInteger (length (_premises sequent))
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
       pf (Line statement rule) index path = (ui, lastIndex)
         where
-          ui = hstack [
+          ui = vstack [
               hstack [
-                -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
-                -- spacer,
+                hstack [
+                  -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
+                  -- spacer,
 
-                -- textFieldV "" (\_ -> NoEvent),
+                  -- textFieldV "" (\_ -> NoEvent),
 
-                firstKeystroke [
-                  ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
-                  ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
-                  -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
+                  firstKeystroke [
+                    ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
+                    ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
+                    -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
-                  ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-                  ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
-                  ("Delete", RemoveLine path, trashActive),
-                  ("Backspace", RemoveLine path, canBackspaceToDelete),
-                  ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
-                  ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
-                  ("Enter", NextFocus 1, True)
-                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
-                  `nodeKey` (showt index <> ".statement"))
-                    `nodeKey` (showt index <> ".statement.keystroke"),
+                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
+                    ("Delete", RemoveLine path, trashActive),
+                    ("Backspace", RemoveLine path, canBackspaceToDelete),
+                    ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
+                    ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                    ("Enter", NextFocus 1, True)
+                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
+                    `styleBasic` [styleIf isError (border 1 red)]
+                    `nodeKey` (showt index <> ".statement"))
+                      `nodeKey` (showt index <> ".statement.keystroke"),
 
+                  spacer,
+
+                  firstKeystroke [
+                    ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+                    ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+                    -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+
+                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
+                    ("Delete", RemoveLine path, trashActive),
+                    ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
+                    ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                    ("Enter", InsertLineAfter path, True)
+                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey, placeholder "No rule"]
+                    `styleBasic` [styleIf isError (border 1 red)]
+                    `nodeKey` (showt index <> ".rule"))
+                      `nodeKey` (showt index <> ".rule.keystroke")
+                      `styleBasic` [width 300]
+
+                  -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
+                ],
                 spacer,
-
-                firstKeystroke [
-                  ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
-                  ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-                  -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
-
-                  ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-                  ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                  ("Delete", RemoveLine path, trashActive),
-                  ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-                  ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
-                  ("Enter", InsertLineAfter path, True)
-                ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey, placeholder "No rule"]
-                  `nodeKey` (showt index <> ".rule"))
-                    `nodeKey` (showt index <> ".rule.keystroke")
-                    `styleBasic` [width 300]
-
-                -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
+                b
               ],
-              spacer,
-              b
+
+              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
+                `styleBasic` [textColor red, paddingT (0.5*u)]
             ] `nodeKey` showt index
 
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
@@ -554,8 +566,10 @@ buildUI _wenv model = widgetTree where
                     button "⏎" (InsertLineAfter pathToParentSubProof) `styleBasic` [textSize u]
 
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
-              ] `styleBasic` [width 300]
+              ] `styleBasic` [width 250]
 
+          isError = isErrorLine lineNumber (model ^. proofStatus)
+          lineNumber = index + toInteger (length (_premises sequent))
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
           trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
           pathToParentSubProof = init path
@@ -594,10 +608,16 @@ buildUI _wenv model = widgetTree where
 
       ln (Line _ _) index _path = (ui, lastIndex)
         where
-          ui = symbolSpan (showt index <> ".")
-            `styleBasic` [width 48, paddingR 12, height 34, textRight]
-            `nodeKey` showt index <> "label"
+          ui = vstack [
+              symbolSpan (showt index <> ".")
+                `styleBasic` [width 48, paddingR 12, height 34, textRight, styleIf isError (textColor red)]
+                `nodeKey` showt index <> "label",
+
+              widgetIf isError (span " ")
+                `styleBasic` [textColor red, paddingT (0.5*u)]
+            ]
           lastIndex = index + 1
+          isError = isErrorLine (toInteger index) (model ^. proofStatus)
 
       getSubProof2 p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
