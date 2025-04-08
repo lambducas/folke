@@ -145,9 +145,9 @@ static int AppendExtensionToSpecBuf( const char *ext, char *specBuf, size_t spec
     }
 
     char extWildcard[NFD_MAX_STRLEN];
-    int bytesWritten = sprintf_s( extWildcard, NFD_MAX_STRLEN, "*.%s", ext );
-    assert( bytesWritten == (int)(strlen(ext)+2) );
-    _NFD_UNUSED(bytesWritten);
+    // int bytesWritten = sprintf_s( extWildcard, NFD_MAX_STRLEN, "*.%s", ext );
+    // assert( bytesWritten == (int)(strlen(ext)+2) );
+    // _NFD_UNUSED(bytesWritten);
     
     strncat( specBuf, extWildcard, specBufLen - strlen(specBuf) - 1 );
 

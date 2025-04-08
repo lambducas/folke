@@ -199,6 +199,7 @@ $ cabal test
     but SDL2 will probably fail to build with `ld.lld: error: undefined symbol: __stack_chk_fail`
 1. Run the project
     ```bash
+    > ghcup run --mingw-path -- cabal build
     > cabal run bsc
     ```
 
