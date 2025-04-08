@@ -144,7 +144,9 @@ push :: Env -> Env
 push env = env { prems = [] , frees = [] }
 
 bindVar :: Env -> Term -> Result Env
-bindVar env (Term x []) = Ok [] env { bound = Map.insert x () (bound env)}
+bindVar env (Term x []) = if Map.member x (bound env)
+    then Error [] env (UnknownError ("Trying to rebind "++ show x ++"."))
+    else Ok [] env { bound = Map.insert x () (bound env)}
 bindVar env _ = Error [] env (UnknownError "Unanble to bind an function.")
 
 isFreeVar :: Env -> Term -> Result Bool
