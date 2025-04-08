@@ -9,10 +9,10 @@ import Frontend.Helper
 import Frontend.Communication (startCommunication, evaluateProofString)
 import Frontend.Parse
 import Frontend.Preferences
+import Frontend.Export (convertToLatex)
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
-import Frontend.Export (convertToLatex)
 
 import Monomer
 import Control.Lens
@@ -28,6 +28,7 @@ import System.FilePath ( takeExtension )
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
+import qualified Data.Map as Map
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -90,10 +91,10 @@ handleEvent wenv node model evt = case evt of
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt (l + 1) <> ".statement") ]
-      insertLine = insertAfterProof path (Line "" "")
+      insertLine = insertAfterProof path (Line "" "" 0 [])
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertAfterProof path (SubProof [Line "" ""])
+    where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
 
   AddLine -> applyOnCurrentProof model addLine
     where
@@ -101,7 +102,7 @@ handleEvent wenv node model evt = case evt of
         where
           premises = _premises sequent
           conclusion = _conclusion sequent
-          steps = _steps sequent ++ [Line "" ""]
+          steps = _steps sequent ++ [Line "" "" 0 []]
 
   AddSubProof -> applyOnCurrentProof model addSubProof
     where
@@ -109,7 +110,7 @@ handleEvent wenv node model evt = case evt of
         where
           premises = _premises sequent
           conclusion = _conclusion sequent
-          steps = _steps sequent ++ [SubProof [Line "" ""]]
+          steps = _steps sequent ++ [SubProof [Line "" "" 0 []]]
 
   RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
     where
@@ -119,8 +120,14 @@ handleEvent wenv node model evt = case evt of
       getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".rule") ]
         where l = pathToLineNumber sequent path - 1
 
-  EditLine path arg newText -> applyOnCurrentProof model editLine
-    where editLine = editFormulaInProof path arg newText
+  EditFormula path newText -> applyOnCurrentProof model editFormula
+    where editFormula = editFormulaInProof path newText
+
+  EditRuleName path newText -> applyOnCurrentProof model editRuleName
+    where editRuleName = editRuleNameInProof path newText
+
+  EditRuleArgument path idx newText -> applyOnCurrentProof model editRuleArgument
+    where editRuleArgument = editRuleArgumentInProof path idx newText
 
   OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
 
@@ -134,7 +141,7 @@ handleEvent wenv node model evt = case evt of
         case result of
           Left e -> print e
           Right _ -> do
-            let emptySeq = Just $ FESequent [] "" [Line "" ""]
+            let emptySeq = Just $ FESequent [] "" [Line "" "" 0 []]
             let file = TemporaryProofFile randomPath emptySeq False
             sendMsg (OpenFileSuccess file)
       )
@@ -215,12 +222,12 @@ handleEvent wenv node model evt = case evt of
       convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
 
-      convertStep Abs.StepNil = [Line "" ""]
+      convertStep Abs.StepNil = [Line "" "" 0 []]
       convertStep (Abs.StepPrem _form) = [] 
-      convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
+      convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
-      convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
-      convertStep (Abs.StepFree (Abs.Ident i)) = [Line (pack i) "free"]
+      convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i) (length args) (map convertArg args)]
+      convertStep (Abs.StepFree (Abs.Ident i)) = [Line (pack i) "free" 0 []]
 
       convertTerm (Abs.Term (Abs.Ident i) (Abs.Params [])) = pack i
       convertTerm (Abs.Term (Abs.Ident i) (Abs.Params ts)) = pack i <> "(" <> intercalate ", " (map convertTerm ts) <> ")"
@@ -459,16 +466,39 @@ editConclusionInProof newText sequent = FESequent premises conclusion steps
     conclusion = newText
     steps = _steps sequent
 
-editFormulaInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
-editFormulaInProof path arg newText = replaceSteps f
+editFormulaInProof :: FormulaPath -> Text -> FESequent -> FESequent
+editFormulaInProof path newText = replaceSteps f
   where
-    f steps = zipWith (\p idx -> el path arg newText [idx] p) steps [0..]
-    el editPath arg newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath arg newText (currentPath ++ [idx]) p) p [0..]
-    el editPath arg newText currentPath f@(Line statement rule)
-      | editPath == currentPath = case arg of
-        0 -> Line newText rule
-        1 -> Line statement newText
-        _ -> error "Invalid field, should be 0 or 1"
+    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
+    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
+    el editPath newText currentPath f@(Line _statement rule usedArguments arguments)
+      | editPath == currentPath = Line newText rule usedArguments arguments
+      | otherwise = f
+
+editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent
+editRuleNameInProof path newText = replaceSteps f
+  where
+    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
+    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
+    el editPath newText currentPath f@(Line statement _rule usedArguments arguments)
+      | editPath == currentPath = case Map.lookup newText ruleMetaDataMap of
+        Nothing -> Line statement newText usedArguments arguments
+        Just (RuleMetaData nrArguments _) -> Line statement newText (fromIntegral nrArguments) (fillList nrArguments arguments)
+      | otherwise = f
+    
+    fillList :: Integer -> [Text] -> [Text]
+    fillList targetLen arr
+      | currLen < targetLen = arr ++ replicate (fromIntegral targetLen - length arr) ""
+      | otherwise = arr
+      where currLen = toInteger (length arr)
+
+editRuleArgumentInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
+editRuleArgumentInProof path idx newText = replaceSteps f
+  where
+    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
+    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
+    el editPath newText currentPath f@(Line statement rule usedArguments arguments)
+      | editPath == currentPath = Line statement rule usedArguments (arguments & element idx .~ newText)
       | otherwise = f
 
 replaceInProof :: FormulaPath -> (FEStep -> FEStep) -> FESequent -> FESequent
@@ -478,7 +508,7 @@ replaceInProof path replaceWith = replaceSteps f
     rl currentPath f@(SubProof p)
       | path == currentPath = replaceWith f
       | otherwise = SubProof $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Line _ _)
+    rl currentPath f@(Line {})
       | path == currentPath = replaceWith f
       | otherwise = f
 
@@ -490,7 +520,7 @@ insertAfterProof path insertThis = replaceSteps f
       | path == currentPath = [res, insertThis]
       | otherwise = [res]
         where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Line _ _)
+    rl currentPath f@(Line {})
       | path == currentPath = [f, insertThis]
       | otherwise = [f]
 
@@ -499,12 +529,12 @@ removeFromProof path = replaceSteps f
   where
     f steps = if null res then startProof else res
       where
-        startProof = [Line "" ""]
+        startProof = [Line "" "" 0 []]
         res = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
     rl removePath currentPath (SubProof p)
       | removePath == currentPath = Nothing
       | otherwise = Just $ SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-    rl removePath currentPath f@(Line _ _)
+    rl removePath currentPath f@(Line {})
       | removePath == currentPath = Nothing
       | otherwise = Just f
 

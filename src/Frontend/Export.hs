@@ -97,12 +97,12 @@ formatSteps steps = T.unlines (map formatStep steps)
 
 -- Format a single step (with justification but without numbers)
 formatStep :: FEStep -> Text
-formatStep (Line statement "") =
+formatStep (Line statement "" _ _) =
   "\\proofstatement{" <> formatText statement <> "}"
   where
     formatText = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
 
-formatStep (Line statement rule) =
+formatStep (Line statement rule _ _) =
   "\\proofline{" <> formatText statement <> "}{" <> formatText rule <> "}"
   where
     formatText = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols

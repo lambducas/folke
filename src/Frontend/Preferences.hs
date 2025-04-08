@@ -8,7 +8,8 @@ module Frontend.Preferences (
 import Frontend.Types
 import Control.Lens ((^.))
 import Control.Exception (try, SomeException)
-import Data.Aeson (encode, decode)
+import Data.Aeson (decode)
+import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import System.Directory (doesFileExist)
 
@@ -36,7 +37,7 @@ readAndApplyPreferences sendMsg = do
 
 savePreferences :: AppModel -> t -> (t -> IO ()) -> IO ()
 savePreferences model messageOnSuccess sendMsg = do
-  let json = (BL.unpack . encode) (model ^. preferences)
+  let json = (BL.unpack . encodePretty) (model ^. preferences)
   result <- try (writeFile preferencePath json) :: IO (Either SomeException ())
   case result of
     Left e -> print e

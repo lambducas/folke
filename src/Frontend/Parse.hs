@@ -6,17 +6,20 @@ module Frontend.Parse (
   parseProofToJSON,
   parseProofFromJSON,
   parseProofToSimpleFileFormat,
-  parseProofFromSimpleFileFormat
+  parseProofFromSimpleFileFormat,
+  parseProofForBackend
 ) where
 
-import Frontend.Types ( FEStep(SubProof, Line), FESequent(..) )
+import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath )
 import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse )
-import Frontend.Helper ( slice, trimText )
+import Frontend.Helper ( slice, trimText, pathToLineNumber )
 
-import Data.Aeson ( encode, decode, defaultOptions )
+import Data.Aeson ( decode, defaultOptions )
+import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Aeson.TH ( deriveJSON )
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as BL
+import TextShow (showt)
 
 data FEDocument = FEDocument {
   _sequent :: FESequent
@@ -25,7 +28,7 @@ data FEDocument = FEDocument {
 $(deriveJSON defaultOptions ''FEDocument)
 
 parseProofToJSON :: FESequent -> T.Text
-parseProofToJSON = T.pack . BL.unpack . encode . FEDocument
+parseProofToJSON = T.pack . BL.unpack . encodePretty . FEDocument
 
 parseProofFromJSON :: T.Text -> Maybe FESequent
 parseProofFromJSON t = (decode . BL.pack . T.unpack) t >>= Just . _sequent
@@ -38,7 +41,7 @@ parseProofToSimpleFileFormat sequent = "\n" <> premises <> ";\n" <> conclusion <
 
     exportProofHelper :: FEStep -> Int -> T.Text
     exportProofHelper (SubProof p) indent = tabs indent <> "{\n" <> T.intercalate "\n" (map (`exportProofHelper` (indent + 1)) p) <> "\n" <> tabs indent <> "}"
-    exportProofHelper (Line statement rule) indent = tabs indent <> statement <> " : " <> rule <> ";"
+    exportProofHelper (Line statement rule usedArguments arguments) indent = tabs indent <> statement <> " : " <> rule <> " " <> nArg rule usedArguments arguments <> ";"
 
     tabs :: Int -> T.Text
     tabs n = T.pack $ replicate n '\t'
@@ -79,15 +82,17 @@ parseProofFromSimpleFileFormat p = case proof of
         '{' -> parseText text (findClosingBracket text 0 idx 0 + 1) (formulas ++ [parseText (slice (idx + 1) (findClosingBracket text 0 idx 0 + 1) text) 0 []])
         '}' -> SubProof formulas
         _ -> error "Invalid special char"
-      Nothing -> SubProof [Line "" ""] -- Return garbage instead of crashing
+      Nothing -> SubProof [Line "" "" 0 []] -- Return garbage instead of crashing
       where
         nextSpecialChar = gotoNextChar text ptr ['{', '}', ';']
 
     parseFormula :: T.Text -> FEStep
-    parseFormula text = Line statement rule
+    parseFormula text = Line statement rule usedArguments arguments
       where
         statement = trimText $ head parts
         rule = trimText $ parts !! 1
+        usedArguments = 0
+        arguments = []
         parts = T.splitOn ":" text
 
     gotoNextChar text ptr chars
@@ -106,3 +111,33 @@ parseProofFromSimpleFileFormat p = case proof of
       '}' -> if nestedLevel == cnl then idx + 1 else findClosingBracket text nestedLevel (idx + 1) (cnl - 1)
       _ -> findClosingBracket text nestedLevel (idx + 1) cnl
       where char = text !! (idx + 1)
+
+parseProofForBackend :: FESequent -> T.Text
+parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
+  where
+    premises = replaceSpecialSymbolsInverse $ T.intercalate "," (_premises sequent)
+    conclusion = replaceSpecialSymbolsInverse $ _conclusion sequent
+
+    newSequent = FESequent (_premises sequent) (_conclusion sequent) (ghostPremises ++ _steps sequent)
+    proof = SubProof (_steps newSequent)
+    ghostPremises = map (\p -> Line p "prem" 0 []) (_premises sequent)
+
+    exportProofHelper :: Int -> FormulaPath -> FEStep -> T.Text
+    exportProofHelper indent path (SubProof p) = tabs indent <> label <> "{\n" <> T.intercalate "\n" (zipWith (\p idx -> exportProofHelper (indent + 1) (path ++ [idx]) p) p [0..]) <> "\n" <> tabs indent <> "}"
+      where label = if null p || null path then "" else showt (offsetLineNumber (path ++ [0])) <> "-" <> showt (offsetLineNumber (path ++ [length p - 1])) <> ":"
+    exportProofHelper indent path (Line statement rule usedArguments arguments) = tabs indent <> label <> nRule <> "" <> nArg rule usedArguments arguments <> " " <> nStatement <> ";"
+      where
+        nRule = replaceSpecialSymbolsInverse rule
+        nStatement = replaceSpecialSymbolsInverse statement
+        label = showt (offsetLineNumber path) <> ":"
+
+    offsetLineNumber = pathToLineNumber newSequent-- + toInteger (length (_premises sequent))
+
+    tabs :: Int -> T.Text
+    tabs n = T.pack $ replicate n '\t'
+
+nArg :: T.Text -> Int -> [T.Text] -> T.Text
+nArg "free" _ [] = ""
+nArg "prem" _ [] = ""
+nArg "assume" _ [] = ""
+nArg _ usedArguments arguments = "[" <> T.intercalate ", " (take usedArguments arguments) <> "]"

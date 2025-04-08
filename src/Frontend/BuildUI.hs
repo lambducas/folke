@@ -27,13 +27,13 @@ import Data.String (fromString)
 import Data.Either (isLeft)
 import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import qualified Data.Map
 
 import Backend.Environment (newEnv)
 import Backend.Types
 import Shared.Messages (FEResult(..))
-import Logic.Par (myLexer, pForm, pStep)
+import Logic.Par (myLexer, pForm)
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
@@ -445,7 +445,7 @@ buildUI _wenv model = widgetTree where
           lastIndex = if null s then index else snd $ last s
           s = getSubProof p path 0 index
 
-      pf (Line statement rule) index path = (ui, lastIndex)
+      pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
         where
           ui = vstack [
               hstack [
@@ -470,29 +470,33 @@ buildUI _wenv model = widgetTree where
                     ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
                     ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditLine path 0) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
+                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
                       `nodeKey` (showt index <> ".statement.keystroke"),
 
                   spacer,
 
-                  firstKeystroke [
-                    ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
-                    ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-                    -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+                  hstack_ [childSpacing] [
+                    firstKeystroke [
+                      ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+                      ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+                      -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
-                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                    ("Delete", RemoveLine path, trashActive),
-                    ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-                    ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
-                    ("Enter", InsertLineAfter path, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditLine path 1) [onKeyDown handleRuleKey, placeholder "No rule"]
-                    `styleBasic` [styleIf isRuleError (border 1 red)]
-                    `nodeKey` (showt index <> ".rule"))
-                      `nodeKey` (showt index <> ".rule.keystroke")
-                      `styleBasic` [width 300]
+                      ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+                      ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
+                      ("Delete", RemoveLine path, trashActive),
+                      ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
+                      ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                      ("Enter", NextFocus 1, True)
+                      -- ("Enter", InsertLineAfter path, True)
+                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule"]
+                      `styleBasic` [styleIf isRuleError (border 1 red)]
+                      `nodeKey` (showt index <> ".rule"))
+                        `nodeKey` (showt index <> ".rule.keystroke"),
+                    argInputs
+                  ]
+                    `styleBasic` [width 300]
 
                   -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
                 ],
@@ -504,24 +508,26 @@ buildUI _wenv model = widgetTree where
                 `styleBasic` [textColor red, paddingT (0.5*u)]
             ] `nodeKey` showt index
 
-          -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
-          --   where rules (Env _ _ r _ _ _ _ _) = r
-
-          handleFormulaKey, handleRuleKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
-          handleFormulaKey (_mod, code, state)
-            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")
-            | otherwise = NoEvent --Print $ show state
+          argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
+          argInput argument idx = firstKeystroke [
+              ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
+              ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
+              ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+              ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+              ("Delete", RemoveLine path, trashActive),
+              ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
+              ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
+              ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
+              ("Enter", InsertLineAfter path, isLastArg),
+              ("Enter", NextFocus 1, not isLastArg)
+            ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1))]
+            `nodeKey` (showt index <> ".ruleArg." <> showt idx)
+            `styleBasic` [width 70]
+            `styleBasic` [styleIf isRuleArgError (border 1 red)])
             where
-              isAtEnd = cursorPos == textLen
-              cursorPos = _ifsCursorPos state
-              textLen = Data.Text.length (_ifsCurrText state)
-
-          handleRuleKey (_mod, code, state)
-            | isKeyLeft code && isAtBeginning = FocusOnKey $ WidgetKey (showt index <> ".statement")
-            | otherwise = NoEvent --Print $ show state
-            where
-              isAtBeginning = cursorPos == 0
-              cursorPos = _ifsCursorPos state
+              isFirstArg = idx == 0
+              isLastArg = idx + 1 == usedArguments
+              isRuleArgError = isError
 
           b = box $ hstack_ [childSpacing] [
                 fastTooltip "Remove line" $
@@ -548,8 +554,42 @@ buildUI _wenv model = widgetTree where
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 250]
 
+          -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
+          --   where rules (Env _ _ r _ _ _ _ _) = r
+
+          handleFormulaKey, handleRuleNameKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
+          handleFormulaKey (_mod, code, state)
+            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")
+            | otherwise = NoEvent
+            where
+              isAtEnd = cursorPos == textLen
+              cursorPos = _ifsCursorPos state
+              textLen = Data.Text.length (_ifsCurrText state)
+
+          handleRuleNameKey (_mod, code, state)
+            | isKeyLeft code && isAtBeginning = FocusOnKey $ WidgetKey (showt index <> ".statement")
+            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".ruleArg.0")
+            | otherwise = NoEvent
+            where
+              isAtEnd = cursorPos == textLen
+              textLen = Data.Text.length (_ifsCurrText state)
+              isAtBeginning = cursorPos == 0
+              cursorPos = _ifsCursorPos state
+
+          handleRuleArgKey :: Int -> (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
+          handleRuleArgKey argIdx (_mod, code, state)
+            | isKeyLeft code && isAtBeginning && argIdx == 0 = FocusOnKey $ WidgetKey (showt index <> ".rule")
+            | isKeyLeft code && isAtBeginning && argIdx /= 0 = FocusOnKey $ WidgetKey (showt index <> ".ruleArg." <> showt (argIdx - 1))
+            | isKeyRight code && isAtEnd && argIdx + 1 < usedArguments = FocusOnKey $ WidgetKey (showt index <> ".ruleArg." <> showt (argIdx + 1))
+            | otherwise = NoEvent
+            where
+              isAtEnd = cursorPos == textLen
+              textLen = Data.Text.length (_ifsCurrText state)
+              isAtBeginning = cursorPos == 0
+              cursorPos = _ifsCursorPos state
+
           isStatementError = isError || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement))))
-          isRuleError = isError || (rule /= "" && not isStatementError && isLeft (pStep (myLexer (unpack (replaceSpecialSymbolsInverse rule <> " " <> replaceSpecialSymbolsInverse statement <> ";")))))
+          isRuleError = isError || (rule /= "" && isNothing (Data.Map.lookup rule ruleMetaDataMap))
           isError = isErrorLine lineNumber (model ^. proofStatus)
           lineNumber = index + toInteger (length (_premises sequent))
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
@@ -588,7 +628,7 @@ buildUI _wenv model = widgetTree where
           lastIndex = if null s then index else snd $ last s
           s = getSubProof2 p path 0 index
 
-      ln (Line _ _) index _path = (ui, lastIndex)
+      ln (Line {}) index _path = (ui, lastIndex)
         where
           ui = vstack [
               symbolSpan (showt index <> ".")

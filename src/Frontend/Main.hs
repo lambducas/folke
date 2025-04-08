@@ -37,7 +37,7 @@ main = do
   startApp (model prefs currentFrontendChan currentBackendChan) handleEvent buildUI (config prefs)
 
   where
-    config prefs = [
+    config _prefs = [
       --appScaleFactor (_appScale prefs),
 
       appWindowTitle "Proof Editor",
