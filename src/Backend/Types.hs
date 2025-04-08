@@ -9,7 +9,8 @@ module Backend.Types (
     Result(Ok, Error),
     Warning(Warning),
     ErrorKind(..),
-    Env(..)
+    Env(..),
+    IDType(..)
 ) where
 
 import Data.Map as Map ( Map )
@@ -17,13 +18,14 @@ import Data.Map as Map ( Map )
 type Terms  = [Term]
 
 data Env = Env {
-      prems  :: [Formula]
-    , frees  :: Terms
-    , refs   :: Map.Map Ref (Integer, Arg)
-    , rules  :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
-    , pos    :: [Ref]
-    , rule   :: String
-    , bound  :: Map.Map String ()
+      prems   :: [Formula]
+    , frees   :: Terms
+    , refs    :: Map.Map Ref (Integer, Arg)
+    , rules   :: Map.Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula)
+    , pos     :: [Ref]
+    , rule    :: String
+    , bound   :: Map.Map String ()
+    , ids     :: Map.Map String IDType
 }
 
 -- Represents the result of an operation, which can either succeed (Ok) or fail (Error).
@@ -125,3 +127,5 @@ instance Show Term where
     show (Term name terms) = name ++ "(" ++ show terms ++ ")"
 instance Eq Term where 
     Term a as == Term b bs = a == b && as == bs
+
+data IDType = IDTypeTerm Integer | IDTypePred Integer

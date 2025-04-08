@@ -3,6 +3,7 @@ module Backend.Environment (
     newEnv,
     push,
     bindVar,
+    regTerm,
     addPrem,
     addFree,
     getPrems,
@@ -129,7 +130,8 @@ newEnv = Env {
     ],
     pos  = [],
     rule = "",
-    bound = Map.empty
+    bound = Map.empty,
+    ids = Map.empty
 }
 
 showPos:: Env -> String
@@ -157,12 +159,22 @@ isBoundVar :: Env -> Term -> Result Bool
 isBoundVar env (Term x []) = if Map.member x (bound env) then Ok [] True else Ok [] False
 isBoundVar env _ = Error [] env (UnknownError "A function can not be a bound variable.")
 
+regTerm :: Env -> Term -> Result Env
+regTerm env (Term x param) = case Map.lookup x (ids env) of
+    Nothing -> Ok [] env {ids = Map.insert x (IDTypeTerm n) (ids env)}
+    Just  t -> case t of
+         IDTypeTerm i -> if i == n 
+            then Ok [] env 
+            else Error [] env  (UnknownError ("Trying to redefine " ++ show x ++ "."))
+         IDTypePred _ -> Error [] env  (UnknownError ("Trying to redefine " ++ show x ++ " as a term."))
+    where n = toInteger (List.length param)
+
 -- Section: Adders
 
 -- Adds a premise/assumption to the environment.
 -- Premises are logical formulas that are assumed to be true in the current scope.
-addPrem :: Env -> Formula -> Env
-addPrem env prem = env { prems = prems env ++ [prem] }
+addPrem :: Env -> Formula -> Result Env
+addPrem env prem = Ok [] env { prems = prems env ++ [prem] }
 
 addFree :: Env -> Term -> Result Env
 addFree env x@(Term _ []) = Ok [] env { frees = frees env ++ [x]}

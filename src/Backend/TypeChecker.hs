@@ -11,6 +11,7 @@ import Shared.Messages
 import Backend.Environment
 import Backend.Types 
 import qualified Data.List as List
+import qualified Data.Map as Map
 
 import Data.Maybe (fromMaybe)
 
@@ -126,15 +127,21 @@ checkStep env step = case step of
     Abs.StepPrem form -> 
         case checkForm env form of
             Error warns env_e err -> Error warns env_e err
-            Ok warns form_t -> Ok warns (addPrem env form_t, ArgForm form_t)
-    Abs.StepFree ident -> case addFree env t of
+            Ok warns1 form_t -> case addPrem env form_t of 
+                Error warns env_e err -> Error (warns++warns1) env_e err
+                Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
+    Abs.StepFree ident -> case regTerm env t of
         Error warns env_e err -> Error warns env_e err
-        Ok warns new_env -> Ok warns (new_env, ArgTerm t)
+        Ok warns1 env1 -> case addFree env1 t of
+            Error warns env_e err -> Error (warns++warns1) env_e err
+            Ok warns2 env2 -> Ok (warns1++warns2) (env2, ArgTerm t)
         where t = Term (identToString ident) []
     Abs.StepAssume form -> 
         case checkForm env form of
             Error warns env_e err -> Error warns env_e err
-            Ok warns form_t -> Ok warns (addPrem env form_t, ArgForm form_t)
+            Ok warns1 form_t -> case addPrem env form_t of 
+                Error warns env_e err -> Error (warns++warns1) env_e err
+                Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
     Abs.StepProof (Abs.Proof steps) -> 
         case checkProof (push env) steps of 
             Error warns env_e err -> Error warns env_e err
@@ -169,11 +176,13 @@ checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of
 checkArg env (Abs.ArgTerm term) = case checkTerm env term of
     Error warns env_e err -> Error warns env_e err
     Ok warns term_t -> Ok warns (env, ArgTerm term_t)
-checkArg env (Abs.ArgForm term form) =case checkTerm env term of
+checkArg env (Abs.ArgForm (Abs.Term x (Abs.Params [])) form) = case regTerm env term_t of
     Error warns env_e err -> Error warns env_e err
-    Ok warns1 term_t -> case checkForm env form of 
+    Ok warns1 new_env -> case checkForm new_env form of 
         Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 form_t -> Ok (warns1++warns2) (env, ArgFormWith term_t form_t)
+        Ok warns2 form_t -> Ok (warns1++warns2) (new_env, ArgFormWith term_t form_t)
+    where term_t = Term (identToString x) []
+checkArg env (Abs.ArgForm _ _) = Error [] env (TypeError "A formula argument can not be over an function.")
         
 {-
     Typechecks a formula
@@ -194,17 +203,21 @@ checkForm env f = case f of
     Abs.FormPred p -> case checkPred env p of
         Error warns env_e err -> Error warns env_e err
         Ok warns (_, p_t)      -> Ok warns (Pred p_t)
-    Abs.FormAll ident form -> case bindVar env x of
+    Abs.FormAll ident form -> case regTerm env x of
         Error warns env_e err -> Error warns env_e err
-        Ok warns1 new_env -> case checkForm new_env form of
+        Ok warns1 env1 ->case bindVar env1 x of
             Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 term_t -> Ok (warns1++warns2) (All x term_t)
+            Ok warns2 env2 -> case checkForm env2 form of
+                Error warns env_e err -> Error (warns++warns1++warns2) env_e err
+                Ok warns3 term_t -> Ok (warns1++warns2++warns3) (All x term_t)
         where x = Term (identToString ident) []
-    Abs.FormSome ident form -> case bindVar env x of
+    Abs.FormSome ident form -> case regTerm env x of
         Error warns env_e err -> Error warns env_e err
-        Ok warns1 new_env -> case checkForm new_env form of
+        Ok warns1 env1 ->case bindVar env1 x of
             Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 term_t -> Ok (warns1++warns2) (Some x term_t)
+            Ok warns2 env2 -> case checkForm env2 form of
+                Error warns env_e err -> Error (warns++warns1++warns2) env_e err
+                Ok warns3 term_t -> Ok (warns1++warns2++warns3) (Some x term_t)
         where x = Term (identToString ident) []
     Abs.FormNot form        -> case checkForm env form of
         Error warns env_e err -> Error warns env_e err
@@ -243,10 +256,17 @@ checkPred env (Abs.Pred ident (Abs.Params terms)) = do
     Typechecks a term
 -}
 checkTerm :: Env -> Abs.Term -> Result Term
-checkTerm env (Abs.Term ident (Abs.Params terms)) = case checkTerms env terms of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns terms_t -> Ok warns (Term (identToString ident) terms_t) 
-{-
+checkTerm env (Abs.Term ident (Abs.Params terms)) = case Map.lookup name (ids env) of
+    Nothing -> Error [] env (UnknownError (name ++ " not declared."))
+    Just (IDTypePred _) ->  Error [] env (UnknownError (name ++ " is a predicate."))
+    Just (IDTypeTerm n) -> if n /= i
+        then Error [] env (UnknownError (name ++ " is arity "++ show n ++ " not" ++ show i ++ "."))
+        else case checkTerms env terms of
+            Error warns env_e err -> Error warns env_e err
+            Ok warns terms_t -> Ok warns (Term name terms_t)
+        where i = toInteger(List.length terms)
+    where name = identToString ident
+{-  
     Typechecks a list of terms of an predicate or term
 -}
 checkTerms :: Env -> [Abs.Term] -> Result [Term]
