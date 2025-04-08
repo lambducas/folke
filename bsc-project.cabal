@@ -114,6 +114,7 @@ executable bsc
                     , Frontend.Themes
                     , Frontend.Parse
                     , Frontend.Preferences
+                    , Frontend.Export
                     , Frontend.Components.RenderMarkdown
                     , Frontend.Components.Labels
                     , Shared.Messages

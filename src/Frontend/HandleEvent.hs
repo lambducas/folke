@@ -12,6 +12,7 @@ import Frontend.Preferences
 import Shared.Messages
 import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
+import Frontend.Export (convertToLatex)
 
 import Monomer
 import Control.Lens
@@ -23,7 +24,7 @@ import Data.List (findIndex, isInfixOf)
 import Data.Text (Text, unpack, pack, intercalate)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile )
-import System.FilePath ( takeExtension )
+import System.FilePath ( takeExtension, replaceExtension, takeDirectory )
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
@@ -71,15 +72,11 @@ handleEvent wenv node model evt = case evt of
 
   EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
 
-  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusBwd]-- focusAction
+  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusBwd]
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-      -- focusAction = fromMaybe [] maybeFocusAction
-      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
-
-  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]-- ++ focusAction
+  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
           SubProof p -> head p
@@ -87,10 +84,6 @@ handleEvent wenv node model evt = case evt of
         ) p
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
-
-      -- focusAction = fromMaybe [] maybeFocusAction
-      -- maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      -- getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement"), MoveFocusFromKey Nothing FocusFwd, MoveFocusFromKey Nothing FocusFwd ]
 
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
@@ -198,7 +191,6 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
         where
           getOutput form = case form of
-            -- Abs.FormOr _ _ -> p
             Abs.FormImpl _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
@@ -206,7 +198,6 @@ handleEvent wenv node model evt = case evt of
       convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
         where
           getOutput form = case form of
-            -- Abs.FormAnd _ _ -> p
             Abs.FormImpl _ _ -> p
             _ -> c
             where c = convertForm form; p = "(" <> c <> ")"
@@ -224,7 +215,7 @@ handleEvent wenv node model evt = case evt of
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
 
       convertStep Abs.StepNil = [Line "" ""]
-      convertStep (Abs.StepPrem _form) = [] -- [Line (convertForm form) "prem"]
+      convertStep (Abs.StepPrem _form) = [] 
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume"]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i <> " [" <> intercalate ", " (map convertArg args) <> "]")]
@@ -319,10 +310,6 @@ handleEvent wenv node model evt = case evt of
                   Left e -> print e
                   Right _ -> do
                     let tmpPath = _path f
-                    -- result <- try (removeFile tmpPath) :: IO (Either SomeException ())
-                    -- case result of
-                    --   Left e -> print e
-                    --   Right _ -> return ()
                     sendMsg (SaveFileSuccess f)
                     sendMsg (CloseFileSuccess tmpPath)
                     sendMsg RefreshExplorer
@@ -343,7 +330,6 @@ handleEvent wenv node model evt = case evt of
         & proofStatus .~ Nothing
     ]
 
-  -- Preferences
   SwitchTheme -> [
       Model $ model & preferences . selectedTheme %~ switchTheme
     ]
@@ -359,7 +345,6 @@ handleEvent wenv node model evt = case evt of
 
   SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
-  -- Backend events
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
       Producer (evaluateCurrentProof model file)
@@ -369,14 +354,6 @@ handleEvent wenv node model evt = case evt of
   BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
 
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
-
-  -- BackendResponse (SequentChecked result) -> case result of
-  --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
-  --   Right sequent -> [Model $ model & proofStatus ?~ isProofCorrect sequent]
-
-  -- BackendResponse (StepChecked result) -> case result of
-  --   Left err -> [Message "Error" (pack err)]  -- Add type annotation
-  --   Right _step -> [Message "Step Status" ("Step is correct" :: Text)]  -- Add type annotation
 
   OpenSetWorkingDir -> [ Producer openDiag ]
     where
@@ -392,12 +369,40 @@ handleEvent wenv node model evt = case evt of
     ]
     where newWd = Just path
 
+  ExportToLaTeX -> case model ^. currentFile of
+    Nothing -> 
+      [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
+    Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
+      Just file@ProofFile{} -> case _parsedSequent file of
+        Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
+        Just _ -> 
+          [ Producer (\sendMsg -> do
+              -- Open a save dialog to let the user choose where to save the LaTeX file
+              mSavePath <- openSaveDialog
+              case mSavePath of
+                Nothing -> 
+                  -- User cancelled the dialog
+                  sendMsg (ExportError "Export cancelled")
+                Just savePath -> do
+                  -- Generate proper LaTeX content using our export module
+                  let texPath = if takeExtension savePath == ".tex"
+                                then savePath 
+                                else savePath <> ".tex"
+                      latexContent = convertToLatex model
+                  
+                  -- Write the full LaTeX content to the file
+                  writeFile texPath (unpack latexContent)
+                  putStrLn $ "Exported LaTeX file to: " ++ texPath
+                  sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
+            )
+          ]
+      _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
+
+  ExportSuccess msg -> [Message (WidgetKey "ExportSuccess") msg]
+  ExportError msg -> [Message (WidgetKey "ExportError") msg]
+
   Print s -> [ Producer (\_ -> print s) ]
-
-  -- Log unhandled events instead of crashing
   f -> [ Producer (\_ -> print f) ]
-
-
 
 directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
@@ -417,13 +422,11 @@ applyOnCurrentProof model f = actions
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
     fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
     cf = model ^. currentFile
-
     getActions fileIndex = [
         Model $ model
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
       ]
-
     maybeF (Just s) = Just (f s)
     maybeF Nothing = Nothing
 
@@ -478,24 +481,10 @@ replaceInProof path replaceWith = replaceSteps f
       | path == currentPath = replaceWith f
       | otherwise = f
 
--- insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
--- insertBeforeProof path insertThis = replaceSteps f
---   where
---     f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
-
---     rl currentPath (SubProof p)
---       | path == currentPath = [res, insertThis]
---       | otherwise = [res]
---         where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
---     rl currentPath f@(Line _ _)
---       | path == currentPath = [f, insertThis]
---       | otherwise = [f]
-
 insertAfterProof :: FormulaPath -> FEStep -> FESequent -> FESequent
 insertAfterProof path insertThis = replaceSteps f
   where
     f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
-
     rl currentPath (SubProof p)
       | path == currentPath = [res, insertThis]
       | otherwise = [res]
@@ -511,7 +500,6 @@ removeFromProof path = replaceSteps f
       where
         startProof = [Line "" ""]
         res = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
-
     rl removePath currentPath (SubProof p)
       | removePath == currentPath = Nothing
       | otherwise = Just $ SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
@@ -525,7 +513,7 @@ removeFromProof path = replaceSteps f
 
 replaceSteps :: ([FEStep] -> [FEStep]) -> FESequent -> FESequent
 replaceSteps f sequent = FESequent premises conclusion steps
- where
+  where
     premises = _premises sequent
     conclusion = _conclusion sequent
     steps = f $ _steps sequent
@@ -541,19 +529,11 @@ getCurrentSequent model = sequent
       f@ProofFile {} -> _parsedSequent f
       _ -> Nothing
 
-
-    -- getSequent fileIndex = model ^. tmpLoadedFiles . singular (ix fileIndex) . parsedSequent
-
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
 getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
 
 evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO ()) -> IO ()
 evaluateCurrentProof model file sendMsg = do
-  -- let sequent = exportProof file
-  -- answer <- evaluateProofSegment (model ^. frontendChan) (model ^. backendChan) sequent
-  -- sendMsg (BackendResponse answer)
-
-  -- catch (putStrLn $ unpack $ parseProofForBackend (_parsedSequent file)) (print :: ErrorCall -> IO ())
   case _parsedSequent file of
     Nothing -> return ()
     Just seq -> do

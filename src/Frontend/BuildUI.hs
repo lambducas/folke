@@ -325,7 +325,13 @@ buildUI _wenv model = widgetTree where
             filler,
             button "Save proof" (SaveFile file) `styleBasic` [textSize u],
             spacer,
-            button "Check proof" (CheckProof file) `styleBasic` [textSize u]
+            button "Check proof" (CheckProof file) `styleBasic` [textSize u],
+            spacer,
+            button "Export to LaTeX" ExportToLaTeX 
+              `styleBasic` [padding 5, width 120]
+              `nodeKey` "ExportSuccess"
+              `nodeKey` "ExportError",
+            spacer
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where
@@ -366,7 +372,13 @@ buildUI _wenv model = widgetTree where
             filler,
             button "Save proof" (SaveFile file) `styleBasic` [textSize u],
             spacer,
-            button "Check proof" (CheckProof file) `styleBasic` [textSize u]
+            button "Check proof" (CheckProof file) `styleBasic` [textSize u],
+            spacer,
+            button "Export to LaTeX" ExportToLaTeX 
+              `styleBasic` [padding 5, width 120]
+              `nodeKey` "ExportSuccess"
+              `nodeKey` "ExportError",
+            spacer
           ] `styleBasic` [padding 10, borderT 1 dividerColor]
         ]
         where

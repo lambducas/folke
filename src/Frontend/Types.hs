@@ -160,6 +160,11 @@ data AppEvent
   | ReadPreferences_ Preferences
   | SavePreferences
   | ResetFontSize
+
+  -- Export to LaTeX
+  | ExportToLaTeX
+  | ExportSuccess Text
+  | ExportError Text
   deriving (Eq, Show)
 
 makeLenses 'Preferences

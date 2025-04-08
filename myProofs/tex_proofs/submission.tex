@@ -1,0 +1,66 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{tikz}
+
+% Custom styles for proof formatting
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+\newcommand{\proofline}[2]{$#1$ \hfill $[#2]$\\[0.5em]}
+\newcommand{\proofstatement}[1]{$#1$\\[0.5em]}
+% Corner brackets for subproofs
+\newenvironment{subproof}{%
+  \begin{minipage}{\textwidth}%
+  $\ulcorner$ \begin{addmargin}[2em]{0em}%
+}{\end{addmargin}\end{minipage}\\[0.5em]}
+\usepackage{scrextend}
+
+\begin{document}
+
+\begin{center}
+\section*{Some submission}
+\end{center}
+
+\subsection*{Sequent}
+\begin{center}
+$\neg (p \rightarrow  \neg q) \vdash (p \land  q)$
+\end{center}
+
+\subsection*{Proof}
+\proofline{\neg (p \rightarrow  \neg q)}{premise}
+
+\begin{subproof}
+\proofline{\neg p}{assume}
+\begin{subproof}
+\proofline{p}{assume}
+\proofline{\bot }{\neg E [3, 2]}
+\proofline{\neg q}{\bot E [4]}
+
+\end{subproof}
+
+\proofline{(p \rightarrow  \neg q)}{\rightarrow I [3-5]}
+\proofline{\bot }{\neg E [6, 1]}
+
+\end{subproof}
+
+\proofline{p}{PBC [2-7]}
+\begin{subproof}
+\proofline{\neg q}{assume}
+\begin{subproof}
+\proofline{p}{assume}
+\proofline{\neg q}{Copy [9]}
+
+\end{subproof}
+
+\proofline{(p \rightarrow  \neg q)}{\rightarrow I [10-11]}
+\proofline{\bot }{\neg E [12, 1]}
+
+\end{subproof}
+
+\proofline{q}{PBC [9-13]}
+\proofline{(p \land  q)}{\land I [8, 14]}
+
+
+
+\end{document}
