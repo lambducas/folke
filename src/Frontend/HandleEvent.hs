@@ -23,7 +23,7 @@ import Data.Maybe (fromMaybe, catMaybes)
 import Data.List (findIndex, isInfixOf)
 import Data.Text (Text, unpack, pack, intercalate)
 import TextShow ( TextShow(showt) )
-import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile )
+import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
 import System.FilePath ( takeExtension, replaceExtension, takeDirectory )
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
@@ -127,6 +127,7 @@ handleEvent wenv node model evt = case evt of
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
         randomFileName <- getTmpFileName
+        createDirectoryIfMissing False "./_tmp"
         let randomPath = ("./_tmp/" <> randomFileName) FPP.<.> "tmp"
 
         result <- try (writeFile randomPath "") :: IO (Either SomeException ())
