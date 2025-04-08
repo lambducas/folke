@@ -426,14 +426,14 @@ replaceInFormula env x@(Term _ []) t (Eq l r) = case replaceInTerm env x t l of
         Ok warns_r r_new -> Ok (warns_l++warns_r) (Eq l_new r_new)
 replaceInFormula env x@(Term _ []) t (All y a) = case bindVar env y of
     Error warns env err -> Error warns env err
-    Ok warns_b new_env -> case replaceInTerm new_env x t y of --TODO modify enviroment 
+    Ok warns_b new_env -> case replaceInTerm new_env x t y of
         Error warns_y env err -> Error (warns_b++warns_y) env err
         Ok warns_y y_new -> case replaceInFormula new_env x t a of
             Error warns_a env err -> Error (warns_y++warns_a++warns_b) env err
             Ok warns_a a_new -> Ok (warns_y++warns_a++warns_b) (All y_new a_new)
 replaceInFormula env x@(Term _ []) t (Some y a) = case bindVar env y of
     Error warns env err -> Error warns env err
-    Ok warns_b new_env -> case replaceInTerm new_env x t y of --TODO modify enviroment 
+    Ok warns_b new_env -> case replaceInTerm new_env x t y of
         Error warns_y env err -> Error (warns_b++warns_y) env err
         Ok warns_y y_new -> case replaceInFormula new_env x t a of
             Error warns_a env err -> Error (warns_y++warns_a++warns_b) env err
