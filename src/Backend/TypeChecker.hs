@@ -257,7 +257,9 @@ checkPred env (Abs.Pred ident (Abs.Params terms)) = do
 -}
 checkTerm :: Env -> Abs.Term -> Result Term
 checkTerm env (Abs.Term ident (Abs.Params terms)) = case Map.lookup name (ids env) of
-    Nothing -> Error [] env (UnknownError (name ++ " not declared."))
+    Nothing -> case checkTerms env terms of --TODO is this an error?
+        Error warns env_e err -> Error warns env_e err
+        Ok warns terms_t -> Ok warns (Term name terms_t)
     Just (IDTypePred _) ->  Error [] env (UnknownError (name ++ " is a predicate."))
     Just (IDTypeTerm n) -> if n /= i
         then Error [] env (UnknownError (name ++ " is arity "++ show n ++ " not" ++ show i ++ "."))
