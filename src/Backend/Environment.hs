@@ -187,10 +187,10 @@ getRefs :: Env -> [Ref] -> Result (Env, [Arg])
 getRefs env [] = Ok [] (env, [])
 getRefs env (x : xs) =
     case getRefs env xs of
-        Error warns env err -> Error warns env err
+        Error warns env_e err -> Error warns env_e err
         Ok warns1 (env1, args) ->
             case getRef env1 x of
-                Error warns env err -> Error (warns++warns1) env err
+                Error warns env_e err -> Error (warns++warns1) env_e err
                 Ok warns2 (env2, arg) -> Ok (warns1++warns2) (env2, arg : args)
 
 -- Retrieves the value corresponding to a single reference.
@@ -215,7 +215,7 @@ applyRule e name args res =
         Nothing -> Error [] env (RuleNotFoundError name)
         Just rule_f ->
             case rule_f (env{rule = name}) (zip [1..] args) res of
-                Error warns env err -> Error warns env err
+                Error warns env_e err -> Error warns env_e err
                 Ok warns res_t ->
                     if res_t == res then Ok warns res_t
                     else Error warns env (RuleConcError ("Wrong conclusion when using rule, expected " ++ show res ++ ", got " ++ show res_t))
@@ -278,7 +278,7 @@ ruleImplI env [_]                      _ = Error [] env (RuleArgError 1 "Needs t
 ruleImplI env forms                    _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 1 )
 
 ruleImplE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleImplE env [(_, ArgForm a), (j, ArgForm (Impl b c))] r =
+ruleImplE env [(_, ArgForm a), (j, ArgForm (Impl b c))] _ =
     if a == b then Ok [] c
     else Error [] env (RuleArgError j "Premise did not match argument 1.")
 ruleImplE env [b@(_, ArgForm (Impl _ _)), a@(_, ArgForm _)] r = ruleImplE env [a,b] r
@@ -339,10 +339,10 @@ ruleEqI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length f
 
 ruleEqE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleEqE env [(_, ArgForm (Eq t1 t2)), (j, ArgForm a), (_, ArgFormWith u phi)] _ = case replaceInFormula env u t1 phi of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns1 b -> if a /= b then Error [] env (RuleArgError j ("Do not match "++show phi++"["++ show t1 ++"/"++ show u ++"].")) else
         case replaceInFormula env u t2 phi of
-            Error warns env err -> Error warns env err
+            Error warns env_e err -> Error warns env_e err
             Ok warns2 c -> Ok (warns1++warns2) c
 ruleEqE env [(_, ArgForm (Eq _ _)), (_, ArgForm _), (k, _)] _ = Error [] env (RuleArgError k  "Must be an formula.")
 ruleEqE env [(_, ArgForm (Eq _ _)), (j, _), (_, _)] _ = Error [] env (RuleArgError j  "Must be an formula.")
@@ -357,7 +357,7 @@ ruleAllE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length 
 
 ruleAllI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) = case replaceInFormula env x t b of
-    Error warns env err -> Error warns env err --TODO specify argument error?
+    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
     Ok warns c -> if a==c then Ok warns (All x b) else Error [] env (RuleConcError "The given formula did not match the conclusion.")
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = Error [] env (RuleConcError "The conclusion must be an for all formula.")
 ruleAllI env [(i, _)] _ = Error [] env (RuleArgError i  "Must be an box.")
@@ -365,7 +365,7 @@ ruleAllI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length 
 
 ruleSomeE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeE env [(_,ArgForm (Some x a)), (_, ArgProof(Proof [t] [b] c))] _ = case replaceInFormula env x t a of
-    Error warns env err -> Error warns env err --TODO specify argument error?
+    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
     Ok warns d -> if b == d then Ok [] c else Error warns env (RuleConcError (show a ++ "[" ++ show t ++ "/" ++show x ++ "] resulted in " ++ show d ++ " and not " ++ show b ++" as expected." ))
 ruleSomeE env [(_,ArgForm (Some _ _)), (j, b)] _ = Error [] env (RuleArgError j  ("Must be an proof not "++ show b ++"."))
 ruleSomeE env [(i,a), (_, _)] _ = Error [] env (RuleArgError i  ("Must be an Exists formula not "++ show a ++ "."))
@@ -373,7 +373,7 @@ ruleSomeE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length
 
 ruleSomeI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeI env [(_, ArgForm a),  (_, ArgTerm t@(Term _ []))] (Some x b) = case replaceInFormula env x t b of
-    Error warns env err -> Error warns env err --TODO specify argument error?
+    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
     Ok warns c -> if a == c then Ok warns (Some x b) else Error [] env (RuleConcError (show b ++ "[" ++ show x ++ "/" ++show t ++ "] resulted in " ++ show c ++ " and not " ++ show a ++" as expected." ))
 ruleSomeI env [(_, ArgForm _),  (_, ArgTerm (Term _ []))] r = Error [] env (RuleConcError ("The conclusion must be an exist formula not " ++ show r ++"."))
 ruleSomeI env [(_, ArgForm _), (j, _)] _ = Error [] env (RuleArgError j  "Must be an free variable.")
@@ -382,65 +382,65 @@ ruleSomeI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length
 
 replaceInTerm:: Env -> Term -> Term -> Term -> Result Term
 replaceInTerm env var@(Term x []) t a@(Term y []) = case isFreeVar env var of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns is_free -> if is_free && (x == y) then Ok warns t else Ok warns a
 replaceInTerm env x@(Term _ []) t (Term f args) = case replaceInTerms env x t args of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns new_args -> Ok warns (Term f new_args)
 replaceInTerm env _ _ _ = Error [] env (UnknownError "needs to be a variable.")
 
 --Replace each free occurrens of the variable x with the term t in a list of terms
 replaceInTerms:: Env -> Term -> Term -> [Term] -> Result [Term]
-replaceInTerms _ (Term _ []) t [] = Ok [] []
+replaceInTerms _ (Term _ []) _ [] = Ok [] []
 replaceInTerms env x@(Term _ []) t (arg : args) = case replaceInTerms env x t args of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns1 args_new -> case replaceInTerm env x t arg of
-        Error warns env err -> Error (warns++warns1) env err
+        Error warns env_e err -> Error (warns++warns1) env_e err
         Ok warns2 arg_new -> Ok (warns1++warns2) (arg_new : args_new)
 replaceInTerms env _ _ _ = Error [] env (UnknownError "needs to be a variable.")
 
 --Replace each free occurrens of the variable x with the term t in the formula f f[t/x]
 replaceInFormula:: Env -> Term -> Term -> Formula -> Result Formula
 replaceInFormula env x@(Term _ []) t (Pred (Predicate p args)) = case replaceInTerms env x t args of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns args_new -> Ok warns (Pred (Predicate p args_new))
 replaceInFormula env x@(Term _ []) t (And l r) = case replaceInFormula env x t l of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_l l_new -> case replaceInFormula env x t r of
-        Error warns env err -> Error (warns_l++warns) env err
+        Error warns env_e err -> Error (warns_l++warns) env_e err
         Ok warns_r r_new -> Ok (warns_l++warns_r) (And l_new r_new)
 replaceInFormula env x@(Term _ []) t (Or l r) = case replaceInFormula env x t l of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_l l_new -> case replaceInFormula env x t r of
-        Error warns env err -> Error (warns_l++warns) env err
+        Error warns env_e err -> Error (warns_l++warns) env_e err
         Ok warns_r r_new -> Ok (warns_l++warns_r) (Or l_new r_new)
 replaceInFormula env x@(Term _ []) t (Impl l r) = case replaceInFormula env x t l of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_l l_new -> case replaceInFormula env x t r of
-        Error warns env err -> Error (warns_l++warns) env err
+        Error warns env_e err -> Error (warns_l++warns) env_e err
         Ok warns_r r_new -> Ok (warns_l++warns_r) (Impl l_new r_new)
 replaceInFormula env x@(Term _ []) t (Eq l r) = case replaceInTerm env x t l of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_l l_new -> case replaceInTerm env x t r of
-        Error warns env err -> Error (warns_l++warns) env err
+        Error warns env_e err -> Error (warns_l++warns) env_e err
         Ok warns_r r_new -> Ok (warns_l++warns_r) (Eq l_new r_new)
 replaceInFormula env x@(Term _ []) t (All y a) = case bindVar env y of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_b new_env -> case replaceInTerm new_env x t y of
-        Error warns_y env err -> Error (warns_b++warns_y) env err
+        Error warns_y env_e err -> Error (warns_b++warns_y) env_e err
         Ok warns_y y_new -> case replaceInFormula new_env x t a of
-            Error warns_a env err -> Error (warns_y++warns_a++warns_b) env err
+            Error warns_a env_e err -> Error (warns_y++warns_a++warns_b) env_e err
             Ok warns_a a_new -> Ok (warns_y++warns_a++warns_b) (All y_new a_new)
 replaceInFormula env x@(Term _ []) t (Some y a) = case bindVar env y of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns_b new_env -> case replaceInTerm new_env x t y of
-        Error warns_y env err -> Error (warns_b++warns_y) env err
+        Error warns_y env_e err -> Error (warns_b++warns_y) env_e err
         Ok warns_y y_new -> case replaceInFormula new_env x t a of
-            Error warns_a env err -> Error (warns_y++warns_a++warns_b) env err
+            Error warns_a env_e err -> Error (warns_y++warns_a++warns_b) env_e err
             Ok warns_a a_new -> Ok (warns_y++warns_a++warns_b) (Some y_new a_new)
 replaceInFormula env  x@(Term _ []) t (Not a) = case replaceInFormula env x t a of
-    Error warns env err -> Error warns env err
+    Error warns env_e err -> Error warns env_e err
     Ok warns a_new -> Ok warns (Not a_new)
 replaceInFormula _ (Term _ []) _ Bot = Ok [] Bot
 replaceInFormula env (Term _ []) _ Nil = Error [] env (UnknownError "trying to do an replace on nill formula.")
-replaceInFormula env x t _ = Error [] env (UnknownError "needs to be a variable.")
+replaceInFormula env x _ _ = Error [] env (UnknownError (show x ++ " needs to be a variable."))
