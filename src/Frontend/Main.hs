@@ -24,7 +24,10 @@ main = do
 
     _workingDir = Nothing, --Just "./myProofs",
     _openFiles = [],
-    _tmpLoadedFiles = []
+    _tmpLoadedFiles = [],
+    _fileExplorerOpen = True,
+    _fileExplorerWidth = 300,
+    _rulesSidebarOpen = True
   }
   let prefs = fromMaybe defaultPrefs readPrefs
 
@@ -74,8 +77,6 @@ main = do
     model prefs currentFrontendChan currentBackendChan = AppModel {
       _openMenuBarItem = Nothing,
 
-      _newFileName = "",
-      _newFilePopupOpen = False,
       _filesInDirectory = [],
       _currentFile = Nothing,
       _confirmDeletePopup = False,

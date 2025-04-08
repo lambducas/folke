@@ -10,7 +10,6 @@ import Frontend.Types
 import Frontend.SpecialCharacters
 import Frontend.Helper
 import Frontend.Themes
-import Frontend.Preferences (preferencePath)
 import Frontend.Components.Labels
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 
@@ -40,7 +39,7 @@ import Logic.Par (myLexer, pForm)
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
     ("File", [
-      ("New Proof", "Ctrl+N", OpenCreateProofPopup),
+      ("New Proof", "Ctrl+N", CreateEmptyProof),
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Close File", "Ctrl+W", CloseCurrentFile)
     ]),
@@ -51,11 +50,13 @@ menuBarCategories = [
       ("Insert Line Below", "Ctrl+Enter", NoEvent),
       ("Close Subproof", "Ctrl+Enter", NoEvent)
     ]),
-    ("Preferences", [
-      ("Open Preferences", "Ctrl+Shift+P", OpenFile_ preferencePath "")
+    ("View", [
+      ("Toggle File Explorer", "Ctrl+B", ToggleFileExplorer),
+      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences),
+      ("Open Guide", "", OpenGuide)
     ]),
     ("Help", [
-      ("Open Guide", "", OpenFile_ "user_guide_en.md" "./docs")
+      ("Open Guide", "", OpenGuide)
     ])
   ]
 
@@ -65,6 +66,7 @@ buildUI
   -> WidgetNode AppModel AppEvent
 buildUI _wenv model = widgetTree where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
+  accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
   backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
@@ -96,10 +98,11 @@ buildUI _wenv model = widgetTree where
   fastHScroll = hscroll_ [wheelRate 50]
 
   globalKeybinds = [
-      ("Ctrl-n", OpenCreateProofPopup, True),
+      ("Ctrl-n", CreateEmptyProof, True),
       ("Ctrl-s", SaveCurrentFile, True),
       ("Ctrl-w", CloseCurrentFile, True),
-      ("Ctrl-Shift-p", OpenFile_ preferencePath "", True)
+      ("Ctrl-Shift-p", OpenPreferences, True),
+      ("Ctrl-b", ToggleFileExplorer, True)
     ]
 
   widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [
@@ -143,13 +146,28 @@ buildUI _wenv model = widgetTree where
           `styleHover` [bgColor hoverColor]
 
   mainContent = hstack [
+      actionSidebar,
       fileExplorerSidebar,
       editWindow,
       ruleSidebar
     ] `styleBasic` [expandHeight 1000]
 
+  actionSidebar :: WidgetNode AppModel AppEvent
+  actionSidebar = vstack (map actionButton [
+      ("Toggle File Explorer (Ctrl+B)", remixFileSearchLine, ToggleFileExplorer, model ^. preferences . fileExplorerOpen),
+      ("Toggle Rule Explorer", remixRuler2Line, ToggleRulesSidebar, model ^. preferences . rulesSidebarOpen),
+      ("Open Preferences", remixSettings4Line, OpenPreferences, False),
+      ("Open Guide", remixQuestionLine, OpenGuide, False)
+    ]) `styleBasic` [width 50, borderR 1 dividerColor]
+    where
+      actionButton (tt, icon, event, selected) = box_ [alignCenter, alignMiddle] btn `styleBasic` [height 50]
+        where
+          btn = fastTooltip tt $ iconButton icon event
+            `styleHover` [bgColor hoverColor]
+            `styleBasic` [radius (0.5*u), styleIf selected (textColor accentColor), styleIf selected (bgColor selectedColor)]
+
   fileExplorerSidebar :: WidgetNode AppModel AppEvent
-  fileExplorerSidebar = case model ^. preferences . workingDir of
+  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ case model ^. preferences . workingDir of
     Nothing -> vstack [
         box_ [expandContent] (hstack [
             bold (span "File Explorer"),
@@ -163,7 +181,7 @@ buildUI _wenv model = widgetTree where
           paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
           box (button "Open Folder" OpenSetWorkingDir)
         ] `styleBasic` [padding u]
-      ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
+      ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
 
     Just _ -> vstack [
         box_ [expandContent] (hstack [
@@ -192,7 +210,7 @@ buildUI _wenv model = widgetTree where
           ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
         fastVScroll $ fileTreeUI parts 1
-      ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
+      ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
       where
         parts = map (\f -> (splitOn "/" (pack f), f)) files
         files = sort (model ^. filesInDirectory)
@@ -437,8 +455,13 @@ buildUI _wenv model = widgetTree where
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s)
-            `styleBasic` [border 1 proofBoxColor, styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24]
+          ui = vstack [
+              vstack_ [childSpacing] (map fst s)
+                `styleBasic` [border 1 proofBoxColor, styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24],
+
+              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
+                `styleBasic` [textColor red, paddingT (0.5*u)]
+            ]
           isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
           rStart = index + toInteger (length (_premises sequent))
           rEnd = lastIndex - 1 + toInteger (length (_premises sequent))
@@ -646,7 +669,7 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-  ruleSidebar = fastVScroll (vstack_ [childSpacing] [
+  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ fastVScroll (vstack_ [childSpacing] [
       h2 "Rules",
       vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
     ] `styleBasic` [padding u]) `styleBasic` [maxWidth 300]

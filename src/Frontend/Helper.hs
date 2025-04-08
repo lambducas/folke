@@ -97,8 +97,8 @@ isErrorSubProof _ _ (Just (FEOk _)) = False
 isErrorSubProof _ _ Nothing = False
 
 isErrorLine :: Integer -> Maybe FEResult -> Bool
-isErrorLine lineNumber (Just (FEError _ (FELocal (RefRange a b) _))) = lineNumber >= a && lineNumber <= b
 isErrorLine lineNumber (Just (FEError _ (FELocal (RefLine line) _))) = line == lineNumber
+isErrorLine _ (Just (FEError _ (FELocal (RefRange _ _) _))) = False
 isErrorLine _ (Just (FEError _ (FEGlobal {}))) = False
 isErrorLine _ (Just (FEOk _)) = False
 isErrorLine _ Nothing = False

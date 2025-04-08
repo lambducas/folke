@@ -65,14 +65,15 @@ data Preferences = Preferences {
 
   _workingDir :: Maybe FilePath,
   _openFiles :: [FilePath],
-  _tmpLoadedFiles :: [File]
+  _tmpLoadedFiles :: [File],
+  _fileExplorerOpen :: Bool,
+  _fileExplorerWidth :: Double,
+  _rulesSidebarOpen :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
 
-  _newFilePopupOpen :: Bool,
-  _newFileName :: Text,
   _filesInDirectory :: [FilePath],
   _currentFile :: Maybe FilePath,
   _confirmDeletePopup :: Bool,
@@ -124,6 +125,10 @@ data AppEvent
   | SwitchSubProofToLine FormulaPath WidgetKey
 
   -- Handle files
+  | OpenPreferences
+  | OpenGuide
+  | ToggleFileExplorer
+  | ToggleRulesSidebar
   | RefreshExplorer
   | OpenSetWorkingDir
   | SetWorkingDir FilePath
@@ -140,7 +145,6 @@ data AppEvent
   | SetCurrentFile FilePath
 
   -- Handle creation of proof
-  | OpenCreateProofPopup
   | CreateEmptyProof
 
   -- Proof checking

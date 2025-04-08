@@ -129,8 +129,6 @@ handleEvent wenv node model evt = case evt of
   EditRuleArgument path idx newText -> applyOnCurrentProof model editRuleArgument
     where editRuleArgument = editRuleArgumentInProof path idx newText
 
-  OpenCreateProofPopup -> [ Model $ model & newFilePopupOpen .~ True ]
-
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
         randomFileName <- getTmpFileName
@@ -147,12 +145,22 @@ handleEvent wenv node model evt = case evt of
       )
     ]
 
+  ToggleRulesSidebar -> [ Model $ model & preferences . rulesSidebarOpen %~ toggle]
+    where toggle = not
+
+  ToggleFileExplorer -> [ Model $ model & preferences . fileExplorerOpen %~ toggle]
+    where toggle = not
+
   RefreshExplorer -> [
       Model $ model & filesInDirectory .~ [],
       Producer $ directoryFilesProducer (model ^. preferences . workingDir)
     ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
+
+  OpenPreferences -> handleEvent wenv node model (OpenFile_ preferencePath "")
+
+  OpenGuide -> handleEvent wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
