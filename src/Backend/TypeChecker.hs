@@ -200,7 +200,7 @@ checkForm env f = case f of
         Ok warns1 a_t -> case checkTerm env b of 
             Error warns env_e err -> Error (warns++warns1) env_e err
             Ok warns2 b_t -> Ok (warns1++warns2) (Eq a_t b_t)
-    Abs.FormPred p -> case checkPred env p of
+    Abs.FormPred p -> case checkPred env p of -- TODO Add to env?
         Error warns env_e err -> Error warns env_e err
         Ok warns (_, p_t)      -> Ok warns (Pred p_t)
     Abs.FormAll ident form -> case regTerm env x of
@@ -246,12 +246,18 @@ checkForm env f = case f of
     -return: The type of the predicate
 -}
 checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
-checkPred env (Abs.Pred ident (Abs.Params terms)) = do
-    -- Check all terms in the predicate
-    case checkTerms env terms of
+checkPred env (Abs.Pred ident (Abs.Params terms)) = case Map.lookup name (ids env) of 
+    Nothing -> case checkTerms env terms of --TODO is this an error?
         Error warns env_e err -> Error warns env_e err
-        Ok warns terms_t -> Ok warns (env, Predicate (identToString ident) terms_t)
-
+        Ok warns terms_t -> Ok warns (env, Predicate name terms_t)
+    Just (IDTypeTerm _) ->  Error [] env (UnknownError (name ++ " is a term."))
+    Just (IDTypePred n) -> if n /= i
+        then Error [] env (UnknownError (name ++ " is arity "++ show n ++ " not" ++ show i ++ "."))
+        else case checkTerms env terms of
+            Error warns env_e err -> Error warns env_e err
+            Ok warns terms_t -> Ok warns (env, Predicate name terms_t)
+        where i = toInteger(List.length terms)
+    where name = identToString ident
 {-
     Typechecks a term
 -}
