@@ -91,6 +91,9 @@ buildUI _wenv model = widgetTree where
 
   button a b = Monomer.button a b `styleBasic` [textSize u]
   fastTooltip tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize u]
+  fastScroll = scroll_ [wheelRate 50]
+  fastVScroll = vscroll_ [wheelRate 50]
+  fastHScroll = hscroll_ [wheelRate 50]
 
   globalKeybinds = [
       ("Ctrl-n", OpenCreateProofPopup, True),
@@ -140,12 +143,13 @@ buildUI _wenv model = widgetTree where
           `styleHover` [bgColor hoverColor]
 
   mainContent = hstack [
-      fileWindow,
+      fileExplorerSidebar,
       editWindow,
-      ruleWindow
+      ruleSidebar
     ] `styleBasic` [expandHeight 1000]
 
-  fileWindow = case model ^. preferences . workingDir of
+  fileExplorerSidebar :: WidgetNode AppModel AppEvent
+  fileExplorerSidebar = case model ^. preferences . workingDir of
     Nothing -> vstack [
         box_ [expandContent] (hstack [
             bold (span "File Explorer"),
@@ -187,7 +191,7 @@ buildUI _wenv model = widgetTree where
             --   ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
           ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-        vscroll $ fileTreeUI parts 1
+        fastVScroll $ fileTreeUI parts 1
       ] `styleBasic` [ minWidth 250, maxWidth 400, borderR 1 dividerColor ]
       where
         parts = map (\f -> (splitOn "/" (pack f), f)) files
@@ -238,10 +242,10 @@ buildUI _wenv model = widgetTree where
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
       fileNavBar (model ^. preferences . openFiles),
-      proofWindow (model ^. currentFile)
+      tabWindow (model ^. currentFile)
     ]
 
-  fileNavBar filePaths = hscroll (hstack (map boxedLabel filePaths))
+  fileNavBar filePaths = fastHScroll (hstack (map boxedLabel filePaths))
     `styleBasic` [bgColor selectedColor, maxHeight 50, minHeight 50, height 50]
     where
       boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
@@ -261,146 +265,105 @@ buildUI _wenv model = widgetTree where
             isCurrent = (model ^. currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
 
-  proofWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
-  proofWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
-  proofWindow (Just fileName) = case file of
+  tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
+  tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
+  tabWindow (Just fileName) = case file of
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
-    Just (PreferenceFile _ _) -> hstack [
-      vstack [
-          h3 "App scale",
-          hslider_ (preferences . fontSize) 8 32 [thumbVisible],
-          button "Reset scale" ResetFontSize,
-          spacer, spacer,
-
-          h3 "Choose font:",
-          textDropdown_ (preferences . selectNormalFont) [
-            ["Regular","Medium","Bold"],
-            ["Dyslexic"],
-            ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
-            ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
-            ] fontListToText [onChange UpdateFont] `styleBasic` [textSize u],
-          spacer,
-
-          h3 "Set font thickness:",
-          textDropdown_ (preferences . normalFont) (model ^. preferences . selectNormalFont) pack [] `styleBasic` [textSize u],
-          vstack $ map illustThickness (model ^. preferences . selectNormalFont),
-          spacer, spacer,
-
-          h3 "Set symbolic font thickness:",
-          paragraph "The symbolic font is the font used in logic proofs",
-          textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
-          label "I think ⊢ I am" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
-          spacer, spacer,
-
-          h3 "Theme",
-          normalStyle $ button "Switch light/dark mode" SwitchTheme
-        ] `styleBasic` [maxWidth 1024]
-      ] `styleBasic` [padding 30]
-      where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
-
-    -- Proof files on disk
-    Just file@(ProofFile {}) -> case parsedSequent of
-      Nothing -> vstack [
-          vstack [
-            h1 $ pack $ _path file,
-            spacer
-          ] `styleBasic` [padding 10, borderB 1 dividerColor],
-          vscroll_ [wheelRate 50] (vstack [
-            paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
-            spacer,
-            paragraph "File preview:",
-            spacer,
-            symbolSpan_ (_content file) [multiline]
-          ]) `styleBasic` [padding 10]
-        ]
-      Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
-          vstack [
-            h1 heading,
-            spacer,
-            subheading
-          ] `styleBasic` [padding 10, borderB 1 dividerColor],
-          scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
-          hstack [
-            proofStatusLabel,
-            filler,
-            button "Save proof" (SaveFile file) `styleBasic` [textSize u],
-            spacer,
-            button "Check proof" (CheckProof file) `styleBasic` [textSize u],
-            spacer,
-            button "Export to LaTeX" ExportToLaTeX 
-              `styleBasic` [padding 5, width 120]
-              `nodeKey` "ExportSuccess"
-              `nodeKey` "ExportError",
-            spacer
-          ] `styleBasic` [padding 10, borderT 1 dividerColor]
-        ]
-        where
-          heading = (pack . takeBaseName . _path) file
-          subheading
-            | null premises && conclusion == "" = span "Empty proof"
-            | otherwise = symbolSpan prettySequent
-          prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-          conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
-          premises = map replaceSpecialSymbols (_premises parsedSequent)
-      where
-        parsedSequent = _parsedSequent file
-
-    -- Temporary proof files
-    Just file@(TemporaryProofFile {}) -> case parsedSequent of
-      Nothing -> vstack [
-          vstack [
-            h1 $ pack $ _path file,
-            spacer
-          ] `styleBasic` [padding 10, borderB 1 dividerColor],
-          vscroll_ [wheelRate 50] (vstack [
-            paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
-            spacer,
-            paragraph "File preview:",
-            spacer,
-            symbolSpan_ (_content file) [multiline]
-          ]) `styleBasic` [padding 10]
-        ]
-      Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
-          vstack [
-            h1 heading,
-            spacer,
-            subheading
-          ] `styleBasic` [padding 10, borderB 1 dividerColor],
-          scroll_ [wheelRate 50] (proofTreeUI parsedSequent) `styleBasic` [padding 10],
-          hstack [
-            proofStatusLabel,
-            filler,
-            button "Save proof" (SaveFile file) `styleBasic` [textSize u],
-            spacer,
-            button "Check proof" (CheckProof file) `styleBasic` [textSize u],
-            spacer,
-            button "Export to LaTeX" ExportToLaTeX 
-              `styleBasic` [padding 5, width 120]
-              `nodeKey` "ExportSuccess"
-              `nodeKey` "ExportError",
-            spacer
-          ] `styleBasic` [padding 10, borderT 1 dividerColor]
-        ]
-        where
-          heading = "[Untitled proof]"
-          subheading
-            | null premises && conclusion == "" = span "Empty proof"
-            | otherwise = symbolSpan prettySequent
-          prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-          conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
-          premises = map replaceSpecialSymbols (_premises parsedSequent)
-      where
-        parsedSequent = _parsedSequent file
-
-    -- Markdown
-    Just (MarkdownFile _p content) -> vscroll_ [wheelRate 50] (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
-
-    -- Other files
-    Just (OtherFile p content) -> vscroll_ [wheelRate 50] $ vstack_ [childSpacing] [
-        label $ pack p <> ": This file type is not supported",
-        paragraph content
-      ] `styleBasic` [padding u]
+    Just (PreferenceFile _ _) -> renderPreferenceTab
+    Just file@(ProofFile {}) -> renderProofTab file ((pack . takeBaseName . _path) file)
+    Just file@(TemporaryProofFile {}) -> renderProofTab file "[Untitled proof]"
+    Just (MarkdownFile _p content) -> renderMarkdownTab content
+    Just (OtherFile p content) -> renderOtherTab p content
     where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) fileName
+
+  renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent
+  renderOtherTab path content = fastVScroll $ vstack_ [childSpacing] [
+      label $ pack path <> ": This file type is not supported",
+      paragraph content
+    ] `styleBasic` [padding u]
+
+  renderMarkdownTab :: Text -> WidgetNode AppModel AppEvent
+  renderMarkdownTab content = fastVScroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+
+  renderPreferenceTab :: WidgetNode AppModel AppEvent
+  renderPreferenceTab = hstack [
+    vstack [
+        h3 "App scale",
+        hslider_ (preferences . fontSize) 8 32 [thumbVisible],
+        button "Reset scale" ResetFontSize,
+        spacer, spacer,
+
+        h3 "Choose font:",
+        textDropdown_ (preferences . selectNormalFont) [
+          ["Regular","Medium","Bold"],
+          ["Dyslexic"],
+          ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
+          ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+          ] fontListToText [onChange UpdateFont] `styleBasic` [textSize u],
+        spacer,
+
+        h3 "Set font thickness:",
+        textDropdown_ (preferences . normalFont) (model ^. preferences . selectNormalFont) pack [] `styleBasic` [textSize u],
+        vstack $ map illustThickness (model ^. preferences . selectNormalFont),
+        spacer, spacer,
+
+        h3 "Set symbolic font thickness:",
+        paragraph "The symbolic font is the font used in logic proofs",
+        textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
+        label "I think ⊢ I am" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
+        spacer, spacer,
+
+        h3 "Theme",
+        normalStyle $ button "Switch light/dark mode" SwitchTheme
+      ] `styleBasic` [maxWidth 1024]
+    ] `styleBasic` [padding 30]
+    where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
+
+  renderProofTab :: File -> Text -> WidgetNode AppModel AppEvent
+  renderProofTab file heading = case parsedSequent of
+    Nothing -> vstack [
+        vstack [
+          h1 $ pack $ _path file,
+          spacer
+        ] `styleBasic` [padding 10, borderB 1 dividerColor],
+        fastVScroll (vstack [
+          paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
+          spacer,
+          paragraph "File preview:",
+          spacer,
+          symbolSpan_ (_content file) [multiline]
+        ]) `styleBasic` [padding 10]
+      ]
+    Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
+        vstack [
+          h1 heading,
+          spacer,
+          subheading
+        ] `styleBasic` [padding 10, borderB 1 dividerColor],
+        fastScroll (proofTreeUI parsedSequent) `styleBasic` [padding 10],
+        hstack [
+          proofStatusLabel,
+          filler,
+          button "Save proof" (SaveFile file) `styleBasic` [textSize u],
+          spacer,
+          button "Check proof" (CheckProof file) `styleBasic` [textSize u],
+          spacer,
+          button "Export to LaTeX" ExportToLaTeX 
+            `styleBasic` [padding 5]
+            `nodeKey` "ExportSuccess"
+            `nodeKey` "ExportError",
+          spacer
+        ] `styleBasic` [padding 10, borderT 1 dividerColor]
+      ]
+      where
+        subheading
+          | null premises && conclusion == "" = span "Empty proof"
+          | otherwise = symbolSpan prettySequent
+        prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
+        conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
+        premises = map replaceSpecialSymbols (_premises parsedSequent)
+    where
+      parsedSequent = _parsedSequent file
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
@@ -643,7 +606,7 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-  ruleWindow = vscroll (vstack_ [childSpacing] [
+  ruleSidebar = fastVScroll (vstack_ [childSpacing] [
       h2 "Rules",
       vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
     ] `styleBasic` [padding u]) `styleBasic` [maxWidth 300]

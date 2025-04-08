@@ -24,7 +24,7 @@ import Data.List (findIndex, isInfixOf)
 import Data.Text (Text, unpack, pack, intercalate)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
-import System.FilePath ( takeExtension, replaceExtension, takeDirectory )
+import System.FilePath ( takeExtension )
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
