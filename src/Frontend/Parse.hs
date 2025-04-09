@@ -140,4 +140,5 @@ nArg :: T.Text -> Int -> [T.Text] -> T.Text
 nArg "free" _ [] = ""
 nArg "prem" _ [] = ""
 nArg "assume" _ [] = ""
+nArg "" _ [] = ""
 nArg _ usedArguments arguments = "[" <> T.intercalate ", " (take usedArguments arguments) <> "]"
