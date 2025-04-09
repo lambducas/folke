@@ -149,6 +149,7 @@ data AppEvent
 
   -- Proof checking
   | CheckProof File
+  | CheckCurrentProof
   | BackendResponse BackendMessage
 
   -- Theme

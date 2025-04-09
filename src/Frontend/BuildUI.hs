@@ -48,7 +48,8 @@ menuBarCategories = [
       ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
       ("Goto Next Input", "Return", NoEvent),
       ("Insert Line Below", "Ctrl+Enter", NoEvent),
-      ("Close Subproof", "Ctrl+Enter", NoEvent)
+      ("Close Subproof", "Ctrl+Enter", NoEvent),
+      ("Validate Proof", "Ctrl+R", CheckCurrentProof)
     ]),
     ("View", [
       ("Toggle File Explorer", "Ctrl+B", ToggleFileExplorer),
@@ -102,7 +103,8 @@ buildUI _wenv model = widgetTree where
       ("Ctrl-s", SaveCurrentFile, True),
       ("Ctrl-w", CloseCurrentFile, True),
       ("Ctrl-Shift-p", OpenPreferences, True),
-      ("Ctrl-b", ToggleFileExplorer, True)
+      ("Ctrl-b", ToggleFileExplorer, True),
+      ("Ctrl-r", CheckCurrentProof, True)
     ]
 
   widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [

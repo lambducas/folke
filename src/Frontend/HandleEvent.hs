@@ -361,6 +361,14 @@ handleEvent wenv node model evt = case evt of
 
   SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
+  CheckCurrentProof -> case model ^. currentFile of
+    Nothing -> []
+    Just filePath -> case currentFile of
+      Just file@ProofFile {} -> handleEvent wenv node model (CheckProof file)
+      Just file@TemporaryProofFile {} -> handleEvent wenv node model (CheckProof file)
+      _ -> []
+      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
       Producer (evaluateCurrentProof model file)
