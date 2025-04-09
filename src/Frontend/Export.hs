@@ -32,7 +32,7 @@ convertToLatex model = T.unlines
   ]
   where
     -- Get the filename from the current file path for the section title
-    sectionTitle = case model ^. currentFile of
+    sectionTitle = case model ^. preferences . currentFile of
       Nothing -> "Formal Proof"
       Just _filePath -> "Some submission" -- T.pack $ takeBaseName filePath
 
@@ -41,7 +41,7 @@ formatProof :: AppModel -> Text
 formatProof model = maybe "% No proof available" formatSequent currentSeq
   where
     currentSeq = do
-      filePath <- model ^. currentFile
+      filePath <- model ^. preferences . currentFile
       file <- getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
       case file of
         ProofFile {_parsedSequent = Just s} -> Just s

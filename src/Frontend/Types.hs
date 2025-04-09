@@ -64,6 +64,7 @@ data Preferences = Preferences {
   _fontSize :: Double,
 
   _workingDir :: Maybe FilePath,
+  _currentFile :: Maybe FilePath,
   _openFiles :: [FilePath],
   _tmpLoadedFiles :: [File],
   _fileExplorerOpen :: Bool,
@@ -75,7 +76,6 @@ data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
 
   _filesInDirectory :: [FilePath],
-  _currentFile :: Maybe FilePath,
   _confirmDeletePopup :: Bool,
   _confirmDeleteTarget :: Maybe FilePath,
 

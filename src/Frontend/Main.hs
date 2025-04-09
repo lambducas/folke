@@ -23,6 +23,7 @@ main = do
     _fontSize = 16,
 
     _workingDir = Nothing, --Just "./myProofs",
+    _currentFile = Nothing,
     _openFiles = [],
     _tmpLoadedFiles = [],
     _fileExplorerOpen = True,
@@ -78,7 +79,6 @@ main = do
       _openMenuBarItem = Nothing,
 
       _filesInDirectory = [],
-      _currentFile = Nothing,
       _confirmDeletePopup = False,
       _confirmDeleteTarget = Nothing,
 

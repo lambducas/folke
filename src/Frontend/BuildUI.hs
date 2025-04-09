@@ -245,7 +245,7 @@ buildUI _wenv model = widgetTree where
     where
       isCurrent = case model ^. preferences . workingDir of
         Nothing -> False
-        Just wd -> (model ^. currentFile) == Just (wd </> filePath)
+        Just wd -> (model ^. preferences . currentFile) == Just (wd </> filePath)
       ext = takeExtension filePath
       iconIdent
         | ext == ".md" = remixMarkdownFill
@@ -259,7 +259,7 @@ buildUI _wenv model = widgetTree where
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
       fileNavBar (model ^. preferences . openFiles),
-      tabWindow (model ^. currentFile)
+      tabWindow (model ^. preferences . currentFile)
     ]
 
   fileNavBar filePaths = fastHScroll (hstack (map boxedLabel filePaths))
@@ -279,7 +279,7 @@ buildUI _wenv model = widgetTree where
             displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
-            isCurrent = (model ^. currentFile) == Just filePath
+            isCurrent = (model ^. preferences . currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
 
   tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent

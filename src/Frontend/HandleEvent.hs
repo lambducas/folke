@@ -260,7 +260,7 @@ handleEvent wenv node model evt = case evt of
           filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
       filePath = _path file
 
-  CloseCurrentFile -> case model ^. currentFile of
+  CloseCurrentFile -> case model ^. preferences . currentFile of
     Nothing -> []
     Just filePath -> handleEvent wenv node model (CloseFile filePath)
 
@@ -282,14 +282,14 @@ handleEvent wenv node model evt = case evt of
             Right _ -> return ()
         ) | "/_tmp/" `isInfixOf` filePath]
       finalModel = modelWithClosedFile
-        & currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
+        & preferences . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
       modelWithClosedFile = model
         & preferences . openFiles %~ filter (filePath/=)
         & confirmDeleteTarget .~ Nothing
         & confirmDeletePopup .~ False
-      cf = model ^. currentFile
+      cf = model ^. preferences . currentFile
 
-  SaveCurrentFile -> case model ^. currentFile of
+  SaveCurrentFile -> case model ^. preferences . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
@@ -342,7 +342,7 @@ handleEvent wenv node model evt = case evt of
 
   SetCurrentFile filePath -> [
       Model $ model
-        & currentFile ?~ filePath
+        & preferences . currentFile ?~ filePath
         & proofStatus .~ Nothing
     ]
 
@@ -361,7 +361,7 @@ handleEvent wenv node model evt = case evt of
 
   SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
-  CheckCurrentProof -> case model ^. currentFile of
+  CheckCurrentProof -> case model ^. preferences . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (CheckProof file)
@@ -393,7 +393,7 @@ handleEvent wenv node model evt = case evt of
     ]
     where newWd = Just path
 
-  ExportToLaTeX -> case model ^. currentFile of
+  ExportToLaTeX -> case model ^. preferences . currentFile of
     Nothing -> 
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
@@ -445,7 +445,7 @@ applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
     fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. currentFile
+    cf = model ^. preferences . currentFile
     getActions fileIndex = [
         Model $ model
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
@@ -570,7 +570,7 @@ getCurrentSequent model = sequent
   where
     sequent = fileIndex >>= getSequent
     fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. currentFile
+    cf = model ^. preferences . currentFile
 
     getSequent fileIndex = case model ^. preferences . tmpLoadedFiles . singular (ix fileIndex) of
       f@ProofFile {} -> _parsedSequent f
