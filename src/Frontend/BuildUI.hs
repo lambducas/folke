@@ -149,7 +149,7 @@ buildUI _wenv model = widgetTree where
       fileExplorerSidebar,
       editWindow,
       ruleSidebar
-    ] `styleBasic` [expandHeight 1000]
+    ] `styleBasic` [expandHeight 100000]
 
   actionSidebar :: WidgetNode AppModel AppEvent
   actionSidebar = vstack (map actionButton [

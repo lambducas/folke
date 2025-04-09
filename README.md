@@ -44,6 +44,7 @@
 - [ ] `+ New line` should insert the line after the last line in same box as the last line
 - [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Fix nativefiledialog on mac
+- [ ] Fix Markdown links on Windows
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
 - [ ] Fix full Markdown support
 - [ ] Fix menubar for better UX
