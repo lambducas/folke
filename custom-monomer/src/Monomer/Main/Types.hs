@@ -47,6 +47,7 @@ type MonomerM s e m = (Eq s, MonadState (MonomerCtx s e) m, MonadCatch m, MonadI
 -- | Messages received by the rendering thread.
 data RenderMsg s e
   = MsgInit (WidgetEnv s e) (WidgetNode s e)
+  | MsgExit
   | MsgRender (WidgetEnv s e) (WidgetNode s e)
   | MsgResize Size
   | MsgRemoveImage Text
