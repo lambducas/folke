@@ -21,7 +21,7 @@ import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _
 import qualified Monomer.Lens as L
 import Control.Lens
 import TextShow ( TextShow(showt) )
-import Data.Text (Text, unpack, pack, intercalate, splitOn)
+import Data.Text (Text, unpack, pack, intercalate, splitOn, toLower)
 import qualified Data.Text (length)
 import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
@@ -39,14 +39,15 @@ menuBarCategories = [
     ("File", [
       ("New Proof", "Ctrl+N", CreateEmptyProof),
       ("Save File", "Ctrl+S", SaveCurrentFile),
-      ("Close File", "Ctrl+W", CloseCurrentFile)
+      ("Close File", "Ctrl+W", CloseCurrentFile),
+      ("Exit", "", ExitApp)
     ]),
     ("Edit", [
-      ("Make Subproof", "Ctrl+Tab", NoEvent),
-      ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
-      ("Goto Next Input", "Return", NoEvent),
-      ("Insert Line Below", "Ctrl+Enter", NoEvent),
-      ("Close Subproof", "Ctrl+Enter", NoEvent),
+      -- ("Make Subproof", "Ctrl+Tab", NoEvent),
+      -- ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
+      -- ("Goto Next Input", "Return", NoEvent),
+      -- ("Insert Line Below", "Ctrl+Enter", NoEvent),
+      -- ("Close Subproof", "Ctrl+Enter", NoEvent),
       ("Validate Proof", "Ctrl+R", CheckCurrentProof)
     ]),
     ("View", [
@@ -96,14 +97,12 @@ buildUI _wenv model = widgetTree where
   fastVScroll = vscroll_ [wheelRate 50]
   fastHScroll = hscroll_ [wheelRate 50]
 
-  globalKeybinds = [
-      ("Ctrl-n", CreateEmptyProof, True),
-      ("Ctrl-s", SaveCurrentFile, True),
-      ("Ctrl-w", CloseCurrentFile, True),
-      ("Ctrl-Shift-p", OpenPreferences, True),
-      ("Ctrl-b", ToggleFileExplorer, True),
-      ("Ctrl-r", CheckCurrentProof, True)
-    ]
+  globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd menuBarCategories
+    where
+      convertBind b = intercalate "-" (map fixKey (splitOn "+" b))
+      fixKey k
+        | Data.Text.length k == 1 = toLower k
+        | otherwise = k
 
   widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [
       vstack [
@@ -677,7 +676,7 @@ buildUI _wenv model = widgetTree where
 
       subsection "First Order Logic",
       vstack $ map (ruleItem . snd) visualRuleNames1
-    ]) `styleBasic` [maxWidth 300, borderL 1 dividerColor]
+    ]) `styleBasic` [rangeWidth 200 300, borderL 1 dividerColor]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
       ruleItem r = box_ [onClick NoEvent] (symbolSpan r)

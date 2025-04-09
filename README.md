@@ -40,7 +40,6 @@
 - [ ] Ctrl Z support
 - [ ] User should be able to drag to resize 'File Explorer' and rule sidebar
 - [ ] Update linenumber references when deleting or inserting line
-- [ ] Add \forall and \exists to symbol conversion table
 - [ ] Fix focus not updating correcly when inserting new line/removing line
 - [ ] `+ New line` should insert the line after the last line in same box as the last line
 - [ ] Give suggestions on which rules to use when user is inputting rule
