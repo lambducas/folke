@@ -207,3 +207,40 @@ ruleMetaDataMap = Map.fromList [
     ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
     ("SomeI", RuleMetaData {_nrArguments = 2, _argumentLabels = []})
   ]
+
+visualRuleNames :: [(Text, Text)]
+visualRuleNames = visualRuleNames0 ++ visualRuleNames1
+
+visualRuleNames0 :: [(Text, Text)]
+visualRuleNames0 = [
+    ("assume", "assume"),
+    ("free", "free"),
+    ("copy", "copy"),
+    ("AndI", "∧I"),
+    ("AndEL", "∧EL"),
+    ("AndER", "∧ER"),
+    ("OrIL", "∨IL"),
+    ("OrIR", "∨IR"),
+    ("OrE", "∨E"),
+    ("ImplI", "→I"),
+    ("ImplE", "→E"),
+    ("NotI", "¬I"),
+    ("NotE", "¬E"),
+    ("BotE", "⊥E"),
+    ("NotNotI", "¬¬I"),
+    ("NotNotE", "¬¬E"),
+    ("MT", "MT"),
+    ("PBC", "PBC"),
+    ("LEM", "LEM")
+  ]
+
+visualRuleNames1 :: [(Text, Text)]
+visualRuleNames1 = [
+    ("free", "free"),
+    ("EqI", "=I"),
+    ("EqE", "=E"),
+    ("AllE", "∀E"),
+    ("AllI", "∀I"),
+    ("SomeE", "∃E"),
+    ("SomeI", "∃I")
+  ]

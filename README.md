@@ -36,22 +36,23 @@
 | SomeI     | existsI, ∃I              |
 
 ### Frontend
-- [ ] Update linenumber references when deleting or inserting line
+- [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
 - [ ] Ctrl Z support
+- [ ] User should be able to drag to resize 'File Explorer' and rule sidebar
+- [ ] Update linenumber references when deleting or inserting line
 - [ ] Add \forall and \exists to symbol conversion table
 - [ ] Fix focus not updating correcly when inserting new line/removing line
 - [ ] `+ New line` should insert the line after the last line in same box as the last line
 - [ ] Give suggestions on which rules to use when user is inputting rule
-- [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
 - [ ] Fix nativefiledialog on mac
-- [ ] Display warnings and errors on the lines they appear on
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
-- [ ] Display all available rules nicely on the side
 - [ ] Fix full Markdown support
 - [ ] Fix menubar for better UX
 - [ ] When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
 - [ ] Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)
+- [ ] Display warnings and errors on the lines they appear on
+- [x] ~~Display all available rules nicely on the side~~
 - [x] ~~Add textfield for every argument in rule instead of brackets in single textfield~~
 - [x] ~~Catch syntax errors before backend parser so we don't get syntax errors that aren't helpful for the user~~
 - [x] ~~Keybinding for check proof button~~

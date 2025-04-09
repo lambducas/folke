@@ -13,6 +13,9 @@ import Frontend.Themes
 import Frontend.Components.Labels
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 
+import Shared.Messages (FEResult(..))
+import Logic.Par (myLexer, pForm)
+
 import Monomer
 import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
 import qualified Monomer.Lens as L
@@ -28,11 +31,6 @@ import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe, isNothing)
 import qualified Data.Map
-
-import Backend.Environment (newEnv)
-import Backend.Types
-import Shared.Messages (FEResult(..))
-import Logic.Par (myLexer, pForm)
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
@@ -671,7 +669,18 @@ buildUI _wenv model = widgetTree where
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ fastVScroll (vstack_ [childSpacing] [
-      h2 "Rules",
-      vstack $ map (label . pack .fst) (Data.Map.toList $ rules newEnv)
-    ] `styleBasic` [padding u]) `styleBasic` [maxWidth 300]
+  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ fastVScroll (vstack [
+      h2 "Rules" `styleBasic` [padding u],
+
+      subsection "Propositional Logic",
+      vstack $ map (ruleItem . snd) visualRuleNames0,
+
+      subsection "First Order Logic",
+      vstack $ map (ruleItem . snd) visualRuleNames1
+    ]) `styleBasic` [maxWidth 300, borderL 1 dividerColor]
+    where
+      subsection t = box (bold (span t)) `styleBasic` [padding u]
+      ruleItem r = box_ [onClick NoEvent] (symbolSpan r)
+        `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
+        `styleHover` [bgColor hoverColor]
+        `styleActive` [bgColor selectedColor]
