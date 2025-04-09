@@ -1,15 +1,15 @@
-module Frontend.Export
-  ( convertToLatex
-  ) where
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
+module Frontend.Export (
+  convertToLatex
+) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Frontend.Types
 import Frontend.SpecialCharacters (replaceSpecialSymbols)
-import Backend.Types
 import Frontend.Helper (getProofFileByPath)
 import Control.Lens ((^.))
-import System.FilePath (takeBaseName)
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: AppModel -> Text
@@ -17,20 +17,7 @@ convertToLatex model = T.unlines
   [ "\\documentclass{article}"
   , "\\usepackage{amsmath}"
   , "\\usepackage{amssymb}" -- For \ulcorner symbol
-  , "\\usepackage{mathtools}"
-  , "\\usepackage{tikz}"
-  , ""
-  , "% Custom styles for proof formatting"
-  , "\\setlength{\\parindent}{0pt}"
-  , "\\pagestyle{empty}" -- Remove page numbers
-  , "\\newcommand{\\proofline}[2]{$#1$ \\hfill $[#2]$\\\\[0.5em]}"
-  , "\\newcommand{\\proofstatement}[1]{$#1$\\\\[0.5em]}"
-  , "% Corner brackets for subproofs"
-  , "\\newenvironment{subproof}{%"
-  , "  \\begin{minipage}{\\textwidth}%"
-  , "  $\\ulcorner$ \\begin{addmargin}[2em]{0em}%"
-  , "}{\\end{addmargin}\\end{minipage}\\\\[0.5em]}"
-  , "\\usepackage{scrextend}" -- For addmargin environment
+  , "\\usepackage{logicproof}"
   , ""
   , "\\begin{document}"
   , ""
@@ -43,18 +30,15 @@ convertToLatex model = T.unlines
   , ""
   , "\\end{document}"
   ]
-  where 
+  where
     -- Get the filename from the current file path for the section title
     sectionTitle = case model ^. currentFile of
       Nothing -> "Formal Proof"
-      Just filePath -> "Some submission" -- T.pack $ takeBaseName filePath
+      Just _filePath -> "Some submission" -- T.pack $ takeBaseName filePath
 
 -- Format the proof as LaTeX
 formatProof :: AppModel -> Text
-formatProof model = 
-  case currentSeq of
-    Nothing -> "% No proof available"
-    Just seq -> formatSequent seq
+formatProof model = maybe "% No proof available" formatSequent currentSeq
   where
     currentSeq = do
       filePath <- model ^. currentFile
@@ -72,52 +56,47 @@ formatSequent seq = T.unlines
   , "\\end{center}"
   , ""
   , "\\subsection*{Proof}"
+  , "\\begin{logicproof}{" <> (T.pack . show) maxNestedLevel <> "}"
   , premiseLines
   , formatSteps (_steps seq)
+  , "\\end{logicproof}"
   ]
   where
-    formattedSequent = 
+    maxNestedLevel = subProofDepth seq
+    formattedSequent =
       if null (_premises seq)
         then "\\vdash " <> formatFormula (_conclusion seq)
-        else T.intercalate ", " (map formatFormula (_premises seq)) <> 
+        else T.intercalate ", " (map formatFormula (_premises seq)) <>
              " \\vdash " <> formatFormula (_conclusion seq)
-    
-    -- Add the premises as initial lines in the proof (without numbering)
+
+    -- Add the premises as initial lines in the proof
     premiseLines = if null (_premises seq)
                    then ""
-                   else T.unlines (map premiseLine (_premises seq))
-    
-    premiseLine premise = "\\proofline{" <> formatFormula premise <> "}{premise}"
-    
+                   else T.intercalate "\n" (map premiseLine (_premises seq))
+
+    premiseLine premise = formatFormula premise <> " & premise \\\\"
+
     formatFormula = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
 
 -- Format steps with proper enumeration
 formatSteps :: [FEStep] -> Text
-formatSteps steps = T.unlines (map formatStep steps)
+formatSteps steps = T.intercalate "\n" (zipWith (\s i -> formatStep s (i == length steps)) steps [1..])
 
--- Format a single step (with justification but without numbers)
-formatStep :: FEStep -> Text
-formatStep (Line statement "" _ _) =
-  "\\proofstatement{" <> formatText statement <> "}"
+-- Format a single step
+formatStep :: FEStep -> Bool -> Text
+formatStep (Line statement rule usedArguments arguments) isLast = fStatement <> " & " <> fRule <> fNewLine
   where
-    formatText = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
-
-formatStep (Line statement rule _ _) =
-  "\\proofline{" <> formatText statement <> "}{" <> formatText rule <> "}"
-  where
+    fNewLine = if isLast then "" else " \\\\"
+    fStatement = formatText statement
+    fRule = "$" <> formatText rule <> "$ " <> T.intercalate ", " (take usedArguments arguments)
     formatText = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
 
 -- Modified subproof formatting without bullets
-formatStep (SubProof steps) =
-  T.unlines
-  [ "\\begin{subproof}"
-  , formatSteps steps
-  , "\\end{subproof}"
-  ]
+formatStep (SubProof steps) _ = "\\begin{subproof}\n" <> formatSteps steps <> "\n\\end{subproof}"
 
 -- Replace special symbols with LaTeX equivalents
 replaceLatexSymbols :: String -> String
-replaceLatexSymbols input = 
+replaceLatexSymbols input =
   fixRuleNames $ fixArrows $ concatMap replaceSymbol input
   where
     replaceSymbol '&' = "\\land "
@@ -128,6 +107,18 @@ replaceLatexSymbols input =
     replaceSymbol '⊥' = "\\bot "
     replaceSymbol '∧' = "\\land "
     replaceSymbol '⊢' = "\\vdash "
+    replaceSymbol '∀' = "\\forall "
+    replaceSymbol '∃' = "\\exists "
+    replaceSymbol '₀' = "_0"
+    replaceSymbol '₁' = "_1"
+    replaceSymbol '₂' = "_2"
+    replaceSymbol '₃' = "_3"
+    replaceSymbol '₄' = "_4"
+    replaceSymbol '₅' = "_5"
+    replaceSymbol '₆' = "_6"
+    replaceSymbol '₇' = "_7"
+    replaceSymbol '₈' = "_8"
+    replaceSymbol '₉' = "_9"
     replaceSymbol c = [c]
 
     -- Handle arrows separately
@@ -136,41 +127,53 @@ replaceLatexSymbols input =
     fixArrows [] = []
 
     -- Fix rule names with proper LaTeX notation
-    fixRuleNames = fixAndI . fixAndE . fixOrI . fixOrE . fixNotI . fixNotE . fixImplI . fixImplE . fixBotE . fixPBC . fixCopy
-    
+    fixRuleNames = fixAndI . fixAndE . fixOrI . fixOrE . fixNotI . fixNotE . fixImplI . fixImplE . fixBotE . fixPBC . fixCopy . fixAllE . fixAllI . fixSomeE . fixSomeI . fixEqE . fixEqI . fixFree . fixAssume
+
     -- Standard inference rules
-    fixAndI = replace "AndI" "\\land I"  -- Conjunction Introduction
-    fixAndE = replace "AndE" "\\land E"  -- Conjunction Elimination
-    fixOrI = replace "OrI" "\\lor I"     -- Disjunction Introduction
-    fixOrE = replace "OrE" "\\lor E"     -- Disjunction Elimination
-    fixNotI = replace "NotI" "\\neg I"   -- Negation Introduction
-    
+    fixAndI = replace "AndI" "\\land \\mathrm{I}"                                            -- Conjunction Introduction
+    fixAndE = replace "AndER" "\\land \\mathrm{ER}" . replace "AndEL" "\\land \\mathrm{EL}"  -- Conjunction Elimination
+    fixOrI = replace "OrIR" "\\lor \\mathrm{IR}" . replace "OrIL" "\\lor \\mathrm{IL}"       -- Disjunction Introduction
+    fixOrE = replace "OrE" "\\lor \\mathrm{E}"                                               -- Disjunction Elimination
+    fixNotI = replace "NotI" "\\neg \\mathrm{I}"                                             -- Negation Introduction
+
     -- Fix various forms of negation elimination
     fixNotE = replaceAll [
-        ("N otE", "\\neg E"),       -- Fix space issue
-        ("NotE", "\\neg E"),        -- Standard format
-        ("Not¬E", "\\neg E"),       -- Mixed format
-        ("N ot¬E", "\\neg E"),      -- Mixed format with space
-        ("¬E", "\\neg E")           -- Unicode symbol format
+        ("N otE", "\\neg \\mathrm{E}"),       -- Fix space issue
+        ("NotE", "\\neg \\mathrm{E}"),        -- Standard format
+        ("Not¬E", "\\neg \\mathrm{E}"),       -- Mixed format
+        ("N ot¬E", "\\neg \\mathrm{E}"),      -- Mixed format with space
+        ("¬E", "\\neg \\mathrm{E}")           -- Unicode symbol format
       ]
-    
+
     -- Fix various forms of implication introduction
     fixImplI = replaceAll [
-        ("IfI", "\\rightarrow I"),
-        ("ImplI", "\\rightarrow I"),
-        ("->I", "\\rightarrow I")
+        ("IfI", "\\rightarrow \\mathrm{I}"),
+        ("ImplI", "\\rightarrow \\mathrm{I}"),
+        ("->I", "\\rightarrow \\mathrm{I}")
       ]
-    
+
     -- Fix various forms of implication elimination
     fixImplE = replaceAll [
-        ("IfE", "\\rightarrow E"),
-        ("ImplE", "\\rightarrow E"),
-        ("->E", "\\rightarrow E")
+        ("IfE", "\\rightarrow \\mathrm{E}"),
+        ("ImplE", "\\rightarrow \\mathrm{E}"),
+        ("->E", "\\rightarrow \\mathrm{E}")
       ]
+
+    fixBotE = replace "BotE" "\\bot \\mathrm{E}"   -- Bottom Elimination
+    fixPBC = replace "PBC" "\\mathrm{PBC}"         -- Proof by Contradiction
+    fixCopy = replace "copy" "\\mathrm{Copy}"      -- Copy rule
+
+    fixAllE = replace "AllE" "\\forall \\mathrm{E}"
+    fixAllI = replace "AllI" "\\forall \\mathrm{I}"
+
+    fixSomeE = replace "SomeE" "\\exists \\mathrm{E}"
+    fixSomeI = replace "SomeI" "\\exists \\mathrm{I}"
+
+    fixEqE = replace "EqE" "= \\mathrm{E}"
+    fixEqI = replace "EqI" "= \\mathrm{I}"
     
-    fixBotE = replace "BotE" "\\bot E"   -- Bottom Elimination
-    fixPBC = replace "PBC" "PBC"         -- Proof by Contradiction (keep as is)
-    fixCopy = replace "copy" "Copy"      -- Copy rule
+    fixFree = replace "free" "\\mathrm{free}"
+    fixAssume = replace "assume" "\\mathrm{assumption}"
 
     -- Helper to apply multiple replacements
     replaceAll :: [(String, String)] -> String -> String
@@ -185,3 +188,11 @@ replace old new = go
       | take (length old) str == old = new ++ go (drop (length old) str)
       | otherwise = c : go cs
     go [] = []
+
+-- Calculates maximum depth of subproofs
+subProofDepth :: FESequent -> Integer
+subProofDepth seq = maximum $ map (md 0) (_steps seq)
+  where
+    md :: Integer -> FEStep -> Integer
+    md currentDepth (Line {}) = currentDepth
+    md currentDepth (SubProof steps) = maximum (map (md (currentDepth + 1)) steps)
