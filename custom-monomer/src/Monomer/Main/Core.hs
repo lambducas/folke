@@ -142,6 +142,11 @@ startApp newModel eventHandler uiBuilder configs = do
 
   resp <- runStateT (runAppLoop window glCtx channel oldRoot newRoot config) ctx
 
+  -- Kill multithread channel so windows exe can close background process
+  platform <- getPlatform
+  when (platform == "Windows") $ do
+    liftIO . atomically $ writeTChan channel MsgExit
+
   -- Even when running on ghci, if exitApplication == True it means the user
   -- closed the window and it will need to be created again on reload.
   when (not isGhci || resp ^. _2 . L.exitApplication) $ do
@@ -499,8 +504,12 @@ waitRenderMsg
   -> IO ()
 waitRenderMsg msgChan window renderer fontMgr state = do
   msg <- atomically $ readTChan msgChan
-  newState <- handleRenderMsg window renderer fontMgr state msg
-  waitRenderMsg msgChan window renderer fontMgr newState
+  unless (isMsgExit msg) $ do
+    newState <- handleRenderMsg window renderer fontMgr state msg
+    waitRenderMsg msgChan window renderer fontMgr newState
+
+isMsgExit MsgExit = True
+isMsgExit _ = False
 
 handleRenderMsg
   :: (Eq s, WidgetEvent e)
