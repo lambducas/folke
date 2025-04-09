@@ -55,6 +55,8 @@ handleEvent wenv node model evt = case evt of
 
   ExitApp -> [ exitApplication ]
 
+  AppResize m -> [ Model $ model & preferences . windowMode .~ m ]
+
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
 
   FocusOnKey key -> [ SetFocusOnKey key ]

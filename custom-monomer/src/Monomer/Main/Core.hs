@@ -157,7 +157,7 @@ startApp newModel eventHandler uiBuilder configs = do
     compCfgs
       = (onInit <$> _apcInitEvent config)
       ++ (onDispose <$> _apcDisposeEvent config)
-      ++ (onResize <$> _apcResizeEvent config)
+      ++ (onResize <$> map (\f (Rect _ _ w h) -> f $ MainWindowNormal (round w, round h)) (_apcResizeEvent config))
     ~modelFp = maybe "" ($ newModel) (_apcModelFingerprintFn config)
     newRoot = composite_ "app" id uiBuilder eventHandler compCfgs
 
@@ -331,6 +331,7 @@ mainLoop window fontManager config loopArgs = do
   let eventsPayload = fmap SDL.eventPayload events
   let quit = SDL.QuitEvent `elem` eventsPayload
 
+  let windowMaximized = isWindowMaximized eventsPayload
   let windowResized = currWinSize /= windowSize && isWindowResized eventsPayload
   let windowExposed = isWindowExposed eventsPayload
   let mouseEntered = isMouseEntered eventsPayload
@@ -338,6 +339,9 @@ mainLoop window fontManager config loopArgs = do
   let invertY = fromMaybe False (_apcInvertWheelY config)
   let convertCfg = ConvertEventsCfg _mlOS dpr epr invertX invertY
   let baseSystemEvents = convertEvents convertCfg mousePos eventsPayload
+
+  -- when windowMaximized $
+  --   liftIO $ print eventsPayload
 
 --  when newSecond $
 --    liftIO . putStrLnErr $ "Frames: " ++ show _mlFrameCount
@@ -382,9 +386,15 @@ mainLoop window fontManager config loopArgs = do
   -- Exit handler
   let baseWidgetId = _mlWidgetRoot ^. L.info . L.widgetId
   let exitMsgs = SendMessage baseWidgetId <$> _mlExitEvents
+  let maximizedMsgs = SendMessage baseWidgetId <$> map ($ MainWindowMaximized) (_apcResizeEvent config)
+  -- let maximizedMsgs = SendMessage baseWidgetId <$> _apcResizeEvent config
   let baseReqs
         | quit = Seq.fromList exitMsgs
         | otherwise = Seq.Empty
+  -- let baseReqs = Seq.fromList (
+  --         (if quit then exitMsgs else []) ++
+  --         (if windowMaximized then maximizedMsgs else [])
+  --       )
   let baseStep = (wenv, _mlWidgetRoot, Seq.empty)
 
   L.renderRequested .= False
@@ -393,11 +403,12 @@ mainLoop window fontManager config loopArgs = do
   (wtWenv, wtRoot, _) <- handleWidgetTasks rqWenv rqRoot
   (seWenv, seRoot, _) <- handleSystemEvents wtWenv wtRoot baseSystemEvents
 
-  (newWenv, newRoot, _) <- if windowResized
+  k@(kindaNewWenv, kindaNewRoot, _) <- if windowResized
     then do
       L.windowSize .= currWinSize
       handleResizeWidgets (seWenv, seRoot, Seq.empty)
-    else return (seWenv, seRoot, Seq.empty)
+    else return (seWenv, seRoot, Seq.empty) 
+  (newWenv, newRoot, _) <- handleRequests (Seq.fromList (if windowMaximized then maximizedMsgs else [])) k
 
   endTs <- getElapsedTimestampSince _mlAppStartTs
 
@@ -554,6 +565,7 @@ handleRenderMsg window renderer fontMgr state (MsgRunInRender chan task) = do
     value <- task
     atomically $ writeTChan chan value
   return state
+handleRenderMsg window renderer fontMgr state _ = do return state
 
 renderWidgets
   :: SDL.Window
@@ -624,6 +636,10 @@ renderScheduleActive currTs schedule = scheduleActive where
   RenderSchedule _ start ms count = schedule
   stepCount = floor (fromIntegral (currTs - start) / fromIntegral ms)
   scheduleActive = maybe True (> stepCount) count
+
+isWindowMaximized :: [SDL.EventPayload] -> Bool
+isWindowMaximized eventsPayload = not status where
+  status = null [ e | e@SDL.WindowMaximizedEvent {} <- eventsPayload ]
 
 isWindowResized :: [SDL.EventPayload] -> Bool
 isWindowResized eventsPayload = not status where

@@ -63,6 +63,7 @@ data Preferences = Preferences {
   _logicFont :: String,
   _fontSize :: Double,
 
+  _windowMode :: MainWindowState,
   _workingDir :: Maybe FilePath,
   _currentFile :: Maybe FilePath,
   _openFiles :: [FilePath],
@@ -95,6 +96,7 @@ data AppEvent
   | AppInit
   | AppBeforeExit
   | ExitApp
+  | AppResize MainWindowState
   | Print String
 
   -- Menu bar
@@ -177,6 +179,7 @@ feFileExt = "json"
 
 $(deriveJSON defaultOptions ''SelectableTheme)
 $(deriveJSON defaultOptions ''File)
+$(deriveJSON defaultOptions ''MainWindowState)
 $(deriveJSON defaultOptions ''Preferences)
 
 ruleMetaDataMap :: Map.Map Text RuleMetaData

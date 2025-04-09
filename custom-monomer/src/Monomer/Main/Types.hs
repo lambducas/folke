@@ -195,7 +195,7 @@ data AppConfig s e = AppConfig {
   -- | Exit event, useful for cancelling an application close event.
   _apcExitEvent :: [e],
   -- | Resize event handler.
-  _apcResizeEvent :: [Rect -> e],
+  _apcResizeEvent :: [MainWindowState -> e],
   -- | Defines which mouse button is considered main.
   _apcMainButton :: Maybe Button,
   -- | Defines which mouse button is considered secondary or context button.
@@ -435,7 +435,7 @@ appExitEvent evt = def {
 }
 
 -- | Resize event handler.
-appResizeEvent :: (Rect -> e) -> AppConfig s e
+appResizeEvent :: (MainWindowState -> e) -> AppConfig s e
 appResizeEvent evt = def {
   _apcResizeEvent = [evt]
 }

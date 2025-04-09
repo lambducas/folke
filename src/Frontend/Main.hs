@@ -22,6 +22,7 @@ main = do
     _logicFont = "Symbol_Regular",
     _fontSize = 16,
 
+    _windowMode = MainWindowNormal (800, 600),
     _workingDir = Nothing, --Just "./myProofs",
     _currentFile = Nothing,
     _openFiles = [],
@@ -44,6 +45,7 @@ main = do
     config _prefs = [
       --appScaleFactor (_appScale prefs),
 
+      appWindowState (_windowMode _prefs),
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appTheme customLightTheme,
@@ -71,6 +73,7 @@ main = do
 
       appInitEvent AppInit,
       appExitEvent AppBeforeExit,
+      appResizeEvent AppResize,
       appModelFingerprint show
       ]
       
