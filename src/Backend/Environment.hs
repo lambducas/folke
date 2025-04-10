@@ -399,43 +399,57 @@ ruleEqI env [] _  = Error [] env (RuleConcError "The conclusion must be an eq st
 ruleEqI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 0 )
 
 ruleEqE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleEqE env [(_, ArgForm (Eq t1 t2)), (j, ArgForm a), (_, ArgFormWith u phi)] _ = case replaceInFormula env u t1 phi of
+ruleEqE env [(i, ArgForm (Eq t1 t2)), (j, ArgForm a), (_, ArgFormWith u phi)] _ = case isFreeFor env t1 u phi of
     Error warns env_e err -> Error warns env_e err
-    Ok warns1 b -> if a /= b then Error [] env (RuleArgError j ("Do not match "++show phi++"["++ show t1 ++"/"++ show u ++"].")) else
-        case replaceInFormula env u t2 phi of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns2 c -> Ok (warns1++warns2) c
+    Ok warns_t1 False -> Error warns_t1 env (RuleArgError i (show t1 ++ "needs to be free for " ++ show u ++" in " ++ show phi))
+    Ok warns_t1 True -> case isFreeFor env t2 u phi of
+        Error warns env_e err -> Error warns env_e err
+        Ok warns_t2 False -> Error (warns_t1++warns_t2) env (RuleArgError i (show t2 ++ "needs to be free for " ++ show u ++" in " ++ show phi))
+        Ok warns_t2 True  -> case replaceInFormula env u t1 phi of
+            Error warns env_e err -> Error (warns++warns_t1++warns_t2) env_e err
+            Ok warns1 b -> if a /= b then Error (warns_t1++warns_t2++warns1) env (RuleArgError j ("Do not match "++show phi++"["++ show t1 ++"/"++ show u ++"].")) else
+                case replaceInFormula env u t2 phi of
+                    Error warns env_e err -> Error (warns++warns_t1++warns_t2++warns1) env_e err
+                    Ok warns2 c -> Ok (warns_t1++warns_t2++warns1++warns2) c
 ruleEqE env [(_, ArgForm (Eq _ _)), (_, ArgForm _), (k, _)] _ = Error [] env (RuleArgError k  "Must be an formula.")
 ruleEqE env [(_, ArgForm (Eq _ _)), (j, _), (_, _)] _ = Error [] env (RuleArgError j  "Must be an formula.")
 ruleEqE env [(i, _), (_, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be an equality.")
 ruleEqE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 3 )
 
 ruleAllE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllE env [(_, ArgForm (All x a)), (_, ArgTerm t@(Term _ []))] _ = replaceInFormula env x t a
+ruleAllE env [(_, ArgForm (All x phi)), (j, ArgTerm t@(Term _ []))] _ =  case isFreeFor env t x phi of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns False -> Error warns env (RuleArgError j (show t ++ "needs to be free for " ++ show x ++" in " ++ show phi))
+    Ok warns1 True -> case replaceInFormula env x t phi of 
+        Error warns env_e err -> Error (warns++warns1) env_e err
+        Ok warns2 res -> Ok (warns1++warns2) res
 ruleAllE env [(_, ArgForm (All _ _)), (j, _)] _ = Error [] env (RuleArgError j  "Must be an free variable.")
 ruleAllE env [(i, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be an for all formula.")
 ruleAllE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 2 )
 
 ruleAllI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) = case replaceInFormula env x t b of
-    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
+    Error warns env_e err -> Error warns env_e err
     Ok warns c -> if a==c then Ok warns (All x b) else Error [] env (RuleConcError "The given formula did not match the conclusion.")
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = Error [] env (RuleConcError "The conclusion must be an for all formula.")
 ruleAllI env [(i, _)] _ = Error [] env (RuleArgError i  "Must be an box.")
 ruleAllI env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 1 )
 
-ruleSomeE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeE env [(_,ArgForm (Some x a)), (_, ArgProof(Proof [t] [b] c))] _ = case replaceInFormula env x t a of
-    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
-    Ok warns d -> if b == d then Ok [] c else Error warns env (RuleConcError (show a ++ "[" ++ show t ++ "/" ++show x ++ "] resulted in " ++ show d ++ " and not " ++ show b ++" as expected." ))
+ruleSomeE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula --TODO do we need to check if b mentions x_0?
+ruleSomeE env [(_,ArgForm (Some x a)), (_, ArgProof(Proof [x_0] [b] c))] _ = case replaceInFormula env x x_0 a of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns d -> if b == d then Ok [] c else Error warns env (RuleConcError (show a ++ "[" ++ show x_0 ++ "/" ++show x ++ "] resulted in " ++ show d ++ " and not " ++ show b ++" as expected." ))
 ruleSomeE env [(_,ArgForm (Some _ _)), (j, b)] _ = Error [] env (RuleArgError j  ("Must be an proof not "++ show b ++"."))
 ruleSomeE env [(i,a), (_, _)] _ = Error [] env (RuleArgError i  ("Must be an Exists formula not "++ show a ++ "."))
 ruleSomeE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 2 )
 
 ruleSomeI:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeI env [(_, ArgForm a),  (_, ArgTerm t@(Term _ []))] (Some x b) = case replaceInFormula env x t b of
-    Error warns env_e err -> Error warns env_e err --TODO specify argument error?
-    Ok warns c -> if a == c then Ok warns (Some x b) else Error [] env (RuleConcError (show b ++ "[" ++ show x ++ "/" ++show t ++ "] resulted in " ++ show c ++ " and not " ++ show a ++" as expected." ))
+ruleSomeI env [(_, ArgForm a),  (j, ArgTerm t@(Term _ []))] (Some x phi) = case isFreeFor env t x phi of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns False -> Error warns env (RuleArgError j (show t ++ "needs to be free for " ++ show x ++" in " ++ show phi))
+    Ok warns1 True -> case replaceInFormula env x t phi of
+        Error warns env_e err -> Error warns env_e err
+        Ok warns2 c -> if a == c then Ok (warns1++warns2) (Some x phi) else Error [] env (RuleConcError (show phi ++ "[" ++ show x ++ "/" ++show t ++ "] resulted in " ++ show c ++ " and not " ++ show a ++" as expected." ))
 ruleSomeI env [(_, ArgForm _),  (_, ArgTerm (Term _ []))] r = Error [] env (RuleConcError ("The conclusion must be an exist formula not " ++ show r ++"."))
 ruleSomeI env [(_, ArgForm _), (j, _)] _ = Error [] env (RuleArgError j  "Must be an free variable.")
 ruleSomeI env [(i, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be an formula.")
