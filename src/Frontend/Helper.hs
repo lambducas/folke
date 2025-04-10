@@ -108,3 +108,8 @@ extractErrorMsg Nothing = ""
 extractErrorMsg (Just (FEOk _)) = ""
 extractErrorMsg (Just (FEError _ (FELocal _ msg))) = msg
 extractErrorMsg (Just (FEError _ (FEGlobal msg))) = msg
+
+insertAt :: a -> Int -> [a] -> [a]
+insertAt newElement _ [] = [newElement]
+insertAt newElement 0 as = newElement:as
+insertAt newElement i (a:as) = a : insertAt newElement (i - 1) as

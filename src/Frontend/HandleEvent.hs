@@ -63,11 +63,7 @@ handleEvent wenv node model evt = case evt of
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddPremise -> applyOnCurrentProof model addPremiseToProof ++ focusAction
-    where
-      focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
-      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt idx) ]
-        where idx = length (_premises sequent)
+  AddPremise idx -> applyOnCurrentProof model (addPremiseToProof (idx + 1)) ++ [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx + 1)) ]
 
   RemovePremise idx -> applyOnCurrentProof model (removePremiseFromProof idx)
 
@@ -75,11 +71,11 @@ handleEvent wenv node model evt = case evt of
 
   EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
 
-  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusBwd]
+  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey]
     where
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey, MoveFocusFromKey Nothing FocusFwd]
+  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey]
     where
       switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
           SubProof p -> head p
@@ -91,9 +87,10 @@ handleEvent wenv node model evt = case evt of
   InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
     where
       focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f path) >>= getFocusAction
-      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt (l + 1) <> ".statement") ]
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       insertLine = insertAfterProof path (Line "" "" 0 [])
+      nextPath = init path ++ [last path + 1]
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
     where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
@@ -119,7 +116,7 @@ handleEvent wenv node model evt = case evt of
       removeLine = removeFromProof path
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
-      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".rule") ]
+      getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
         where l = pathToLineNumber sequent path - 1
 
   EditFormula path newText -> applyOnCurrentProof model editFormula
@@ -458,10 +455,10 @@ applyOnCurrentProof model f = actions
     maybeF (Just s) = Just (f s)
     maybeF Nothing = Nothing
 
-addPremiseToProof :: FESequent -> FESequent
-addPremiseToProof sequent = FESequent premises conclusion steps
+addPremiseToProof :: Int -> FESequent -> FESequent
+addPremiseToProof idx sequent = FESequent premises conclusion steps
   where
-    premises = _premises sequent ++ [""]
+    premises = insertAt "" idx (_premises sequent)
     conclusion = _conclusion sequent
     steps = _steps sequent
 
@@ -578,6 +575,7 @@ getCurrentSequent model = sequent
 
     getSequent fileIndex = case model ^. preferences . tmpLoadedFiles . singular (ix fileIndex) of
       f@ProofFile {} -> _parsedSequent f
+      f@TemporaryProofFile {} -> _parsedSequent f
       _ -> Nothing
 
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int

@@ -109,7 +109,7 @@ data AppEvent
   -- Handle premises
   | EditPremise Int Text
   | RemovePremise Int
-  | AddPremise
+  | AddPremise Int
 
   -- Handle conclusion
   | EditConclusion Text

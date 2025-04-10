@@ -395,7 +395,7 @@ buildUI _wenv model = widgetTree where
         widgetIf (null $ _premises sequent) (span "No premises")
       ],
       spacer,
-      hstack [button "+ Premise" AddPremise `styleBasic` [textSize u]],
+      hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `styleBasic` [textSize u]],
       spacer, spacer,
 
       vstack_ [childSpacing] [
@@ -420,9 +420,15 @@ buildUI _wenv model = widgetTree where
       box (label "") `styleBasic` [height 1000]
     ]
     where
+      nrPremises = length (_premises sequent)
       premiseLine premise idx = box_ [alignLeft] (hstack [
-          symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
-            `nodeKey` ("premise.input." <> showt idx),
+          firstKeystroke [
+            ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
+            ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), True),
+            ("Delete", RemovePremise idx, True),
+            ("Ctrl-Enter", AddPremise idx, True)
+          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
+            `nodeKey` ("premise.input." <> showt idx)),
             --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
           spacer,
           fastTooltip "Remove line" $ trashButton (RemovePremise idx),
@@ -489,7 +495,7 @@ buildUI _wenv model = widgetTree where
                     ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
                     ("Delete", RemoveLine path, trashActive),
                     ("Backspace", RemoveLine path, canBackspaceToDelete),
-                    ("Ctrl-Enter", InsertLineAfter path, not isLastLine),
+                    ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
                     ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
@@ -509,8 +515,10 @@ buildUI _wenv model = widgetTree where
                       ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
                       ("Delete", RemoveLine path, trashActive),
                       ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
+                      ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
                       ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
-                      ("Enter", NextFocus 1, True)
+                      ("Enter", NextFocus 1, usedArguments > 0),
+                      ("Enter", InsertLineAfter path, usedArguments == 0)
                       -- ("Enter", InsertLineAfter path, True)
                     ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule"]
                       `styleBasic` [styleIf isRuleError (border 1 red)]
@@ -539,10 +547,11 @@ buildUI _wenv model = widgetTree where
               ("Delete", RemoveLine path, trashActive),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
+              ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
               ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
               ("Enter", InsertLineAfter path, isLastArg),
               ("Enter", NextFocus 1, not isLastArg)
-            ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1))]
+            ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
             `nodeKey` (showt index <> ".ruleArg." <> showt idx)
             `styleBasic` [width 70]
             `styleBasic` [styleIf isRuleArgError (border 1 red)])

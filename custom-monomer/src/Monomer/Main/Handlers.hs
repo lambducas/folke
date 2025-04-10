@@ -689,7 +689,7 @@ addFocusReq
   -> Seq (WidgetRequest s e)
   -> Seq (WidgetRequest s e)
 addFocusReq (KeyAction mod code KeyPressed) reqs = newReqs where
-  isTabPressed = isKeyTab code
+  isTabPressed = isKeyTab code && not (isCtrlPressed mod)
   stopProcessing = isJust $ Seq.findIndexL isIgnoreParentEvents reqs
   focusReqExists = isJust $ Seq.findIndexL isFocusRequest reqs
   focusReqNeeded = isTabPressed && not stopProcessing && not focusReqExists
