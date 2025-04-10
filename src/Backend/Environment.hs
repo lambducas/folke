@@ -22,6 +22,7 @@ module Backend.Environment (
 
 import qualified Data.Map as Map
 import qualified Data.List as List
+import qualified Data.Set as Set
 import Backend.Types
 
 -- Represents the environment for the typechecker.
@@ -158,6 +159,54 @@ isFreeVar env _ = Error [] env (UnknownError "A function can not be a free varia
 isBoundVar :: Env -> Term -> Result Bool
 isBoundVar env (Term x []) = if Map.member x (bound env) then Ok [] True else Ok [] False
 isBoundVar env _ = Error [] env (UnknownError "A function can not be a bound variable.")
+
+isFreeFor :: Env -> Term -> Term -> Formula -> Result Bool
+isFreeFor _ _ _ Bot = Ok [] True
+isFreeFor _ _ _ (Pred _) = Ok [] True
+isFreeFor _ _ _ (Eq _ _) = Ok [] True
+isFreeFor env t x (And l r) = case isFreeFor env t x l of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns1 res_l-> case isFreeFor env t x r of
+        Error warns env_e err -> Error (warns++warns1) env_e err
+        Ok warns2 res_r -> Ok (warns1++warns2) (res_l &&res_r)
+isFreeFor env t x (Or l r) = case isFreeFor env t x l of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns1 res_l-> case isFreeFor env t x r of
+        Error warns env_e err -> Error (warns++warns1) env_e err
+        Ok warns2 res_r -> Ok (warns1++warns2) (res_l &&res_r)
+isFreeFor env t x (Impl l r) = case isFreeFor env t x l of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns1 res_l-> case isFreeFor env t x r of
+        Error warns env_e err -> Error (warns++warns1) env_e err
+        Ok warns2 res_r -> Ok (warns1++warns2) (res_l &&res_r)
+isFreeFor env t x (All y f) = case isFreeFor env t x f of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns False -> Ok warns False 
+    Ok warns True  ->  if Set.member x (freeVarForm (All y f)) && Set.notMember y (freeVarTerm t) then Ok warns True else Ok warns False
+isFreeFor env t x (Some y f) = case isFreeFor env t x f of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns False -> Ok warns False 
+    Ok warns True  ->  if Set.member x (freeVarForm (Some y f)) && Set.notMember y (freeVarTerm t) then Ok warns True else Ok warns False
+isFreeFor env t x (Not f) = isFreeFor env t x f
+isFreeFor env _ _ Nil = Error [] env (UnknownError "Nil formula.")
+
+freeVarTerm :: Term -> Set.Set Term
+freeVarTerm (Term s []) = Set.singleton (Term s [])
+freeVarTerm (Term _ [term]) = Set.singleton term
+freeVarTerm (Term _ terms) = Set.unions [freeVarTerm term | term <- terms]
+
+freeVarForm:: Formula -> Set.Set Term
+freeVarForm Bot = Set.empty
+freeVarForm (Pred (Predicate _ terms)) = Set.unions [freeVarTerm term | term <- terms]
+freeVarForm (Eq l r) = Set.union (freeVarTerm l) (freeVarTerm r)
+freeVarForm (And l r) = Set.union (freeVarForm l) (freeVarForm r)
+freeVarForm (Or l r) = Set.union (freeVarForm l) (freeVarForm r)
+freeVarForm (Impl l r) = Set.union (freeVarForm l) (freeVarForm r)
+freeVarForm (All x f) = Set.difference (freeVarForm f) (Set.singleton x)
+freeVarForm (Some x f) = Set.difference (freeVarForm f) (Set.singleton x)
+freeVarForm (Not f) = freeVarForm f
+freeVarForm Nil = Set.empty
+
 
 regTerm :: Env -> Term -> Result Env
 regTerm env (Term x param) = case Map.lookup x (ids env) of
@@ -413,9 +462,16 @@ replaceInTerms env _ _ _ = Error [] env (UnknownError "needs to be a variable.")
 
 --Replace each free occurrens of the variable x with the term t in the formula f f[t/x]
 replaceInFormula:: Env -> Term -> Term -> Formula -> Result Formula
+replaceInFormula _ (Term _ []) _ Bot = Ok [] Bot
+replaceInFormula _ (Term _ []) _ p@(Pred (Predicate _ [])) = Ok [] p
 replaceInFormula env x@(Term _ []) t (Pred (Predicate p args)) = case replaceInTerms env x t args of
     Error warns env_e err -> Error warns env_e err
     Ok warns args_new -> Ok warns (Pred (Predicate p args_new))
+replaceInFormula env x@(Term _ []) t (Eq l r) = case replaceInTerm env x t l of
+    Error warns env_e err -> Error warns env_e err
+    Ok warns_l l_new -> case replaceInTerm env x t r of
+        Error warns env_e err -> Error (warns_l++warns) env_e err
+        Ok warns_r r_new -> Ok (warns_l++warns_r) (Eq l_new r_new)
 replaceInFormula env x@(Term _ []) t (And l r) = case replaceInFormula env x t l of
     Error warns env_e err -> Error warns env_e err
     Ok warns_l l_new -> case replaceInFormula env x t r of
@@ -431,28 +487,30 @@ replaceInFormula env x@(Term _ []) t (Impl l r) = case replaceInFormula env x t 
     Ok warns_l l_new -> case replaceInFormula env x t r of
         Error warns env_e err -> Error (warns_l++warns) env_e err
         Ok warns_r r_new -> Ok (warns_l++warns_r) (Impl l_new r_new)
-replaceInFormula env x@(Term _ []) t (Eq l r) = case replaceInTerm env x t l of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns_l l_new -> case replaceInTerm env x t r of
-        Error warns env_e err -> Error (warns_l++warns) env_e err
-        Ok warns_r r_new -> Ok (warns_l++warns_r) (Eq l_new r_new)
-replaceInFormula env x@(Term _ []) t (All y a) = case bindVar env y of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns_b new_env -> case replaceInTerm new_env x t y of
-        Error warns_y env_e err -> Error (warns_b++warns_y) env_e err
-        Ok warns_y y_new -> case replaceInFormula new_env x t a of
-            Error warns_a env_e err -> Error (warns_y++warns_a++warns_b) env_e err
-            Ok warns_a a_new -> Ok (warns_y++warns_a++warns_b) (All y_new a_new)
-replaceInFormula env x@(Term _ []) t (Some y a) = case bindVar env y of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns_b new_env -> case replaceInTerm new_env x t y of
-        Error warns_y env_e err -> Error (warns_b++warns_y) env_e err
-        Ok warns_y y_new -> case replaceInFormula new_env x t a of
-            Error warns_a env_e err -> Error (warns_y++warns_a++warns_b) env_e err
-            Ok warns_a a_new -> Ok (warns_y++warns_a++warns_b) (Some y_new a_new)
+replaceInFormula env x@(Term _ []) t (All y a) = if x == y then Ok [] (All y a) 
+    else case isFreeFor env t x (All y a) of
+        Error warns env_e err -> Error warns env_e err
+        Ok warns_free False -> Error warns_free env (UnknownError "Cannot replace variable")
+        Ok warns_free True -> case bindVar env y of
+            Error warns env_e err -> Error (warns++warns_free) env_e err
+            Ok warns_b new_env -> case replaceInTerm new_env x t y of
+                Error warns_y env_e err -> Error (warns_free++warns_b++warns_y) env_e err
+                Ok warns_y y_new -> case replaceInFormula new_env x t a of
+                    Error warns_a env_e err -> Error (warns_free++warns_y++warns_a++warns_b) env_e err
+                    Ok warns_a a_new -> Ok (warns_free++warns_y++warns_a++warns_b) (All y_new a_new)
+replaceInFormula env x@(Term _ []) t (Some y a) =  if x == y then Ok [] (Some y a) 
+    else case isFreeFor env t x (Some y a) of
+        Error warns env_e err -> Error warns env_e err
+        Ok warns_free False -> Error warns_free env (UnknownError "Cannot replace variable")
+        Ok warns_free True -> case bindVar env y of
+            Error warns env_e err -> Error (warns++warns_free) env_e err
+            Ok warns_b new_env -> case replaceInTerm new_env x t y of
+                Error warns_y env_e err -> Error (warns_free++warns_b++warns_y) env_e err
+                Ok warns_y y_new -> case replaceInFormula new_env x t a of
+                    Error warns_a env_e err -> Error (warns_free++warns_y++warns_a++warns_b) env_e err
+                    Ok warns_a a_new -> Ok (warns_free++warns_y++warns_a++warns_b) (Some y_new a_new)
 replaceInFormula env  x@(Term _ []) t (Not a) = case replaceInFormula env x t a of
     Error warns env_e err -> Error warns env_e err
     Ok warns a_new -> Ok warns (Not a_new)
-replaceInFormula _ (Term _ []) _ Bot = Ok [] Bot
 replaceInFormula env (Term _ []) _ Nil = Error [] env (UnknownError "trying to do an replace on nill formula.")
 replaceInFormula env x _ _ = Error [] env (UnknownError (show x ++ " needs to be a variable."))

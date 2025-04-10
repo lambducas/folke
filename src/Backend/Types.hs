@@ -121,7 +121,7 @@ instance Eq Predicate where
     Predicate a as == Predicate b bs = a == b && as == bs
 
 -- Represents a term with a name and a list of subterms.
-data Term = Term String [Term]
+data Term = Term String [Term] deriving Ord
 instance Show Term where
     show (Term name []) = name
     show (Term name terms) = name ++ "(" ++ show terms ++ ")"
