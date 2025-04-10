@@ -1,0 +1,61 @@
+{
+    "_sequent": {
+        "_conclusion": "â u u=f(u)",
+        "_premises": [
+            "â x â y (P(x,y)â§P(y,x)âx=y)",
+            "â x P(x,f(x))",
+            "â z â x P(x,z)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "free",
+                        "_statement": "z_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "â x P(x,zâ)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "z_0"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(zâ,f(zâ))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "a"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(a,zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7",
+                            "a"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x P(x,zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            }
+        ]
+    }
+}

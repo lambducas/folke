@@ -1,0 +1,105 @@
+{
+    "_sequent": {
+        "_conclusion": "R(a) â¨ â x S(x)",
+        "_premises": [
+            "â x P(x) â¨ â x Q(x)",
+            "P(a) â R(a)",
+            "â x Q(x) â S(b)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "â x P(x)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "a"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(a)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "2"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "R(a)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6"
+                        ],
+                        "_rule": "OrIL",
+                        "_statement": "R(a) â¨ â x S(x)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "â x Q(x)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "8"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "S(b)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "b"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x S(x)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10"
+                        ],
+                        "_rule": "OrIR",
+                        "_statement": "R(a) â¨ â x S(x)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "4-7",
+                    "8-11"
+                ],
+                "_rule": "OrE",
+                "_statement": "R(a)â¨ â x S(x)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}
