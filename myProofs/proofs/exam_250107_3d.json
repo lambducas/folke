@@ -1,16 +1,16 @@
 {
     "_sequent": {
-        "_conclusion": "all x (P -> Q)",
+        "_conclusion": "all x (P(x) -> Q(x))",
         "_premises": [
-            "some x (P & Q)",
-            "some x (P & all y (P -> x=y))"
+            "some x (P(x) & Q(x))",
+            "some x (P(x) & all y (P(y) -> x=y))"
         ],
         "_steps": [
             {
                 "contents": [
                     {
                         "_arguments": [],
-                        "_rule": "free",
+                        "_rule": "fresh",
                         "_statement": "x_0",
                         "_usedArguments": 0,
                         "tag": "Line"
@@ -20,7 +20,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "P",
+                                "_statement": "P(x_0)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -28,7 +28,7 @@
                                 "contents": [
                                     {
                                         "_arguments": [],
-                                        "_rule": "free",
+                                        "_rule": "fresh",
                                         "_statement": "x_1",
                                         "_usedArguments": 0,
                                         "tag": "Line"
@@ -36,7 +36,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "P & Q",
+                                        "_statement": "P(x_1) & Q(x_1)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -45,7 +45,7 @@
                                             "6"
                                         ],
                                         "_rule": "AndEL",
-                                        "_statement": "P",
+                                        "_statement": "P(x_1)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -54,7 +54,7 @@
                                             "6"
                                         ],
                                         "_rule": "AndER",
-                                        "_statement": "Q",
+                                        "_statement": "Q(x_1)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -62,7 +62,7 @@
                                         "contents": [
                                             {
                                                 "_arguments": [],
-                                                "_rule": "free",
+                                                "_rule": "fresh",
                                                 "_statement": "x_2",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
@@ -70,7 +70,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "P & all y (P -> x_2=y)",
+                                                "_statement": "P(x_2) & all y (P(y) -> x_2=y)",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -79,7 +79,7 @@
                                                     "10"
                                                 ],
                                                 "_rule": "AndER",
-                                                "_statement": "all y (P -> x_2=y)",
+                                                "_statement": "all y (P(y) -> x_2=y)",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
@@ -89,7 +89,7 @@
                                                     "x_0"
                                                 ],
                                                 "_rule": "AllE",
-                                                "_statement": "P -> x_2=x_0",
+                                                "_statement": "P(x_0) -> x_2=x_0",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -109,7 +109,7 @@
                                                     "x_1"
                                                 ],
                                                 "_rule": "AllE",
-                                                "_statement": "P -> x_2=x_1",
+                                                "_statement": "P(x_1) -> x_2=x_1",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -156,10 +156,10 @@
                                                 "_arguments": [
                                                     "18",
                                                     "8",
-                                                    "u:=Q"
+                                                    "u:=Q(u)"
                                                 ],
                                                 "_rule": "EqE",
-                                                "_statement": "Q",
+                                                "_statement": "Q(x_0)",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             }
@@ -172,7 +172,7 @@
                                             "9-19"
                                         ],
                                         "_rule": "SomeE",
-                                        "_statement": "Q",
+                                        "_statement": "Q(x_0)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     }
@@ -185,7 +185,7 @@
                                     "5-20"
                                 ],
                                 "_rule": "SomeE",
-                                "_statement": "Q",
+                                "_statement": "Q(x_0)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -197,7 +197,7 @@
                             "4-21"
                         ],
                         "_rule": "ImplI",
-                        "_statement": "P -> Q",
+                        "_statement": "P(x_0) -> Q(x_0)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -209,7 +209,7 @@
                     "3-22"
                 ],
                 "_rule": "AllI",
-                "_statement": "all x (P -> Q)",
+                "_statement": "all x (P(x) -> Q(x))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

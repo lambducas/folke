@@ -2,8 +2,8 @@
     "_sequent": {
         "_conclusion": "!S",
         "_premises": [
-            "S -> some x (P & !Q)",
-            "all x (P -> Q)"
+            "S -> some x (P(x) & !Q(x))",
+            "all x (P(x) -> Q(x))"
         ],
         "_steps": [
             {
@@ -21,7 +21,7 @@
                             "3"
                         ],
                         "_rule": "ImplE",
-                        "_statement": "some x (P & !Q)",
+                        "_statement": "some x (P(x) & !Q(x))",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -29,7 +29,7 @@
                         "contents": [
                             {
                                 "_arguments": [],
-                                "_rule": "free",
+                                "_rule": "fresh",
                                 "_statement": "x_0",
                                 "_usedArguments": 0,
                                 "tag": "Line"
@@ -37,17 +37,16 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "P & !Q",
+                                "_statement": "P(x_0) & !Q(x_0)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
-                                    "6",
-                                    "a"
+                                    "6"
                                 ],
                                 "_rule": "AndEL",
-                                "_statement": "P",
+                                "_statement": "P(x_0)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -56,7 +55,7 @@
                                     "6"
                                 ],
                                 "_rule": "AndER",
-                                "_statement": "!Q",
+                                "_statement": "!Q(x_0)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -66,7 +65,7 @@
                                     "x_0"
                                 ],
                                 "_rule": "AllE",
-                                "_statement": "P -> Q",
+                                "_statement": "P(x_0) -> Q(x_0)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -76,7 +75,7 @@
                                     "7"
                                 ],
                                 "_rule": "ImplE",
-                                "_statement": "Q",
+                                "_statement": "Q(x_0)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },

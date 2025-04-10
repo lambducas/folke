@@ -551,7 +551,7 @@ buildUI _wenv model = widgetTree where
               ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
               ("Enter", InsertLineAfter path, isLastArg),
               ("Enter", NextFocus 1, not isLastArg)
-            ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
+            ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
             `nodeKey` (showt index <> ".ruleArg." <> showt idx)
             `styleBasic` [width 70]
             `styleBasic` [styleIf isRuleArgError (border 1 red)])

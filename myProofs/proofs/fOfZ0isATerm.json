@@ -11,7 +11,7 @@
                 "contents": [
                     {
                         "_arguments": [],
-                        "_rule": "free",
+                        "_rule": "fresh",
                         "_statement": "z_0",
                         "_usedArguments": 0,
                         "tag": "Line"
@@ -50,6 +50,16 @@
                         ],
                         "_rule": "SomeI",
                         "_statement": "â x P(x,zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "f(z_0)"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(f(zâ),zâ)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }

@@ -10,7 +10,7 @@
                 "contents": [
                     {
                         "_arguments": [],
-                        "_rule": "free",
+                        "_rule": "fresh",
                         "_statement": "x_0",
                         "_usedArguments": 0,
                         "tag": "Line"
@@ -26,7 +26,7 @@
                         "contents": [
                             {
                                 "_arguments": [],
-                                "_rule": "free",
+                                "_rule": "fresh",
                                 "_statement": "y_0",
                                 "_usedArguments": 0,
                                 "tag": "Line"
