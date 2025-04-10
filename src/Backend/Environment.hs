@@ -417,7 +417,7 @@ ruleEqE env [(i, _), (_, _), (_, _)] _ = Error [] env (RuleArgError i  "Must be 
 ruleEqE env forms _ = Error [] env (RuleArgCountError (toInteger $ List.length forms) 3 )
 
 ruleAllE:: Env-> [(Integer, Arg)] -> Formula -> Result Formula
-ruleAllE env [(_, ArgForm (All x phi)), (j, ArgTerm t@(Term _ []))] _ =  case isFreeFor env t x phi of
+ruleAllE env [(_, ArgForm (All x phi)), (j, ArgTerm t)] _ =  case isFreeFor env t x phi of
     Error warns env_e err -> Error warns env_e err
     Ok warns False -> Error warns env (RuleArgError j (show t ++ "needs to be free for " ++ show x ++" in " ++ show phi))
     Ok warns1 True -> case replaceInFormula env x t phi of 

@@ -392,7 +392,7 @@ happyReduction_30 happy_x_3
 	happy_x_1
 	 =  case happyOut25 happy_x_2 of { (HappyWrap25 happy_var_2) -> 
 	happyIn31
-		 (Logic.Abs.StepFree happy_var_2
+		 (Logic.Abs.StepFresh happy_var_2
 	)}
 
 happyReduce_31 = happySpecReduce_3  6# happyReduction_31

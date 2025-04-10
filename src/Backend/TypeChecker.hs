@@ -130,7 +130,7 @@ checkStep env step = case step of
             Ok warns1 form_t -> case addPrem env form_t of 
                 Error warns env_e err -> Error (warns++warns1) env_e err
                 Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
-    Abs.StepFree ident -> case regTerm env t of
+    Abs.StepFresh ident -> case regTerm env t of
         Error warns env_e err -> Error warns env_e err
         Ok warns1 env1 -> case addFree env1 t of
             Error warns env_e err -> Error (warns++warns1) env_e err
