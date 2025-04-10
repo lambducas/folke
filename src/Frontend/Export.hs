@@ -127,7 +127,7 @@ replaceLatexSymbols input =
     fixArrows [] = []
 
     -- Fix rule names with proper LaTeX notation
-    fixRuleNames = fixAndI . fixAndE . fixOrI . fixOrE . fixNotI . fixNotE . fixImplI . fixImplE . fixBotE . fixPBC . fixCopy . fixAllE . fixAllI . fixSomeE . fixSomeI . fixEqE . fixEqI . fixFree . fixAssume
+    fixRuleNames = fixAndI . fixAndE . fixOrI . fixOrE . fixNotI . fixNotE . fixImplI . fixImplE . fixBotE . fixPBC . fixCopy . fixAllE . fixAllI . fixSomeE . fixSomeI . fixEqE . fixEqI . fixFresh . fixAssume
 
     -- Standard inference rules
     fixAndI = replace "AndI" "\\land \\mathrm{I}"                                            -- Conjunction Introduction
@@ -172,7 +172,7 @@ replaceLatexSymbols input =
     fixEqE = replace "EqE" "= \\mathrm{E}"
     fixEqI = replace "EqI" "= \\mathrm{I}"
     
-    fixFree = replace "free" "\\mathrm{free}"
+    fixFresh = replace "fresh" "\\mathrm{fresh}"
     fixAssume = replace "assume" "\\mathrm{assumption}"
 
     -- Helper to apply multiple replacements

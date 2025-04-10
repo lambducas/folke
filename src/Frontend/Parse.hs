@@ -137,7 +137,7 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
     tabs n = T.pack $ replicate n '\t'
 
 nArg :: T.Text -> Int -> [T.Text] -> T.Text
-nArg "free" _ [] = ""
+nArg "fresh" _ [] = ""
 nArg "prem" _ [] = ""
 nArg "assume" _ [] = ""
 nArg "" _ [] = ""

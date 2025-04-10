@@ -185,7 +185,7 @@ $(deriveJSON defaultOptions ''Preferences)
 ruleMetaDataMap :: Map.Map Text RuleMetaData
 ruleMetaDataMap = Map.fromList [
     ("assume", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("free", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
+    ("fresh", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
     ("copy", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
     ("AndI", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
     ("AndEL", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
@@ -217,7 +217,7 @@ visualRuleNames = visualRuleNames0 ++ visualRuleNames1
 visualRuleNames0 :: [(Text, Text)]
 visualRuleNames0 = [
     ("assume", "assume"),
-    ("free", "free"),
+    ("fresh", "fresh"),
     ("copy", "copy"),
     ("AndI", "∧I"),
     ("AndEL", "∧EL"),
@@ -239,7 +239,7 @@ visualRuleNames0 = [
 
 visualRuleNames1 :: [(Text, Text)]
 visualRuleNames1 = [
-    ("free", "free"),
+    ("fresh", "fresh"),
     ("EqI", "=I"),
     ("EqE", "=E"),
     ("AllE", "∀E"),

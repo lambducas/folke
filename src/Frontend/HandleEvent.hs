@@ -237,7 +237,7 @@ handleEvent wenv node model evt = case evt of
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i) (length args) (map convertArg args)]
-      convertStep (Abs.StepFresh (Abs.Ident i)) = [Line (pack i) "free" 0 []]
+      convertStep (Abs.StepFresh (Abs.Ident i)) = [Line (pack i) "fresh" 0 []]
 
       convertTerm (Abs.Term (Abs.Ident i) params) = pack i <> convertParams params
 
