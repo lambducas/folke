@@ -480,7 +480,8 @@ makeInputField !config !state = widget where
         newState = newFieldState currVal currText newPos newSel
         newNode = node
           & L.widget .~ makeInputField config newState
-        result = resultReqs newNode [RenderOnce]
+        newReqs = [ SetFocus widgetId | not (isNodeFocused wenv node) ]
+        result = resultReqs newNode ([RenderOnce] ++ newReqs)
 
     -- Select all if clicked three times in a row
     ButtonAction point btn BtnReleased clicks
@@ -490,7 +491,8 @@ makeInputField !config !state = widget where
         newState = newFieldState currVal currText newPos newSel
         newNode = node
           & L.widget .~ makeInputField config newState
-        result = resultReqs newNode [RenderOnce]
+        newReqs = [ SetFocus widgetId | not (isNodeFocused wenv node) ]
+        result = resultReqs newNode ([RenderOnce] ++ newReqs)
 
     -- If a custom drag handler is used, generate onChange events and history
     ButtonAction point btn BtnReleased clicks
@@ -590,8 +592,14 @@ makeInputField !config !state = widget where
     -- Handle blur and disable custom drag handlers
     Blur next -> Just result where
       reqs = [RenderStop widgetId, StopTextInput]
-      newResult = resultReqs node reqs
-      blurResult = handleFocusChange node next (_ifcOnBlurReq config)
+      -- Deselect text on blur
+      newState = state {
+        _ifsSelStart = Nothing
+      }
+      newNode = node
+        & L.widget .~ makeInputField config newState
+      newResult = resultReqs newNode reqs
+      blurResult = handleFocusChange newNode next (_ifcOnBlurReq config)
       result = maybe newResult (newResult <>) blurResult
 
     _ -> Nothing
