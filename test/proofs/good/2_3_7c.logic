@@ -1,9 +1,9 @@
 some x all y P(x,y) |- all y some x P(x,y) {
     1: prem some x all y P(x,y);
     2-7: {
-        2: free y_0;
+        2: fresh y_0;
         3-6: {
-            3: free x_0;
+            3: fresh x_0;
             4: assume all y P(x_0, y);
             5: AllE[4, y_0] P(x_0,y_0);
             6: SomeI[5, x_0] some x P(x, y_0); 

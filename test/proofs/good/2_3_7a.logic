@@ -1,9 +1,9 @@
 all x all y P(x,y) |- all u all v P(u,v) {
     1: prem all x all y P(x,y);
     2-6: {
-        2: free x_0;
+        2: fresh x_0;
         3-5: {
-            3: free y_0;
+            3: fresh y_0;
             4: AllE[1, x_0] all y P(x_0, y);
             5: AllE[4, y_0] P(x_0, y_0);
         }

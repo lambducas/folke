@@ -432,7 +432,7 @@ resWords =
        (b ":=" 9 (b ":" 8 (b "->" 7 N N) N) (b "=" 11 (b ";" 10 N N) N)))
     (b "prem" 18
        (b "assume" 15
-          (b "all" 14 (b "]" 13 N N) N) (b "free" 17 (b "bot" 16 N N) N))
+          (b "all" 14 (b "]" 13 N N) N) (b "fresh" 17 (b "bot" 16 N N) N))
        (b "|" 21
           (b "{" 20 (b "some" 19 N N) N) (b "}" 23 (b "|-" 22 N N) N)))
   where

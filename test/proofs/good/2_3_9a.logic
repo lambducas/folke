@@ -3,7 +3,7 @@ some x (S->Q(x)) |- S-> some x Q(x){
     2-7: {
         2: assume S;
         3-6: {
-            3: free x_0;
+            3: fresh x_0;
             4: assume S->Q(x_0);
             5: ImplE[4,2] Q(x_0);
             6: SomeI[5, x_0] some x Q(x);

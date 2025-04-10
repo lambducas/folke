@@ -5,7 +5,7 @@ S->some x (P(x) & !Q(x)), all x (P(x)->Q(x))|- !S {
         3: assume S;
         4: ImplE[1,3] some x (P(x) & !Q(x));
         5-11: {
-            5: free x_0;
+            5: fresh x_0;
             6: assume P(x_0)&!Q(x_0);
             7: AndEL[6] P(x_0);
             8: AndER[6] !Q(x_0);

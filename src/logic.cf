@@ -8,7 +8,7 @@ ProofElem. ProofElem ::= [Label] Step;
 terminator ProofElem "" ;
 
 StepPrem.       Step ::= "prem" Form ";";
-StepFree.       Step ::= "free" Ident ";";
+StepFree.       Step ::= "fresh" Ident ";";
 StepAssume.     Step ::= "assume" Form ";"; --"Isn't premise and assume same only for proof/subproof?"
 StepProof.      Step ::= Proof; 
 StepForm.       Step ::= Ident "[" [Arg] "]" Form ";";

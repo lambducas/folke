@@ -3,7 +3,7 @@ all x P(x) -> S |- some x (P(x)->S) {
     2-19: {
         2: assume !some x (P(x)->S);
         3-12: {
-            3: free x_0;
+            3: fresh x_0;
             4-10: {
                 4: assume !P(x_0);
                 5-7: {
