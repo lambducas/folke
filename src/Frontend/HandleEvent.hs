@@ -221,7 +221,7 @@ handleEvent wenv node model evt = case evt of
             where c = convertForm form; p = "(" <> c <> ")"
 
       convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
-      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) _params)) = pack i
+      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) params)) = pack i <> convertParams params
       convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
       convertForm (Abs.FormEq a b) = convertTerm a <> "=" <> convertTerm b
       convertForm (Abs.FormAll (Abs.Ident i) a) = "all " <> pack i <> " " <> convertForm a
@@ -229,18 +229,20 @@ handleEvent wenv node model evt = case evt of
       convertForm Abs.FormBot = "bot"
       convertForm Abs.FormNil = ""
 
-      convertProof (Abs.Proof proofElems) = concat $ map convertProofElem proofElems
+      convertProof (Abs.Proof proofElems) = concatMap convertProofElem proofElems
       convertProofElem (Abs.ProofElem _labels step) = convertStep step
 
       convertStep Abs.StepNil = [Line "" "" 0 []]
-      convertStep (Abs.StepPrem _form) = [] 
+      convertStep (Abs.StepPrem _form) = []
       convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
       convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
       convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i) (length args) (map convertArg args)]
       convertStep (Abs.StepFree (Abs.Ident i)) = [Line (pack i) "free" 0 []]
 
-      convertTerm (Abs.Term (Abs.Ident i) (Abs.Params [])) = pack i
-      convertTerm (Abs.Term (Abs.Ident i) (Abs.Params ts)) = pack i <> "(" <> intercalate ", " (map convertTerm ts) <> ")"
+      convertTerm (Abs.Term (Abs.Ident i) params) = pack i <> convertParams params
+
+      convertParams (Abs.Params []) = ""
+      convertParams (Abs.Params ts) = "(" <> intercalate ", " (map convertTerm ts) <> ")"
 
       convertArg (Abs.ArgLine i) = showt i
       convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
@@ -396,26 +398,26 @@ handleEvent wenv node model evt = case evt of
     where newWd = Just path
 
   ExportToLaTeX -> case model ^. preferences . currentFile of
-    Nothing -> 
+    Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
       Just file@ProofFile{} -> case _parsedSequent file of
         Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
-        Just _ -> 
+        Just _ ->
           [ Producer (\sendMsg -> do
               -- Open a save dialog to let the user choose where to save the LaTeX file
               mSavePath <- openSaveDialog
               case mSavePath of
-                Nothing -> 
+                Nothing ->
                   -- User cancelled the dialog
                   sendMsg (ExportError "Export cancelled")
                 Just savePath -> do
                   -- Generate proper LaTeX content using our export module
                   let texPath = if takeExtension savePath == ".tex"
-                                then savePath 
+                                then savePath
                                 else savePath <> ".tex"
                       latexContent = convertToLatex model
-                  
+
                   -- Write the full LaTeX content to the file
                   writeFile texPath (unpack latexContent)
                   putStrLn $ "Exported LaTeX file to: " ++ texPath
@@ -503,7 +505,7 @@ editRuleNameInProof path newText = replaceSteps f
         Nothing -> Line statement newText usedArguments arguments
         Just (RuleMetaData nrArguments _) -> Line statement newText (fromIntegral nrArguments) (fillList nrArguments arguments)
       | otherwise = f
-    
+
     fillList :: Integer -> [Text] -> [Text]
     fillList targetLen arr
       | currLen < targetLen = arr ++ replicate (fromIntegral targetLen - length arr) ""
