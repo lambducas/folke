@@ -409,8 +409,14 @@ buildUI _wenv model = widgetTree where
         h2 "Conclusion",
         spacer,
         box_ [alignLeft] (
-          symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+          firstKeystroke [
+            ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
+            ("Down", NextFocus 1, True),
+            ("Enter", NextFocus 1, True)
+          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
             `styleBasic` [maxWidth 600]
+            `styleBasic` [styleIf isConclusionError (border 1 red)]
+            `nodeKey` "conclusion.input")
         )
           --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
       ],
@@ -427,20 +433,23 @@ buildUI _wenv model = widgetTree where
       box (label "") `styleBasic` [height 1000]
     ]
     where
+      isConclusionError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
       nrPremises = length (_premises sequent)
       premiseLine premise idx = box_ [alignLeft] (hstack [
           firstKeystroke [
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
-            ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), True),
+            ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
+            ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
             ("Delete", RemovePremise idx, True),
             ("Ctrl-Enter", AddPremise idx, True)
           ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
-            `nodeKey` ("premise.input." <> showt idx)),
-            --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
+            `nodeKey` ("premise.input." <> showt idx)
+            `styleBasic` [styleIf isPremiseError (border 1 red)]),
           spacer,
           fastTooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
         ] `styleBasic` [maxWidth 400]) `nodeKey` ("premise.line." <> showt idx)
+        where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
 
       tree = vstack [
           ui,
@@ -495,6 +504,7 @@ buildUI _wenv model = widgetTree where
 
                   firstKeystroke [
                     ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
+                    ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                     ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
                     -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
@@ -515,6 +525,7 @@ buildUI _wenv model = widgetTree where
                   hstack_ [childSpacing] [
                     firstKeystroke [
                       ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+                      ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                       ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
                       -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
@@ -527,7 +538,7 @@ buildUI _wenv model = widgetTree where
                       ("Enter", NextFocus 1, usedArguments > 0),
                       ("Enter", InsertLineAfter path, usedArguments == 0)
                       -- ("Enter", InsertLineAfter path, True)
-                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule"]
+                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
                       `styleBasic` [styleIf isRuleError (border 1 red)]
                       `nodeKey` (showt index <> ".rule"))
                         `nodeKey` (showt index <> ".rule.keystroke"),
@@ -548,6 +559,7 @@ buildUI _wenv model = widgetTree where
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = firstKeystroke [
               ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
+              ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
               ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
               ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
               ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),

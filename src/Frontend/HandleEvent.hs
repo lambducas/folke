@@ -294,6 +294,7 @@ handleEvent wenv node model evt = case evt of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
+      Just file@TemporaryProofFile {} -> handleEvent wenv node model (SaveFile file)
       Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
