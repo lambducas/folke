@@ -11,7 +11,8 @@ module Backend.Types (
     Warning(Warning),
     ErrorKind(..),
     Env(..),
-    IDType(..)
+    IDType(..),
+    UDefRule
 ) where
 
 import Data.Map as Map (Map)
@@ -25,6 +26,7 @@ data Env = Env {
     fresh   :: Terms,
     refs    :: Map Ref (Integer, Arg),
     rules   :: Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula),
+    user_rules :: Map String UDefRule,
     pos     :: Refs,
     rule    :: String,
     bound   :: Map String (),
@@ -56,6 +58,8 @@ instance Monad Result where
     (Error warns env err) >>= _ = Error warns env err
 
 data Warning = Warning Env String
+instance Show Warning where
+    show (Warning _ msg) = msg
 
 data ErrorKind = 
     TypeError String | 
@@ -146,3 +150,5 @@ instance Eq Term where
     Term a as == Term b bs = a == b && as == bs
 
 data IDType = IDTypeTerm Integer | IDTypePred Integer
+
+data UDefRule = UDefRule [Formula] Formula

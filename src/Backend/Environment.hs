@@ -24,7 +24,6 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Set as Set
 import Backend.Types
-import Data.Monoid (All(getAll))
 
 -- Represents the environment for the typechecker.
 -- The environment contains:
@@ -131,6 +130,7 @@ newEnv = Env {
         ("existsI", ruleSomeI),
         ("∃I", ruleSomeI)
     ],
+    user_rules = Map.empty,
     pos  = [],
     rule = "",
     bound = Map.empty,
@@ -276,19 +276,28 @@ popPos env n = env {pos = drop (fromIntegral n) (pos env)}
 applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule e name args res =
     case Map.lookup name (rules env) of
-        Nothing -> Error [] env (RuleNotFoundError name)
         Just rule_f ->
-            case rule_f (env{rule = name}) (zip [1..] args) res of
+            case rule_f env (zip [1..] args) res of
                 Error warns env_e err -> Error warns env_e err
                 Ok warns res_t ->
                     if res_t == res then Ok warns res_t
                     else Error warns env (RuleConcError ("Wrong conclusion when using rule, expected " ++ show res ++ ", got " ++ show res_t))
+        Nothing -> case Map.lookup name (user_rules env) of
+            Just rule_s -> case applyUDefRule env rule_s (zip [1..] args) of 
+                Error warns env_e err -> Error warns env_e err
+                Ok warns res_t ->
+                    if res_t == res then Ok warns res_t
+                    else Error warns env (RuleConcError ("Wrong conclusion when using rule, expected " ++ show res ++ ", got " ++ show res_t))
+            Nothing -> Error [] env (RuleNotFoundError name)
     where env = e{rule=name}
 -- All predefined rules.
 -- Rules are functions that take:
 --   - A list of arguments (e.g., proofs, formulas, or terms).
 --   - An expected result formula.
 --   - Return either the resulting formula or an error.
+
+applyUDefRule:: Env -> UDefRule -> [(Integer, Arg)] -> Result Formula
+applyUDefRule env sig args = Error [] env (UnknownError "Unimplemented")
 
 ruleCopy :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleCopy _ [(_, ArgForm form)] _ = Ok [] form

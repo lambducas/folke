@@ -6,13 +6,20 @@ import System.Directory
 import Backend.TypeChecker
 import Backend.Types
 import Backend.Environment
+    ( newEnv,
+      replaceInFormula,
+      replaceInTerm,
+      replaceInTerms,
+      showPos )
+
+import qualified Data.List as List
 
 import Logic.Par (pSequent, myLexer)
 
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error _ env err -> assertBool (showPos env ++ show err) False
+            Error warns env err -> assertBool ( List.intercalate "\n" [show warn|warn <- warns] ++ showPos env ++ show err) False
             Ok _ _ -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test
