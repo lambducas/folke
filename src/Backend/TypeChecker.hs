@@ -68,7 +68,7 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkPrems env pr
         Ok warns2 conc_t -> case checkProof env proof of
             Error warns env_e err -> Error (warns ++ warns1 ++ warns2) env_e err
             Ok warns3 proof_t -> do
-                let seq_t = Proof [] prems_t conc_t -- TODO special check for variables?
+                let seq_t = Proof [] prems_t conc_t
                 if proof_t == seq_t
                     then Ok (warns1 ++ warns2 ++ warns3) seq_t
                     else Error (warns1 ++ warns2 ++ warns3) env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
@@ -90,7 +90,7 @@ checkPrems env (form:forms) = case checkForm env form of
     -return: The type of the proof
 -}
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
-checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
+checkProof env [] = Ok [] (Proof [] (getAllPrems env) Nil)
 checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
     Error warns env_e err -> Error warns env_e err
     Ok warns1 refs_t -> case checkStep (pushPos env refs_t) step of
@@ -98,7 +98,7 @@ checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
         Ok warns2 (_, ArgProof _) -> Error (warns1++warns2) env (TypeError "Last step in proof was another proof.")
         Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) env (TypeError "Check step could not return an term.")
         Ok warns2 (_, ArgFormWith _ _) -> Error (warns1++warns2) env (TypeError "Check step could not return an form with.")
-        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getFrees new_env) (getPrems new_env) step_t)
+        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getFrees new_env) (getAllPrems new_env) step_t)
 checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
     Error warns env_e err -> Error warns env_e err
     Ok warns1 refs_t -> case checkStep (pushPos env refs_t) step of 
@@ -139,7 +139,7 @@ checkStep env step = case step of
     Abs.StepAssume form -> 
         case checkForm env form of
             Error warns env_e err -> Error warns env_e err
-            Ok warns1 form_t -> case addPrem env form_t of 
+            Ok warns1 form_t -> case addAssumption env form_t of 
                 Error warns env_e err -> Error (warns++warns1) env_e err
                 Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
     Abs.StepProof (Abs.Proof steps) -> 

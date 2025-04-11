@@ -64,6 +64,7 @@
 ### Other
 - Test frontend to improve UX
 - Write help guide
+- Package backend with arbitrary frontend (library for proof editor backend)
 
 ## IDEAS
 - Use reference counting to check that all parts of the proof is used.

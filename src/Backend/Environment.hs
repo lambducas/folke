@@ -5,8 +5,10 @@ module Backend.Environment (
     bindVar,
     regTerm,
     addPrem,
+    addAssumption,
     addFree,
-    getPrems,
+  --  getPrems,
+    getAllPrems,
     getFrees,
     addRefs,
     getRefs,
@@ -24,6 +26,7 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Set as Set
 import Backend.Types
+import Data.Monoid (All(getAll))
 
 -- Represents the environment for the typechecker.
 -- The environment contains:
@@ -142,9 +145,12 @@ showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
 
 
 -- Pushes a new context to the environment (used when entering a subproof or box).
--- This resets the list of premises for the new scope.
+-- This resets the list of premises for the new scope, keeping only assumptions.
+-- Pushes a new context to the environment (used when entering a subproof or box).
+-- This resets the list of premises for the new scope, keeping only assumptions.
 push :: Env -> Env
-push env = env { prems = [] , frees = [] }
+push env = env { prems = [], frees = [] }
+
 
 bindVar :: Env -> Term -> Result Env
 bindVar env (Term x []) = if Map.member x (bound env)
@@ -222,8 +228,12 @@ regTerm env (Term x param) = case Map.lookup x (ids env) of
 
 -- Adds a premise/assumption to the environment.
 -- Premises are logical formulas that are assumed to be true in the current scope.
+
 addPrem :: Env -> Formula -> Result Env
-addPrem env prem = Ok [] env { prems = prems env ++ [prem] }
+addPrem env prem = Ok [] env { prems = prems env ++ [(prem, True)] }
+
+addAssumption :: Env -> Formula -> Result Env
+addAssumption env assumption = Ok [] env { prems = prems env ++ [(assumption, False)] }
 
 addFree :: Env -> Term -> Result Env
 addFree env x@(Term _ []) = Ok [] env { frees = frees env ++ [x]}
@@ -236,8 +246,8 @@ addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(labe
 -- Section: Getters
 
 -- Retrieves all premises/assumptions in the current scope.
-getPrems :: Env -> [Formula]
-getPrems = prems
+getAllPrems :: Env -> [Formula]
+getAllPrems env = map fst $ prems env
 
 getFrees :: Env -> [Term]
 getFrees = frees
