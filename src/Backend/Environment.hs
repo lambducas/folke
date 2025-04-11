@@ -6,10 +6,10 @@ module Backend.Environment (
     regTerm,
     addPrem,
     addAssumption,
-    addFree,
+    addFresh,
   --  getPrems,
     getAllPrems,
-    getFrees,
+    getFreshs,
     addRefs,
     getRefs,
     getRef,
@@ -40,7 +40,7 @@ import Data.Monoid (All(getAll))
 newEnv :: Env
 newEnv = Env {
     prems = [],
-    frees = [],
+    fresh = [],
     refs  = Map.empty,
     rules = Map.fromList [
         ("copy", ruleCopy),
@@ -149,7 +149,7 @@ showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
 -- Pushes a new context to the environment (used when entering a subproof or box).
 -- This resets the list of premises for the new scope, keeping only assumptions.
 push :: Env -> Env
-push env = env { prems = [], frees = [] }
+push env = env { prems = [], fresh = [] }
 
 
 bindVar :: Env -> Term -> Result Env
@@ -235,9 +235,9 @@ addPrem env prem = Ok [] env { prems = prems env ++ [(prem, True)] }
 addAssumption :: Env -> Formula -> Result Env
 addAssumption env assumption = Ok [] env { prems = prems env ++ [(assumption, False)] }
 
-addFree :: Env -> Term -> Result Env
-addFree env x@(Term _ []) = Ok [] env { frees = frees env ++ [x]}
-addFree env x = Error [] env (UnknownError ("Can not add function " ++ show x ++ " as a free variable."))
+addFresh :: Env -> Term -> Result Env
+addFresh env x@(Term _ []) = Ok [] env { fresh = fresh env ++ [x]}
+addFresh env x = Error [] env (UnknownError ("Can not add function " ++ show x ++ " as a fresh variable."))
 
 -- Adds references to the environment.
 -- References map labels to arguments (e.g., proofs, formulas, or terms).
@@ -249,8 +249,8 @@ addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(labe
 getAllPrems :: Env -> [Formula]
 getAllPrems env = map fst $ prems env
 
-getFrees :: Env -> [Term]
-getFrees = frees
+getFreshs :: Env -> [Term]
+getFreshs = fresh
 
 -- Retrieves the values corresponding to a list of references.
 -- Returns an error if any reference is invalid.

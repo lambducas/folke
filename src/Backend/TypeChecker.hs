@@ -95,7 +95,7 @@ checkProof env [Abs.ProofElem labels step] = do
         ArgProof _ -> Error [] env (TypeError "Last step in proof was another proof.")
         ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
         ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
-        ArgForm step_t -> Ok [] (Proof (getFrees new_env) (getAllPrems new_env) step_t)
+        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getAllPrems new_env) step_t)
 checkProof env (Abs.ProofElem labels step : elems) = do
     refs_t <- checkRefs labels
     (new_env, step_t) <- checkStep (pushPos env refs_t) step
@@ -126,7 +126,7 @@ checkStep env step = case step of
     Abs.StepFresh ident -> do
         let t = Term (identToString ident) []
         env1 <- regTerm env t
-        env2 <- addFree env1 t
+        env2 <- addFresh env1 t
         Ok [] (env2, ArgTerm t)
     Abs.StepAssume form -> do
         form_t <- checkForm env form

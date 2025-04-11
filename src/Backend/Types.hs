@@ -23,7 +23,7 @@ type IsPremise = Bool
 
 data Env = Env {
     prems   :: [(Formula, IsPremise)],
-    frees   :: Terms,
+    fresh   :: Terms,
     refs    :: Map Ref (Integer, Arg),
     rules   :: Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula),
     pos     :: Refs,
