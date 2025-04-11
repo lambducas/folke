@@ -18,11 +18,9 @@ import Data.Map as Map (Map)
 
 type Terms = [Term]
 type Refs = [Ref]
-type Formulas = [Formula]
-type IsPremise = Bool 
 
 data Env = Env {
-    prems   :: [(Formula, IsPremise)],
+    prems   :: [Formula],
     fresh   :: Terms,
     refs    :: Map Ref (Integer, Arg),
     rules   :: Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula),

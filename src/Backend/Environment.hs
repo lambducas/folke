@@ -5,10 +5,8 @@ module Backend.Environment (
     bindVar,
     regTerm,
     addPrem,
-    addAssumption,
     addFresh,
-  --  getPrems,
-    getAllPrems,
+    getPrems,
     getFreshs,
     addRefs,
     getRefs,
@@ -226,14 +224,8 @@ regTerm env (Term x param) = case Map.lookup x (ids env) of
 
 -- Section: Adders
 
--- Adds a premise/assumption to the environment.
--- Premises are logical formulas that are assumed to be true in the current scope.
-
 addPrem :: Env -> Formula -> Result Env
-addPrem env prem = Ok [] env { prems = prems env ++ [(prem, True)] }
-
-addAssumption :: Env -> Formula -> Result Env
-addAssumption env assumption = Ok [] env { prems = prems env ++ [(assumption, False)] }
+addPrem env prem = Ok [] (env { prems = prems env ++ [prem] })
 
 addFresh :: Env -> Term -> Result Env
 addFresh env x@(Term _ []) = Ok [] env { fresh = fresh env ++ [x]}
@@ -246,8 +238,8 @@ addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(labe
 -- Section: Getters
 
 -- Retrieves all premises/assumptions in the current scope.
-getAllPrems :: Env -> [Formula]
-getAllPrems env = map fst $ prems env
+getPrems :: Env -> [Formula]
+getPrems env = prems env
 
 getFreshs :: Env -> [Term]
 getFreshs = fresh

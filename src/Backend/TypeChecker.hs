@@ -87,7 +87,7 @@ checkPrems env (form:forms) = do
     -return: The type of the proof
 -}
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
-checkProof env [] = Ok [] (Proof [] (getAllPrems env) Nil)
+checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
 checkProof env [Abs.ProofElem labels step] = do
     refs_t <- checkRefs labels
     (new_env, step_t) <- checkStep (pushPos env refs_t) step
@@ -95,7 +95,7 @@ checkProof env [Abs.ProofElem labels step] = do
         ArgProof _ -> Error [] env (TypeError "Last step in proof was another proof.")
         ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
         ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
-        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getAllPrems new_env) step_t)
+        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
 checkProof env (Abs.ProofElem labels step : elems) = do
     refs_t <- checkRefs labels
     (new_env, step_t) <- checkStep (pushPos env refs_t) step
@@ -130,7 +130,7 @@ checkStep env step = case step of
         Ok [] (env2, ArgTerm t)
     Abs.StepAssume form -> do
         form_t <- checkForm env form
-        new_env <- addAssumption env form_t
+        new_env <- addPrem env form_t
         Ok [] (new_env, ArgForm form_t)
     Abs.StepProof (Abs.Proof steps) -> do
         proof_t <- checkProof (push env) steps
