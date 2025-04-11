@@ -385,7 +385,14 @@ buildUI _wenv model = widgetTree where
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
     Just (FEError _warns error) -> span ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
-    Just (FEOk _warns) -> span "Proof is correct :)" `styleBasic` [textColor lime]
+    Just (FEOk warns) ->
+        if null warns
+        then span "Proof is correct :)" `styleBasic` [textColor lime]
+        else vstack [
+            span "Proof is correct, but there are warnings:" `styleBasic` [textColor orange],
+            vstack (map (span . pack . show) warns) `styleBasic` [textColor orange]
+        ]
+
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
