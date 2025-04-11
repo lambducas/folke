@@ -21,6 +21,7 @@ type Refs = [Ref]
 
 data Env = Env {
     prems   :: [Formula],
+    depth   :: Integer,
     fresh   :: Terms,
     refs    :: Map Ref (Integer, Arg),
     rules   :: Map String (Env -> [(Integer, Arg)] -> Formula -> Result Formula),

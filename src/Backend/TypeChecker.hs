@@ -119,19 +119,21 @@ checkRefs (label:labels) = do
 -}
 checkStep :: Env -> Abs.Step -> Result (Env, Arg)
 checkStep env step = case step of
-    Abs.StepPrem form -> do
-        form_t <- checkForm env form
-        new_env <- addPrem env form_t
-        Ok [] (new_env, ArgForm form_t)
+    Abs.StepPrem form -> if depth env == 0 then do
+            form_t <- checkForm env form
+            new_env <- addPrem env form_t
+            Ok [] (new_env, ArgForm form_t)
+        else Error [] env (UnknownError "A premise is not allowed in an subproof.")
     Abs.StepFresh ident -> do
         let t = Term (identToString ident) []
         env1 <- regTerm env t
         env2 <- addFresh env1 t
         Ok [] (env2, ArgTerm t)
-    Abs.StepAssume form -> do
-        form_t <- checkForm env form
-        new_env <- addPrem env form_t
-        Ok [] (new_env, ArgForm form_t)
+    Abs.StepAssume form ->  if depth env /= 0 then do
+            form_t <- checkForm env form
+            new_env <- addPrem env form_t
+            Ok [] (new_env, ArgForm form_t)
+        else Error [] env (UnknownError "A assumption is not allowed in an proof.")
     Abs.StepProof (Abs.Proof steps) -> do
         proof_t <- checkProof (push env) steps
         Ok [] (env, ArgProof proof_t)

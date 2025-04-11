@@ -38,6 +38,7 @@ import Data.Monoid (All(getAll))
 newEnv :: Env
 newEnv = Env {
     prems = [],
+    depth = 0,
     fresh = [],
     refs  = Map.empty,
     rules = Map.fromList [
@@ -147,7 +148,7 @@ showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
 -- Pushes a new context to the environment (used when entering a subproof or box).
 -- This resets the list of premises for the new scope, keeping only assumptions.
 push :: Env -> Env
-push env = env { prems = [], fresh = [] }
+push env = env { prems = [], fresh = [], depth = depth env + 1}
 
 
 bindVar :: Env -> Term -> Result Env
