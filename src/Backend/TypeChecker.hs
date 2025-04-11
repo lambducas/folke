@@ -25,7 +25,7 @@ import Data.Maybe (fromMaybe)
 -- | Make support for special characters
 
 checkString :: String -> Result ()
-checkString proof = 
+checkString proof = do
     case pSequent (myLexer proof) of
         Left err -> Error [] newEnv (SyntaxError err)
         Right seq_t -> check seq_t
@@ -47,11 +47,11 @@ isProofCorrect seq_t = case check seq_t of
     -return: Ok/Error
 -}
 check :: Abs.Sequent -> Result ()
-check seq_t = do 
+check seq_t = do
     let env = newEnv
-    case checkSequent env seq_t of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns _ -> Ok warns ()
+    seq_result <- checkSequent env seq_t
+    return ()
+
 {-
     Typechecks a given proof and if it matches the sequent and returns what it proves
     -params:
@@ -60,27 +60,24 @@ check seq_t = do
     -return: The type of the proof
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) = Error [] newEnv (TypeError "Conclusion is empty.")
-checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = case checkPrems env prems of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 prems_t -> case checkForm env conc of
-        Error warns env_e err -> Error (warns ++ warns1) env_e err
-        Ok warns2 conc_t -> case checkProof env proof of
-            Error warns env_e err -> Error (warns ++ warns1 ++ warns2) env_e err
-            Ok warns3 proof_t -> do
-                let seq_t = Proof [] prems_t conc_t
-                if proof_t == seq_t
-                    then Ok (warns1 ++ warns2 ++ warns3) seq_t
-                    else Error (warns1 ++ warns2 ++ warns3) env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) = 
+    Error [] newEnv (TypeError "Conclusion is empty.")
+checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
+    prems_t <- checkPrems env prems
+    conc_t <- checkForm env conc
+    proof_t <- checkProof env proof
+    let seq_t = Proof [] prems_t conc_t
+    if proof_t == seq_t
+        then return seq_t
+        else Error [] env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
 
 checkPrems :: Env -> [Abs.Form] -> Result [Formula]
-checkPrems _ []             = Ok [] []
-checkPrems _ [Abs.FormNil]  = Ok [] []
-checkPrems env (form:forms) = case checkForm env form of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 form_t      -> case checkPrems env forms of
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 forms_t     -> Ok (warns1++warns2) (form_t : forms_t)
+checkPrems _ [] = Ok [] []
+checkPrems _ [Abs.FormNil] = Ok [] []
+checkPrems env (form:forms) = do
+    form_t <- checkForm env form
+    forms_t <- checkPrems env forms
+    Ok [] (form_t : forms_t)
 
 {-
     Typechecks a given proof
@@ -91,29 +88,27 @@ checkPrems env (form:forms) = case checkForm env form of
 -}
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
 checkProof env [] = Ok [] (Proof [] (getAllPrems env) Nil)
-checkProof env [Abs.ProofElem labels step] = case checkRefs labels of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 refs_t -> case checkStep (pushPos env refs_t) step of
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 (_, ArgProof _) -> Error (warns1++warns2) env (TypeError "Last step in proof was another proof.")
-        Ok warns2 (_, ArgTerm _) -> Error (warns1++warns2) env (TypeError "Check step could not return an term.")
-        Ok warns2 (_, ArgFormWith _ _) -> Error (warns1++warns2) env (TypeError "Check step could not return an form with.")
-        Ok warns2 (new_env, ArgForm step_t) -> Ok (warns1++warns2) (Proof (getFrees new_env) (getAllPrems new_env) step_t)
-checkProof env ((Abs.ProofElem labels step):elems) = case checkRefs labels of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 refs_t -> case checkStep (pushPos env refs_t) step of 
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 (new_env, step_t) -> case checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems of
-            Error warns env_e err -> Error (warns++warns1++warns2) env_e err
-            Ok warns3 seq_t -> Ok (warns1++warns2++warns3) seq_t
+checkProof env [Abs.ProofElem labels step] = do
+    refs_t <- checkRefs labels
+    (new_env, step_t) <- checkStep (pushPos env refs_t) step
+    case step_t of
+        ArgProof _ -> Error [] env (TypeError "Last step in proof was another proof.")
+        ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
+        ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
+        ArgForm step_t -> Ok [] (Proof (getFrees new_env) (getAllPrems new_env) step_t)
+checkProof env (Abs.ProofElem labels step : elems) = do
+    refs_t <- checkRefs labels
+    (new_env, step_t) <- checkStep (pushPos env refs_t) step
+    seq_t <- checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems
+    Ok [] seq_t
 
 checkRefs :: [Abs.Label] -> Result [Ref]
 checkRefs [] = Ok [] []
-checkRefs (label: labels) = case checkRefs labels of 
-    Error warns env_e err -> Error warns env_e err
-    Ok warns refs_t -> case label of
-        Abs.LabelRange i j -> Ok warns (RefRange i j : refs_t)
-        Abs.LabelLine i    -> Ok warns (RefLine i : refs_t)
+checkRefs (label:labels) = do
+    refs_t <- checkRefs labels
+    case label of
+        Abs.LabelRange i j -> Ok [] (RefRange i j : refs_t)
+        Abs.LabelLine i -> Ok [] (RefLine i : refs_t)
 
 {-
     Typechecks a step in a proof, returns the environment becuase we do not change scope between each step.
@@ -123,167 +118,129 @@ checkRefs (label: labels) = case checkRefs labels of
     -return: (Updated environment, type of the step)
 -}
 checkStep :: Env -> Abs.Step -> Result (Env, Arg)
-checkStep env step = case step of 
-    Abs.StepPrem form -> 
-        case checkForm env form of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns1 form_t -> case addPrem env form_t of 
-                Error warns env_e err -> Error (warns++warns1) env_e err
-                Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
-    Abs.StepFresh ident -> case regTerm env t of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 env1 -> case addFree env1 t of
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 env2 -> Ok (warns1++warns2) (env2, ArgTerm t)
-        where t = Term (identToString ident) []
-    Abs.StepAssume form -> 
-        case checkForm env form of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns1 form_t -> case addAssumption env form_t of 
-                Error warns env_e err -> Error (warns++warns1) env_e err
-                Ok warns2 new_env -> Ok (warns1++warns2) (new_env, ArgForm form_t)
-    Abs.StepProof (Abs.Proof steps) -> 
-        case checkProof (push env) steps of 
-            Error warns env_e err -> Error warns env_e err
-            Ok warns proof_t -> Ok warns (env, ArgProof proof_t)
-    Abs.StepForm name args form -> 
-        case checkForm env form of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns1 form_t -> 
-                case checkArgs env args of
-                    Error warns env_e err -> Error (warns++warns1) env_e err
-                    Ok warns2 (env1, args_t) -> 
-                        case applyRule env1 (identToString name) args_t form_t of
-                            Error warns env_e err -> Error (warns++warns1++warns2) env_e err
-                            Ok warns3 res_t -> Ok (warns1++warns2++warns3) (env1, ArgForm res_t)
+checkStep env step = case step of
+    Abs.StepPrem form -> do
+        form_t <- checkForm env form
+        new_env <- addPrem env form_t
+        Ok [] (new_env, ArgForm form_t)
+    Abs.StepFresh ident -> do
+        let t = Term (identToString ident) []
+        env1 <- regTerm env t
+        env2 <- addFree env1 t
+        Ok [] (env2, ArgTerm t)
+    Abs.StepAssume form -> do
+        form_t <- checkForm env form
+        new_env <- addAssumption env form_t
+        Ok [] (new_env, ArgForm form_t)
+    Abs.StepProof (Abs.Proof steps) -> do
+        proof_t <- checkProof (push env) steps
+        Ok [] (env, ArgProof proof_t)
+    Abs.StepForm name args form -> do
+        form_t <- checkForm env form
+        (env1, args_t) <- checkArgs env args
+        res_t <- applyRule env1 (identToString name) args_t form_t
+        Ok [] (env1, ArgForm res_t)
     Abs.StepNil -> Error [] env (UnknownError "Empty step.")
 
 checkArgs :: Env -> [Abs.Arg] -> Result (Env, [Arg])
 checkArgs env [] = Ok [] (env, [])
-checkArgs env (arg: args) = case checkArgs env args of 
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 (env1, args_t) -> case checkArg env1 arg of
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 (env2, arg_t) -> Ok (warns1++warns2) (env2, arg_t : args_t)
+checkArgs env (arg:args) = do
+    (env1, args_t) <- checkArgs env args
+    (env2, arg_t) <- checkArg env1 arg
+    Ok [] (env2, arg_t : args_t)
 
 checkArg :: Env -> Abs.Arg -> Result (Env, Arg)
-checkArg env (Abs.ArgRange i j) = case getRef env (RefRange i j) of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns arg_t -> Ok warns arg_t
-checkArg env (Abs.ArgLine i) = case getRef env (RefLine i) of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns arg_t -> Ok warns arg_t
-checkArg env (Abs.ArgTerm term) = case checkTerm env term of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns term_t -> Ok warns (env, ArgTerm term_t)
-checkArg env (Abs.ArgForm (Abs.Term x (Abs.Params [])) form) = case regTerm env term_t of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 new_env -> case checkForm new_env form of 
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 form_t -> Ok (warns1++warns2) (new_env, ArgFormWith term_t form_t)
-    where term_t = Term (identToString x) []
-checkArg env (Abs.ArgForm _ _) = Error [] env (TypeError "A formula argument can not be over an function.")
-        
-{-
-    Typechecks a formula
-    -params:
-        - Environment
-        - Formula to check 
-    -return: The type of the formula
--}
+checkArg env (Abs.ArgRange i j) = getRef env (RefRange i j)
+checkArg env (Abs.ArgLine i) = getRef env (RefLine i)
+checkArg env (Abs.ArgTerm term) = do
+    term_t <- checkTerm env term
+    Ok [] (env, ArgTerm term_t)
+checkArg env (Abs.ArgForm (Abs.Term x (Abs.Params [])) form) = do
+    let term_t = Term (identToString x) []
+    new_env <- regTerm env term_t
+    form_t <- checkForm new_env form
+    Ok [] (new_env, ArgFormWith term_t form_t)
+checkArg env (Abs.ArgForm _ _) = Error [] env (TypeError "A formula argument cannot be over a function.")
+
+checkTerm :: Env -> Abs.Term -> Result Term
+checkTerm env (Abs.Term ident (Abs.Params terms)) = do
+    let name = identToString ident
+    case Map.lookup name (ids env) of
+        Nothing -> do
+            terms_t <- checkTerms env terms
+            Ok [] (Term name terms_t)
+        Just (IDTypePred _) -> Error [] env (UnknownError (name ++ " is a predicate."))
+        Just (IDTypeTerm n) -> do
+            let i = toInteger (length terms)
+            if n /= i
+                then Error [] env (UnknownError (name ++ " is arity " ++ show n ++ " not " ++ show i ++ "."))
+                else do
+                    terms_t <- checkTerms env terms
+                    Ok [] (Term name terms_t)
+
+checkTerms :: Env -> [Abs.Term] -> Result [Term]
+checkTerms _ [] = Ok [] []
+checkTerms env (x:xs) = do
+    term_t <- checkTerm env x
+    terms_t <- checkTerms env xs
+    Ok [] (term_t : terms_t)
+
 checkForm :: Env -> Abs.Form -> Result Formula
 checkForm env f = case f of  
     Abs.FormPar form -> checkForm env form
     Abs.FormBot -> Ok [] Bot
-    Abs.FormEq a b -> case checkTerm env a of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 a_t -> case checkTerm env b of 
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 b_t -> Ok (warns1++warns2) (Eq a_t b_t)
-    Abs.FormPred p -> case checkPred env p of -- TODO Add to env?
-        Error warns env_e err -> Error warns env_e err
-        Ok warns (_, p_t)      -> Ok warns (Pred p_t)
-    Abs.FormAll ident form -> case regTerm env x of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 env1 ->case bindVar env1 x of
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 env2 -> case checkForm env2 form of
-                Error warns env_e err -> Error (warns++warns1++warns2) env_e err
-                Ok warns3 term_t -> Ok (warns1++warns2++warns3) (All x term_t)
-        where x = Term (identToString ident) []
-    Abs.FormSome ident form -> case regTerm env x of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 env1 ->case bindVar env1 x of
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 env2 -> case checkForm env2 form of
-                Error warns env_e err -> Error (warns++warns1++warns2) env_e err
-                Ok warns3 term_t -> Ok (warns1++warns2++warns3) (Some x term_t)
-        where x = Term (identToString ident) []
-    Abs.FormNot form        -> case checkForm env form of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns form_t -> Ok warns (Not form_t)
-    Abs.FormAnd left right -> case checkForm env left of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 left_t -> case checkForm env  right of 
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 right_t -> Ok (warns1++warns2) (And left_t right_t)
-    Abs.FormOr left right -> case checkForm env left of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 left_t -> case checkForm env  right of 
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 right_t -> Ok (warns1++warns2) (Or left_t right_t)
-    Abs.FormImpl left right  -> case checkForm env left of
-        Error warns env_e err -> Error warns env_e err
-        Ok warns1 left_t -> case checkForm env  right of 
-            Error warns env_e err -> Error (warns++warns1) env_e err
-            Ok warns2 right_t -> Ok (warns1++warns2) (Impl left_t right_t)
+    Abs.FormEq a b -> do
+        a_t <- checkTerm env a
+        b_t <- checkTerm env b
+        Ok [] (Eq a_t b_t)
+    Abs.FormPred p -> do
+        (_, p_t) <- checkPred env p
+        Ok [] (Pred p_t)
+    Abs.FormAll ident form -> do
+        let x = Term (identToString ident) []
+        env1 <- regTerm env x
+        env2 <- bindVar env1 x
+        a_t <- checkForm env2 form
+        Ok [] (All x a_t)
+    Abs.FormSome ident form -> do
+        let x = Term (identToString ident) []
+        env1 <- regTerm env x
+        env2 <- bindVar env1 x
+        a_t <- checkForm env2 form
+        Ok [] (Some x a_t)
+    Abs.FormNot form -> do
+        a_t <- checkForm env form
+        Ok [] (Not a_t)
+    Abs.FormAnd left right -> do
+        left_t <- checkForm env left
+        right_t <- checkForm env right
+        Ok [] (And left_t right_t)
+    Abs.FormOr left right -> do
+        left_t <- checkForm env left
+        right_t <- checkForm env right
+        Ok [] (Or left_t right_t)
+    Abs.FormImpl left right -> do
+        left_t <- checkForm env left
+        right_t <- checkForm env right
+        Ok [] (Impl left_t right_t)
     Abs.FormNil -> Error [] env (TypeError "Formula is empty.")
-{-
-    Typechecks a predicate
-    -params:
-        - Environment
-        - The predicate to check
-    -return: The type of the predicate
--}
+
 checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
-checkPred env (Abs.Pred ident (Abs.Params terms)) = case Map.lookup name (ids env) of 
-    Nothing -> case checkTerms env terms of --TODO is this an error?
-        Error warns env_e err -> Error warns env_e err
-        Ok warns terms_t -> Ok warns (env, Predicate name terms_t)
-    Just (IDTypeTerm _) ->  Error [] env (UnknownError (name ++ " is a term."))
-    Just (IDTypePred n) -> if n /= i
-        then Error [] env (UnknownError (name ++ " is arity "++ show n ++ " not" ++ show i ++ "."))
-        else case checkTerms env terms of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns terms_t -> Ok warns (env, Predicate name terms_t)
-        where i = toInteger(List.length terms)
-    where name = identToString ident
-{-
-    Typechecks a term
--}
-checkTerm :: Env -> Abs.Term -> Result Term
-checkTerm env (Abs.Term ident (Abs.Params terms)) = case Map.lookup name (ids env) of
-    Nothing -> case checkTerms env terms of --TODO is this an error?
-        Error warns env_e err -> Error warns env_e err
-        Ok warns terms_t -> Ok warns (Term name terms_t)
-    Just (IDTypePred _) ->  Error [] env (UnknownError (name ++ " is a predicate."))
-    Just (IDTypeTerm n) -> if n /= i
-        then Error [] env (UnknownError (name ++ " is arity "++ show n ++ " not" ++ show i ++ "."))
-        else case checkTerms env terms of
-            Error warns env_e err -> Error warns env_e err
-            Ok warns terms_t -> Ok warns (Term name terms_t)
-        where i = toInteger(List.length terms)
-    where name = identToString ident
-{-  
-    Typechecks a list of terms of an predicate or term
--}
-checkTerms :: Env -> [Abs.Term] -> Result [Term]
-checkTerms _ [] = Ok [] []
-checkTerms env (x: xs) = case checkTerm env x of
-    Error warns env_e err -> Error warns env_e err
-    Ok warns1 term_t -> case checkTerms env xs of 
-        Error warns env_e err -> Error (warns++warns1) env_e err
-        Ok warns2 terms_t -> Ok (warns1++warns2) (term_t : terms_t)
+checkPred env (Abs.Pred ident (Abs.Params terms)) = do
+    let name = identToString ident
+    case Map.lookup name (ids env) of
+        Nothing -> do
+            terms_t <- checkTerms env terms
+            Ok [] (env, Predicate name terms_t)
+        Just (IDTypeTerm _) -> Error [] env (UnknownError (name ++ " is a term."))
+        Just (IDTypePred n) -> do
+            let i = toInteger (length terms)
+            if n /= i
+                then Error [] env (UnknownError (name ++ " is arity " ++ show n ++ " not " ++ show i ++ "."))
+                else do
+                    terms_t <- checkTerms env terms
+                    Ok [] (env, Predicate name terms_t)
+
 {-
     Converts identifier to string
     -params:
