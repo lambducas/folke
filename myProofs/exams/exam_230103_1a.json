@@ -1,0 +1,100 @@
+{
+    "_sequent": {
+        "_conclusion": "Â¬r â§ p â q",
+        "_premises": [
+            "p â§ Â¬q â r"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "Â¬r â§ p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "AndEL",
+                        "_statement": "Â¬r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "AndER",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "Â¬q",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "4",
+                                    "5"
+                                ],
+                                "_rule": "AndI",
+                                "_statement": "p â§ Â¬q",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "1",
+                                    "6"
+                                ],
+                                "_rule": "ImplE",
+                                "_statement": "r",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "3",
+                                    "7"
+                                ],
+                                "_rule": "NotE",
+                                "_statement": "bot",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "5-8"
+                        ],
+                        "_rule": "PBC",
+                        "_statement": "q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-9"
+                ],
+                "_rule": "ImplI",
+                "_statement": "Â¬r â§ p â q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

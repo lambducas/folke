@@ -1,0 +1,122 @@
+{
+    "_sequent": {
+        "_conclusion": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+        "_premises": [
+            "P(a)",
+            "Q(b)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "LEM",
+                "_statement": "a = b â¨ Â¬(a = b)",
+                "_usedArguments": 0,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "a = b",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "1",
+                            "u:=P(u)"
+                        ],
+                        "_rule": "EqE",
+                        "_statement": "P(b)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "2"
+                        ],
+                        "_rule": "AndI",
+                        "_statement": "P(b) â§ Q(b)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "b"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x (P(x) â§ Q(x))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7"
+                        ],
+                        "_rule": "OrIL",
+                        "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "Â¬(a = b)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "b"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â y Â¬(a = y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            "a"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x â y Â¬(x = y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "11"
+                        ],
+                        "_rule": "OrIR",
+                        "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4-8",
+                    "9-12"
+                ],
+                "_rule": "OrE",
+                "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

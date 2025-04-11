@@ -1,0 +1,63 @@
+{
+    "_sequent": {
+        "_conclusion": "p â r â§ s",
+        "_premises": [
+            "p â q",
+            "r â s",
+            "p â r"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "4"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "r",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "5"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "s",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "6"
+                        ],
+                        "_rule": "AndI",
+                        "_statement": "r â§ s",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "4-7"
+                ],
+                "_rule": "ImplI",
+                "_statement": "p â r â§ s",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

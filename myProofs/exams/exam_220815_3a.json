@@ -1,0 +1,91 @@
+{
+    "_sequent": {
+        "_conclusion": "â x A(f(g(x)))",
+        "_premises": [
+            "â x A(x)",
+            "â x (A(x) â A(f(x)))",
+            "â x (A(x) â A(g(x)))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "A(xâ)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "x_0"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "A(xâ) â A(g(xâ))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "g(xâ)"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "A(g(xâ)) â A(f(g(xâ)))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "5"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "A(g(xâ))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7",
+                            "8"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "A(f(g(xâ)))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "x_0"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x A(f(g(x)))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "4-10"
+                ],
+                "_rule": "SomeE",
+                "_statement": "â x A(f(g(x)))",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}
