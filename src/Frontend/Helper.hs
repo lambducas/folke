@@ -42,6 +42,14 @@ pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
     stepLength (SubProof p) = sum $ map stepLength p
     stepLength (Line {}) = 1
 
+pathToLastLine :: FESequent -> FormulaPath
+pathToLastLine sequent = ep (SubProof $ _steps sequent) []
+  where
+    ep currentProof path = case currentProof of
+      Line {} -> path
+      SubProof [] -> path
+      SubProof p -> ep (last p) (path ++ [length p - 1])
+
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
 firstKeystroke [] widget = widget

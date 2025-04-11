@@ -41,7 +41,6 @@
 - [ ] User should be able to drag to resize 'File Explorer' and rule sidebar
 - [ ] Update linenumber references when deleting or inserting line
 - [ ] Fix focus not updating correcly when inserting new line/removing line
-- [ ] `+ New line` should insert the line after the last line in same box as the last line
 - [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix Markdown links on Windows
@@ -52,6 +51,7 @@
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
 - [ ] Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)
 - [ ] Display warnings and errors on the lines they appear on
+- [x] ~~`+ New line` should insert the line after the last line in same box as the last line~~
 - [x] ~~Display all available rules nicely on the side~~
 - [x] ~~Add textfield for every argument in rule instead of brackets in single textfield~~
 - [x] ~~Catch syntax errors before backend parser so we don't get syntax errors that aren't helpful for the user~~

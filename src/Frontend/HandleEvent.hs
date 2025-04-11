@@ -89,27 +89,17 @@ handleEvent wenv node model evt = case evt of
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
-      insertLine = insertAfterProof path (Line "" "" 0 [])
       nextPath = init path ++ [last path + 1]
+      insertLine = insertAfterProof path (Line "" "" 0 [])
 
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
     where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
 
-  AddLine -> applyOnCurrentProof model addLine
-    where
-      addLine sequent = FESequent premises conclusion steps
-        where
-          premises = _premises sequent
-          conclusion = _conclusion sequent
-          steps = _steps sequent ++ [Line "" "" 0 []]
+  AddLine -> applyOnCurrentProof model insertLine
+    where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
 
-  AddSubProof -> applyOnCurrentProof model addSubProof
-    where
-      addSubProof sequent = FESequent premises conclusion steps
-        where
-          premises = _premises sequent
-          conclusion = _conclusion sequent
-          steps = _steps sequent ++ [SubProof [Line "" "" 0 []]]
+  AddSubProof -> applyOnCurrentProof model insertSubProof
+    where insertSubProof seq = insertAfterProof (pathToLastLine seq) (SubProof [Line "" "" 0 []]) seq
 
   RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
     where
