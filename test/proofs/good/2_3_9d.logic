@@ -1,5 +1,5 @@
 all x P(x) -> S |- some x (P(x)->S) {
-    1: assume all x P(x) -> S;
+    1: prem all x P(x) -> S;
     2-19: {
         2: assume !some x (P(x)->S);
         3-12: {
