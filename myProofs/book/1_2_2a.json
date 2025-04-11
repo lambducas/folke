@@ -1,0 +1,59 @@
+{
+    "_sequent": {
+        "_conclusion": "q -> p",
+        "_premises": [
+            "!p -> !q"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "NotNotI",
+                        "_statement": "!!q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "4"
+                        ],
+                        "_rule": "MT",
+                        "_statement": "!!p",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5"
+                        ],
+                        "_rule": "NotNotE",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2"
+                ],
+                "_rule": "IfI",
+                "_statement": "q -> p",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

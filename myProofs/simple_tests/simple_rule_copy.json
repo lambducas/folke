@@ -1,0 +1,20 @@
+{
+    "_sequent": {
+        "_conclusion": "A",
+        "_premises": [
+            "A",
+            "B"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "copy",
+                "_statement": "A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

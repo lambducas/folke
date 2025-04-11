@@ -1,0 +1,141 @@
+{
+    "_sequent": {
+        "_conclusion": "((p â q) â q) â (q â p) â p",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "(p â q) â q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "q â p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "Â¬p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "p",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "3",
+                                                    "4"
+                                                ],
+                                                "_rule": "NotE",
+                                                "_statement": "bot",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5"
+                                                ],
+                                                "_rule": "BotE",
+                                                "_statement": "q",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-6"
+                                        ],
+                                        "_rule": "ImplI",
+                                        "_statement": "p â q",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "1",
+                                            "7"
+                                        ],
+                                        "_rule": "ImplE",
+                                        "_statement": "q",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "2",
+                                            "8"
+                                        ],
+                                        "_rule": "ImplE",
+                                        "_statement": "p",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "3",
+                                            "9"
+                                        ],
+                                        "_rule": "NotE",
+                                        "_statement": "bot",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-10"
+                                ],
+                                "_rule": "PBC",
+                                "_statement": "p",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-11"
+                        ],
+                        "_rule": "ImplI",
+                        "_statement": "(q â p) â p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-12"
+                ],
+                "_rule": "ImplI",
+                "_statement": "((p â q) â q) â (q â p) â p",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

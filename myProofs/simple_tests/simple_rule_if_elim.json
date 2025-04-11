@@ -1,0 +1,21 @@
+{
+    "_sequent": {
+        "_conclusion": "B",
+        "_premises": [
+            "A",
+            "A -> B"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1",
+                    "2"
+                ],
+                "_rule": "IfE",
+                "_statement": "B",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

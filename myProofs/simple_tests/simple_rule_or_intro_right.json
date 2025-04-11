@@ -1,0 +1,19 @@
+{
+    "_sequent": {
+        "_conclusion": "A | B",
+        "_premises": [
+            "A"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "OrIL",
+                "_statement": "A | B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

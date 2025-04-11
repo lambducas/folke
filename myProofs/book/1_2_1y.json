@@ -1,0 +1,119 @@
+{
+    "_sequent": {
+        "_conclusion": "p & (q | r)",
+        "_premises": [
+            "(p & q) | (p & r)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p & q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "AndEL",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "AndER",
+                        "_statement": "q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5"
+                        ],
+                        "_rule": "OrIL",
+                        "_statement": "q | r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "6"
+                        ],
+                        "_rule": "AndI",
+                        "_statement": "p & (q | r)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p & r",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4"
+                        ],
+                        "_rule": "AndEL",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4"
+                        ],
+                        "_rule": "AndER",
+                        "_statement": "r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6"
+                        ],
+                        "_rule": "OrIR",
+                        "_statement": "q | r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "7"
+                        ],
+                        "_rule": "AndI",
+                        "_statement": "p & (q | r)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "2",
+                    "3"
+                ],
+                "_rule": "OrE",
+                "_statement": "p & (q | r)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

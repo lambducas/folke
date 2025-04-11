@@ -1,0 +1,179 @@
+{
+    "_sequent": {
+        "_conclusion": "â x (P(x) â â y P(y))",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "Â¬â x (P(x) â â y P(y))",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "t",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(t)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "x_0",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "Â¬P(xâ)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "P(xâ)",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "5",
+                                                            "6"
+                                                        ],
+                                                        "_rule": "NotE",
+                                                        "_statement": "bot",
+                                                        "_usedArguments": 2,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "7"
+                                                        ],
+                                                        "_rule": "BotE",
+                                                        "_statement": "â y P(y)",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "6-8"
+                                                ],
+                                                "_rule": "ImplI",
+                                                "_statement": "P(xâ) â â y P(y)",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "9",
+                                                    "x_0"
+                                                ],
+                                                "_rule": "SomeI",
+                                                "_statement": "â x (P(x) â â y P(y))",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "1",
+                                                    "10"
+                                                ],
+                                                "_rule": "NotE",
+                                                "_statement": "bot",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "5-11"
+                                        ],
+                                        "_rule": "PBC",
+                                        "_statement": "P(xâ)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "4-12"
+                                ],
+                                "_rule": "AllI",
+                                "_statement": "â y P(y)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "3-13"
+                        ],
+                        "_rule": "ImplI",
+                        "_statement": "P(t) â â y P(y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "14",
+                            "t"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â x (P(x) â â y P(y))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "15"
+                        ],
+                        "_rule": "NotE",
+                        "_statement": "bot",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-16"
+                ],
+                "_rule": "PBC",
+                "_statement": "â x (P(x) â â y P(y))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

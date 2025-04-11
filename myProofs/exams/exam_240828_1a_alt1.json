@@ -1,0 +1,80 @@
+{
+    "_sequent": {
+        "_conclusion": "p | !q",
+        "_premises": [
+            "!(p -> q)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "2"
+                                ],
+                                "_rule": "copy",
+                                "_statement": "q",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "3-4"
+                        ],
+                        "_rule": "ImplI",
+                        "_statement": "p -> q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "1"
+                        ],
+                        "_rule": "NotE",
+                        "_statement": "bot",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-6"
+                ],
+                "_rule": "NotI",
+                "_statement": "!q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "7"
+                ],
+                "_rule": "OrIR",
+                "_statement": "p | !q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}
