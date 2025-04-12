@@ -80,10 +80,13 @@ main = do
     -- Initial states
     model prefs currentFrontendChan currentBackendChan = AppModel {
       _openMenuBarItem = Nothing,
+      _contextMenu = ContextMenu {
+        _ctxOpen = False,
+        _ctxFilePath = Nothing
+      },
 
       _filesInDirectory = [],
-      _confirmDeletePopup = False,
-      _confirmDeleteTarget = Nothing,
+      _confirmActionPopup = Nothing,
 
       _frontendChan = currentFrontendChan,
       _backendChan = currentBackendChan,

@@ -5,13 +5,18 @@ module Frontend.Helper where
 import Frontend.Types
 import Shared.Messages
 import Monomer
+import qualified Monomer.Lens as L
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd)
 import Text.Printf
 import System.Random
-import System.FilePath.Posix (equalFilePath)
+import System.FilePath.Posix (equalFilePath, takeDirectory)
 import Backend.Types (Ref(RefRange, RefLine))
+
+import Control.Exception (SomeException, catch)
+import System.Process (callCommand)
+import Control.Lens ((^.))
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
@@ -121,3 +126,18 @@ insertAt :: a -> Int -> [a] -> [a]
 insertAt newElement _ [] = [newElement]
 insertAt newElement 0 as = newElement:as
 insertAt newElement i (a:as) = a : insertAt newElement (i - 1) as
+
+openInExplorer :: WidgetEnv s e -> FilePath -> IO ()
+openInExplorer wenv path = catchIgnore (callCommand command) where
+  os = wenv ^. L.os
+  command
+    | os == "Windows" = "start %windir%\\explorer.exe \"" ++ path ++ "\""
+    | os == "Mac OS X" = "cd \"" ++ path ++ "\"; open -R ."
+    | os == "Linux" = "xdg-open \"" ++ takeDirectory path ++ "\""
+    | otherwise = "ls"
+
+catchIgnore :: IO () -> IO ()
+catchIgnore task = catchAny task (const $ return ())
+
+catchAny :: IO a -> (SomeException -> IO a) -> IO a
+catchAny = catch

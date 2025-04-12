@@ -96,6 +96,8 @@ executable bsc
                     , bytestring
                     , random
                     , nativefiledialog
+                    , process
+                    , sdl2 >=2.5.0 && <2.7
     other-modules:
                       Backend.TypeChecker
                     , Backend.Environment

@@ -30,6 +30,8 @@ import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 import qualified Data.Map as Map
 
+import qualified SDL
+
 handleEvent
   :: WidgetEnv AppModel AppEvent
   -> WidgetNode AppModel AppEvent
@@ -57,7 +59,36 @@ handleEvent wenv node model evt = case evt of
 
   AppResize m -> [ Model $ model & preferences . windowMode .~ m ]
 
+  CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t)]
+
+  OpenConfirmAction a -> [ Model $ model & confirmActionPopup %~ openPopup ]
+    where
+      openPopup Nothing = Just a
+      openPopup old@(Just _) = old
+
+  CloseConfirmAction a -> [
+      Model $ model & confirmActionPopup .~ Nothing,
+      Event a
+    ]
+
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
+
+  OpenContextMenu filePath -> [
+      Model $ model
+        & contextMenu . ctxFilePath .~ Just filePath
+        & contextMenu . ctxOpen .~ True
+    ]
+
+  CloseContextMenu -> [ Model $ model & contextMenu . ctxOpen .~ False ]
+
+  DeleteFilePath p -> [ Producer (\sendMsg -> do
+      result <- try (removeFile p) :: IO (Either SomeException ())
+      case result of
+        Left e -> print e
+        Right _ -> sendMsg RefreshExplorer
+    ) ]
+
+  OpenInExplorer p -> [ Producer (\_ -> openInExplorer wenv p) ]
 
   FocusOnKey key -> [ SetFocusOnKey key ]
 
@@ -92,8 +123,19 @@ handleEvent wenv node model evt = case evt of
       nextPath = init path ++ [last path + 1]
       insertLine = insertAfterProof path (Line "" "" 0 [])
 
+  InsertLineBefore path -> applyOnCurrentProof model insertLine ++ focusAction
+    where
+      focusAction = fromMaybe [] maybeFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
+      nextPath = init path ++ [last path + 0]
+      insertLine = insertBeforeProof path (Line "" "" 0 [])
+
   InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
     where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
+
+  InsertSubProofBefore path -> applyOnCurrentProof model insertSubProof
+    where insertSubProof = insertBeforeProof path (SubProof [Line "" "" 0 []])
 
   AddLine -> applyOnCurrentProof model insertLine
     where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
@@ -257,11 +299,13 @@ handleEvent wenv node model evt = case evt of
 
   CloseFile filePath -> case file of
     Nothing -> []
-    Just file -> (if isFileEdited (Just file) then [
-        Model $ model
-          & confirmDeletePopup .~ True
-          & confirmDeleteTarget ?~ filePath
-      ] else handleEvent wenv node model (CloseFileSuccess filePath))
+    Just file -> (if isFileEdited (Just file)
+      then handleEvent wenv node model (OpenConfirmAction (ConfirmActionData {
+        _cadTitle = "Close without saving?",
+        _cadBody = "Are you sure you want to close\n" <> pack filePath <> "\nwithout saving? All changes will be lost!",
+        _cadAction = CloseFileSuccess filePath
+      }))
+      else handleEvent wenv node model (CloseFileSuccess filePath))
     where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
@@ -276,8 +320,6 @@ handleEvent wenv node model evt = case evt of
         & preferences . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
       modelWithClosedFile = model
         & preferences . openFiles %~ filter (filePath/=)
-        & confirmDeleteTarget .~ Nothing
-        & confirmDeletePopup .~ False
       cf = model ^. preferences . currentFile
 
   SaveCurrentFile -> case model ^. preferences . currentFile of
@@ -530,6 +572,18 @@ insertAfterProof path insertThis = replaceSteps f
         where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
     rl currentPath f@(Line {})
       | path == currentPath = [f, insertThis]
+      | otherwise = [f]
+
+insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
+insertBeforeProof path insertThis = replaceSteps f
+  where
+    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
+    rl currentPath (SubProof p)
+      | path == currentPath = [insertThis, res]
+      | otherwise = [res]
+        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Line {})
+      | path == currentPath = [insertThis, f]
       | otherwise = [f]
 
 removeFromProof :: FormulaPath -> FESequent -> FESequent

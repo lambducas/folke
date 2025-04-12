@@ -27,9 +27,9 @@ import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import Data.Either (isLeft)
-import System.FilePath (takeExtension, takeFileName, takeBaseName)
+import System.FilePath (takeExtension, takeFileName, takeBaseName, makeRelative)
 import System.FilePath.Posix ((</>))
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, isJust)
 import qualified Data.Map
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
@@ -40,6 +40,7 @@ menuBarCategories = [
       ("New Proof", "Ctrl+N", CreateEmptyProof),
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Close File", "Ctrl+W", CloseCurrentFile),
+      ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
     ("Edit", [
@@ -109,17 +110,8 @@ buildUI _wenv model = widgetTree where
         menuBar,
         mainContent
       ],
-      popup_ confirmDeletePopup [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
-        h1 "Close without saving?",
-        span "Are you sure you want to close",
-        bold $ span (showt $ model ^. confirmDeleteTarget),
-        span "without saving. All changes will be lost!",
-        spacer,
-        hstack_ [childSpacing] [
-          normalStyle $ toggleButton "Cancel" confirmDeletePopup,
-          normalStyle $ button "Close anyway" (maybe NoEvent CloseFileSuccess (model ^. confirmDeleteTarget))
-        ]
-      ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ u -2])
+      contextMenuUI,
+      confirmActionUI
     ]
 
   menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
@@ -236,16 +228,20 @@ buildUI _wenv model = widgetTree where
                 -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
                 -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
-  fileItem indent text filePath = box_ [expandContent, onClick (OpenFile filePath)] $ hstack_ [childSpacing] [
+  fileItem indent text filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
       iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
       span_ text [ellipsis]
     ]
       `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
-      isCurrent = case model ^. preferences . workingDir of
-        Nothing -> False
-        Just wd -> (model ^. preferences . currentFile) == Just (wd </> filePath)
+      handleBtn BtnLeft _ = OpenFile filePath
+      handleBtn BtnRight _ = OpenContextMenu fullPath
+      handleBtn _ _ = NoEvent
+      isCurrent = (model ^. preferences . currentFile) == Just fullPath
+      fullPath = case model ^. preferences . workingDir of
+        Nothing -> ""
+        Just wd -> wd </> filePath
       ext = takeExtension filePath
       iconIdent
         | ext == ".md" = remixMarkdownFill
@@ -584,8 +580,12 @@ buildUI _wenv model = widgetTree where
                   trashButton (RemoveLine path)
                     `nodeEnabled` trashActive,
 
-                fastTooltip "Insert line below" $
-                  button "↓+" (InsertLineAfter path) `styleBasic` [textSize u],
+                vstack [
+                  fastTooltip "Insert line above" $
+                    button "↑+" (InsertLineBefore path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusBL 0, radiusBR 0],
+                  fastTooltip "Insert line below" $
+                    button "↓+" (InsertLineAfter path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusTL 0, radiusTR 0, borderT 1 dividerColor]
+                ] `styleBasic` [height 34],
 
                 -- fastTooltip "Insert subproof below" $
                 --   button "↓☐+" (InsertSubProofAfter path),
@@ -711,3 +711,45 @@ buildUI _wenv model = widgetTree where
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
+
+  contextMenuUI = case model ^. contextMenu . ctxFilePath of
+    Nothing -> popupV False (const NoEvent) (label "")
+    Just filePath ->
+      popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
+        (vstack (map dropdownButton [
+          ("Open in File Explorer", "", OpenInExplorer filePath),
+          -- ("Rename", "", NoEvent),
+          ("Delete file", "Delete", OpenConfirmAction (ConfirmActionData {
+            _cadTitle = "Delete file?",
+            _cadBody = "Are you sure you want to delete " <> pack filePath <> "? This action cannot be undone!",
+            _cadAction = DeleteFilePath filePath
+            })),
+          ("Copy Path", "", CopyToClipboard (pack filePath)),
+          ("Copy Relative Path", "", CopyToClipboard (pack relativePath))
+        ])
+          `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
+      where
+        relativePath = makeRelative wd filePath
+        wd = fromMaybe "" (model ^. preferences . workingDir)
+        dropdownButton (name, keybind, action) = box_ [onClick action, onClick CloseContextMenu, expandContent] $ hstack [
+            span name `styleBasic` [textSize $ u -2],
+            filler,
+            span keybind `styleBasic` [textSize $ u -2]
+          ]
+            `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ u -2]
+            `styleHover` [bgColor hoverColor]
+
+  confirmActionUI = popupV_ (isJust cad) (const NoEvent) [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
+      h1 title,
+      paragraph body,
+      spacer,
+      hstack_ [childSpacing] [
+        normalStyle $ button "Cancel" (CloseConfirmAction NoEvent),
+        normalStyle $ button "Confirm" (CloseConfirmAction action)
+      ]
+    ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, textSize $ u -2])
+    where
+      title = fromMaybe "" (cad >>= Just . _cadTitle)
+      body = fromMaybe "" (cad >>= Just . _cadBody)
+      action = fromMaybe NoEvent (cad >>= Just . _cadAction)
+      cad = model ^. confirmActionPopup

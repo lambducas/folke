@@ -73,12 +73,23 @@ data Preferences = Preferences {
   _rulesSidebarOpen :: Bool
 } deriving (Eq, Show)
 
+data ContextMenu = ContextMenu {
+  _ctxOpen :: Bool,
+  _ctxFilePath :: Maybe FilePath
+} deriving (Eq, Show)
+
+data ConfirmActionData = ConfirmActionData {
+  _cadTitle :: Text,
+  _cadBody :: Text,
+  _cadAction :: AppEvent
+} deriving (Eq, Show)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
+  _contextMenu :: ContextMenu,
 
   _filesInDirectory :: [FilePath],
-  _confirmDeletePopup :: Bool,
-  _confirmDeleteTarget :: Maybe FilePath,
+  _confirmActionPopup :: Maybe ConfirmActionData,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
@@ -97,10 +108,21 @@ data AppEvent
   | AppBeforeExit
   | ExitApp
   | AppResize MainWindowState
+  | CopyToClipboard Text
   | Print String
+
+  -- Confirm action
+  | OpenConfirmAction ConfirmActionData
+  | CloseConfirmAction AppEvent
 
   -- Menu bar
   | SetOpenMenuBarItem (Maybe Integer)
+
+  -- Context menu
+  | OpenContextMenu FilePath
+  | CloseContextMenu
+  | DeleteFilePath FilePath
+  | OpenInExplorer FilePath
 
   -- Focus
   | NextFocus Int
@@ -118,7 +140,9 @@ data AppEvent
   | AddLine
   | AddSubProof
   | InsertLineAfter FormulaPath
+  | InsertLineBefore FormulaPath
   | InsertSubProofAfter FormulaPath
+  | InsertSubProofBefore FormulaPath
   | RemoveLine FormulaPath
   | EditFormula FormulaPath Text
   | EditRuleName FormulaPath Text
@@ -172,6 +196,8 @@ data AppEvent
 
 makeLenses 'Preferences
 makeLenses 'ProofFile
+makeLenses 'ConfirmActionData
+makeLenses 'ContextMenu
 makeLenses 'AppModel
 
 feFileExt :: String
