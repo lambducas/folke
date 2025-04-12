@@ -73,9 +73,11 @@ data Preferences = Preferences {
   _rulesSidebarOpen :: Bool
 } deriving (Eq, Show)
 
+type ContextMenuActions = [(Text, Text, AppEvent, Bool)]
+
 data ContextMenu = ContextMenu {
   _ctxOpen :: Bool,
-  _ctxFilePath :: Maybe FilePath
+  _ctxActions :: ContextMenuActions
 } deriving (Eq, Show)
 
 data ConfirmActionData = ConfirmActionData {
@@ -119,7 +121,7 @@ data AppEvent
   | SetOpenMenuBarItem (Maybe Integer)
 
   -- Context menu
-  | OpenContextMenu FilePath
+  | OpenContextMenu ContextMenuActions
   | CloseContextMenu
   | DeleteFilePath FilePath
   | OpenInExplorer FilePath
@@ -139,11 +141,11 @@ data AppEvent
   -- Handle proof
   | AddLine
   | AddSubProof
-  | InsertLineAfter FormulaPath
-  | InsertLineBefore FormulaPath
-  | InsertSubProofAfter FormulaPath
-  | InsertSubProofBefore FormulaPath
-  | RemoveLine FormulaPath
+  | InsertLineAfter Bool FormulaPath
+  | InsertLineBefore Bool FormulaPath
+  | InsertSubProofAfter Bool FormulaPath
+  | InsertSubProofBefore Bool FormulaPath
+  | RemoveLine Bool FormulaPath
   | EditFormula FormulaPath Text
   | EditRuleName FormulaPath Text
   | EditRuleArgument FormulaPath Int Text

@@ -28,7 +28,7 @@ import Data.Default ( Default(def) )
 import Data.String (fromString)
 import Data.Either (isLeft)
 import qualified Data.Map
-import System.FilePath (takeExtension, takeFileName, takeBaseName, makeRelative)
+import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe, isJust)
 import Frontend.Parse (validateRuleArgument, validateStatement, validateRule, parseRule)
@@ -60,6 +60,19 @@ menuBarCategories = [
     ("Help", [
       ("Open Guide", "", OpenGuide)
     ])
+  ]
+
+ctxFileExplorer :: FilePath -> FilePath -> ContextMenuActions
+ctxFileExplorer filePath relativePath = [
+    ("Open in File Explorer", "", OpenInExplorer filePath, True),
+    -- ("Rename", "", NoEvent, False),
+    ("Delete file", "Delete", OpenConfirmAction (ConfirmActionData {
+      _cadTitle = "Delete file?",
+      _cadBody = "Are you sure you want to delete " <> pack filePath <> "? This action cannot be undone!",
+      _cadAction = DeleteFilePath filePath
+    }), True),
+    ("Copy Path", "", CopyToClipboard (pack filePath), True),
+    ("Copy Relative Path", "", CopyToClipboard (pack relativePath), True)
   ]
 
 buildUI
@@ -252,7 +265,7 @@ buildUI _wenv model = widgetTree where
       `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
     where
       handleBtn BtnLeft _ = OpenFile filePath
-      handleBtn BtnRight _ = OpenContextMenu fullPath
+      handleBtn BtnRight _ = OpenContextMenu (ctxFileExplorer fullPath filePath)
       handleBtn _ _ = NoEvent
       isCurrent = (model ^. preferences . currentFile) == Just fullPath
       fullPath = case model ^. preferences . workingDir of
@@ -503,7 +516,7 @@ buildUI _wenv model = widgetTree where
 
       pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
         where
-          ui = vstack [
+          ui = box_ [onBtnReleased handleBtn, expandContent] $ vstack [
               hstack [
                 hstack [
                   -- span (pack (show (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement)))))),
@@ -522,10 +535,10 @@ buildUI _wenv model = widgetTree where
 
                     ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
                     ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
-                    ("Delete", RemoveLine path, trashActive),
-                    ("Backspace", RemoveLine path, canBackspaceToDelete),
-                    ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
-                    ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                    ("Delete", RemoveLine False path, trashActive),
+                    ("Backspace", RemoveLine False path, canBackspaceToDelete),
+                    ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                    ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
@@ -543,12 +556,12 @@ buildUI _wenv model = widgetTree where
 
                       ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
                       ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                      ("Delete", RemoveLine path, trashActive),
+                      ("Delete", RemoveLine False path, trashActive),
                       ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-                      ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
-                      ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastLine),
+                      ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                      ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                       ("Enter", NextFocus 1, usedArguments > 0),
-                      ("Enter", InsertLineAfter path, usedArguments == 0)
+                      ("Enter", InsertLineAfter False path, usedArguments == 0)
                       -- ("Enter", InsertLineAfter path, True)
                     ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
                       `styleBasic` [styleIf isRuleError (border 1 red)]
@@ -577,12 +590,12 @@ buildUI _wenv model = widgetTree where
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
                 ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
                 ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-                ("Delete", RemoveLine path, trashActive),
+                ("Delete", RemoveLine False path, trashActive),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
-                ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
-                ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
-                ("Enter", InsertLineAfter path, isLastArg),
+                ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
+                ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
               ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
               `nodeKey` (showt index <> ".ruleArg." <> showt idx)
@@ -599,14 +612,14 @@ buildUI _wenv model = widgetTree where
 
           b = box $ hstack_ [childSpacing] [
                 fastTooltip "Remove line" $
-                  trashButton (RemoveLine path)
+                  trashButton (RemoveLine False path)
                     `nodeEnabled` trashActive,
 
                 vstack [
                   fastTooltip "Insert line above" $
-                    button "↑+" (InsertLineBefore path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusBL 0, radiusBR 0],
+                    button "↑+" (InsertLineBefore False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusBL 0, radiusBR 0],
                   fastTooltip "Insert line below" $
-                    button "↓+" (InsertLineAfter path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusTL 0, radiusTR 0, borderT 1 dividerColor]
+                    button "↓+" (InsertLineAfter False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusTL 0, radiusTR 0, borderT 1 dividerColor]
                 ] `styleBasic` [height 34],
 
                 -- fastTooltip "Insert subproof below" $
@@ -621,13 +634,42 @@ buildUI _wenv model = widgetTree where
 
                 widgetIf (isLastLine && nextIndexExists) $
                   fastTooltip "Close subproof" $
-                    button "⏎" (InsertLineAfter pathToParentSubProof) `styleBasic` [textSize u]
+                    button "⏎" (InsertLineAfter False pathToParentSubProof) `styleBasic` [textSize u]
 
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 250]
 
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
           --   where rules (Env _ _ r _ _ _ _ _) = r
+
+          handleBtn BtnRight _ = OpenContextMenu ctxProofLine
+          handleBtn _ _ = NoEvent
+
+          ctxProofLine = [
+              ("Remove Line", "", RemoveLine False path, trashActive),
+              ("Remove Line (Update refs)", "", RemoveLine True path, trashActive),
+
+              ("Insert Line Above", "", InsertLineBefore False path, True),
+              ("Insert Line Above (Update refs)", "", InsertLineBefore True path, True),
+
+              ("Insert Line Below", "", InsertLineAfter False path, True),
+              ("Insert Line Below (Update refs)", "", InsertLineAfter True path, True),
+
+              ("Insert Subproof Above", "", InsertSubProofBefore False path, True),
+              ("Insert Subproof Above (Update refs)", "", InsertSubProofBefore True path, True),
+
+              ("Insert Subproof Below", "", InsertSubProofAfter False path, True),
+              ("Insert Subproof Below (Update refs)", "", InsertSubProofAfter True path, True),
+
+              ("Insert Line After Subproof", "", InsertLineAfter False pathToParentSubProof, isLastLine && nextIndexExists),
+              ("Insert Line After Subproof (Update refs)", "", InsertLineAfter True pathToParentSubProof, isLastLine && nextIndexExists),
+
+              ("Insert Subproof After Subproof", "", InsertSubProofAfter False pathToParentSubProof, isLastLine && nextIndexExists),
+              ("Insert Subproof After Subproof (Update refs)", "", InsertSubProofAfter True pathToParentSubProof, isLastLine && nextIndexExists),
+
+              ("Convert Line to Subproof", "", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+              ("Undo Subproof", "", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), isSubProofSingleton)
+            ]
 
           handleFormulaKey, handleRuleNameKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
           handleFormulaKey (_mod, code, state)
@@ -734,32 +776,28 @@ buildUI _wenv model = widgetTree where
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
 
-  contextMenuUI = case model ^. contextMenu . ctxFilePath of
-    Nothing -> popupV False (const NoEvent) (label "")
-    Just filePath ->
-      popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
-        (vstack (map dropdownButton [
-          ("Open in File Explorer", "", OpenInExplorer filePath),
-          -- ("Rename", "", NoEvent),
-          ("Delete file", "Delete", OpenConfirmAction (ConfirmActionData {
-            _cadTitle = "Delete file?",
-            _cadBody = "Are you sure you want to delete " <> pack filePath <> "? This action cannot be undone!",
-            _cadAction = DeleteFilePath filePath
-            })),
-          ("Copy Path", "", CopyToClipboard (pack filePath)),
-          ("Copy Relative Path", "", CopyToClipboard (pack relativePath))
-        ])
-          `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
-      where
-        relativePath = makeRelative wd filePath
-        wd = fromMaybe "" (model ^. preferences . workingDir)
-        dropdownButton (name, keybind, action) = box_ [onClick action, onClick CloseContextMenu, expandContent] $ hstack [
-            span name `styleBasic` [textSize $ u -2],
+  contextMenuUI = popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
+    (vstack (map dropdownButton actions)
+      `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
+    where
+      actions = model ^. contextMenu . ctxActions
+      dropdownButton (name, keybind, action, active)
+        | active = box_ [onClick action, onClick CloseContextMenu, expandContent] $ hstack [
+            spn name,
             filler,
-            span keybind `styleBasic` [textSize $ u -2]
+            spn keybind
           ]
-            `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ u -2]
+            `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand]
             `styleHover` [bgColor hoverColor]
+        | otherwise = box_ [expandContent] $ hstack [
+            spnIna name,
+            filler,
+            spnIna keybind
+          ]
+            `styleBasic` [radius 4, paddingV 10, paddingH 20]
+          where
+            spn t = span t `styleBasic` [textSize $ u -2]
+            spnIna t = spn t `styleBasic` [textColor dividerColor]
 
   confirmActionUI = popupV_ (isJust cad) (const NoEvent) [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
       h1 title,

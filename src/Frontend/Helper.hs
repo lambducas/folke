@@ -47,6 +47,9 @@ pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
     stepLength (SubProof p) = sum $ map stepLength p
     stepLength (Line {}) = 1
 
+pathToLineNumberOffsetPremises :: FESequent -> FormulaPath -> Integer
+pathToLineNumberOffsetPremises sequent path = pathToLineNumber sequent path + toInteger (length (_premises sequent))
+
 pathToLastLine :: FESequent -> FormulaPath
 pathToLastLine sequent = ep (SubProof $ _steps sequent) []
   where

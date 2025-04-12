@@ -82,7 +82,7 @@ main = do
       _openMenuBarItem = Nothing,
       _contextMenu = ContextMenu {
         _ctxOpen = False,
-        _ctxFilePath = Nothing
+        _ctxActions = []
       },
 
       _filesInDirectory = Just [],

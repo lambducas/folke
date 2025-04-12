@@ -11,7 +11,8 @@ import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex)
 import Shared.Messages
-import Logic.Par (pSequent, myLexer)
+import Logic.Par (pSequent, myLexer, pArg)
+import qualified Logic.Abs as Abs
 
 import Monomer
 import Control.Lens
@@ -72,9 +73,9 @@ handleEvent wenv node model evt = case evt of
 
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
 
-  OpenContextMenu filePath -> [
+  OpenContextMenu actions -> [
       Model $ model
-        & contextMenu . ctxFilePath .~ Just filePath
+        & contextMenu . ctxActions .~ actions
         & contextMenu . ctxOpen .~ True
     ]
 
@@ -114,27 +115,37 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-  InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
+  InsertLineAfter updateRef path -> applyOnCurrentProof model insertLine ++ focusAction
     where
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 1]
-      insertLine = insertAfterProof path (Line "" "" 0 [])
+      insertLine = insertAfterProof path (Line "" "" 0 []) . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
-  InsertLineBefore path -> applyOnCurrentProof model insertLine ++ focusAction
+  InsertLineBefore updateRef path -> applyOnCurrentProof model insertLine ++ focusAction
     where
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 0]
-      insertLine = insertBeforeProof path (Line "" "" 0 [])
+      insertLine = insertBeforeProof path (Line "" "" 0 []) . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path
 
-  InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
+  InsertSubProofAfter updateRef path -> applyOnCurrentProof model insertSubProof
+    where
+      insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []]) . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
-  InsertSubProofBefore path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertBeforeProof path (SubProof [Line "" "" 0 []])
+  InsertSubProofBefore updateRef path -> applyOnCurrentProof model insertSubProof
+    where
+      insertSubProof = insertBeforeProof path (SubProof [Line "" "" 0 []]) . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path
 
   AddLine -> applyOnCurrentProof model insertLine
     where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
@@ -142,9 +153,11 @@ handleEvent wenv node model evt = case evt of
   AddSubProof -> applyOnCurrentProof model insertSubProof
     where insertSubProof seq = insertAfterProof (pathToLastLine seq) (SubProof [Line "" "" 0 []]) seq
 
-  RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
+  RemoveLine updateRef path -> applyOnCurrentProof model removeLine ++ focusAction
     where
-      removeLine = removeFromProof path
+      removeLine = removeFromProof path . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
       getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
@@ -590,3 +603,26 @@ listDirectoryRecursive directory = do
     where
       appendTop :: FilePath -> FilePath
       appendTop = ((directory ++ "/") ++)
+
+offsetAllRefs :: Integer -> Integer -> FESequent -> FESequent
+offsetAllRefs n after sequent = applyOnAllRefs f sequent
+  where f = offsetLineRefBy n after
+
+applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
+applyOnAllRefs func sequent = replaceSteps (map f) sequent
+  where
+    f (SubProof p) = SubProof (map f p)
+    f (Line s r u a) = Line s r u (map func a)
+
+offsetLineRefBy :: Integer -> Integer -> Text -> Text
+offsetLineRefBy n after refText = applyOnLineNumberRef f refText
+  where f l
+          | l >= after = l + n
+          | otherwise = l
+
+applyOnLineNumberRef :: (Integer -> Integer) -> Text -> Text
+applyOnLineNumberRef f refText = case pArg (myLexer (unpack refText)) of
+  Left {} -> refText
+  Right (Abs.ArgRange a b) -> showt (f a) <> "-" <> showt (f b)
+  Right (Abs.ArgLine l) -> showt (f l)
+  Right _ -> refText
