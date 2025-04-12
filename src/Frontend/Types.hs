@@ -88,7 +88,7 @@ data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
   _contextMenu :: ContextMenu,
 
-  _filesInDirectory :: [FilePath],
+  _filesInDirectory :: Maybe [FilePath],
   _confirmActionPopup :: Maybe ConfirmActionData,
 
   _frontendChan :: Chan FrontendMessage,
@@ -158,7 +158,7 @@ data AppEvent
   | RefreshExplorer
   | OpenSetWorkingDir
   | SetWorkingDir FilePath
-  | SetFilesInDirectory [FilePath]
+  | SetFilesInDirectory (Maybe [FilePath])
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath
   | OpenFileSuccess File

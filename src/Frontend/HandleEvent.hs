@@ -183,7 +183,7 @@ handleEvent wenv node model evt = case evt of
     where toggle = not
 
   RefreshExplorer -> [
-      Model $ model & filesInDirectory .~ [],
+      Model $ model & filesInDirectory .~ Just [],
       Producer $ directoryFilesProducer (model ^. preferences . workingDir)
     ]
 
@@ -465,14 +465,14 @@ handleEvent wenv node model evt = case evt of
 directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
   case workingDir of
-    Nothing -> sendMsg (SetFilesInDirectory [])
+    Nothing -> sendMsg (SetFilesInDirectory Nothing)
     Just wd -> do
       result <- try (fmap (map (drop (length wd + 1))) (listDirectoryRecursive wd)) :: IO (Either SomeException [[Char]])
       case result of
         Left e -> do
           print e
-          sendMsg (SetFilesInDirectory [])
-        Right allFileNames -> sendMsg (SetFilesInDirectory allFileNames)
+          sendMsg (SetFilesInDirectory Nothing)
+        Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
 
 applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
 applyOnCurrentProof model f = actions

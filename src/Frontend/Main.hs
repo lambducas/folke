@@ -85,7 +85,7 @@ main = do
         _ctxFilePath = Nothing
       },
 
-      _filesInDirectory = [],
+      _filesInDirectory = Just [],
       _confirmActionPopup = Nothing,
 
       _frontendChan = currentFrontendChan,
