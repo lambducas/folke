@@ -225,7 +225,7 @@ openLink :: WidgetEnv s e -> String -> IO ()
 openLink wenv url = catchIgnore (callCommand openCommand) where
   os = wenv ^. L.os
   command
-    | os == "Windows" = "start"
+    | os == "Windows" = "start \"\""
     | os == "Mac OS X" = "open"
     | os == "Linux" = "xdg-open"
     | otherwise = "ls"
