@@ -607,7 +607,7 @@ buildUI _wenv model = widgetTree where
               isLastArg = idx + 1 == usedArguments
               isRuleArgError = isError || not (validateRuleArgument argument)
               labels = case Data.Map.lookup (parseRule rule) ruleMetaDataMap of
-                Nothing -> repeat "#Err"
+                Nothing -> repeat ""
                 Just (RuleMetaData _ l) -> l
 
           b = box $ hstack_ [childSpacing] [
