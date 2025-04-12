@@ -11,7 +11,6 @@ import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex)
 import Shared.Messages
-import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 
 import Monomer
@@ -21,7 +20,7 @@ import Control.Concurrent (newChan)
 import Control.Monad (filterM)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.List (findIndex, isInfixOf)
-import Data.Text (Text, unpack, pack, intercalate)
+import Data.Text (Text, unpack, pack)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
 import System.FilePath ( takeExtension )
@@ -217,66 +216,11 @@ handleEvent wenv node model evt = case evt of
                   Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited)
 
               Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
-                where pParsedContent = Just (convertSeq seq_t)
+                where pParsedContent = Just (convertBESequentToFESequent seq_t)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
     ]
-    where
-      convertSeq (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
-
-      convertForm (Abs.FormNot a) = "!" <> getOutput a
-        where
-          getOutput form = case form of
-            Abs.FormPred _ -> c
-            Abs.FormNot _ -> c
-            Abs.FormBot -> c
-            Abs.FormPar _ -> c
-            _ -> p
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
-        where
-          getOutput form = case form of
-            Abs.FormImpl _ _ -> p
-            _ -> c
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
-        where
-          getOutput form = case form of
-            Abs.FormImpl _ _ -> p
-            _ -> c
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
-      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) params)) = pack i <> convertParams params
-      convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
-      convertForm (Abs.FormEq a b) = convertTerm a <> "=" <> convertTerm b
-      convertForm (Abs.FormAll (Abs.Ident i) a) = "all " <> pack i <> " " <> convertForm a
-      convertForm (Abs.FormSome (Abs.Ident i) a) = "some " <> pack i <> " " <> convertForm a
-      convertForm Abs.FormBot = "bot"
-      convertForm Abs.FormNil = ""
-
-      convertProof (Abs.Proof proofElems) = concatMap convertProofElem proofElems
-      convertProofElem (Abs.ProofElem _labels step) = convertStep step
-
-      convertStep Abs.StepNil = [Line "" "" 0 []]
-      convertStep (Abs.StepPrem _form) = []
-      convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
-      convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
-      convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i) (length args) (map convertArg args)]
-      convertStep (Abs.StepFresh (Abs.Ident i)) = [Line (pack i) "fresh" 0 []]
-
-      convertTerm (Abs.Term (Abs.Ident i) params) = pack i <> convertParams params
-
-      convertParams (Abs.Params []) = ""
-      convertParams (Abs.Params ts) = "(" <> intercalate ", " (map convertTerm ts) <> ")"
-
-      convertArg (Abs.ArgLine i) = showt i
-      convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
-      convertArg (Abs.ArgTerm t) = convertTerm t
-      convertArg (Abs.ArgForm t f) = convertTerm t <> ":=" <> convertForm f
 
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
     where wd = fromMaybe "" (model ^. preferences . workingDir)
@@ -526,14 +470,14 @@ editFormulaInProof path newText = replaceSteps f
       | otherwise = f
 
 editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editRuleNameInProof path newText = replaceSteps f
+editRuleNameInProof path newRule = replaceSteps f
   where
-    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
-    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
-    el editPath newText currentPath f@(Line statement _rule usedArguments arguments)
-      | editPath == currentPath = case Map.lookup newText ruleMetaDataMap of
-        Nothing -> Line statement newText usedArguments arguments
-        Just (RuleMetaData nrArguments _) -> Line statement newText (fromIntegral nrArguments) (fillList nrArguments arguments)
+    f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
+    el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
+    el editPath currentPath f@(Line statement _rule usedArguments arguments)
+      | editPath == currentPath = case Map.lookup (parseRule newRule) ruleMetaDataMap of
+        Nothing -> Line statement newRule usedArguments arguments
+        Just (RuleMetaData nrArguments _) -> Line statement newRule (fromIntegral nrArguments) (fillList nrArguments arguments)
       | otherwise = f
 
     fillList :: Integer -> [Text] -> [Text]

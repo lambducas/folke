@@ -1,4 +1,6 @@
 module Frontend.SpecialCharacters (
+  replaceFromLookup,
+  replaceFromInverseLookup,
   replaceSpecialSymbols,
   replaceSpecialSymbolsInverse
 ) where

@@ -27,10 +27,11 @@ import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import Data.Either (isLeft)
+import qualified Data.Map
 import System.FilePath (takeExtension, takeFileName, takeBaseName, makeRelative)
 import System.FilePath.Posix ((</>))
-import Data.Maybe (fromMaybe, isNothing, isJust)
-import qualified Data.Map
+import Data.Maybe (fromMaybe, isJust)
+import Frontend.Parse (validateRuleArgument, validateStatement, validateRule, parseRule)
 
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
@@ -568,27 +569,33 @@ buildUI _wenv model = widgetTree where
             ] `nodeKey` showt index
 
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
-          argInput argument idx = firstKeystroke [
-              ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
-              ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-              ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
-              ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-              ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-              ("Delete", RemoveLine path, trashActive),
-              ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
-              ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
-              ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
-              ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
-              ("Enter", InsertLineAfter path, isLastArg),
-              ("Enter", NextFocus 1, not isLastArg)
-            ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
-            `nodeKey` (showt index <> ".ruleArg." <> showt idx)
-            `styleBasic` [width 70]
-            `styleBasic` [styleIf isRuleArgError (border 1 red)])
+          argInput argument idx = hstack [
+              symbolSpan (labels !! idx),
+              firstKeystroke [
+                ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
+                ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
+                ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
+                ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                ("Delete", RemoveLine path, trashActive),
+                ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
+                ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
+                ("Ctrl-Enter", InsertLineAfter path, not isLastLine || not nextIndexExists),
+                ("Ctrl-Enter", InsertLineAfter pathToParentSubProof, isLastArg && isLastLine),
+                ("Enter", InsertLineAfter path, isLastArg),
+                ("Enter", NextFocus 1, not isLastArg)
+              ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
+              `nodeKey` (showt index <> ".ruleArg." <> showt idx)
+              `styleBasic` [width 70]
+              `styleBasic` [styleIf isRuleArgError (border 1 red)])
+            ]
             where
               isFirstArg = idx == 0
               isLastArg = idx + 1 == usedArguments
-              isRuleArgError = isError
+              isRuleArgError = isError || not (validateRuleArgument argument)
+              labels = case Data.Map.lookup (parseRule rule) ruleMetaDataMap of
+                Nothing -> repeat "#Err"
+                Just (RuleMetaData _ l) -> l
 
           b = box $ hstack_ [childSpacing] [
                 fastTooltip "Remove line" $
@@ -653,8 +660,8 @@ buildUI _wenv model = widgetTree where
               isAtBeginning = cursorPos == 0
               cursorPos = _ifsCursorPos state
 
-          isStatementError = isError || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement))))
-          isRuleError = isError || (rule /= "" && isNothing (Data.Map.lookup rule ruleMetaDataMap))
+          isStatementError = isError || not (validateStatement statement)
+          isRuleError = isError || not (validateRule rule)
           isError = isErrorLine lineNumber (model ^. proofStatus)
           lineNumber = index + toInteger (length (_premises sequent))
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
@@ -719,7 +726,7 @@ buildUI _wenv model = widgetTree where
 
       subsection "First Order Logic",
       vstack $ map (ruleItem . snd) visualRuleNames1
-    ]) `styleBasic` [rangeWidth 200 300, borderL 1 dividerColor]
+    ]) `styleBasic` [width 300, borderL 1 dividerColor]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
       ruleItem r = box_ [onClick NoEvent] (symbolSpan r)
