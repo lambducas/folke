@@ -119,6 +119,30 @@ isErrorLine _ (Just (FEError _ (FEGlobal {}))) = False
 isErrorLine _ (Just (FEOk _)) = False
 isErrorLine _ Nothing = False
 
+getWarningsOnLine :: Integer -> Maybe FEResult -> [String]
+getWarningsOnLine lineNumber (Just (FEError warns _)) = map getMsgFromWhere $ filter (whereIsOnLine lineNumber) warns
+getWarningsOnLine lineNumber (Just (FEOk warns)) = map getMsgFromWhere $ filter (whereIsOnLine lineNumber) warns
+getWarningsOnLine _ Nothing = []
+
+getWarningsInSubProof :: Integer -> Integer -> Maybe FEResult -> [String]
+getWarningsInSubProof start end (Just (FEError warns _)) = map getMsgFromWhere $ filter (whereIsSubProof start end) warns
+getWarningsInSubProof start end (Just (FEOk warns)) = map getMsgFromWhere $ filter (whereIsSubProof start end) warns
+getWarningsInSubProof _ _ Nothing = []
+
+whereIsOnLine :: Integer -> FEErrorWhere -> Bool
+whereIsOnLine _ (FEGlobal {}) = False
+whereIsOnLine _ (FELocal (RefRange {}) _) = False
+whereIsOnLine lineNumber (FELocal (RefLine l) _) = l == lineNumber
+
+whereIsSubProof :: Integer -> Integer -> FEErrorWhere -> Bool
+whereIsSubProof _ _ (FEGlobal {}) = False
+whereIsSubProof _ _ (FELocal (RefLine _) _) = False
+whereIsSubProof start end (FELocal (RefRange s e) _) = start == s && end == e
+
+getMsgFromWhere :: FEErrorWhere -> String
+getMsgFromWhere (FEGlobal msg) = msg
+getMsgFromWhere (FELocal _ msg) = msg
+
 extractErrorMsg :: Maybe FEResult -> String
 extractErrorMsg Nothing = ""
 extractErrorMsg (Just (FEOk _)) = ""

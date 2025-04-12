@@ -503,11 +503,15 @@ buildUI _wenv model = widgetTree where
         where
           ui = vstack [
               vstack_ [childSpacing] (map fst s)
-                `styleBasic` [border 1 proofBoxColor, styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24],
+                `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24],
 
               widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)]
+                `styleBasic` [textColor red, paddingT (0.5*u)],
+
+              vstack (map warningLabel warnings)
             ]
+          isWarning = not (null warnings)
+          warnings = getWarningsInSubProof rStart rEnd (model ^. proofStatus)
           isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
           rStart = index + toInteger (length (_premises sequent))
           rEnd = lastIndex - 1 + toInteger (length (_premises sequent))
@@ -541,6 +545,7 @@ buildUI _wenv model = widgetTree where
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
+                    `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
                       `nodeKey` (showt index <> ".statement.keystroke"),
@@ -564,6 +569,7 @@ buildUI _wenv model = widgetTree where
                       ("Enter", InsertLineAfter False path, usedArguments == 0)
                       -- ("Enter", InsertLineAfter path, True)
                     ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
+                      `styleBasic` [styleIf isWarning (border 1 orange)]
                       `styleBasic` [styleIf isRuleError (border 1 red)]
                       `nodeKey` (showt index <> ".rule"))
                         `nodeKey` (showt index <> ".rule.keystroke"),
@@ -578,7 +584,9 @@ buildUI _wenv model = widgetTree where
               ],
 
               widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)]
+                `styleBasic` [textColor red, paddingT (0.5*u)],
+
+              vstack (map warningLabel warnings)
             ] `nodeKey` showt index
 
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
@@ -600,6 +608,7 @@ buildUI _wenv model = widgetTree where
               ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
               `nodeKey` (showt index <> ".ruleArg." <> showt idx)
               `styleBasic` [width 70]
+              `styleBasic` [styleIf isWarning (border 1 orange)]
               `styleBasic` [styleIf isRuleArgError (border 1 red)])
             ]
             where
@@ -705,6 +714,8 @@ buildUI _wenv model = widgetTree where
           isStatementError = isError || not (validateStatement statement)
           isRuleError = isError || not (validateRule rule)
           isError = isErrorLine lineNumber (model ^. proofStatus)
+          isWarning = not (null warnings)
+          warnings = getWarningsOnLine lineNumber (model ^. proofStatus)
           lineNumber = index + toInteger (length (_premises sequent))
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
           trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
@@ -718,6 +729,8 @@ buildUI _wenv model = widgetTree where
           isLastLine = case evalPath sequent pathToParentSubProof of
             SubProof p -> length p == last path + 1
             _ -> False
+
+      warningLabel w = span (pack w) `styleBasic` [textColor orange, paddingT (0.5*u)]
 
       getSubProof p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
@@ -738,7 +751,18 @@ buildUI _wenv model = widgetTree where
 
       ln (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 transparent, paddingV 8]
+          ui = vstack [
+              vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 transparent, paddingV 8],
+
+              widgetIf isError (span " ")
+                `styleBasic` [textColor red, paddingT (0.5*u)],
+
+              vstack (map (const $ warningLabel ("" :: String)) warnings)
+            ]
+          warnings = getWarningsInSubProof rStart rEnd (model ^. proofStatus)
+          isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
+          rStart = toInteger $ index + length (_premises sequent)
+          rEnd = toInteger $ lastIndex - 1 + length (_premises sequent)
           lastIndex = if null s then index else snd $ last s
           s = getSubProof2 p path 0 index
 
@@ -750,10 +774,15 @@ buildUI _wenv model = widgetTree where
                 `nodeKey` showt index <> "label",
 
               widgetIf isError (span " ")
-                `styleBasic` [textColor red, paddingT (0.5*u)]
+                `styleBasic` [textColor red, paddingT (0.5*u)],
+
+              vstack (map (const $ warningLabel ("" :: String)) warnings)
             ]
           lastIndex = index + 1
-          isError = isErrorLine (toInteger index) (model ^. proofStatus)
+          lineNumber = toInteger index
+          isError = isErrorLine lineNumber (model ^. proofStatus)
+          warnings = getWarningsOnLine lineNumber (model ^. proofStatus)
+          warningLabel _ = span "" `styleBasic` [textColor orange, paddingT (0.5*u)]
 
       getSubProof2 p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
