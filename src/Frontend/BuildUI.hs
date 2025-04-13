@@ -26,7 +26,6 @@ import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe, isJust)
 
 import Monomer.Widgets.Containers.BoxDragToResize
--- import Monomer.Widgets.Containers.TextFieldSuggestions
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [

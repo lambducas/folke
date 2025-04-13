@@ -247,7 +247,6 @@ visualRuleNames = visualRuleNames0 ++ visualRuleNames1
 visualRuleNames0 :: [(Text, Text)]
 visualRuleNames0 = [
     ("assume", "assume"),
-    ("fresh", "fresh"),
     ("copy", "copy"),
     ("AndI", "∧I"),
     ("AndEL", "∧EL"),

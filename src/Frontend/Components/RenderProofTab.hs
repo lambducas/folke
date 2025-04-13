@@ -18,13 +18,16 @@ import Logic.Par (myLexer, pForm)
 import Monomer
 import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
 import qualified Monomer.Lens as L
-import Data.Text (Text, pack, intercalate, unpack)
+import Data.Text (Text, pack, intercalate, unpack, toLower, isInfixOf)
 import qualified Data.Text (length)
 import Data.Default (Default(def))
 import Data.Either (isLeft)
 import qualified Data.Map
 import Control.Lens
 import TextShow (showt)
+
+import Monomer.Widgets.Containers.TextFieldSuggestions
+import Data.Set (fromList, toList)
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -43,7 +46,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
   u = model ^. preferences . fontSize
-  
+
   h1 = Frontend.Components.Labels.h1 model
   h2 = Frontend.Components.Labels.h2 model
   -- h3 = Frontend.Components.Labels.h3 model
@@ -255,31 +258,13 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                   spacer,
 
                   hstack_ [childSpacing] [
-                    firstKeystroke [
-                      ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
-                      ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-                      ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-                      -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+                    -- ruleKeystrokes ruleField
 
-                      ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-                      ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                      ("Delete", RemoveLine False path, trashActive),
-                      ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-                      ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                      ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
-                      ("Enter", NextFocus 1, usedArguments > 0),
-                      ("Enter", InsertLineAfter False path, usedArguments == 0)
-                      -- ("Enter", InsertLineAfter path, True)
-                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
-                      `styleBasic` [styleIf isWarning (border 1 orange)]
-                      `styleBasic` [styleIf isRuleError (border 1 red)]
-                      `nodeKey` (showt index <> ".rule"))
-                        `nodeKey` (showt index <> ".rule.keystroke"),
+                    ruleKeystrokes $ textFieldSuggestionsV (replaceSpecialSymbols rule) (\_i t -> EditRuleName path t) allRules (const ruleField) label,
+
                     argInputs
                   ]
                     `styleBasic` [width 300]
-
-                  -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
                 ],
                 spacer,
                 b
@@ -290,6 +275,29 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
               vstack (map warningLabel warnings)
             ] `nodeKey` showt index
+
+          ruleKeystrokes w = firstKeystroke [
+              ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+              ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
+              ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+              -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
+
+              ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+              ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
+              ("Delete", RemoveLine False path, trashActive),
+              ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
+              ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+              ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
+              ("Enter", NextFocus 1, usedArguments > 0),
+              ("Enter", InsertLineAfter False path, usedArguments == 0)
+              -- ("Enter", InsertLineAfter path, True)
+            ] w
+              `nodeKey` (showt index <> ".rule.keystroke")
+
+          ruleField = symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
+              `styleBasic` [styleIf isWarning (border 1 orange)]
+              `styleBasic` [styleIf isRuleError (border 1 red)]
+              `nodeKey` (showt index <> ".rule")
 
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = hstack [
@@ -350,6 +358,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
               ] `styleBasic` [width 250]
 
+          -- allRules = map fst visualRuleNames
+          allRules = (toList . fromList) $ filter (\f -> (toLower . replaceSpecialSymbols) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
+          -- allRules = (toList . fromList) $ replaceSpecialSymbols rule : filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
           --   where rules (Env _ _ r _ _ _ _ _) = r
 
