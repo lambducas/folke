@@ -25,6 +25,7 @@ import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe, isJust)
 
+import Monomer.Widgets.Containers.BoxDragToResize
 -- import Monomer.Widgets.Containers.TextFieldSuggestions
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
@@ -167,8 +168,14 @@ buildUI wenv model = widgetTree where
             `styleHover` [bgColor hoverColor]
             `styleBasic` [radius (0.5*u), styleIf selected (textColor accentColor), styleIf selected (bgColor selectedColor)]
 
+  dts :: DragSide -> ALens' AppModel Double -> WidgetNode AppModel AppEvent -> WidgetNode AppModel AppEvent
+  dts DragSideRight lens w = boxDragToResize_ DragSideRight lens [] $ hstack [w, spc]
+    where spc = vstack [] `styleBasic` [width 10]
+  dts DragSideLeft lens w = boxDragToResize_ DragSideLeft lens [] $ hstack [spc, w]
+    where spc = vstack [] `styleBasic` [width 10]
+
   fileExplorerSidebar :: WidgetNode AppModel AppEvent
-  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ case model ^. preferences . workingDir of
+  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ dts DragSideRight (preferences . fileExplorerWidth) $ case model ^. preferences . workingDir of
     Nothing -> vstack [
         box_ [expandContent] (hstack [
             bold (span "File Explorer"),
@@ -182,7 +189,7 @@ buildUI wenv model = widgetTree where
           paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
           box (button "Open Folder" OpenSetWorkingDir)
         ] `styleBasic` [padding u]
-      ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+      ] `styleBasic` [ borderR 1 dividerColor ]
 
     Just _ -> case model ^. filesInDirectory of
       Nothing -> vstack [
@@ -198,7 +205,7 @@ buildUI wenv model = widgetTree where
             paragraph "Error loading working directory. It might not exist.",
             box (button "Open Other Folder" OpenSetWorkingDir)
           ] `styleBasic` [padding u]
-        ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+        ] `styleBasic` [ borderR 1 dividerColor ]
       Just fid -> vstack [
           box_ [expandContent] (hstack [
               bold (span "File Explorer"),
@@ -215,7 +222,7 @@ buildUI wenv model = widgetTree where
             ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
           fastVScroll $ fileTreeUI parts 1
-        ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+        ] `styleBasic` [ borderR 1 dividerColor ]
         where
           parts = map (\f -> (splitOn "/" (pack f), f)) files
           files = sort fid
@@ -346,7 +353,7 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [padding 30]
     where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
 
-  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ fastVScroll (vstack [
+  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ dts DragSideLeft (preferences . rulesSidebarWidth) $ fastVScroll (vstack [
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",
@@ -354,7 +361,7 @@ buildUI wenv model = widgetTree where
 
       subsection "First Order Logic",
       vstack $ map (ruleItem . snd) visualRuleNames1
-    ]) `styleBasic` [width 300, borderL 1 dividerColor]
+    ]) `styleBasic` [borderL 1 dividerColor]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
       ruleItem r = box_ [onClick NoEvent] (symbolSpan r)

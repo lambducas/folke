@@ -70,7 +70,8 @@ data Preferences = Preferences {
   _tmpLoadedFiles :: [File],
   _fileExplorerOpen :: Bool,
   _fileExplorerWidth :: Double,
-  _rulesSidebarOpen :: Bool
+  _rulesSidebarOpen :: Bool,
+  _rulesSidebarWidth :: Double
 } deriving (Eq, Show)
 
 type ContextMenuActions = [(Text, Text, AppEvent, Bool)]
