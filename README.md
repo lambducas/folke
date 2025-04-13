@@ -42,8 +42,8 @@
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
-- [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
+- [x] ~~Give suggestions on which rules to use when user is inputting rule~~
 - [x] ~~User should be able to drag to resize 'File Explorer' and rule sidebar~~
 - [x] ~~Display warnings and errors on the lines they appear on~~
 - [x] ~~Update linenumber references when deleting or inserting line~~

@@ -260,7 +260,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                   hstack_ [childSpacing] [
                     -- ruleKeystrokes ruleField
 
-                    ruleKeystrokes $ textFieldSuggestionsV (replaceSpecialSymbols rule) (\_i t -> EditRuleName path t) allRules (const ruleField) label,
+                    ruleKeystrokes $ textFieldSuggestionsV (replaceSpecialSymbols rule) (\_i t -> EditRuleName path t) allRules (const ruleField) label
+                      `styleBasic` [styleIf isWarning (border 1 orange)]
+                      `styleBasic` [styleIf isRuleError (border 1 red)],
 
                     argInputs
                   ]
