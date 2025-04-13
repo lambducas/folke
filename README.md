@@ -45,7 +45,7 @@
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
 - [ ] Give suggestions on which rules to use when user is inputting rule
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
-- [ ] Display warnings and errors on the lines they appear on
+- [x] ~~Display warnings and errors on the lines they appear on~~
 - [x] ~~Update linenumber references when deleting or inserting line~~
 - [x] ~~Fix focus not updating correcly when inserting new line/removing line~~
 - [x] ~~When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'~~

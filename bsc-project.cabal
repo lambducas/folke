@@ -120,6 +120,7 @@ executable bsc
                     , Frontend.Export
                     , Frontend.Components.RenderMarkdown
                     , Frontend.Components.Labels
+                    , Frontend.Components.RenderProofTab
                     , Shared.Messages
                     , Shared.FESequent
     default-language: Haskell2010

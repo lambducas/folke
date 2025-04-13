@@ -1,20 +1,4 @@
-module Frontend.Components.Labels (
-  u,
-  h1, h1_,
-  h2, h2_,
-  h3, h3_,
-  h4, h4_,
-  h5, h5_,
-  h6, h6_,
-  span, span_,
-  symbolSpan, symbolSpan_,
-  paragraph, paragraph_,
-  iconLabel, iconLabel_,
-  iconButton,
-  trashButton,
-  bold,
-  normalStyle, symbolStyle
-) where
+module Frontend.Components.Labels where
 
 import Prelude hiding (span)
 
@@ -81,13 +65,13 @@ paragraph model t = label_ t [multiline] `styleBasic` [ textSize (u model), norm
 paragraph_ model t cfg = label_ t cfg `styleBasic` [ textSize (u model), normalTextFont model ]
 
 -- For rendering icons
-iconLabel _model iconIdent = label iconIdent `styleBasic` [textFont "Remix", textBottom, textSize (u _model)]
-iconLabel_ _model iconIdent cfg = label_ iconIdent cfg `styleBasic` [textFont "Remix", textBottom, textSize (u _model)]
+iconLabel model iconIdent = label iconIdent `styleBasic` [textFont "Remix", textBottom, textSize (u model)]
+iconLabel_ model iconIdent cfg = label_ iconIdent cfg `styleBasic` [textFont "Remix", textBottom, textSize (u model)]
 
 -- For rendering icons inside buttons
 iconButton :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
-iconButton _model iconIdent action = button iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 1 transparent, textSize (u _model)]
+iconButton model iconIdent action = Frontend.Components.Labels.button model iconIdent action
+  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 1 transparent, textSize (u model)]
 
 -- Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent
@@ -110,3 +94,14 @@ normalStyle model widget = widget `styleBasic` [textSize (u model), normalTextFo
 
 symbolStyle :: AppModel -> WidgetNode s e -> WidgetNode s e
 symbolStyle model widget = widget `styleBasic` [textSize (u model), logicTextFont model]
+
+button :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
+button model a b = Monomer.button a b `styleBasic` [textSize (u model)]
+
+fastTooltip :: AppModel -> Text -> WidgetNode s e -> WidgetNode s e
+fastTooltip model tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize (u model)]
+
+fastScroll, fastVScroll, fastHScroll :: WidgetNode s e -> WidgetNode s e
+fastScroll = scroll_ [wheelRate 50]
+fastVScroll = vscroll_ [wheelRate 50]
+fastHScroll = hscroll_ [wheelRate 50]
