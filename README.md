@@ -7,7 +7,7 @@
 - [ ] Better messages
 - [ ] JSON proofs
 - [ ] Suggest next step of proof (Ambitious)
-- [ ] Add checks for side conditions for rules.
+- [x] Add checks for side conditions for rules.
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
 |-----------|--------------------------|
