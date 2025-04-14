@@ -2,14 +2,16 @@
 ### Backend
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
 - [ ] Improve warning system
-- [ ] Warn on unused steps
+- [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
 - [ ] Better messages
 - [ ] JSON proofs
-- [ ] Suggest next step of proof (Ambitious)
 - [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
+#### And if ambition enables:
+- [ ] Suggest next step of proof
+- [ ] JSON node for error
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
 |-----------|--------------------------|
@@ -74,8 +76,6 @@
 - Package backend with arbitrary frontend (library for proof editor backend)
 
 ## IDEAS
-- Use reference counting to check that all parts of the proof is used.
-- Latex output for proofs.
 - Support for subscript in front end, nice if x_0 renders fancy.
 
 ## Build
