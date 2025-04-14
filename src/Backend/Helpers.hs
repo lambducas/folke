@@ -39,6 +39,7 @@ filterNilConclusion (Proof terms prems Nil) =
         (lastPrem:rest) -> Proof terms (reverse rest) lastPrem  -- Use last premise as conclusion
 filterNilConclusion proof = proof  -- Keep non-Nil conclusions as is
 
+
 -- Returns warnings for unused references.
 validateRefs :: Env -> Result ()
 validateRefs env =
