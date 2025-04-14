@@ -59,6 +59,7 @@ library
     exposed-modules:  Backend.TypeChecker
                     , Backend.Environment
                     , Backend.Types
+                    , Backend.Helpers
                     , Logic.Abs
                     , Logic.Par
                     , Logic.Lex
@@ -102,6 +103,7 @@ executable bsc
                       Backend.TypeChecker
                     , Backend.Environment
                     , Backend.Types
+                    , Backend.Helpers
                     , Shared.Messages
                     , Example
                     , Logic.Abs

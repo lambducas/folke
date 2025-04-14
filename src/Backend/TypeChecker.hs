@@ -9,11 +9,11 @@ import qualified Logic.Abs as Abs
 import Logic.Par (pSequent, myLexer)
 import Shared.Messages
 import Backend.Environment
-import Backend.Types 
+import Backend.Types
 import qualified Data.List as List
 import qualified Data.Map as Map
-
 import Data.Maybe (fromMaybe)
+import Backend.Helpers
 
 {-
     Runs the parser and then the typechecker on a given string
@@ -30,17 +30,6 @@ checkString proof = do
         Left err -> Error [] newEnv (SyntaxError err)
         Right seq_t -> check seq_t
 {-
-    Typechecks if a given proof is correct and if it matches the sequent. Discards any error information
-    -params:
-        - Sequent to check
-    -return: Yes/No
--}
-isProofCorrect :: Abs.Sequent -> Bool
-isProofCorrect seq_t = case check seq_t of
-    Error _ _ _ ->  False
-    Ok _ _ -> True
-
-{-
     Typechecks a given proof and if it matches the sequent
     -params:
         - Sequent to check
@@ -51,7 +40,6 @@ check seq_t = do
     let env = newEnv
     seq_result <- checkSequent env seq_t
     return ()
-
 {-
     Typechecks a given proof and if it matches the sequent and returns what it proves
     -params:
@@ -60,16 +48,25 @@ check seq_t = do
     -return: The type of the proof
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) = 
+checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) =
     Error [] newEnv (TypeError "Conclusion is empty.")
 checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
     prems_t <- checkPrems env prems
     conc_t <- checkForm env conc
     proof_t <- checkProof env proof
+
+    let endsWithEmptyLine = hasNilConclusion proof_t
+    -- Filter out Nil conclusion from the proof
+    let filteredProof = filterNilConclusion proof_t
     let seq_t = Proof [] prems_t conc_t
-    if proof_t == seq_t
+
+    if filteredProof == seq_t
         then return seq_t
-        else Error [] env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+        else if endsWithEmptyLine && not (hasInvalidConclusion filteredProof seq_t)
+            
+            then Ok [Warning env "Unfinished proof. The last line doesn't match the expected conclusion."] filteredProof
+            else Error [] env (TypeError ("The proof " ++ show filteredProof ++ " did not match the expected " ++ show seq_t ++ "."))
+
 
 checkPrems :: Env -> [Abs.Form] -> Result [Formula]
 checkPrems _ [] = Ok [] []
@@ -78,7 +75,6 @@ checkPrems env (form:forms) = do
     form_t <- checkForm env form
     forms_t <- checkPrems env forms
     Ok [] (form_t : forms_t)
-
 {-
     Typechecks a given proof
     -params:
@@ -88,20 +84,36 @@ checkPrems env (form:forms) = do
 -}
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
 checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
-checkProof env [Abs.ProofElem labels step] = do
-    refs_t <- checkRefs labels
-    (new_env, step_t) <- checkStep (pushPos env refs_t) step
-    case step_t of
-        ArgProof _ -> Error [] env (TypeError "Last step in proof was another proof.")
-        ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
-        ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
-        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
-checkProof env (Abs.ProofElem labels step : elems) = do
-    refs_t <- checkRefs labels
-    (new_env, step_t) <- checkStep (pushPos env refs_t) step
-    seq_t <- checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems
-    Ok [] seq_t
+checkProof env [Abs.ProofElem labels step] =
+    case step of
+        Abs.StepNil -> Ok [] (Proof (getFreshs env) (getPrems env) Nil)
+        _ -> do
+            refs_t <- checkRefs labels
+            (new_env, step_t) <- checkStep (pushPos env refs_t) step
+            case step_t of
+                ArgProof _ -> Error [] env (TypeError "Last step in proof was another proof.")
+                ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
+                ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
+                ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
+checkProof env (Abs.ProofElem labels step : elems) =
+    case step of
+        Abs.StepNil ->
+            let warning = Warning env "Empty line in proof"
+            in case checkProof env elems of
+                Ok warns proof -> Ok (warning : warns) proof
+                Error warns env_e err -> Error (warning : warns) env_e err
+        _ -> do
+            refs_t <- checkRefs labels
+            (new_env, step_t) <- checkStep (pushPos env refs_t) step
+            case elems of
+                [Abs.ProofElem _ Abs.StepNil] ->
+                    case step_t of
+                        ArgForm conclusion ->
+                            Ok [] (Proof (getFreshs new_env) (getPrems new_env) conclusion)
+                        _ -> checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems
+                _ -> checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems
 
+-- Add back the checkRefs function
 checkRefs :: [Abs.Label] -> Result [Ref]
 checkRefs [] = Ok [] []
 checkRefs (label:labels) = do
@@ -123,26 +135,41 @@ checkStep env step = case step of
             form_t <- checkForm env form
             new_env <- addPrem env form_t
             Ok [] (new_env, ArgForm form_t)
-        else Error [] env (UnknownError "A premise is not allowed in an subproof.")
+        else Error [] env (UnknownError "A premise is not allowed in a subproof.")
     Abs.StepFresh ident -> do
         let t = Term (identToString ident) []
         env1 <- regTerm env t
         env2 <- addFresh env1 t
         Ok [] (env2, ArgTerm t)
-    Abs.StepAssume form ->  if depth env /= 0 then do
+    Abs.StepAssume form -> if depth env /= 0 then do
             form_t <- checkForm env form
             new_env <- addPrem env form_t
             Ok [] (new_env, ArgForm form_t)
-        else Error [] env (UnknownError "A assumption is not allowed in an proof.")
-    Abs.StepProof (Abs.Proof steps) -> do
-        proof_t <- checkProof (push env) steps
-        Ok [] (env, ArgProof proof_t)
+        else Error [] env (UnknownError "An assumption is not allowed in a proof.")
+    Abs.StepProof (Abs.Proof steps) ->
+        -- Check if the subproof ends with an empty line
+        case steps of
+            [] -> Ok [] (env, ArgForm Nil)  -- Empty subproof
+            [Abs.ProofElem _ Abs.StepNil] -> Ok [] (env, ArgForm Nil)  -- Subproof with just an empty line
+            _ ->
+                let lastStep = last steps
+                in case lastStep of
+                    -- If the last step is empty, treat as ArgForm Nil to avoid "another proof" error
+                    Abs.ProofElem _ Abs.StepNil -> do
+                        -- Process everything except the last empty line
+                        proof_t <- checkProof (push env) (init steps)
+                        -- Return the proof without the empty line's effect
+                        Ok [] (env, ArgForm (getConclusion proof_t))
+                    -- Normal case: process the whole subproof
+                    _ -> do
+                        proof_t <- checkProof (push env) steps
+                        Ok [] (env, ArgProof proof_t)
     Abs.StepForm name args form -> do
         form_t <- checkForm env form
         (env1, args_t) <- checkArgs env args
         res_t <- applyRule env1 (identToString name) args_t form_t
         Ok [] (env1, ArgForm res_t)
-    Abs.StepNil -> Error [] env (UnknownError "Empty step.")
+    Abs.StepNil -> Error [] env (UnknownError "Unexpected StepNil")
 
 checkArgs :: Env -> [Abs.Arg] -> Result (Env, [Arg])
 checkArgs env [] = Ok [] (env, [])
@@ -188,7 +215,7 @@ checkTerms env (x:xs) = do
     Ok [] (term_t : terms_t)
 
 checkForm :: Env -> Abs.Form -> Result Formula
-checkForm env f = case f of  
+checkForm env f = case f of
     Abs.FormPar form -> checkForm env form
     Abs.FormBot -> Ok [] Bot
     Abs.FormEq a b -> do
@@ -243,37 +270,24 @@ checkPred env (Abs.Pred ident (Abs.Params terms)) = do
                     terms_t <- checkTerms env terms
                     Ok [] (env, Predicate name terms_t)
 
+
 {-
-    Converts identifier to string
+    Typechecks if a given proof is correct and if it matches the sequent. Discards any error information
     -params:
-        - the Abs identifier 
-    -return: string
+        - Sequent to check
+    -return: Yes/No
 -}
-identToString :: Abs.Ident -> String
-identToString (Abs.Ident str) = str
+isProofCorrect :: Abs.Sequent -> Bool
+isProofCorrect seq_t = case check seq_t of
+    Error {} ->  False
+    Ok _ _ -> True
 
 {-
     Allow frontend to check sequents in background-thread
 -}
+
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent text) = StringSequentChecked (convertToFEError (checkString text))
 handleFrontendMessage (CheckSequent sequent) = SequentChecked (convertToFEError (check sequent))
 handleFrontendMessage (CheckStep _) = StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) = OtherBackendMessage text
-
--- Sending `Result` directly to frontend freezes the program
--- (because of env?) so we use env to calculate line numbers
--- first and then send back error without env in it
-convertToFEError :: Result t -> FEResult
-convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Error warns env errorKind) = FEError (map convertWarning warns) (FELocal (getErrorLine env) (show errorKind))
-
-convertWarning :: Warning -> FEErrorWhere
-convertWarning (Warning env msg) = FELocal (getErrorLine env) msg
-
-getErrorLine :: Env -> Ref
-getErrorLine env = fromMaybe (RefLine (-1)) (maybeHead (pos env))
-
-maybeHead :: [a] -> Maybe a
-maybeHead [] = Nothing
-maybeHead (h:_) = Just h

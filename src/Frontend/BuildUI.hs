@@ -409,7 +409,7 @@ buildUI _wenv model = widgetTree where
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
-    Just (FEError _warns error) -> span ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
+    Just (FEError _warns error) -> paragraph ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
     Just (FEOk warns) ->
         if null warns
         then span "Proof is correct :)" `styleBasic` [textColor lime]

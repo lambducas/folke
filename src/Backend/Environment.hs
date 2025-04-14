@@ -264,7 +264,6 @@ getRef env ref =
     case Map.lookup ref (refs env) of
         Nothing -> Error [] env (TypeError ("No ref " ++ show ref ++ " exists."))
         Just (count, arg) -> Ok [] (env{refs = Map.insert ref (count+1, arg) (refs env) }, arg)
-
 pushPos :: Env -> [Ref] -> Env
 pushPos env r = env {pos = r ++ pos env}
 
