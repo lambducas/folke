@@ -254,10 +254,10 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
   container = def {
     containerAddStyleReq = False,
     containerChildrenOffset = Just (_ddsOffset state),
-    containerGetBaseStyle = getBaseStyle,
+    -- containerGetBaseStyle = getBaseStyle,
     containerInit = init,
     -- containerFindNextFocus = findNextFocus,
-    containerFindByPoint = findByPoint,
+    -- containerFindByPoint = findByPoint,
     containerMerge = merge,
     containerDispose = dispose,
     containerHandleEvent = handleEvent,
@@ -312,7 +312,7 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
       | not isOpen && isPointInNodeVp mainNode point = Just mainIdx
       | otherwise = Nothing
 
-  ddFocusChange node prev reqs = Just newResult where
+  ddFocusChange node prev reqs = newResult where
     tmpResult = handleFocusChange node prev reqs
     newResult = fromMaybe (resultNode node) tmpResult
       & L.requests %~ (|> IgnoreChildrenEvents)
@@ -327,46 +327,55 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     Blur next
       -- | not isOpen && not (seqStartsWith path focusedPath)
       --   -> ddFocusChange node next (_ddcOnBlurReq config)
-      | isOpen && not (seqStartsWith path focusedPath) -> Just (closeDropdown2 wenv node (widgetIdFromPath wenv next))
+      | isOpen && not (seqStartsWith path focusedPath) -> Just (closeDropdown2 wenv node next (widgetIdFromPath wenv next))
 
-    Move point -> result where
-      mainNode = Seq.index (node ^. L.children) mainIdx
-      listNode = Seq.index (node ^. L.children) listIdx
-      slPoint = addPoint (negPoint (_ddsOffset state)) point
+    -- Only changes cursor (dont want this)
+    -- Move point -> result where
+    --   mainNode = Seq.index (node ^. L.children) mainIdx
+    --   listNode = Seq.index (node ^. L.children) listIdx
+    --   slPoint = addPoint (negPoint (_ddsOffset state)) point
 
-      validMainPos = not isOpen && isPointInNodeVp mainNode point
-      validListPos = isOpen && isPointInNodeVp listNode slPoint
-      validPos = validMainPos || validListPos
+    --   validMainPos = not isOpen && isPointInNodeVp mainNode point
+    --   validListPos = isOpen && isPointInNodeVp listNode slPoint
+    --   validPos = validMainPos || validListPos
 
-      isArrow = Just CursorArrow == (snd <$> wenv ^. L.cursor)
-      resetRes = resultReqs node [SetCursorIcon widgetId CursorArrow]
-      result
-        | not validPos && not isArrow = Just resetRes
-        | otherwise = Nothing
+    --   isArrow = Just CursorArrow == (snd <$> wenv ^. L.cursor)
+    --   resetRes = resultReqs node [SetCursorIcon widgetId CursorArrow]
+    --   result
+    --     | not validPos && not isArrow = Just resetRes
+    --     | otherwise = Nothing
 
     -- ButtonAction _ btn BtnPressed _
     --   | btn == wenv ^. L.mainButton && not isOpen -> result where
     --     result = Just $ resultReqs node [SetFocus (node ^. L.info . L.widgetId)]
 
-    -- Click point _ _
-    --   | openRequired point node -> Just resultOpen
-    --   | closeRequired point node -> Just resultClose
-    --   where
+    -- ButtonAction point btn BtnPressed _
+    --   | isOpen && not inVp -> result where
+    --     (slWid, _) = scrollListInfo node
     --     inVp = isPointInNodeVp node point
-    --     resultOpen = openDropdown wenv node
-    --       & L.requests <>~ Seq.fromList [SetCursorIcon widgetId CursorArrow]
-    --     resultClose = closeDropdown wenv node
-    --       & L.requests <>~ Seq.fromList ([ResetCursorIcon widgetId | not inVp] ++ [MoveFocus Nothing FocusFwd])
+    --     result = Just (closeDropdown wenv node)
+    --     -- result = Just $ resultReqs node [ResetOverlay slWid, MoveFocus Nothing FocusFwd]
+
+    Click point _ _
+      -- | openRequired point node -> Just resultOpen
+      | closeRequired point node && not inVp -> Just resultClose
+      where
+        inVp = isPointInNodeVp node point
+        -- resultOpen = openDropdown wenv node
+        --   & L.requests <>~ Seq.fromList [SetCursorIcon widgetId CursorArrow]
+        resultClose = closeDropdown wenv node
+          -- & L.requests <>~ Seq.fromList ([ResetCursorIcon widgetId | not inVp] ++ [MoveFocus Nothing FocusFwd])
 
     KeyAction mode code KeyPressed
       | isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
       | isKeyEscape code && isOpen -> Just $ closeDropdown wenv node
       where
         activationKeys = [isKeyDown, isKeyUp, isKeySpace, isKeyReturn]
-        isKeyOpenDropdown = or (fmap ($ code) activationKeys)
+        isKeyOpenDropdown = True
+        -- isKeyOpenDropdown = or (fmap ($ code) activationKeys)
 
     _
-      | not isOpen -> Just $ resultReqs node [IgnoreChildrenEvents]
+      -- | not isOpen -> Just $ resultReqs node [IgnoreChildrenEvents]
       | otherwise -> Nothing
     where
       style = currentStyle wenv node
@@ -400,7 +409,8 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     (listWid, _) = selectListInfo node
     scrollMsg = SendMessage listWid SelectListShowSelected
     -- requests = [scrollMsg]
-    requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg]
+    -- requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg]
+    requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg, SetOverlay slWid slPath]
     -- requests = [SetOverlay slWid slPath, SetFocus listWid, scrollMsg]
 
   closeDropdown wenv node = resultReqs newNode requests where
@@ -417,7 +427,7 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     requests = [ResetOverlay slWid]
     -- requests = [ResetOverlay slWid, SetFocus widgetId]
 
-  closeDropdown2 wenv node setFocusToMe = resultReqs newNode requests where
+  closeDropdown2 wenv node prev setFocusToMe = result where
     widgetId = node ^. L.info . L.widgetId
     (slWid, _) = scrollListInfo node
     (listWid, _) = selectListInfo node
@@ -432,6 +442,9 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
       Nothing -> [ResetOverlay slWid]
       Just s -> [ResetOverlay slWid, SetFocus s]
     -- requests = [ResetOverlay slWid, SetFocus widgetId]
+
+    result = ddFocusChange newNode prev (const <$> requests)
+    -- result = resultReqs newNode requests
 
   scrollListInfo :: WidgetNode s e -> (WidgetId, Path)
   -- scrollListInfo node = (scrollInfo ^. L.widgetId, scrollInfo ^. L.path) where
@@ -552,8 +565,8 @@ makeSelectList wenv value items makeRow config widgetId = selectListNode where
   mergeReqFn = maybe def mergeRequired (_ddcMergeRequired config)
 
   slConfig = [
-      selectOnBlur,
-      onBlurReq (const $ SendMessage widgetId OnListBlur),
+      -- selectOnBlur,
+      -- onBlurReq (const $ SendMessage widgetId OnListBlur),
       onChangeIdxReq (\idx it -> SendMessage widgetId (OnChangeMessage idx it)),
       itemBasicStyle itemStyle,
       itemSelectedStyle itemSelStyle,

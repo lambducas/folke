@@ -70,7 +70,8 @@ data Preferences = Preferences {
   _tmpLoadedFiles :: [File],
   _fileExplorerOpen :: Bool,
   _fileExplorerWidth :: Double,
-  _rulesSidebarOpen :: Bool
+  _rulesSidebarOpen :: Bool,
+  _rulesSidebarWidth :: Double
 } deriving (Eq, Show)
 
 type ContextMenuActions = [(Text, Text, AppEvent, Bool)]
@@ -246,7 +247,6 @@ visualRuleNames = visualRuleNames0 ++ visualRuleNames1
 visualRuleNames0 :: [(Text, Text)]
 visualRuleNames0 = [
     ("assume", "assume"),
-    ("fresh", "fresh"),
     ("copy", "copy"),
     ("AndI", "∧I"),
     ("AndEL", "∧EL"),

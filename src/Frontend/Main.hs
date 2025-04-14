@@ -29,7 +29,8 @@ main = do
     _tmpLoadedFiles = [],
     _fileExplorerOpen = True,
     _fileExplorerWidth = 300,
-    _rulesSidebarOpen = True
+    _rulesSidebarOpen = True,
+    _rulesSidebarWidth = 300
   }
   let prefs = fromMaybe defaultPrefs readPrefs
 
