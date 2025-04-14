@@ -155,7 +155,7 @@ handleEvent wenv node model evt = case evt of
 
   RemoveLine updateRef path -> applyOnCurrentProof model removeLine ++ focusAction
     where
-      removeLine = removeFromProof path . offsetFunc
+      removeLine = removeFromProof path True . offsetFunc
       offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber seq else seq
         where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
@@ -171,6 +171,16 @@ handleEvent wenv node model evt = case evt of
 
   EditRuleArgument path idx newText -> applyOnCurrentProof model editRuleArgument
     where editRuleArgument = editRuleArgumentInProof path idx newText
+
+  MovePathToPath target dest
+    | pathIsParentOf target dest -> []
+    | otherwise -> applyOnCurrentProof model f
+    where
+      f seq
+        | target > dest = (removeInvalidFromProof . copyTarget seq . deleteTarget) seq
+        | otherwise     = (removeInvalidFromProof . deleteTarget . copyTarget seq) seq
+      copyTarget oldestSeq = insertAfterProof dest (evalPath oldestSeq target)
+      deleteTarget = removeFromProof target False
 
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
@@ -543,19 +553,28 @@ insertBeforeProof path insertThis = replaceSteps f
       | path == currentPath = [insertThis, f]
       | otherwise = [f]
 
-removeFromProof :: FormulaPath -> FESequent -> FESequent
-removeFromProof path = replaceSteps f
+removeFromProof :: FormulaPath -> Bool -> FESequent -> FESequent
+removeFromProof path removeInvalid
+  | removeInvalid = removeInvalidFromProof . replaceSteps f
+  | otherwise = replaceSteps f
+  where
+    f steps = catMaybes $ zipWith (\p idx -> rl path [idx] p) steps [0..]
+    rl removePath currentPath (SubProof p)
+      | removePath == currentPath = Nothing
+      | otherwise = Just $ SubProof $ catMaybes $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+    rl removePath currentPath f@(Line {})
+      | removePath == currentPath = Nothing
+      | otherwise = Just f
+
+removeInvalidFromProof :: FESequent -> FESequent
+removeInvalidFromProof = replaceSteps f
   where
     f steps = if null res then startProof else res
       where
         startProof = [Line "" "" 0 []]
-        res = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
-    rl removePath currentPath (SubProof p)
-      | removePath == currentPath = Nothing
-      | otherwise = Just $ SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-    rl removePath currentPath f@(Line {})
-      | removePath == currentPath = Nothing
-      | otherwise = Just f
+        res = filterValid $ map rl steps
+    rl (SubProof p) = Just $ SubProof $ filterValid $ map rl p
+    rl f@(Line {}) = Just f
 
     filterValid = filter validateProof . catMaybes
     validateProof (SubProof []) = False

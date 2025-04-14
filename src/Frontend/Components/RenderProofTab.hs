@@ -42,7 +42,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
   -- backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
   -- selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
-  -- hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+  hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
   u = model ^. preferences . fontSize
@@ -65,7 +65,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
   button = Frontend.Components.Labels.button model
   fastTooltip = Frontend.Components.Labels.fastTooltip model
-  fastScroll = Frontend.Components.Labels.fastScroll
+  -- fastScroll = Frontend.Components.Labels.fastScroll
   fastVScroll = Frontend.Components.Labels.fastVScroll
   -- fastHScroll = Frontend.Components.Labels.fastHScroll
 
@@ -90,7 +90,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           spacer,
           subheading
         ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        fastScroll (proofTreeUI parsedSequent) `styleBasic` [padding 10],
+        fastVScroll (proofTreeUI parsedSequent) `styleBasic` [padding 10],
         hstack [
           proofStatusLabel,
           filler,
@@ -181,6 +181,10 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         ] `styleBasic` [maxWidth 400]) `nodeKey` ("premise.line." <> showt idx)
         where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
 
+      -- pfDropTarget idx w = dropTarget_ ((\msg -> Print (show msg <> " to " <> show idx)) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
+      pfDropTarget idx w = dropTarget_ ((\p -> MovePathToPath p idx) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
+        where hoverStyle = [border 3 red, bgColor hoverColor]
+
       tree = vstack [
           ui,
           spacer,
@@ -206,9 +210,13 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
         where
-          ui = vstack [
-              vstack_ [childSpacing] (map fst s)
-                `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24],
+          ui = draggable_ path [transparency 0.3] $ vstack [
+              hstack [
+                pfDropTarget path (vstack [] `styleBasic` [width 24]),
+
+                vstack_ [childSpacing] (map fst s)
+              ]
+                `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8],
 
               widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
                 `styleBasic` [textColor red, paddingT (0.5*u)],
@@ -225,7 +233,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
       pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
         where
-          ui = box_ [onBtnReleased handleBtn, expandContent] $ vstack [
+          ui = pfDropTarget path $ draggable_ path [transparency 0.3] $ box_ [onBtnReleased handleBtn, expandContent] $ vstack [
               hstack [
                 hstack [
                   -- span (pack (show (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement)))))),
@@ -276,7 +284,8 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 `styleBasic` [textColor red, paddingT (0.5*u)],
 
               vstack (map warningLabel warnings)
-            ] `nodeKey` showt index
+            ]
+              `nodeKey` showt index
 
           ruleKeystrokes w = firstKeystroke [
               ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),

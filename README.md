@@ -41,12 +41,12 @@
 
 ### Frontend
 - [ ] Fix full Markdown support
-- [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
 - [ ] Ctrl Z support
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
 - [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
+- [x] ~~Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))~~
 - [x] ~~Give suggestions on which rules to use when user is inputting rule~~
 - [x] ~~User should be able to drag to resize 'File Explorer' and rule sidebar~~
 - [x] ~~Display warnings and errors on the lines they appear on~~

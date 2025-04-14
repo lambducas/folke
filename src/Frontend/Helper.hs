@@ -58,6 +58,10 @@ pathToLastLine sequent = ep (SubProof $ _steps sequent) []
       SubProof [] -> path
       SubProof p -> ep (last p) (path ++ [length p - 1])
 
+pathIsParentOf :: FormulaPath -> FormulaPath -> Bool
+pathIsParentOf parent child = parent == basePath where
+  basePath = take (length parent) child
+
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
 firstKeystroke [] widget = widget

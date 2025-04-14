@@ -152,6 +152,7 @@ data AppEvent
   | EditRuleArgument FormulaPath Int Text
   | SwitchLineToSubProof FormulaPath WidgetKey
   | SwitchSubProofToLine FormulaPath WidgetKey
+  | MovePathToPath FormulaPath FormulaPath
 
   -- Handle files
   | OpenPreferences
