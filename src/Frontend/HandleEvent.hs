@@ -115,37 +115,27 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-  InsertLineAfter updateRef path -> applyOnCurrentProof model insertLine ++ focusAction
+  InsertLineAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
     where
+      insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 1]
-      insertLine = insertAfterProof path (Line "" "" 0 []) . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
-  InsertLineBefore updateRef path -> applyOnCurrentProof model insertLine ++ focusAction
+  InsertLineBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
     where
+      insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 0]
-      insertLine = insertBeforeProof path (Line "" "" 0 []) . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-        where lineNumber = pathToLineNumberOffsetPremises seq path
 
-  InsertSubProofAfter updateRef path -> applyOnCurrentProof model insertSubProof
-    where
-      insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []]) . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
+  InsertSubProofAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef)
+    where insertThis = SubProof [Line "" "" 0 []]
 
-  InsertSubProofBefore updateRef path -> applyOnCurrentProof model insertSubProof
-    where
-      insertSubProof = insertBeforeProof path (SubProof [Line "" "" 0 []]) . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-        where lineNumber = pathToLineNumberOffsetPremises seq path
+  InsertSubProofBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef)
+    where insertThis = SubProof [Line "" "" 0 []]
 
   AddLine -> applyOnCurrentProof model insertLine
     where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
@@ -441,7 +431,7 @@ directoryFilesProducer workingDir sendMsg = do
           sendMsg (SetFilesInDirectory Nothing)
         Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
 
-applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
+applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
 applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
@@ -451,6 +441,7 @@ applyOnCurrentProof model f = actions
         Model $ model
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+          & proofStatus .~ Nothing
       ]
     maybeF (Just s) = Just (f s)
     maybeF Nothing = Nothing
@@ -528,6 +519,24 @@ replaceInProof path replaceWith = replaceSteps f
     rl currentPath f@(Line {})
       | path == currentPath = replaceWith f
       | otherwise = f
+
+insertAfterAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
+insertAfterAndMaybeUpdateRefs path insertThis updateRef = insertAfterProof path insertThis . offsetFunc
+  where
+    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+      where
+        d = evalPath seq path
+        isSubProof (SubProof {}) = True
+        isSubProof _ = False
+        lineNumber
+          | isSubProof d = pathToLineNumberOffsetPremises seq path + proofStepLength d
+          | otherwise = pathToLineNumberOffsetPremises seq path + 1
+
+insertBeforeAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
+insertBeforeAndMaybeUpdateRefs path insertThis updateRef = insertBeforeProof path insertThis . offsetFunc
+  where
+    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+      where lineNumber = pathToLineNumberOffsetPremises seq path
 
 insertAfterProof :: FormulaPath -> FEStep -> FESequent -> FESequent
 insertAfterProof path insertThis = replaceSteps f
@@ -624,8 +633,8 @@ listDirectoryRecursive directory = do
       appendTop = ((directory ++ "/") ++)
 
 offsetAllRefs :: Integer -> Integer -> FESequent -> FESequent
-offsetAllRefs n after sequent = applyOnAllRefs f sequent
-  where f = offsetLineRefBy n after
+offsetAllRefs by after sequent = applyOnAllRefs f sequent
+  where f = offsetLineRefBy by after
 
 applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
 applyOnAllRefs func sequent = replaceSteps (map f) sequent
@@ -634,9 +643,9 @@ applyOnAllRefs func sequent = replaceSteps (map f) sequent
     f (Line s r u a) = Line s r u (map func a)
 
 offsetLineRefBy :: Integer -> Integer -> Text -> Text
-offsetLineRefBy n after refText = applyOnLineNumberRef f refText
+offsetLineRefBy by after refText = applyOnLineNumberRef f refText
   where f l
-          | l >= after = l + n
+          | l >= after = l + by
           | otherwise = l
 
 applyOnLineNumberRef :: (Integer -> Integer) -> Text -> Text

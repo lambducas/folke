@@ -481,12 +481,12 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               widgetIf isError (span " ")
                 `styleBasic` [textColor red, paddingT (0.5*u)],
 
-              vstack (map (const $ warningLabel ("" :: String)) warnings)
+              vstack (map (const $ warningLabel (" " :: String)) warnings)
             ]
           warnings = getWarningsInSubProof rStart rEnd (model ^. proofStatus)
           isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
-          rStart = toInteger $ index + length (_premises sequent)
-          rEnd = toInteger $ lastIndex - 1 + length (_premises sequent)
+          rStart = toInteger index
+          rEnd = toInteger $ lastIndex - 1
           lastIndex = if null s then index else snd $ last s
           s = getSubProof2 p path 0 index
 
@@ -500,7 +500,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               widgetIf isError (span " ")
                 `styleBasic` [textColor red, paddingT (0.5*u)],
 
-              vstack (map (const $ warningLabel ("" :: String)) warnings)
+              vstack (map (const $ warningLabel (" " :: String)) warnings)
             ]
           lastIndex = index + 1
           lineNumber = toInteger index

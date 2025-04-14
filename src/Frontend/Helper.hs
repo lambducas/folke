@@ -40,12 +40,13 @@ pathToLineNumber :: FESequent -> FormulaPath -> Integer
 pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
   where
     ep (idx:tail) currentProof startLine = case currentProof of
-      SubProof p -> ep tail (p !! idx) (startLine + sum (map stepLength (take idx p)))
+      SubProof p -> ep tail (p !! idx) (startLine + sum (map proofStepLength (take idx p)))
       Line {} -> error "Tried to index into `Line` (not an array)"
     ep [] _ startLine = startLine
 
-    stepLength (SubProof p) = sum $ map stepLength p
-    stepLength (Line {}) = 1
+proofStepLength :: Num a => FEStep -> a
+proofStepLength (SubProof p) = sum $ map proofStepLength p
+proofStepLength (Line {}) = 1
 
 pathToLineNumberOffsetPremises :: FESequent -> FormulaPath -> Integer
 pathToLineNumberOffsetPremises sequent path = pathToLineNumber sequent path + toInteger (length (_premises sequent))
