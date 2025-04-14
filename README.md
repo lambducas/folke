@@ -2,7 +2,8 @@
 ### Backend
 - [ ] Write bad tests and make them fail
 - [ ] Implement last rules and start testing FOL proofs
-- [ ] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
+- [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
+- [ ] Warn on unused steps
 - [ ] Add checks for side conditions for rules.
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
