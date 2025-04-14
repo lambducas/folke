@@ -91,6 +91,10 @@ To run the executable, run the following command:
 ```bash
 $ cabal run
 ```
+## Test (to revert to old test system simply replace main-is field with MainOld.hs in the .cabal file)
+```bash
+$ cabal test
+```
 
 ### Set up BNFC
 To install BNFC and generate files, run:
