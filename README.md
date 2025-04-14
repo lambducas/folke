@@ -7,6 +7,7 @@
 - [ ] Better messages
 - [ ] JSON proofs
 - [ ] Suggest next step of proof (Ambitious)
+- [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
 #### Suggestions for new rule names
@@ -77,53 +78,18 @@
 - Latex output for proofs.
 - Support for subscript in front end, nice if x_0 renders fancy.
 
-## Directory Structure
+## Build
 
-```
-bsc-project/
-├── app/
-│   ├── Example.hs
-│   ├── Main.hs
-├── src/
-│   ├── Backend/
-│   │   ├── ExampleSequent.hs
-│   │   ├── Rules.hs
-│   │   ├── TypeChecker.hs
-│   ├── Frontend/
-│   │   ├── Communication.hs
-│   │   ├── Main.hs
-│   ├── Parser/
-│   │   ├── Logic/
-│   │   │   ├── Abs.hs
-│   ├── Shared/
-│   │   ├── Messages.hs
-├── test/
-│   ├── Main.hs
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
-├── bsc-project.cabal
-```
-
-
-# Proof Editor using Monomer & BNFC with Haskell
-
-## Overview
-
-This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
-
-## Haskell
-
-```haskell
-\_ -> undefined
-```
-
-## Building the Project
-
-To build the library and executable, run the following command:
+To build the library, run the following command:
 
 ```bash
 $ cabal build
+```
+## Run
+To run the executable, run the following command:
+
+```bash
+$ cabal run
 ```
 
 ### Set up BNFC
