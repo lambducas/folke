@@ -59,7 +59,6 @@ validateRefs env =
     isProofReference (ArgProof _) = True  -- Don't count ArgProofs
     isProofReference _ = False
 
-
 {-
     Converts identifier to string
     -params:

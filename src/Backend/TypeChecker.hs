@@ -2,6 +2,7 @@ module Backend.TypeChecker (
     isProofCorrect,
     check,
     checkString,
+    checkJson,
     handleFrontendMessage,
 ) where
 
@@ -23,12 +24,15 @@ import Backend.Helpers
 -}
 
 -- | Make support for special characters
+checkJson :: FilePath -> Result ()
+checkJson = undefined
 
 checkString :: String -> Result ()
 checkString proof = do
     case pSequent (myLexer proof) of
         Left err -> Error [] newEnv (SyntaxError err)
         Right seq_t -> check seq_t
+
 {-
     Typechecks a given proof and if it matches the sequent
     -params:
@@ -69,7 +73,6 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
             then Ok [Warning env "Unfinished proof. The last line doesn't match the expected conclusion."] filteredProof
             else Error [] env (TypeError ("The proof " ++ show filteredProof ++ " did not match the expected " ++ show seq_t ++ "."))
 
-
 checkPrems :: Env -> [Abs.Form] -> Result [Formula]
 checkPrems _ [] = Ok [] []
 checkPrems _ [Abs.FormNil] = Ok [] []
@@ -97,6 +100,7 @@ checkProof env [Abs.ProofElem labels step] =
                 ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
                 ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
                 ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
+
 checkProof env (Abs.ProofElem labels step : elems) =
     case step of
         Abs.StepNil ->

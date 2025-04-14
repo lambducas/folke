@@ -157,4 +157,5 @@ test-suite bsc-project-test
         bsc-project,
         HUnit,
         directory,
+        filepath,
         array
