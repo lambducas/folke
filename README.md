@@ -201,3 +201,13 @@ Solve sdl2 build error: https://github.com/haskell-game/sdl2/issues/277#issuecom
 
 <!-- SDL2-2.0.14 build files: https://github.com/msys2/MINGW-packages/tree/76df904503a525e3043462ebf65ab6377182a22a/mingw-w64-SDL2
 Build with: `makepkg --syncdeps --skippgpcheck` in mingw64.exe in ghcup -->
+
+## Create windows installer
+Do this OUTSIDE of WSL to ensure cabal builds an exe and not a Linux executable!
+1. Install [Inno Setup](https://jrsoftware.org/isinfo.php)
+1. Build cabal following the windows build instructions above
+1. Copy `bsc.exe` from `dist-newstyle` (somewhere inside build/..../bsc-project/x/....) to `installer/releaseFiles`
+1. Copy `assets/` to to `installer/releaseFiles`
+1. Move `copyAllDLLsHere.sh` to `installer/releaseFiles` and run the script. It should generate a dozen DLL's inside `installer/releaseFiles`
+1. Build `installerGenerator.iss` with Inno Setup. A file called `mysetup.exe` should be generated in `installer/Setup output`
+1. Distribute `mysetup.exe` to user however you like

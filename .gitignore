@@ -18,3 +18,7 @@ dist-newstyle/
 # Ignore proof editor preferences/settings
 Settings.json
 _tmp/
+
+# Ignore generated installer
+installer/Setup output
+installer/releaseFiles
