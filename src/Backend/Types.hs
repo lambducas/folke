@@ -134,8 +134,18 @@ instance Eq Formula where
     Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
     Impl a1 a2 == Impl b1 b2 = a1 == b1 && a2 == b2
     Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2
-    All x a == All y b = x == y && a == b 
-    Some x a == Some y b = x == y && a == b 
+    
+    All x a == All y b = 
+        -- If variables are the same, just compare subformulas
+        (x == y && a == b) ||
+        -- check x does not occur as free in b then substitute and check
+        (not (occursFree x b) && a == substitute y x b)
+    
+    Some x a == Some y b = 
+        -- If variables are the same, just compare subformulas
+        (x == y && a == b) ||
+        (not (occursFree x b) && a == substitute y x b)
+    
     Not a == Not b = a == b
     Bot == Bot = True
     Nil == Nil = True
@@ -159,3 +169,34 @@ instance Eq Term where
 data IDType = IDTypeTerm Integer | IDTypePred Integer
 
 data UDefRule = UDefRule [Formula] Formula
+
+
+-- | Helper function to check if a variable occurs free in a formula i.e not bound
+occursFree :: Term -> Formula -> Bool
+occursFree v@(Term name []) formula = case formula of
+    Pred (Predicate _ terms) -> v `elem` terms
+    And f1 f2 -> occursFree v f1 || occursFree v f2
+    Or f1 f2 -> occursFree v f1 || occursFree v f2
+    Impl f1 f2 -> occursFree v f1 || occursFree v f2
+    Eq t1 t2 -> v == t1 || v == t2
+    All x f -> v /= x && occursFree v f
+    Some x f -> v /= x && occursFree v f
+    Not f -> occursFree v f
+    Bot -> False
+    Nil -> False
+occursFree _ _ = False
+
+-- | Helper function to substitute variable into formula
+substitute :: Term -> Term -> Formula -> Formula
+substitute old new formula = case formula of
+    Pred (Predicate name terms) -> 
+        Pred (Predicate name (map (\t -> if t == old then new else t) terms))
+    And f1 f2 -> And (substitute old new f1) (substitute old new f2)
+    Or f1 f2 -> Or (substitute old new f1) (substitute old new f2)
+    Impl f1 f2 -> Impl (substitute old new f1) (substitute old new f2)
+    Eq t1 t2 -> Eq (if t1 == old then new else t1) (if t2 == old then new else t2)
+    All x f -> if x == old then All x f else All x (substitute old new f)
+    Some x f -> if x == old then Some x f else Some x (substitute old new f)
+    Not f -> Not (substitute old new f)
+    Bot -> Bot
+    Nil -> Nil

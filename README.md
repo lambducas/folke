@@ -2,13 +2,16 @@
 ### Backend
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
 - [ ] Improve warning system
-- [ ] Warn on unused steps
+- [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
 - [ ] Better messages
 - [ ] JSON proofs
-- [ ] Suggest next step of proof (Ambitious)
-- [ ] Update test system for JSON
+- [x] Alpha-equivalence formulas
+- [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
+#### And if ambition enables:
+- [ ] Suggest next step of proof
+- [ ] JSON node for error
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
 |-----------|--------------------------|
@@ -73,57 +76,24 @@
 - Package backend with arbitrary frontend (library for proof editor backend)
 
 ## IDEAS
-- Use reference counting to check that all parts of the proof is used.
-- Latex output for proofs.
 - Support for subscript in front end, nice if x_0 renders fancy.
 
-## Directory Structure
+## Build
 
-```
-bsc-project/
-├── app/
-│   ├── Example.hs
-│   ├── Main.hs
-├── src/
-│   ├── Backend/
-│   │   ├── ExampleSequent.hs
-│   │   ├── Rules.hs
-│   │   ├── TypeChecker.hs
-│   ├── Frontend/
-│   │   ├── Communication.hs
-│   │   ├── Main.hs
-│   ├── Parser/
-│   │   ├── Logic/
-│   │   │   ├── Abs.hs
-│   ├── Shared/
-│   │   ├── Messages.hs
-├── test/
-│   ├── Main.hs
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
-├── bsc-project.cabal
-```
-
-
-# Proof Editor using Monomer & BNFC with Haskell
-
-## Overview
-
-This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
-
-## Haskell
-
-```haskell
-\_ -> undefined
-```
-
-## Building the Project
-
-To build the library and executable, run the following command:
+To build the library, run the following command:
 
 ```bash
 $ cabal build
+```
+## Run
+To run the executable, run the following command:
+
+```bash
+$ cabal run
+```
+## Test (to revert to old test system simply replace main-is field with MainOld.hs in the .cabal file)
+```bash
+$ cabal test
 ```
 
 ### Set up BNFC

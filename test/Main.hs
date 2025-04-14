@@ -2,6 +2,9 @@ module Main (main) where
 
 import Test.HUnit
 import System.Directory
+import System.FilePath (takeFileName, (</>))
+import Control.Monad (filterM)
+import System.Environment (getArgs)
 
 import Backend.TypeChecker
 import Backend.Types
@@ -14,29 +17,28 @@ import Backend.Environment
 
 import qualified Data.List as List
 
-import Logic.Par (pSequent, myLexer)
+testProof :: FilePath -> Test
+testProof proofPath = TestCase $ do
+    -- proofContent <- readFile proofPath (if check takes string)
+    case checkJson proofPath of
+        Error warns env err -> 
+            assertFailure $ "Proof validation failed:\n" ++ 
+                           List.intercalate "\n" [show warn | warn <- warns] ++ 
+                           "\n" ++ showPos env ++ "\n" ++ show err
+        Ok _ _ -> assertBool ("Proof is valid: " ++ proofPath) True
 
-testProofGood:: String -> Test
-testProofGood proof = TestCase(do
-        case checkString proof of
-            Error warns env err -> assertBool ( List.intercalate "\n" [show warn|warn <- warns] ++ showPos env ++ show err) False
-            Ok _ _ -> assertBool "Dummy msg" True)
+collectJsonFiles :: FilePath -> IO [FilePath]
+collectJsonFiles dir = do
+    contents <- listDirectory dir
+    let fullPaths = map (dir </>) contents
+    directories <- filterM doesDirectoryExist fullPaths
+    files <- filterM doesFileExist fullPaths
+    subdirsFiles <- mapM collectJsonFiles directories
+    return $ files ++ concat subdirsFiles
 
-testProofBadType:: String -> Test
-testProofBadType proof = TestCase(do
-        case checkString proof of
-            Error _ _ err@(SyntaxError _) ->  assertBool (show err) True
-            Error _ _ _ -> assertBool "Dummy msg" True
-            Ok _ _ -> assertBool "Did not fail as expected" False)
-
-testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
-testProofs _ [] [] = []
-testProofs _ _ [] = error "fewer proofs then names"
-testProofs _ [] _ = error "fewer names then proofs"
-testProofs test_fun (name:names) (proof:proofs) = do 
-    let tests = testProofs test_fun names proofs
-    let test  = test_fun proof
-    tests ++ [TestLabel name test]
+testProofs :: (FilePath -> Test) -> [FilePath] -> [Test]
+testProofs testFun paths = 
+    [TestLabel (takeFileName path) (testFun path) | path <- paths]
 
 testReplaceInTerm :: Term -> Term -> Term -> Term -> Test
 testReplaceInTerm x t phi exp =  TestCase(case replaceInTerm newEnv x t phi of
@@ -71,7 +73,7 @@ testReplace = do
             TestLabel "Test Predicate 1" (testReplaceInFormula (Term "x" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "t" [], Term "y" []]))),
             TestLabel "Test Predicate 2" (testReplaceInFormula (Term "y" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "x" [], Term "t" []]))),
 
-            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
@@ -81,7 +83,7 @@ testReplace = do
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "y" []]))) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "t" []])))),
-            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
@@ -122,18 +124,17 @@ testUDefRules = do
         ]
 main :: IO ()
 main = do
-    good_files <- listDirectory "test/proofs/good"
-    let good_paths = ["test/proofs/good/"++file | file <- good_files]
-    good_proofs <- mapM readFile good_paths
-    let tests_good = TestList (testProofs testProofGood good_files good_proofs)
-
-    bad_files <- listDirectory "test/proofs/bad_type/"
-    let bad_paths = ["test/proofs/bad_type/"++file | file <- bad_files]
-    bad_proofs <- mapM readFile bad_paths
-    let tests_bad_type = TestList (testProofs testProofBadType bad_files bad_proofs)
+    -- Collect files
+    jsonFiles <- collectJsonFiles "myProofs"
+    
+    -- Create tests for all proof files
+    let allProofTests = TestList (testProofs testProof jsonFiles)
+    
+    -- Run all test including replace tests
+    putStrLn "Running tests..."
     let tests = TestList [
-            TestLabel "Good" tests_good, 
-            TestLabel "Bad Types"  tests_bad_type, 
+            TestLabel "Proofs" allProofTests,
             TestLabel "Replace" testReplace,
-            TestLabel "User Defined rules" testUDefRules]
+            TestLabel "User Defined rules" testUDefRules
+          ]
     runTestTTAndExit tests

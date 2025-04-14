@@ -146,14 +146,12 @@ showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
     where p = "[" ++ List.intercalate " " (reverse [show x| x <-  pos env]) ++ "]"
           r = rule env
 
-
 -- Pushes a new context to the environment (used when entering a subproof or box).
 -- This resets the list of premises for the new scope, keeping only assumptions.
 -- Pushes a new context to the environment (used when entering a subproof or box).
 -- This resets the list of premises for the new scope, keeping only assumptions.
 push :: Env -> Env
 push env = env { prems = [], fresh = [], depth = depth env + 1}
-
 
 bindVar :: Env -> Term -> Result Env
 bindVar env (Term x []) = if Map.member x (bound env)
@@ -215,7 +213,6 @@ freeVarForm (All x f) = Set.difference (freeVarForm f) (Set.singleton x)
 freeVarForm (Some x f) = Set.difference (freeVarForm f) (Set.singleton x)
 freeVarForm (Not f) = freeVarForm f
 freeVarForm Nil = Set.empty
-
 
 regTerm :: Env -> Term -> Result Env
 regTerm env (Term x param) = case Map.lookup x (ids env) of
