@@ -17,7 +17,8 @@ module Backend.Environment (
     showPos,
     replaceInFormula,
     replaceInTerms,
-    replaceInTerm
+    replaceInTerm,
+    addUDefRule
 ) where
 
 import qualified Data.Map as Map
@@ -136,6 +137,9 @@ newEnv = Env {
     bound = Map.empty,
     ids = Map.empty
 }
+
+addUDefRule :: Env -> String -> UDefRule -> Env
+addUDefRule env name r = env{user_rules = Map.insert name r (user_rules env)}
 
 showPos:: Env -> String
 showPos env = if rule env == "" then p else p ++ ":" ++ r ++ " "
@@ -298,7 +302,68 @@ applyRule e name args res =
 --   - Return either the resulting formula or an error.
 
 applyUDefRule:: Env -> UDefRule -> [(Integer, Arg)] -> Result Formula
-applyUDefRule env sig args = Error [] env (UnknownError "Unimplemented")
+applyUDefRule env sig@(UDefRule ins out) args = if (toInteger $ List.length ins) /= (toInteger $ List.length args) 
+    then Error [] env (RuleArgCountError (toInteger $ List.length ins) (toInteger $ List.length args) )
+    else do
+        ph <- findPlaceholdersInArgs env ins args Map.empty
+        replacePlaceholders env out ph
+
+findPlaceholdersInArgs:: Env -> [Formula] -> [(Integer, Arg)] -> Map.Map Predicate Formula -> Result (Map.Map Predicate Formula)
+findPlaceholdersInArgs env [] [] ph = Ok [] ph
+findPlaceholdersInArgs env [a] [(i, b)] ph = case b of
+    ArgForm b_f -> findPlaceholdersInArg env i a b_f ph
+    _ -> Error [] env (RuleArgError i "Arguments in user defined rules must be formulas.")
+findPlaceholdersInArgs env (a:as) ((i, b):bs) ph = case b of
+    ArgForm b_f -> do
+        ph1 <- findPlaceholdersInArg env i a b_f ph
+        ph2 <- findPlaceholdersInArgs env as bs ph1
+        Ok [] ph2
+    _ -> Error [] env (RuleArgError i "Arguments in user defined rules must be formulas.")
+findPlaceholdersInArgs env _ _ _ = Error [] env (UnknownError "Missmatch in number of args and signature.")
+
+findPlaceholdersInArg:: Env -> Integer -> Formula -> Formula -> Map.Map Predicate Formula -> Result (Map.Map Predicate Formula)
+findPlaceholdersInArg env i (And l1 r1) (And l2 r2) ph = do
+    phl <- findPlaceholdersInArg env i l1 l2 ph
+    phr <- findPlaceholdersInArg env i r1 r2 phl
+    Ok [] phr
+findPlaceholdersInArg env i (Or l1 r1) (Or l2 r2) ph = do
+    phl <- findPlaceholdersInArg env i l1 l2 ph
+    phr <- findPlaceholdersInArg env i r1 r2 phl
+    Ok [] phr
+findPlaceholdersInArg env i (Impl l1 r1) (Impl l2 r2) ph = do
+    phl <- findPlaceholdersInArg env i l1 l2 ph
+    phr <- findPlaceholdersInArg env i r1 r2 phl
+    Ok [] phr
+findPlaceholdersInArg _ _ Bot Bot ph = Ok [] ph
+findPlaceholdersInArg env i (Not a) (Not b) ph = findPlaceholdersInArg env i a b ph
+findPlaceholdersInArg env i (Pred a) b ph = case Map.lookup a ph of
+    Nothing -> Ok [] (Map.insert a b ph) 
+    Just c -> if b == c  -- may need more complex test? 
+        then Ok [] ph
+        else Error [] env (RuleArgError i "Did not match previous instance of placeholder.")
+findPlaceholdersInArg env i _ _ ph = Error [] env (UnknownError "Unimplemented.")
+
+replacePlaceholders:: Env -> Formula -> Map.Map Predicate Formula -> Result Formula
+replacePlaceholders env (And l r) ph = do
+    res_l <- replacePlaceholders env l ph
+    res_r <- replacePlaceholders env r ph
+    Ok [] (And res_l res_r)
+replacePlaceholders env (Or l r) ph = do
+    res_l <- replacePlaceholders env l ph
+    res_r <- replacePlaceholders env r ph
+    Ok [] (Or res_l res_r)
+replacePlaceholders env (Impl l r) ph = do
+    res_l <- replacePlaceholders env l ph
+    res_r <- replacePlaceholders env r ph
+    Ok [] (Impl res_l res_r)
+replacePlaceholders _ Bot _ = Ok [] Bot
+replacePlaceholders env (Not a) ph = do 
+    res <- replacePlaceholders env a ph
+    Ok [] (Not res)
+replacePlaceholders env (Pred p) ph = case Map.lookup p ph of 
+    Nothing -> Error [] env (UnknownError "Unimplemented.")
+    Just res -> Ok [] res
+replacePlaceholders env _ _ = Error [] env (UnknownError "Unimplemented.")
 
 ruleCopy :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleCopy _ [(_, ArgForm form)] _ = Ok [] form

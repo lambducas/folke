@@ -10,7 +10,7 @@ import Backend.Environment
       replaceInFormula,
       replaceInTerm,
       replaceInTerms,
-      showPos )
+      showPos, addUDefRule , applyRule)
 
 import qualified Data.List as List
 
@@ -88,6 +88,38 @@ testReplace = do
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))))
             ]
     TestList [ TestLabel "In Term" inTermTests, TestLabel "In Terms" inTermsTests, TestLabel "In Formula" inFormulaTests]
+
+testUDefRule :: Env -> String -> [Formula] -> Formula -> Test
+testUDefRule env name args res = TestCase(case applyRule env name [ArgForm arg | arg <- args] res of 
+    Error _ _ err -> assertBool (show err) False
+    Ok _ res ->  assertBool "Dummy msg" True)
+
+testUDefRules :: Test
+testUDefRules = do
+    let env = addUDefRule newEnv "DMAnd" (UDefRule [Not (And (Pred (Predicate "P" [])) (Pred (Predicate "Q" [])))] (And (Not (Pred (Predicate "P" []))) (Not (Pred (Predicate "Q" [])))))
+    TestList [
+            TestLabel "De Morgan And 1" (testUDefRule env "DMAnd" [Not (And 
+                (Pred (Predicate "P" [])) 
+                (Pred (Predicate "Q" []))
+            )] (And 
+                (Not (Pred (Predicate "P" []))) 
+                (Not (Pred (Predicate "Q" [])))
+            )),
+            TestLabel "De Morgan And 2" (testUDefRule env "DMAnd" [Not (And 
+                (And (Pred (Predicate "A" [])) ( Pred (Predicate "B" []))) 
+                (Pred (Predicate "C" []))
+            )] (And 
+                (Not (And (Pred (Predicate "A" [])) ( Pred (Predicate "B" [])))) 
+                (Not (Pred (Predicate "C" [])))
+            )),
+            TestLabel "De Morgan And 3" (testUDefRule env "DMAnd" [Not (And 
+                (Pred (Predicate "A" [])) 
+                (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" [])))
+            )] (And 
+                (Not (Pred (Predicate "A" []))) 
+                (Not (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" []))))
+            ))
+        ]
 main :: IO ()
 main = do
     good_files <- listDirectory "test/proofs/good"
@@ -99,5 +131,9 @@ main = do
     let bad_paths = ["test/proofs/bad_type/"++file | file <- bad_files]
     bad_proofs <- mapM readFile bad_paths
     let tests_bad_type = TestList (testProofs testProofBadType bad_files bad_proofs)
-    let tests = TestList [TestLabel "Good" tests_good, TestLabel "Bad Types"  tests_bad_type, TestLabel "Replace" testReplace]
+    let tests = TestList [
+            TestLabel "Good" tests_good, 
+            TestLabel "Bad Types"  tests_bad_type, 
+            TestLabel "Replace" testReplace,
+            TestLabel "User Defined rules" testUDefRules]
     runTestTTAndExit tests

@@ -12,7 +12,7 @@ module Backend.Types (
     ErrorKind(..),
     Env(..),
     IDType(..),
-    UDefRule
+    UDefRule(..)
 ) where
 
 import Data.Map as Map (Map)
@@ -141,7 +141,7 @@ instance Eq Formula where
     Nil == Nil = True
     _ == _ = False
 
-data Predicate = Predicate String [Term]
+data Predicate = Predicate String [Term]  deriving Ord
 instance Show Predicate where
     show (Predicate name []) = name
     show (Predicate name terms) = name ++ "(" ++ show terms ++ ")"
