@@ -7,33 +7,25 @@ module Frontend.BuildUI (
 import Prelude hiding (span)
 
 import Frontend.Types
-import Frontend.SpecialCharacters
 import Frontend.Helper
 import Frontend.Themes
 import Frontend.Components.Labels
 import Frontend.Components.RenderMarkdown (renderMarkdown)
-
-import Shared.Messages (FEResult(..))
-import Logic.Par (myLexer, pForm)
+import Frontend.Components.RenderProofTab (renderProofTab)
 
 import Monomer
-import Monomer.Widgets.Singles.Base.InputField (InputFieldState (_ifsCurrText, _ifsCursorPos))
 import qualified Monomer.Lens as L
 import Control.Lens
-import TextShow ( TextShow(showt) )
-import Data.Text (Text, unpack, pack, intercalate, splitOn, toLower)
+import Data.Text (Text, pack, intercalate, splitOn, toLower)
 import qualified Data.Text (length)
 import Data.List (sort, groupBy, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
-import Data.Either (isLeft)
-import qualified Data.Map
 import System.FilePath (takeExtension, takeFileName, takeBaseName)
 import System.FilePath.Posix ((</>))
 import Data.Maybe (fromMaybe, isJust)
-import Frontend.Parse (validateRuleArgument, validateStatement, validateRule, parseRule)
 
--- import Monomer.Widgets.Containers.TextFieldSuggestions
+import Monomer.Widgets.Containers.BoxDragToResize
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -41,6 +33,7 @@ menuBarCategories = [
       ("New Proof", "Ctrl+N", CreateEmptyProof),
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Close File", "Ctrl+W", CloseCurrentFile),
+      ("Export To LaTeX", "", ExportToLaTeX),
       ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
@@ -79,7 +72,7 @@ buildUI
   :: WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI _wenv model = widgetTree where
+buildUI wenv model = widgetTree where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
@@ -87,7 +80,7 @@ buildUI _wenv model = widgetTree where
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
-  proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
+  -- proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
   h1 = Frontend.Components.Labels.h1 model
   h2 = Frontend.Components.Labels.h2 model
@@ -95,22 +88,22 @@ buildUI _wenv model = widgetTree where
   span = Frontend.Components.Labels.span model
   span_ = Frontend.Components.Labels.span_ model
   symbolSpan = Frontend.Components.Labels.symbolSpan model
-  symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
+  -- symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
   paragraph = Frontend.Components.Labels.paragraph model
   -- paragraph_ = Frontend.Components.Labels.paragraph_ model
   iconLabel = Frontend.Components.Labels.iconLabel model
   iconButton = Frontend.Components.Labels.iconButton model
-  trashButton = Frontend.Components.Labels.trashButton model
+  -- trashButton = Frontend.Components.Labels.trashButton model
   bold = Frontend.Components.Labels.bold model
   normalStyle = Frontend.Components.Labels.normalStyle model
-  symbolStyle = Frontend.Components.Labels.symbolStyle model
+  -- symbolStyle = Frontend.Components.Labels.symbolStyle model
   u = model ^. preferences . fontSize
 
-  button a b = Monomer.button a b `styleBasic` [textSize u]
-  fastTooltip tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize u]
-  fastScroll = scroll_ [wheelRate 50]
-  fastVScroll = vscroll_ [wheelRate 50]
-  fastHScroll = hscroll_ [wheelRate 50]
+  button = Frontend.Components.Labels.button model
+  fastTooltip = Frontend.Components.Labels.fastTooltip model
+  -- fastScroll = Frontend.Components.Labels.fastScroll
+  fastVScroll = Frontend.Components.Labels.fastVScroll
+  fastHScroll = Frontend.Components.Labels.fastHScroll
 
   globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd menuBarCategories
     where
@@ -119,14 +112,17 @@ buildUI _wenv model = widgetTree where
         | Data.Text.length k == 1 = toLower k
         | otherwise = k
 
-  widgetTree = firstKeystroke globalKeybinds $ themeSwitch_ selTheme [themeClearBg] $ vstack [
-      vstack [
-        menuBar,
-        mainContent
-      ],
-      contextMenuUI,
-      confirmActionUI
-    ]
+  widgetTree =
+    firstKeystroke globalKeybinds $
+      themeSwitch_ selTheme [themeClearBg] $
+        vstack [
+          vstack [
+            menuBar,
+            mainContent
+          ],
+          contextMenuUI,
+          confirmActionUI
+        ]
 
   menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
     `styleBasic` [borderB 1 dividerColor, padding 5, textSize $ u -2]
@@ -171,8 +167,14 @@ buildUI _wenv model = widgetTree where
             `styleHover` [bgColor hoverColor]
             `styleBasic` [radius (0.5*u), styleIf selected (textColor accentColor), styleIf selected (bgColor selectedColor)]
 
+  dts :: DragSide -> ALens' AppModel Double -> WidgetNode AppModel AppEvent -> WidgetNode AppModel AppEvent
+  dts DragSideRight lens w = boxDragToResize_ DragSideRight lens [] $ hstack [w, spc]
+    where spc = vstack [] `styleBasic` [width 10]
+  dts DragSideLeft lens w = boxDragToResize_ DragSideLeft lens [] $ hstack [spc, w]
+    where spc = vstack [] `styleBasic` [width 10]
+
   fileExplorerSidebar :: WidgetNode AppModel AppEvent
-  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ case model ^. preferences . workingDir of
+  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ dts DragSideRight (preferences . fileExplorerWidth) $ case model ^. preferences . workingDir of
     Nothing -> vstack [
         box_ [expandContent] (hstack [
             bold (span "File Explorer"),
@@ -186,7 +188,7 @@ buildUI _wenv model = widgetTree where
           paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
           box (button "Open Folder" OpenSetWorkingDir)
         ] `styleBasic` [padding u]
-      ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+      ] `styleBasic` [ borderR 1 dividerColor ]
 
     Just _ -> case model ^. filesInDirectory of
       Nothing -> vstack [
@@ -202,7 +204,7 @@ buildUI _wenv model = widgetTree where
             paragraph "Error loading working directory. It might not exist.",
             box (button "Open Other Folder" OpenSetWorkingDir)
           ] `styleBasic` [padding u]
-        ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+        ] `styleBasic` [ borderR 1 dividerColor ]
       Just fid -> vstack [
           box_ [expandContent] (hstack [
               bold (span "File Explorer"),
@@ -216,21 +218,10 @@ buildUI _wenv model = widgetTree where
               fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
                 `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
                 `styleHover` [bgColor hoverColor]
-
-              -- let cep = (CreateEmptyProof $ model ^. newFileName) in
-              --   popup_ newFilePopupOpen [popupAlignToWindow, alignCenter, alignMiddle] (vstack [
-              --     h2 "Create proof",
-              --     spacer,
-              --     span "Enter the name of your proof",
-              --     spacer,
-              --     firstKeystroke [("Enter", cep, True)] $ textField_ newFileName [placeholder "my_proof"],
-              --     spacer,
-              --     button "+ Create proof" cep
-              --   ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding (1.5*u), width (20*u)])
             ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
           fastVScroll $ fileTreeUI parts 1
-        ] `styleBasic` [ width (model ^. preferences . fileExplorerWidth), borderR 1 dividerColor ]
+        ] `styleBasic` [ borderR 1 dividerColor ]
         where
           parts = map (\f -> (splitOn "/" (pack f), f)) files
           files = sort fid
@@ -312,8 +303,8 @@ buildUI _wenv model = widgetTree where
   tabWindow (Just fileName) = case file of
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> renderPreferenceTab
-    Just file@(ProofFile {}) -> renderProofTab file ((pack . takeBaseName . _path) file)
-    Just file@(TemporaryProofFile {}) -> renderProofTab file "[Untitled proof]"
+    Just file@(ProofFile {}) -> renderProofTab wenv model file ((pack . takeBaseName . _path) file)
+    Just file@(TemporaryProofFile {}) -> renderProofTab wenv model file "[Untitled proof]"
     Just (MarkdownFile _p content) -> renderMarkdownTab content
     Just (OtherFile p content) -> renderOtherTab p content
     where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) fileName
@@ -361,435 +352,7 @@ buildUI _wenv model = widgetTree where
     ] `styleBasic` [padding 30]
     where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
 
-  renderProofTab :: File -> Text -> WidgetNode AppModel AppEvent
-  renderProofTab file heading = case parsedSequent of
-    Nothing -> vstack [
-        vstack [
-          h1 $ pack $ _path file,
-          spacer
-        ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        fastVScroll (vstack [
-          paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
-          spacer,
-          paragraph "File preview:",
-          spacer,
-          symbolSpan_ (_content file) [multiline]
-        ]) `styleBasic` [padding 10]
-      ]
-    Just parsedSequent -> keystroke [("Ctrl-s", SaveFile file)] $ vstack [
-        vstack [
-          h1 heading,
-          spacer,
-          subheading
-        ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        fastScroll (proofTreeUI parsedSequent) `styleBasic` [padding 10],
-        hstack [
-          proofStatusLabel,
-          filler,
-          button "Save proof" (SaveFile file) `styleBasic` [textSize u],
-          spacer,
-          button "Check proof" (CheckProof file) `styleBasic` [textSize u],
-          spacer,
-          button "Export to LaTeX" ExportToLaTeX 
-            `styleBasic` [padding 5]
-            `nodeKey` "ExportSuccess"
-            `nodeKey` "ExportError",
-          spacer
-        ] `styleBasic` [padding 10, borderT 1 dividerColor]
-      ]
-      where
-        subheading
-          | null premises && conclusion == "" = span "Empty proof"
-          | otherwise = symbolSpan prettySequent
-        prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-        conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
-        premises = map replaceSpecialSymbols (_premises parsedSequent)
-    where
-      parsedSequent = _parsedSequent file
-
-  proofStatusLabel = case model ^. proofStatus of
-    Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
-    Just (FEError _warns error) -> span ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
-    Just (FEOk warns) ->
-        if null warns
-        then span "Proof is correct :)" `styleBasic` [textColor lime]
-        else vstack [
-            span "Proof is correct, but there are warnings:" `styleBasic` [textColor orange],
-            vstack (map (span . pack . show) warns) `styleBasic` [textColor orange]
-        ]
-
-
-  proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
-  proofTreeUI sequent = vstack [
-      vstack_ [childSpacing] [
-        h2 "Premises",
-        vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-        widgetIf (null $ _premises sequent) (span "No premises")
-      ],
-      spacer,
-      hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `styleBasic` [textSize u]],
-      spacer, spacer,
-
-      vstack_ [childSpacing] [
-        h2 "Conclusion",
-        spacer,
-        box_ [alignLeft] (
-          firstKeystroke [
-            ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
-            ("Down", NextFocus 1, True),
-            ("Enter", NextFocus 1, True)
-          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
-            `styleBasic` [maxWidth 600]
-            `styleBasic` [styleIf isConclusionError (border 1 red)]
-            `nodeKey` "conclusion.input")
-        )
-          --`styleBasic` [textFont $ fromString $ model ^. logicFont, textSize u],
-      ],
-      spacer, spacer,
-
-      h2 "Proof",
-      spacer,
-      hstack [
-        lineNumbers,
-        tree
-      ],
-
-      -- Hack so last proof line can scroll all the way to the top
-      box (label "") `styleBasic` [height 1000]
-    ]
-    where
-      isConclusionError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
-      nrPremises = length (_premises sequent)
-      premiseLine premise idx = box_ [alignLeft] (hstack [
-          firstKeystroke [
-            ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
-            ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
-            ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
-            ("Delete", RemovePremise idx, True),
-            ("Ctrl-Enter", AddPremise idx, True)
-          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
-            `nodeKey` ("premise.input." <> showt idx)
-            `styleBasic` [styleIf isPremiseError (border 1 red)]),
-          spacer,
-          fastTooltip "Remove line" $ trashButton (RemovePremise idx),
-          spacer
-        ] `styleBasic` [maxWidth 400]) `nodeKey` ("premise.line." <> showt idx)
-        where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
-
-      tree = vstack [
-          ui,
-          spacer,
-          hstack_ [childSpacing] [
-            button "+ New line" AddLine `styleBasic` [textSize u],
-            button "+☐ New sub proof" AddSubProof `styleBasic` [textSize u]
-          ]
-        ]
-        where
-          ui = vstack_ [childSpacing] (ghostPremises ++ map fst s)
-          s = getSubProof (_steps sequent) [] 0 1
-
-          ghostPremises = map ghostPremise (_premises sequent)
-          ghostPremise premise = hstack [
-              symbolSpan pp,
-              filler,
-              symbolSpan "premise" `styleBasic` [width 300, paddingH 10, textSize u],
-              spacer,
-              vstack [] `styleBasic` [width 250]
-            ] `styleBasic` [height 34]
-            where pp = replaceSpecialSymbols premise
-
-      pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
-      pf (SubProof p) index path = (ui, lastIndex)
-        where
-          ui = vstack [
-              vstack_ [childSpacing] (map fst s)
-                `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8, paddingL 24],
-
-              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)],
-
-              vstack (map warningLabel warnings)
-            ]
-          isWarning = not (null warnings)
-          warnings = getWarningsInSubProof rStart rEnd (model ^. proofStatus)
-          isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
-          rStart = index + toInteger (length (_premises sequent))
-          rEnd = lastIndex - 1 + toInteger (length (_premises sequent))
-          lastIndex = if null s then index else snd $ last s
-          s = getSubProof p path 0 index
-
-      pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
-        where
-          ui = box_ [onBtnReleased handleBtn, expandContent] $ vstack [
-              hstack [
-                hstack [
-                  -- span (pack (show (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement)))))),
-                  -- span (replaceSpecialSymbolsInverse statement),
-
-                  -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
-                  -- spacer,
-
-                  -- textFieldV "" (\_ -> NoEvent),
-
-                  firstKeystroke [
-                    ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
-                    ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-                    ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
-                    -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
-
-                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
-                    ("Delete", RemoveLine False path, trashActive),
-                    ("Backspace", RemoveLine False path, canBackspaceToDelete),
-                    ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                    ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
-                    ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
-                    `styleBasic` [styleIf isWarning (border 1 orange)]
-                    `styleBasic` [styleIf isStatementError (border 1 red)]
-                    `nodeKey` (showt index <> ".statement"))
-                      `nodeKey` (showt index <> ".statement.keystroke"),
-
-                  spacer,
-
-                  hstack_ [childSpacing] [
-                    firstKeystroke [
-                      ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
-                      ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-                      ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-                      -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
-
-                      ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-                      ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
-                      ("Delete", RemoveLine False path, trashActive),
-                      ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-                      ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                      ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
-                      ("Enter", NextFocus 1, usedArguments > 0),
-                      ("Enter", InsertLineAfter False path, usedArguments == 0)
-                      -- ("Enter", InsertLineAfter path, True)
-                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
-                      `styleBasic` [styleIf isWarning (border 1 orange)]
-                      `styleBasic` [styleIf isRuleError (border 1 red)]
-                      `nodeKey` (showt index <> ".rule"))
-                        `nodeKey` (showt index <> ".rule.keystroke"),
-                    argInputs
-                  ]
-                    `styleBasic` [width 300]
-
-                  -- , textFieldSuggestionsV rule (\_i t -> EditLine path 1 t) allRules (const $ textFieldV (replaceSpecialSymbols rule) (EditLine path 1)) label `styleHover` [bgColor transparent]
-                ],
-                spacer,
-                b
-              ],
-
-              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)],
-
-              vstack (map warningLabel warnings)
-            ] `nodeKey` showt index
-
-          argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
-          argInput argument idx = hstack [
-              symbolSpan (labels !! idx),
-              firstKeystroke [
-                ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
-                ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-                ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
-                ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-                ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-                ("Delete", RemoveLine False path, trashActive),
-                ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
-                ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
-                ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
-                ("Enter", InsertLineAfter False path, isLastArg),
-                ("Enter", NextFocus 1, not isLastArg)
-              ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
-              `nodeKey` (showt index <> ".ruleArg." <> showt idx)
-              `styleBasic` [width 70]
-              `styleBasic` [styleIf isWarning (border 1 orange)]
-              `styleBasic` [styleIf isRuleArgError (border 1 red)])
-            ]
-            where
-              isFirstArg = idx == 0
-              isLastArg = idx + 1 == usedArguments
-              isRuleArgError = isError || not (validateRuleArgument argument)
-              labels = case Data.Map.lookup (parseRule rule) ruleMetaDataMap of
-                Nothing -> repeat ""
-                Just (RuleMetaData _ l) -> l
-
-          b = box $ hstack_ [childSpacing] [
-                fastTooltip "Remove line" $
-                  trashButton (RemoveLine False path)
-                    `nodeEnabled` trashActive,
-
-                vstack [
-                  fastTooltip "Insert line above" $
-                    button "↑+" (InsertLineBefore False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusBL 0, radiusBR 0],
-                  fastTooltip "Insert line below" $
-                    button "↓+" (InsertLineAfter False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusTL 0, radiusTR 0, borderT 1 dividerColor]
-                ] `styleBasic` [height 34],
-
-                -- fastTooltip "Insert subproof below" $
-                --   button "↓☐+" (InsertSubProofAfter path),
-
-                fastTooltip "Convert line to subproof" $
-                  button "→☐" (SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-
-                widgetIf isSubProofSingleton $
-                  fastTooltip "Undo subproof" $
-                    button "☒" (SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement")) `styleBasic` [textSize u],
-
-                widgetIf (isLastLine && nextIndexExists) $
-                  fastTooltip "Close subproof" $
-                    button "⏎" (InsertLineAfter False pathToParentSubProof) `styleBasic` [textSize u]
-
-                -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))
-              ] `styleBasic` [width 250]
-
-          -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
-          --   where rules (Env _ _ r _ _ _ _ _) = r
-
-          handleBtn BtnRight _ = OpenContextMenu ctxProofLine
-          handleBtn _ _ = NoEvent
-
-          ctxProofLine = [
-              ("Remove Line", "", RemoveLine False path, trashActive),
-              ("Remove Line (Update refs)", "", RemoveLine True path, trashActive),
-
-              ("Insert Line Above", "", InsertLineBefore False path, True),
-              ("Insert Line Above (Update refs)", "", InsertLineBefore True path, True),
-
-              ("Insert Line Below", "", InsertLineAfter False path, True),
-              ("Insert Line Below (Update refs)", "", InsertLineAfter True path, True),
-
-              ("Insert Subproof Above", "", InsertSubProofBefore False path, True),
-              ("Insert Subproof Above (Update refs)", "", InsertSubProofBefore True path, True),
-
-              ("Insert Subproof Below", "", InsertSubProofAfter False path, True),
-              ("Insert Subproof Below (Update refs)", "", InsertSubProofAfter True path, True),
-
-              ("Insert Line After Subproof", "", InsertLineAfter False pathToParentSubProof, isLastLine && nextIndexExists),
-              ("Insert Line After Subproof (Update refs)", "", InsertLineAfter True pathToParentSubProof, isLastLine && nextIndexExists),
-
-              ("Insert Subproof After Subproof", "", InsertSubProofAfter False pathToParentSubProof, isLastLine && nextIndexExists),
-              ("Insert Subproof After Subproof (Update refs)", "", InsertSubProofAfter True pathToParentSubProof, isLastLine && nextIndexExists),
-
-              ("Convert Line to Subproof", "", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-              ("Undo Subproof", "", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), isSubProofSingleton)
-            ]
-
-          handleFormulaKey, handleRuleNameKey :: (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
-          handleFormulaKey (_mod, code, state)
-            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".rule")
-            | otherwise = NoEvent
-            where
-              isAtEnd = cursorPos == textLen
-              cursorPos = _ifsCursorPos state
-              textLen = Data.Text.length (_ifsCurrText state)
-
-          handleRuleNameKey (_mod, code, state)
-            | isKeyLeft code && isAtBeginning = FocusOnKey $ WidgetKey (showt index <> ".statement")
-            | isKeyRight code && isAtEnd = FocusOnKey $ WidgetKey (showt index <> ".ruleArg.0")
-            | otherwise = NoEvent
-            where
-              isAtEnd = cursorPos == textLen
-              textLen = Data.Text.length (_ifsCurrText state)
-              isAtBeginning = cursorPos == 0
-              cursorPos = _ifsCursorPos state
-
-          handleRuleArgKey :: Int -> (KeyMod, KeyCode, InputFieldState Text) -> AppEvent
-          handleRuleArgKey argIdx (_mod, code, state)
-            | isKeyLeft code && isAtBeginning && argIdx == 0 = FocusOnKey $ WidgetKey (showt index <> ".rule")
-            | isKeyLeft code && isAtBeginning && argIdx /= 0 = FocusOnKey $ WidgetKey (showt index <> ".ruleArg." <> showt (argIdx - 1))
-            | isKeyRight code && isAtEnd && argIdx + 1 < usedArguments = FocusOnKey $ WidgetKey (showt index <> ".ruleArg." <> showt (argIdx + 1))
-            | otherwise = NoEvent
-            where
-              isAtEnd = cursorPos == textLen
-              textLen = Data.Text.length (_ifsCurrText state)
-              isAtBeginning = cursorPos == 0
-              cursorPos = _ifsCursorPos state
-
-          isStatementError = isError || not (validateStatement statement)
-          isRuleError = isError || not (validateRule rule)
-          isError = isErrorLine lineNumber (model ^. proofStatus)
-          isWarning = not (null warnings)
-          warnings = getWarningsOnLine lineNumber (model ^. proofStatus)
-          lineNumber = index + toInteger (length (_premises sequent))
-          canBackspaceToDelete = rule == "" && statement == "" && trashActive
-          trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
-          pathToParentSubProof = init path
-          lastIndex = index + 1
-          prevIndexExists = index > 1
-          nextIndexExists = not (isLastLine && length path == 1)
-          isSubProofSingleton = length path /= 1 && isSingleton (evalPath sequent pathToParentSubProof)
-          isSingleton (SubProof p) = length p == 1
-          isSingleton _ = False
-          isLastLine = case evalPath sequent pathToParentSubProof of
-            SubProof p -> length p == last path + 1
-            _ -> False
-
-      warningLabel w = span (pack w) `styleBasic` [textColor orange, paddingT (0.5*u)]
-
-      getSubProof p path arrayIndex visualIndex
-        | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
-        | otherwise = []
-          where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
-
-
-
-
-      lineNumbers = ui
-        where
-          ui = vstack_ [childSpacing] (ghostLines ++ map fst s)
-          s = getSubProof2 (_steps sequent) [] 0 (length (_premises sequent) + 1)
-
-          ghostLines = map ghostLine [1..length (_premises sequent)]
-          ghostLine index = symbolSpan (showt index <> ".")
-            `styleBasic` [width 48, paddingR 12, height 34, textRight]
-
-      ln (SubProof p) index path = (ui, lastIndex)
-        where
-          ui = vstack [
-              vstack_ [childSpacing] (map fst s) `styleBasic` [border 1 transparent, paddingV 8],
-
-              widgetIf isError (span " ")
-                `styleBasic` [textColor red, paddingT (0.5*u)],
-
-              vstack (map (const $ warningLabel ("" :: String)) warnings)
-            ]
-          warnings = getWarningsInSubProof rStart rEnd (model ^. proofStatus)
-          isError = isErrorSubProof rStart rEnd (model ^. proofStatus)
-          rStart = toInteger $ index + length (_premises sequent)
-          rEnd = toInteger $ lastIndex - 1 + length (_premises sequent)
-          lastIndex = if null s then index else snd $ last s
-          s = getSubProof2 p path 0 index
-
-      ln (Line {}) index _path = (ui, lastIndex)
-        where
-          ui = vstack [
-              symbolSpan (showt index <> ".")
-                `styleBasic` [width 48, paddingR 12, height 34, textRight, styleIf isError (textColor red)]
-                `nodeKey` showt index <> "label",
-
-              widgetIf isError (span " ")
-                `styleBasic` [textColor red, paddingT (0.5*u)],
-
-              vstack (map (const $ warningLabel ("" :: String)) warnings)
-            ]
-          lastIndex = index + 1
-          lineNumber = toInteger index
-          isError = isErrorLine lineNumber (model ^. proofStatus)
-          warnings = getWarningsOnLine lineNumber (model ^. proofStatus)
-          warningLabel _ = span "" `styleBasic` [textColor orange, paddingT (0.5*u)]
-
-      getSubProof2 p path arrayIndex visualIndex
-        | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
-        | otherwise = []
-          where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
-
-  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ fastVScroll (vstack [
+  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ dts DragSideLeft (preferences . rulesSidebarWidth) $ fastVScroll (vstack [
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",
@@ -797,7 +360,7 @@ buildUI _wenv model = widgetTree where
 
       subsection "First Order Logic",
       vstack $ map (ruleItem . snd) visualRuleNames1
-    ]) `styleBasic` [width 300, borderL 1 dividerColor]
+    ]) `styleBasic` [borderL 1 dividerColor]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
       ruleItem r = box_ [onClick NoEvent] (symbolSpan r)
