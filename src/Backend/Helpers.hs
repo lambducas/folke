@@ -39,6 +39,26 @@ filterNilConclusion (Proof terms prems Nil) =
         (lastPrem:rest) -> Proof terms (reverse rest) lastPrem  -- Use last premise as conclusion
 filterNilConclusion proof = proof  -- Keep non-Nil conclusions as is
 
+-- Returns warnings for unused references.
+validateRefs :: Env -> Result ()
+validateRefs env =
+    -- Don't count references to entire proofs, which aren't meant to be cited
+    let unusedRefs = 
+          [(ref, arg) | 
+           (ref, (count, arg)) <- Map.toList (refs env), 
+           count == 0, 
+           not (isProofReference arg)]
+    in if null unusedRefs
+       then Ok [] ()  -- No unused references found
+       else 
+           let unusedRefsStr = List.intercalate ", " [show ref | (ref, _) <- unusedRefs]
+           in if null unusedRefsStr 
+              then Ok [] ()
+              else Ok [Warning env ("Unused references: " ++ unusedRefsStr)] ()
+  where
+    isProofReference (ArgProof _) = True  -- Don't count ArgProofs
+    isProofReference _ = False
+
 
 {-
     Converts identifier to string

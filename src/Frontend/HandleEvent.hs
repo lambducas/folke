@@ -446,18 +446,18 @@ applyOnCurrentProof model f = actions
     maybeF Nothing = Nothing
 
 addPremiseToProof :: Int -> FESequent -> FESequent
-addPremiseToProof idx sequent = FESequent premises conclusion steps
+addPremiseToProof idx sequent = FESequent premises conclusion (steps' sequent)
   where
     premises = insertAt "" idx (_premises sequent)
     conclusion = _conclusion sequent
-    steps = _steps sequent
+    steps' seq = _steps (offsetAllRefs 1 (toInteger idx+1) seq)
 
 removePremiseFromProof :: Int -> FESequent -> FESequent
-removePremiseFromProof idx sequent = FESequent premises conclusion steps
+removePremiseFromProof idx sequent = FESequent premises conclusion (steps' sequent)
   where
     premises = _premises sequent ^.. folded . ifiltered (\i _ -> i /= idx)
     conclusion = _conclusion sequent
-    steps = _steps sequent
+    steps' seq = _steps (offsetAllRefs (-1) (toInteger idx+1) seq)
 
 editPremisesInProof :: Int -> Text -> FESequent -> FESequent
 editPremisesInProof idx newText sequent = FESequent premises conclusion steps

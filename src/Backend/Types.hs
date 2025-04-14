@@ -57,6 +57,13 @@ instance Monad Result where
         Error newWarns env err -> Error (warns ++ newWarns) env err
     (Error warns env err) >>= _ = Error warns env err
 
+-- | TODO: Improve the warning system
+{- data WarningKind = 
+    UnusedRefWarning [Ref] |
+    GeneralWarning String
+
+data Warning = Warning Env WarningKind -}
+
 data Warning = Warning Env String
 instance Show Warning where
     show (Warning _ msg) = msg

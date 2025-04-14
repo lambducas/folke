@@ -55,6 +55,8 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
     conc_t <- checkForm env conc
     proof_t <- checkProof env proof
 
+    validateRefs env -- TODO: Should validate refs
+
     let endsWithEmptyLine = hasNilConclusion proof_t
     -- Filter out Nil conclusion from the proof
     let filteredProof = filterNilConclusion proof_t

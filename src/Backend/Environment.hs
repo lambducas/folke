@@ -238,9 +238,10 @@ addRefs :: Env -> [Ref] -> Arg -> Env
 addRefs env labels form = env { refs = Map.union (refs env) (Map.fromList [(label, (0, form)) | label <- labels])}
 -- Section: Getters
 
+
 -- Retrieves all premises/assumptions in the current scope.
 getPrems :: Env -> [Formula]
-getPrems env = prems env
+getPrems = prems
 
 getFreshs :: Env -> [Term]
 getFreshs = fresh
@@ -259,11 +260,12 @@ getRefs env (x : xs) =
 
 -- Retrieves the value corresponding to a single reference.
 -- Returns an error if the reference does not exist.
+-- Make sure this function increments the reference count
 getRef :: Env -> Ref -> Result (Env, Arg)
-getRef env ref =
-    case Map.lookup ref (refs env) of
-        Nothing -> Error [] env (TypeError ("No ref " ++ show ref ++ " exists."))
-        Just (count, arg) -> Ok [] (env{refs = Map.insert ref (count+1, arg) (refs env) }, arg)
+getRef env ref = case Map.lookup ref (refs env) of
+    Nothing -> Error [] env (TypeError ("Reference " ++ show ref ++ " was not found."))
+    Just (count, arg) -> Ok [] (env { refs = Map.insert ref (count + 1, arg) (refs env) }, arg)
+
 pushPos :: Env -> [Ref] -> Env
 pushPos env r = env {pos = r ++ pos env}
 
