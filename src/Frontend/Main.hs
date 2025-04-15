@@ -88,6 +88,9 @@ main = do
 
       _filesInDirectory = Just [],
       _confirmActionPopup = Nothing,
+       _stateHistory = [],
+      _historyIndex = 0,
+      _ignoreHistoryOnce = False,
 
       _frontendChan = currentFrontendChan,
       _backendChan = currentBackendChan,

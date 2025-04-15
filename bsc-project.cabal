@@ -113,6 +113,7 @@ executable bsc
                     , Frontend.Communication
                     , Frontend.Types
                     , Frontend.BuildUI
+                    , Frontend.History
                     , Frontend.HandleEvent
                     , Frontend.SpecialCharacters
                     , Frontend.Helper

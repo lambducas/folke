@@ -94,6 +94,10 @@ data AppModel = AppModel {
   _filesInDirectory :: Maybe [FilePath],
   _confirmActionPopup :: Maybe ConfirmActionData,
 
+  _stateHistory :: [AppModel],
+  _historyIndex :: Int,    
+  _ignoreHistoryOnce :: Bool,
+
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe FEResult,
@@ -107,6 +111,8 @@ instance Show (Chan a) where
 
 data AppEvent
   = NoEvent
+  | Undo
+  | Redo 
   | AppInit
   | AppBeforeExit
   | ExitApp

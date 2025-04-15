@@ -10,6 +10,7 @@ import Frontend.Communication (startCommunication, evaluateProofString)
 import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex)
+import Frontend.History
 import Shared.Messages
 import Logic.Par (pSequent, myLexer, pArg)
 import qualified Logic.Abs as Abs
@@ -30,6 +31,7 @@ import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 import qualified Data.Map as Map
 
+import Debug.Trace (trace)
 import qualified SDL
 
 handleEvent
@@ -40,6 +42,16 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
   NoEvent -> []
+  Undo ->
+   if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
+    let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
+        newModel = prevModel
+          & stateHistory .~ model ^. stateHistory
+          & historyIndex .~ model ^. historyIndex - 1
+          & ignoreHistoryOnce .~ True
+    in [Model newModel]
+  else []
+  Redo -> undefined
 
   AppInit -> [
       Producer $ directoryFilesProducer (model ^. preferences . workingDir),
@@ -431,6 +443,7 @@ directoryFilesProducer workingDir sendMsg = do
           sendMsg (SetFilesInDirectory Nothing)
         Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
 
+
 applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
 applyOnCurrentProof model f = actions
   where
@@ -438,7 +451,7 @@ applyOnCurrentProof model f = actions
     fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
     cf = model ^. preferences . currentFile
     getActions fileIndex = [
-        Model $ model
+        Model $ saveModelToHistory model $ model  -- Already using saveModelToHistory correctly
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
           & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
           & proofStatus .~ Nothing
@@ -637,13 +650,13 @@ offsetAllRefs by after sequent = applyOnAllRefs f sequent
   where f = offsetLineRefBy by after
 
 applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
-applyOnAllRefs func sequent = replaceSteps (map f) sequent
+applyOnAllRefs func = replaceSteps (map f)
   where
     f (SubProof p) = SubProof (map f p)
     f (Line s r u a) = Line s r u (map func a)
 
 offsetLineRefBy :: Integer -> Integer -> Text -> Text
-offsetLineRefBy by after refText = applyOnLineNumberRef f refText
+offsetLineRefBy by after = applyOnLineNumberRef f
   where f l
           | l >= after = l + by
           | otherwise = l

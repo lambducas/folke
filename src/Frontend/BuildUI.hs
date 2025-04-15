@@ -38,6 +38,8 @@ menuBarCategories = [
       ("Exit", "", ExitApp)
     ]),
     ("Edit", [
+      ("Undo", "Ctrl+Z", Undo),         
+      ("Redo", "Ctrl+Y", Redo),      
       -- ("Make Subproof", "Ctrl+Tab", NoEvent),
       -- ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
       -- ("Goto Next Input", "Return", NoEvent),
