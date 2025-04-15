@@ -5,7 +5,7 @@ import Frontend.BuildUI ( buildUI )
 import Frontend.HandleEvent ( handleEvent )
 import Frontend.Themes ( customLightTheme )
 import Frontend.Communication (startCommunication)
-import Frontend.Preferences (readPreferences)
+import Frontend.Preferences (readPreferences, readPersistentState)
 
 import Monomer
 import Control.Concurrent (newChan)
@@ -15,24 +15,10 @@ main :: IO ()
 main = do
   -- Read preferences from file or use default on error
   readPrefs <- readPreferences
-  let defaultPrefs = Preferences {
-    _selectedTheme = Dark,
-    _selectNormalFont = ["Regular", "Medium", "Bold"],
-    _normalFont = "Regular",
-    _logicFont = "Symbol_Regular",
-    _fontSize = 16,
-
-    _windowMode = MainWindowNormal (800, 600),
-    _workingDir = Nothing, --Just "./myProofs",
-    _currentFile = Nothing,
-    _openFiles = [],
-    _tmpLoadedFiles = [],
-    _fileExplorerOpen = True,
-    _fileExplorerWidth = 300,
-    _rulesSidebarOpen = True,
-    _rulesSidebarWidth = 300
-  }
   let prefs = fromMaybe defaultPrefs readPrefs
+
+  readState <- readPersistentState
+  let state = fromMaybe defaultState readState
 
   -- Start communication between frontend and backend
   currentFrontendChan <- newChan
@@ -40,13 +26,13 @@ main = do
   _ <- startCommunication currentFrontendChan currentBackendChan
 
   -- Start Monomer application
-  startApp (model prefs currentFrontendChan currentBackendChan) handleEvent buildUI (config prefs)
+  startApp (model prefs state currentFrontendChan currentBackendChan) handleEvent buildUI (config prefs state)
 
   where
-    config _prefs = [
+    config _prefs state = [
       --appScaleFactor (_appScale prefs),
 
-      appWindowState (_windowMode _prefs),
+      appWindowState (_windowMode state),
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appTheme customLightTheme,
@@ -79,7 +65,7 @@ main = do
       ]
       
     -- Initial states
-    model prefs currentFrontendChan currentBackendChan = AppModel {
+    model prefs state currentFrontendChan currentBackendChan = AppModel {
       _openMenuBarItem = Nothing,
       _contextMenu = ContextMenu {
         _ctxOpen = False,
@@ -96,5 +82,26 @@ main = do
       _backendChan = currentBackendChan,
       _proofStatus = Nothing,
 
-      _preferences = prefs
+      _preferences = prefs,
+      _persistentState = state
+    }
+
+    defaultPrefs = Preferences {
+      _selectedTheme = Dark,
+      _selectNormalFont = ["Regular", "Medium", "Bold"],
+      _normalFont = "Regular",
+      _logicFont = "Symbol_Regular",
+      _fontSize = 16
+    }
+
+    defaultState = PersistentState {
+      _windowMode = MainWindowNormal (800, 600),
+      _workingDir = Nothing, --Just "./myProofs",
+      _currentFile = Nothing,
+      _openFiles = [],
+      _tmpLoadedFiles = [],
+      _fileExplorerOpen = True,
+      _fileExplorerWidth = 300,
+      _rulesSidebarOpen = True,
+      _rulesSidebarWidth = 300
     }

@@ -158,8 +158,8 @@ buildUI wenv model = widgetTree where
 
   actionSidebar :: WidgetNode AppModel AppEvent
   actionSidebar = vstack (map actionButton [
-      ("Toggle File Explorer (Ctrl+B)", remixFileSearchLine, ToggleFileExplorer, model ^. preferences . fileExplorerOpen),
-      ("Toggle Rule Explorer", remixRuler2Line, ToggleRulesSidebar, model ^. preferences . rulesSidebarOpen),
+      ("Toggle File Explorer (Ctrl+B)", remixFileSearchLine, ToggleFileExplorer, model ^. persistentState . fileExplorerOpen),
+      ("Toggle Rule Explorer", remixRuler2Line, ToggleRulesSidebar, model ^. persistentState . rulesSidebarOpen),
       ("Open Preferences", remixSettings4Line, OpenPreferences, False),
       ("Open Guide", remixQuestionLine, OpenGuide, False)
     ]) `styleBasic` [width 50, borderR 1 dividerColor]
@@ -177,79 +177,82 @@ buildUI wenv model = widgetTree where
     where spc = vstack [] `styleBasic` [width 10]
 
   fileExplorerSidebar :: WidgetNode AppModel AppEvent
-  fileExplorerSidebar = widgetIf (model ^. preferences . fileExplorerOpen) $ dts DragSideRight (preferences . fileExplorerWidth) $ case model ^. preferences . workingDir of
-    Nothing -> vstack [
-        box_ [expandContent] (hstack [
-            bold (span "File Explorer"),
-            filler,
-            fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
-              `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-              `styleHover` [bgColor hoverColor]
-          ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+  fileExplorerSidebar =
+    widgetIf (model ^. persistentState . fileExplorerOpen) $
+      dts DragSideRight (persistentState . fileExplorerWidth) $
+        case model ^. persistentState . workingDir of
+          Nothing -> vstack [
+              box_ [expandContent] (hstack [
+                  bold (span "File Explorer"),
+                  filler,
+                  fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+                    `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+                    `styleHover` [bgColor hoverColor]
+                ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-        vstack_ [childSpacing] [
-          paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
-          box (button "Open Folder" OpenSetWorkingDir)
-        ] `styleBasic` [padding u]
-      ] `styleBasic` [ borderR 1 dividerColor ]
+              vstack_ [childSpacing] [
+                paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
+                box (button "Open Folder" OpenSetWorkingDir)
+              ] `styleBasic` [padding u]
+            ] `styleBasic` [ borderR 1 dividerColor ]
 
-    Just _ -> case model ^. filesInDirectory of
-      Nothing -> vstack [
-          box_ [expandContent] (hstack [
-              bold (span "File Explorer"),
-              filler,
-              fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
-                `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-                `styleHover` [bgColor hoverColor]
-            ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+          Just _ -> case model ^. filesInDirectory of
+            Nothing -> vstack [
+                box_ [expandContent] (hstack [
+                    bold (span "File Explorer"),
+                    filler,
+                    fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+                      `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+                      `styleHover` [bgColor hoverColor]
+                  ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          vstack_ [childSpacing] [
-            paragraph "Error loading working directory. It might not exist.",
-            box (button "Open Other Folder" OpenSetWorkingDir)
-          ] `styleBasic` [padding u]
-        ] `styleBasic` [ borderR 1 dividerColor ]
-      Just fid -> vstack [
-          box_ [expandContent] (hstack [
-              bold (span "File Explorer"),
-              filler,
-              fastTooltip "Create new proof" $ iconButton remixFileAddLine CreateEmptyProof
-                `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-                `styleHover` [bgColor hoverColor],
-              fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
-                `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-                `styleHover` [bgColor hoverColor],
-              fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
-                `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-                `styleHover` [bgColor hoverColor]
-            ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
+                vstack_ [childSpacing] [
+                  paragraph "Error loading working directory. It might not exist.",
+                  box (button "Open Other Folder" OpenSetWorkingDir)
+                ] `styleBasic` [padding u]
+              ] `styleBasic` [ borderR 1 dividerColor ]
+            Just fid -> vstack [
+                box_ [expandContent] (hstack [
+                    bold (span "File Explorer"),
+                    filler,
+                    fastTooltip "Create new proof" $ iconButton remixFileAddLine CreateEmptyProof
+                      `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+                      `styleHover` [bgColor hoverColor],
+                    fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
+                      `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+                      `styleHover` [bgColor hoverColor],
+                    fastTooltip "Set working directory" $ iconButton remixFolderUserFill OpenSetWorkingDir
+                      `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
+                      `styleHover` [bgColor hoverColor]
+                  ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-          fastVScroll $ fileTreeUI parts 1
-        ] `styleBasic` [ borderR 1 dividerColor ]
-        where
-          parts = map (\f -> (splitOn "/" (pack f), f)) files
-          files = sort fid
+                fastVScroll $ fileTreeUI parts 1
+              ] `styleBasic` [ borderR 1 dividerColor ]
+              where
+                parts = map (\f -> (splitOn "/" (pack f), f)) files
+                files = sort fid
 
-          fileTreeUI parts indent = vstack [
-              vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
-              vstack $ map folder groups
-            ]
-            where
-              -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-              partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-              partFolder = filter (\i -> length (fst i) > 1) parts
-              groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+                fileTreeUI parts indent = vstack [
+                    vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
+                    vstack $ map folder groups
+                  ]
+                  where
+                    -- parts = map (\f -> (splitOn "/" (pack f), f)) files
+                    partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
+                    partFolder = filter (\i -> length (fst i) > 1) parts
+                    groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
 
-              folder seqs = vstack [
-                  hstack [
-                    span ((head . fst . head) seqs),
-                    iconLabel remixFolder5Line `styleBasic` [paddingL 8]
-                  ] `styleBasic` [paddingL (16 * indent), paddingV 8],
-                  fileTreeUI newParts (indent + 1)
-                ]
-                where
-                  newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-                  -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
-                  -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
+                    folder seqs = vstack [
+                        hstack [
+                          span ((head . fst . head) seqs),
+                          iconLabel remixFolder5Line `styleBasic` [paddingL 8]
+                        ] `styleBasic` [paddingL (16 * indent), paddingV 8],
+                        fileTreeUI newParts (indent + 1)
+                      ]
+                      where
+                        newParts = map (\f -> ((tail . fst) f, snd f)) seqs
+                        -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
+                        -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
 
   fileItem indent text filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
       iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
@@ -261,8 +264,8 @@ buildUI wenv model = widgetTree where
       handleBtn BtnLeft _ = OpenFile filePath
       handleBtn BtnRight _ = OpenContextMenu (ctxFileExplorer fullPath filePath)
       handleBtn _ _ = NoEvent
-      isCurrent = (model ^. preferences . currentFile) == Just fullPath
-      fullPath = case model ^. preferences . workingDir of
+      isCurrent = (model ^. persistentState . currentFile) == Just fullPath
+      fullPath = case model ^. persistentState . workingDir of
         Nothing -> ""
         Just wd -> wd </> filePath
       ext = takeExtension filePath
@@ -277,8 +280,8 @@ buildUI wenv model = widgetTree where
 
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
-      fileNavBar (model ^. preferences . openFiles),
-      tabWindow (model ^. preferences . currentFile)
+      fileNavBar (model ^. persistentState . openFiles),
+      tabWindow (model ^. persistentState . currentFile)
     ]
 
   fileNavBar filePaths = fastHScroll (hstack (map boxedLabel filePaths))
@@ -297,20 +300,20 @@ buildUI wenv model = widgetTree where
           where
             displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
-            file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
-            isCurrent = (model ^. preferences . currentFile) == Just filePath
+            file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
+            isCurrent = (model ^. persistentState . currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
 
   tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
   tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   tabWindow (Just fileName) = case file of
-    Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. preferences . tmpLoadedFiles)))
+    Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> renderPreferenceTab
     Just file@(ProofFile {}) -> renderProofTab wenv model file ((pack . takeBaseName . _path) file)
     Just file@(TemporaryProofFile {}) -> renderProofTab wenv model file "[Untitled proof]"
     Just (MarkdownFile _p content) -> renderMarkdownTab content
     Just (OtherFile p content) -> renderOtherTab p content
-    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) fileName
+    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName
 
   renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent
   renderOtherTab path content = fastVScroll $ vstack_ [childSpacing] [
@@ -355,7 +358,7 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [padding 30]
     where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
 
-  ruleSidebar = widgetIf (model ^. preferences . rulesSidebarOpen) $ dts DragSideLeft (preferences . rulesSidebarWidth) $ fastVScroll (vstack [
+  ruleSidebar = widgetIf (model ^. persistentState . rulesSidebarOpen) $ dts DragSideLeft (persistentState . rulesSidebarWidth) $ fastVScroll (vstack [
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",

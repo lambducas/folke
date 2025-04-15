@@ -12,14 +12,10 @@ import Frontend.SpecialCharacters (replaceSpecialSymbols)
 import Frontend.Helper (getProofFileByPath)
 import Control.Lens ((^.))
 
-import System.Process (readProcessWithExitCode)
 import System.Exit (ExitCode(..))
-import System.Directory (doesFileExist)
-import System.FilePath (takeExtension, takeDirectory, takeBaseName, dropExtension)
+import System.FilePath (takeDirectory, dropExtension, (</>), takeFileName)
 import System.IO.Temp (withSystemTempDirectory)
-import System.Directory (copyFile, doesFileExist)
-import System.FilePath ((</>), takeFileName)
-import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, copyFile)
+import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
 
 compileLatexToPDF :: FilePath -> IO (Either String FilePath)
@@ -86,7 +82,7 @@ convertToLatex model = T.unlines
   ]
   where
     -- Get the filename from the current file path for the section title
-    sectionTitle = case model ^. preferences . currentFile of
+    sectionTitle = case model ^. persistentState . currentFile of
       Nothing -> "Formal Proof"
       Just _filePath -> "Some submission" -- T.pack $ takeBaseName filePath
 
@@ -95,8 +91,8 @@ formatProof :: AppModel -> Text
 formatProof model = maybe "% No proof available" formatSequent currentSeq
   where
     currentSeq = do
-      filePath <- model ^. preferences . currentFile
-      file <- getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+      filePath <- model ^. persistentState . currentFile
+      file <- getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
       case file of
         ProofFile {_parsedSequent = Just s} -> Just s
         TemporaryProofFile {_parsedSequent = Just s} -> Just s

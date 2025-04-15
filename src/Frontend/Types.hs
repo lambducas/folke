@@ -61,8 +61,10 @@ data Preferences = Preferences {
   _selectNormalFont :: [String],
   _normalFont :: String,
   _logicFont :: String,
-  _fontSize :: Double,
+  _fontSize :: Double
+} deriving (Eq, Show)
 
+data PersistentState = PersistentState {
   _windowMode :: MainWindowState,
   _workingDir :: Maybe FilePath,
   _currentFile :: Maybe FilePath,
@@ -102,7 +104,8 @@ data AppModel = AppModel {
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe FEResult,
 
-  _preferences :: Preferences
+  _preferences :: Preferences,
+  _persistentState :: PersistentState
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -205,6 +208,7 @@ data AppEvent
   | ExportError Text
   deriving (Eq, Show)
 
+makeLenses 'PersistentState
 makeLenses 'Preferences
 makeLenses 'ProofFile
 makeLenses 'ConfirmActionData
@@ -218,6 +222,7 @@ $(deriveJSON defaultOptions ''SelectableTheme)
 $(deriveJSON defaultOptions ''File)
 $(deriveJSON defaultOptions ''MainWindowState)
 $(deriveJSON defaultOptions ''Preferences)
+$(deriveJSON defaultOptions ''PersistentState)
 
 ruleMetaDataMap :: Map.Map Text RuleMetaData
 ruleMetaDataMap = Map.fromList [

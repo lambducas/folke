@@ -31,9 +31,6 @@ import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 import qualified Data.Map as Map
 
-import qualified Data.Text as T
-
-import Debug.Trace (trace)
 import qualified SDL
 
 handleEvent
@@ -44,6 +41,7 @@ handleEvent
   -> [AppEventResponse AppModel AppEvent]
 handleEvent wenv node model evt = case evt of
   NoEvent -> []
+
   Undo ->
    if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
     let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
@@ -53,10 +51,11 @@ handleEvent wenv node model evt = case evt of
           & ignoreHistoryOnce .~ True
     in [Model newModel]
   else []
+
   Redo -> undefined
 
   AppInit -> [
-      Producer $ directoryFilesProducer (model ^. preferences . workingDir),
+      Producer $ directoryFilesProducer (model ^. persistentState . workingDir),
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
@@ -66,12 +65,12 @@ handleEvent wenv node model evt = case evt of
 
   AppBeforeExit -> [
       cancelExitApplication,
-      Producer (savePreferences model ExitApp)
+      Producer (savePrefAndState model ExitApp)
     ]
 
   ExitApp -> [ exitApplication ]
 
-  AppResize m -> [ Model $ model & preferences . windowMode .~ m ]
+  AppResize m -> [ Model $ model & persistentState . windowMode .~ m ]
 
   CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t)]
 
@@ -202,25 +201,29 @@ handleEvent wenv node model evt = case evt of
       )
     ]
 
-  ToggleRulesSidebar -> [ Model $ model & preferences . rulesSidebarOpen %~ toggle]
+  ToggleRulesSidebar -> [ Model $ model & persistentState . rulesSidebarOpen %~ toggle]
     where toggle = not
 
-  ToggleFileExplorer -> [ Model $ model & preferences . fileExplorerOpen %~ toggle]
+  ToggleFileExplorer -> [ Model $ model & persistentState . fileExplorerOpen %~ toggle]
     where toggle = not
 
   RefreshExplorer -> [
       Model $ model & filesInDirectory .~ Just [],
-      Producer $ directoryFilesProducer (model ^. preferences . workingDir)
+      Producer $ directoryFilesProducer (model ^. persistentState . workingDir)
     ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
-  OpenPreferences -> handleEvent wenv node model (OpenFile_ preferencePath "")
+  OpenPreferences -> [ Producer (\sendMsg -> do
+      preferencePath <- getPreferencePath
+      sendMsg (OpenFile_ preferencePath "")
+    )]
 
   OpenGuide -> handleEvent wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
+        preferencePath <- getPreferencePath
         let fullPath = folderPath FPP.</> filePath
         pContent <- readFile fullPath
         let pContentText = pack pContent
@@ -250,21 +253,21 @@ handleEvent wenv node model evt = case evt of
     ]
 
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
-    where wd = fromMaybe "" (model ^. preferences . workingDir)
+    where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
-        & preferences . openFiles %~ doOpenFile
-        & preferences . tmpLoadedFiles %~ createNew file
+        & persistentState . openFiles %~ doOpenFile
+        & persistentState . tmpLoadedFiles %~ createNew file
 
-      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. preferences . openFiles]
-      createNew newFile oldFiles = if _path newFile `elem` (model ^. preferences . openFiles) then
+      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. persistentState . openFiles]
+      createNew newFile oldFiles = if _path newFile `elem` (model ^. persistentState . openFiles) then
           oldFiles else
           filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
       filePath = _path file
 
-  CloseCurrentFile -> case model ^. preferences . currentFile of
+  CloseCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> handleEvent wenv node model (CloseFile filePath)
 
@@ -277,7 +280,7 @@ handleEvent wenv node model evt = case evt of
         _cadAction = CloseFileSuccess filePath
       }))
       else handleEvent wenv node model (CloseFileSuccess filePath))
-    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
     where
@@ -288,19 +291,19 @@ handleEvent wenv node model evt = case evt of
             Right _ -> return ()
         ) | "/_tmp/" `isInfixOf` filePath]
       finalModel = modelWithClosedFile
-        & preferences . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
+        & persistentState . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. persistentState . openFiles) else cf)
       modelWithClosedFile = model
-        & preferences . openFiles %~ filter (filePath/=)
-      cf = model ^. preferences . currentFile
+        & persistentState . openFiles %~ filter (filePath/=)
+      cf = model ^. persistentState . currentFile
 
-  SaveCurrentFile -> case model ^. preferences . currentFile of
+  SaveCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
       Just file@TemporaryProofFile {} -> handleEvent wenv node model (SaveFile file)
       Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
-      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+      where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   SaveFile f -> case f of
     PreferenceFile {} -> handleEvent wenv node model SavePreferences
@@ -342,12 +345,12 @@ handleEvent wenv node model evt = case evt of
   SaveFileSuccess f -> actions
     where
       actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      getActions fileIndex = [ Model $ model & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
-      fileIndex = getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles) (_path f)
+      getActions fileIndex = [ Model $ model & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
+      fileIndex = getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles) (_path f)
 
   SetCurrentFile filePath -> [
       Model $ model
-        & preferences . currentFile ?~ filePath
+        & persistentState . currentFile ?~ filePath
         & proofStatus .~ Nothing
     ]
 
@@ -366,13 +369,13 @@ handleEvent wenv node model evt = case evt of
 
   SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
-  CheckCurrentProof -> case model ^. preferences . currentFile of
+  CheckCurrentProof -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (CheckProof file)
       Just file@TemporaryProofFile {} -> handleEvent wenv node model (CheckProof file)
       _ -> []
-      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+      where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
@@ -393,15 +396,15 @@ handleEvent wenv node model evt = case evt of
           Just path -> sendMsg (SetWorkingDir path)
 
   SetWorkingDir path -> [
-      Model $ model & preferences . workingDir .~ newWd,
+      Model $ model & persistentState . workingDir .~ newWd,
       Producer (directoryFilesProducer newWd)
     ]
     where newWd = Just path
 
-  ExportToLaTeX -> case model ^. preferences . currentFile of
+  ExportToLaTeX -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
-    Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
+    Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
       Just file@ProofFile{} -> case _parsedSequent file of
         Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
         Just _ ->
@@ -427,10 +430,10 @@ handleEvent wenv node model evt = case evt of
           ]
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
-  ExportToPDF -> case model ^. preferences . currentFile of
+  ExportToPDF -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
-    Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
+    Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
       Just file@ProofFile{} -> case _parsedSequent file of
         Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
         Just _ ->
@@ -484,12 +487,12 @@ applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse Ap
 applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. preferences . currentFile
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
     getActions fileIndex = [
         Model $ saveModelToHistory model $ model  -- Already using saveModelToHistory correctly
-          & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
-          & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
           & proofStatus .~ Nothing
       ]
     maybeF (Just s) = Just (f s)
@@ -649,10 +652,10 @@ getCurrentSequent :: AppModel -> Maybe FESequent
 getCurrentSequent model = sequent
   where
     sequent = fileIndex >>= getSequent
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. preferences . currentFile
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
 
-    getSequent fileIndex = case model ^. preferences . tmpLoadedFiles . singular (ix fileIndex) of
+    getSequent fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
       f@ProofFile {} -> _parsedSequent f
       f@TemporaryProofFile {} -> _parsedSequent f
       _ -> Nothing

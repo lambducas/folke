@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module Frontend.History (
   saveModelToHistory
 ) where
@@ -6,8 +8,6 @@ import Frontend.Types
 
 import Control.Lens
 import Data.List (find)
-
-
 
 saveModelToHistory :: AppModel -> AppModel -> AppModel
 saveModelToHistory oldModel newModel =
@@ -26,10 +26,10 @@ saveModelToHistory oldModel newModel =
 
 hasChanged :: AppModel -> AppModel -> Bool
 hasChanged oldModel newModel =
-  let oldFiles = oldModel ^. preferences . tmpLoadedFiles
-      newFiles = newModel ^. preferences . tmpLoadedFiles
+  let oldFiles = oldModel ^. persistentState . tmpLoadedFiles
+      newFiles = newModel ^. persistentState . tmpLoadedFiles
       
-      currentPath = oldModel ^. preferences . currentFile
+      currentPath = oldModel ^. persistentState . currentFile
       
       filesChanged = case currentPath of
         Nothing -> False
