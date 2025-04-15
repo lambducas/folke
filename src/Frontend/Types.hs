@@ -200,6 +200,7 @@ data AppEvent
 
   -- Export to LaTeX
   | ExportToLaTeX
+  | ExportToPDF
   | ExportSuccess Text
   | ExportError Text
   deriving (Eq, Show)

@@ -45,7 +45,7 @@
 
 ### Frontend
 - [ ] Fix full Markdown support
-- [ ] Ctrl Z support
+- [x] Ctrl Z support
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders

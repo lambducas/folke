@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Frontend.Export (
-  convertToLatex
+  convertToLatex,
+  compileLatexToPDF  -- Export this function too
 ) where
 
 import Data.Text (Text)
@@ -10,6 +11,59 @@ import Frontend.Types
 import Frontend.SpecialCharacters (replaceSpecialSymbols)
 import Frontend.Helper (getProofFileByPath)
 import Control.Lens ((^.))
+
+import System.Process (readProcessWithExitCode)
+import System.Exit (ExitCode(..))
+import System.Directory (doesFileExist)
+import System.FilePath (takeExtension, takeDirectory, takeBaseName, dropExtension)
+import System.IO.Temp (withSystemTempDirectory)
+import System.Directory (copyFile, doesFileExist)
+import System.FilePath ((</>), takeFileName)
+import System.Directory (getCurrentDirectory, setCurrentDirectory, doesFileExist, copyFile)
+import System.Process (readCreateProcessWithExitCode, proc)
+
+compileLatexToPDF :: FilePath -> IO (Either String FilePath)
+compileLatexToPDF texPath = do
+  -- Define output paths
+  let texDir = takeDirectory texPath
+      texName = takeFileName texPath
+      baseName = dropExtension texName
+      finalPdfPath = texDir </> baseName <> ".pdf"
+  
+  -- Use a temporary directory for the compilation process
+  withSystemTempDirectory "latex-temp" $ \tmpDir -> do
+    -- Copy the LaTeX file to the temp directory
+    let tmpTexPath = tmpDir </> texName
+    copyFile texPath tmpTexPath
+    
+    -- Save the current directory
+    originalDir <- getCurrentDirectory
+    
+    -- Change to the temporary directory before running pdflatex
+    setCurrentDirectory tmpDir
+    
+    -- Run pdflatex in the temporary directory (using just the filename, not the path)
+    (exitCode, _, stderr) <- readCreateProcessWithExitCode (proc "pdflatex" 
+        ["-interaction=nonstopmode", texName]) ""
+    
+    -- Change back to the original directory
+    setCurrentDirectory originalDir
+    
+    -- Check if compilation succeeded
+    case exitCode of
+      ExitSuccess -> do
+        -- Verify the PDF was created in the temp directory
+        let tmpPdfPath = tmpDir </> baseName <> ".pdf"
+        pdfExists <- doesFileExist tmpPdfPath
+        if pdfExists
+            then do
+              -- Copy only the PDF file back to the original location
+              copyFile tmpPdfPath finalPdfPath
+              return $ Right finalPdfPath
+            else
+              return $ Left "PDF file was not created despite successful compilation"
+      ExitFailure _ -> 
+          return $ Left $ "LaTeX compilation failed: " ++ stderr
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: AppModel -> Text

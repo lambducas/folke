@@ -9,7 +9,7 @@ import Frontend.Helper
 import Frontend.Communication (startCommunication, evaluateProofString)
 import Frontend.Parse
 import Frontend.Preferences
-import Frontend.Export (convertToLatex)
+import Frontend.Export (convertToLatex, compileLatexToPDF)
 import Frontend.History
 import Shared.Messages
 import Logic.Par (pSequent, myLexer, pArg)
@@ -25,11 +25,13 @@ import Data.List (findIndex, isInfixOf)
 import Data.Text (Text, unpack, pack)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
-import System.FilePath ( takeExtension )
+import System.FilePath ( takeExtension, dropExtension)
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 import qualified Data.Map as Map
+
+import qualified Data.Text as T
 
 import Debug.Trace (trace)
 import qualified SDL
@@ -421,6 +423,40 @@ handleEvent wenv node model evt = case evt of
                   writeFile texPath (unpack latexContent)
                   putStrLn $ "Exported LaTeX file to: " ++ texPath
                   sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
+            )
+          ]
+      _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
+
+  ExportToPDF -> case model ^. preferences . currentFile of
+    Nothing ->
+      [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
+    Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
+      Just file@ProofFile{} -> case _parsedSequent file of
+        Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
+        Just _ ->
+          [ Producer (\sendMsg -> do
+              -- Open a save dialog to let the user choose where to save the file
+              mSavePath <- openSaveDialog
+              case mSavePath of
+                Nothing -> return ()
+                Just savePath -> do
+                  -- Generate LaTeX content
+                  let basePath = if takeExtension savePath == ".pdf"
+                                 then dropExtension savePath
+                                 else savePath
+                      texPath = basePath <> ".tex"
+                      latexContent = convertToLatex model
+
+                  -- Write the LaTeX content to the file
+                  writeFile texPath (unpack latexContent)
+
+                  -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
+                  result <- compileLatexToPDF texPath
+                  case result of
+                    Right pdfPath -> do
+                      sendMsg (ExportSuccess (pack $ "Files created: " ++ texPath ++ " and " ++ pdfPath))
+                    Left err -> do
+                      sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
             )
           ]
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]

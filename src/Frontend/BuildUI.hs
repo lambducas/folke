@@ -34,6 +34,7 @@ menuBarCategories = [
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Close File", "Ctrl+W", CloseCurrentFile),
       ("Export To LaTeX", "", ExportToLaTeX),
+      ("Export to LaTeX and PDF", "", ExportToPDF),
       ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
