@@ -2,9 +2,10 @@ module Example (
     example
 ) where
 
-import Backend.TypeChecker (check)
-import Backend.Types (Result(Ok, Error))
+import Backend.TypeChecker
+import Backend.Types
 import qualified Logic.Abs as Abs
+import Control.Monad (unless)
 
 example :: IO ()
 example = do
@@ -35,6 +36,13 @@ example = do
         result = check sequent
     
     case result of
-        Error _ _ err -> putStrLn $ "Error: " ++ show err
-        Ok _ _seq -> do
+        Err warns _ err -> do
+            putStrLn $ "Error: " ++ show err
+            unless (null warns) $ do
+                putStrLn "Warnings:"
+                mapM_ (putStrLn . ("  " ++) . show) warns
+        Ok warns _ -> do
             putStrLn "Proof is correct!"
+            unless (null warns) $ do
+                putStrLn "Warnings:"
+                mapM_ (putStrLn . ("  " ++) . show) warns

@@ -61,8 +61,10 @@ data Preferences = Preferences {
   _selectNormalFont :: [String],
   _normalFont :: String,
   _logicFont :: String,
-  _fontSize :: Double,
+  _fontSize :: Double
+} deriving (Eq, Show)
 
+data PersistentState = PersistentState {
   _windowMode :: MainWindowState,
   _workingDir :: Maybe FilePath,
   _currentFile :: Maybe FilePath,
@@ -70,21 +72,40 @@ data Preferences = Preferences {
   _tmpLoadedFiles :: [File],
   _fileExplorerOpen :: Bool,
   _fileExplorerWidth :: Double,
-  _rulesSidebarOpen :: Bool
+  _rulesSidebarOpen :: Bool,
+  _rulesSidebarWidth :: Double
+} deriving (Eq, Show)
+
+type ContextMenuActions = [(Text, Text, AppEvent, Bool)]
+
+data ContextMenu = ContextMenu {
+  _ctxOpen :: Bool,
+  _ctxActions :: ContextMenuActions
+} deriving (Eq, Show)
+
+data ConfirmActionData = ConfirmActionData {
+  _cadTitle :: Text,
+  _cadBody :: Text,
+  _cadAction :: AppEvent
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
+  _contextMenu :: ContextMenu,
 
-  _filesInDirectory :: [FilePath],
-  _confirmDeletePopup :: Bool,
-  _confirmDeleteTarget :: Maybe FilePath,
+  _filesInDirectory :: Maybe [FilePath],
+  _confirmActionPopup :: Maybe ConfirmActionData,
+
+  _stateHistory :: [AppModel],
+  _historyIndex :: Int,    
+  _ignoreHistoryOnce :: Bool,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe FEResult,
 
-  _preferences :: Preferences
+  _preferences :: Preferences,
+  _persistentState :: PersistentState
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -93,14 +114,27 @@ instance Show (Chan a) where
 
 data AppEvent
   = NoEvent
+  | Undo
+  | Redo 
   | AppInit
   | AppBeforeExit
   | ExitApp
   | AppResize MainWindowState
+  | CopyToClipboard Text
   | Print String
+
+  -- Confirm action
+  | OpenConfirmAction ConfirmActionData
+  | CloseConfirmAction AppEvent
 
   -- Menu bar
   | SetOpenMenuBarItem (Maybe Integer)
+
+  -- Context menu
+  | OpenContextMenu ContextMenuActions
+  | CloseContextMenu
+  | DeleteFilePath FilePath
+  | OpenInExplorer FilePath
 
   -- Focus
   | NextFocus Int
@@ -117,14 +151,17 @@ data AppEvent
   -- Handle proof
   | AddLine
   | AddSubProof
-  | InsertLineAfter FormulaPath
-  | InsertSubProofAfter FormulaPath
-  | RemoveLine FormulaPath
+  | InsertLineAfter Bool FormulaPath
+  | InsertLineBefore Bool FormulaPath
+  | InsertSubProofAfter Bool FormulaPath
+  | InsertSubProofBefore Bool FormulaPath
+  | RemoveLine Bool FormulaPath
   | EditFormula FormulaPath Text
   | EditRuleName FormulaPath Text
   | EditRuleArgument FormulaPath Int Text
   | SwitchLineToSubProof FormulaPath WidgetKey
   | SwitchSubProofToLine FormulaPath WidgetKey
+  | MovePathToPath FormulaPath FormulaPath
 
   -- Handle files
   | OpenPreferences
@@ -134,7 +171,7 @@ data AppEvent
   | RefreshExplorer
   | OpenSetWorkingDir
   | SetWorkingDir FilePath
-  | SetFilesInDirectory [FilePath]
+  | SetFilesInDirectory (Maybe [FilePath])
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath
   | OpenFileSuccess File
@@ -166,12 +203,16 @@ data AppEvent
 
   -- Export to LaTeX
   | ExportToLaTeX
+  | ExportToPDF
   | ExportSuccess Text
   | ExportError Text
   deriving (Eq, Show)
 
+makeLenses 'PersistentState
 makeLenses 'Preferences
 makeLenses 'ProofFile
+makeLenses 'ConfirmActionData
+makeLenses 'ContextMenu
 makeLenses 'AppModel
 
 feFileExt :: String
@@ -181,34 +222,36 @@ $(deriveJSON defaultOptions ''SelectableTheme)
 $(deriveJSON defaultOptions ''File)
 $(deriveJSON defaultOptions ''MainWindowState)
 $(deriveJSON defaultOptions ''Preferences)
+$(deriveJSON defaultOptions ''PersistentState)
 
 ruleMetaDataMap :: Map.Map Text RuleMetaData
 ruleMetaDataMap = Map.fromList [
     ("assume", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
     ("fresh", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("copy", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("AndI", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("AndEL", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("AndER", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("OrIL", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("OrIR", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("OrE", RuleMetaData {_nrArguments = 3, _argumentLabels = []}),
-    ("ImplI", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("ImplE", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("NotI", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("NotE", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("BotE", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("NotNotI", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("NotNotE", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("MT", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("PBC", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
+    ("copy", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("AndI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("AndEL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("AndER", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("OrIL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("OrIR", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("OrE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", ""]}),
+    ("ImplI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("ImplE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("NotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("NotE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("BotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("NotNotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("NotNotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("MT", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("PBC", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
     ("LEM", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
     ("EqI", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = []}),
-    ("AllE", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = []}),
-    ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = []}),
-    ("SomeI", RuleMetaData {_nrArguments = 2, _argumentLabels = []})
+    ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", ""]}),
+    -- ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", "𝝓(u)≡"]}),
+    ("AllE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
+    ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
+    ("SomeI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]})
   ]
 
 visualRuleNames :: [(Text, Text)]
@@ -217,7 +260,6 @@ visualRuleNames = visualRuleNames0 ++ visualRuleNames1
 visualRuleNames0 :: [(Text, Text)]
 visualRuleNames0 = [
     ("assume", "assume"),
-    ("fresh", "fresh"),
     ("copy", "copy"),
     ("AndI", "∧I"),
     ("AndEL", "∧EL"),

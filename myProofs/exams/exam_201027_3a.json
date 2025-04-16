@@ -1,0 +1,60 @@
+{
+    "_sequent": {
+        "_conclusion": "Q(a)",
+        "_premises": [
+            "P(b) â§ Q(b)",
+            "â x (P(x) â x = a)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "2",
+                    "b"
+                ],
+                "_rule": "AllE",
+                "_statement": "P(b) â b = a",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "AndEL",
+                "_statement": "P(b)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4"
+                ],
+                "_rule": "ImplE",
+                "_statement": "b = a",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "AndER",
+                "_statement": "Q(b)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "5",
+                    "6",
+                    "u:=Q(u)"
+                ],
+                "_rule": "EqE",
+                "_statement": "Q(a)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

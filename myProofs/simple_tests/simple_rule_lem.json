@@ -1,0 +1,15 @@
+{
+    "_sequent": {
+        "_conclusion": "A | !A",
+        "_premises": [],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "LEM",
+                "_statement": "A | !A",
+                "_usedArguments": 0,
+                "tag": "Line"
+            }
+        ]
+    }
+}

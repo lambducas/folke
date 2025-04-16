@@ -7,18 +7,28 @@ module Frontend.Parse (
   parseProofFromJSON,
   parseProofToSimpleFileFormat,
   parseProofFromSimpleFileFormat,
-  parseProofForBackend
+  parseProofForBackend,
+  validateStatement,
+  validateRule,
+  validateRuleArgument,
+  parseRule,
+  convertBESequentToFESequent,
 ) where
 
-import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath )
-import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse )
+import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
+import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
 import Frontend.Helper ( slice, trimText, pathToLineNumber )
+import Logic.Par (myLexer, pForm, pArg)
+import qualified Logic.Abs as Abs
 
 import Data.Aeson ( decode, defaultOptions )
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Aeson.TH ( deriveJSON )
+import Data.Either (isRight)
+import Data.Maybe (isJust)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Map
 import TextShow (showt)
 
 data FEDocument = FEDocument {
@@ -26,6 +36,26 @@ data FEDocument = FEDocument {
 } deriving (Show, Eq)
 
 $(deriveJSON defaultOptions ''FEDocument)
+
+validateStatement :: T.Text -> Bool
+validateStatement statement = isRight res
+  where
+    res = pForm (myLexer s)
+    s = T.unpack (replaceSpecialSymbolsInverse statement)
+
+validateRule :: T.Text -> Bool
+validateRule rule = parsedRule == "" || isJust (Data.Map.lookup parsedRule ruleMetaDataMap)
+  where parsedRule = parseRule rule
+
+validateRuleArgument :: T.Text -> Bool
+validateRuleArgument arg = arg == "" || isRight res
+  where
+    res = pArg (myLexer s)
+    s = T.unpack (replaceSpecialSymbolsInverse arg)
+
+parseRule :: T.Text -> T.Text
+parseRule inp = replaceFromInverseLookup withSpec visualRuleNames
+  where withSpec = replaceSpecialSymbols inp
 
 parseProofToJSON :: FESequent -> T.Text
 parseProofToJSON = T.pack . BL.unpack . encodePretty . FEDocument
@@ -127,7 +157,7 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
       where label = if null p || null path then "" else showt (offsetLineNumber (path ++ [0])) <> "-" <> showt (offsetLineNumber (path ++ [length p - 1])) <> ":"
     exportProofHelper indent path (Line statement rule usedArguments arguments) = tabs indent <> label <> nRule <> "" <> nArg rule usedArguments arguments <> " " <> nStatement <> ";"
       where
-        nRule = replaceSpecialSymbolsInverse rule
+        nRule = parseRule rule
         nStatement = replaceSpecialSymbolsInverse statement
         label = showt (offsetLineNumber path) <> ":"
 
@@ -141,4 +171,60 @@ nArg "fresh" _ [] = ""
 nArg "prem" _ [] = ""
 nArg "assume" _ [] = ""
 nArg "" _ [] = ""
-nArg _ usedArguments arguments = "[" <> T.intercalate ", " (take usedArguments arguments) <> "]"
+nArg _ usedArguments arguments = "[" <> T.intercalate ", " (map replaceSpecialSymbolsInverse (take usedArguments arguments)) <> "]"
+
+convertBESequentToFESequent :: Abs.Sequent -> FESequent
+convertBESequentToFESequent (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
+  where
+    convertForm (Abs.FormNot a) = "!" <> getOutput a
+      where
+        getOutput form = case form of
+          Abs.FormPred _ -> c
+          Abs.FormNot _ -> c
+          Abs.FormBot -> c
+          Abs.FormPar _ -> c
+          _ -> p
+          where c = convertForm form; p = "(" <> c <> ")"
+
+    convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
+      where
+        getOutput form = case form of
+          Abs.FormImpl _ _ -> p
+          _ -> c
+          where c = convertForm form; p = "(" <> c <> ")"
+
+    convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
+      where
+        getOutput form = case form of
+          Abs.FormImpl _ _ -> p
+          _ -> c
+          where c = convertForm form; p = "(" <> c <> ")"
+
+    convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
+    convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) params)) = T.pack i <> convertParams params
+    convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
+    convertForm (Abs.FormEq a b) = convertTerm a <> "=" <> convertTerm b
+    convertForm (Abs.FormAll (Abs.Ident i) a) = "all " <> T.pack i <> " " <> convertForm a
+    convertForm (Abs.FormSome (Abs.Ident i) a) = "some " <> T.pack i <> " " <> convertForm a
+    convertForm Abs.FormBot = "bot"
+    convertForm Abs.FormNil = ""
+
+    convertProof (Abs.Proof proofElems) = concatMap convertProofElem proofElems
+    convertProofElem (Abs.ProofElem _labels step) = convertStep step
+
+    convertStep Abs.StepNil = [Line "" "" 0 []]
+    convertStep (Abs.StepPrem _form) = []
+    convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
+    convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
+    convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (T.pack i) (length args) (map convertArg args)]
+    convertStep (Abs.StepFresh (Abs.Ident i)) = [Line (T.pack i) "fresh" 0 []]
+
+    convertTerm (Abs.Term (Abs.Ident i) params) = T.pack i <> convertParams params
+
+    convertParams (Abs.Params []) = ""
+    convertParams (Abs.Params ts) = "(" <> T.intercalate ", " (map convertTerm ts) <> ")"
+
+    convertArg (Abs.ArgLine i) = showt i
+    convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
+    convertArg (Abs.ArgTerm t) = convertTerm t
+    convertArg (Abs.ArgForm t f) = convertTerm t <> ":=" <> convertForm f

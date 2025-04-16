@@ -5,6 +5,7 @@ module Shared.FESequent where
 import Data.Text ( Text )
 import Data.Aeson ( defaultOptions )
 import Data.Aeson.TH ( deriveJSON )
+import Control.Lens ( makeLenses )
 
 data FESequent = FESequent {
   _premises :: [FEFormula],
@@ -23,6 +24,8 @@ data FEStep
   }
   | SubProof [FEStep]
   deriving (Eq, Show)
+
+makeLenses 'FESequent
 
 $(deriveJSON defaultOptions ''FEStep)
 $(deriveJSON defaultOptions ''FESequent)

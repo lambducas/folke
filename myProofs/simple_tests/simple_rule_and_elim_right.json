@@ -1,0 +1,19 @@
+{
+    "_sequent": {
+        "_conclusion": "B",
+        "_premises": [
+            "A & B"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "AndER",
+                "_statement": "B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

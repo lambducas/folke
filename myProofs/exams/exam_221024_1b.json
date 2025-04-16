@@ -1,0 +1,214 @@
+{
+    "_sequent": {
+        "_conclusion": "Â¬(p â§ (Â¬p â¨ q)) â¨ q",
+        "_premises": [],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "LEM",
+                "_statement": "q â¨ Â¬q",
+                "_usedArguments": 0,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "OrIR",
+                        "_statement": "Â¬(p â§ (Â¬p â¨ q)) â¨ q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "Â¬q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "p â§ (Â¬p â¨ q)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "LEM",
+                                "_statement": "p â¨ Â¬p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "5"
+                                        ],
+                                        "_rule": "AndER",
+                                        "_statement": "Â¬p â¨ q",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "Â¬p",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "9",
+                                                    "7"
+                                                ],
+                                                "_rule": "NotE",
+                                                "_statement": "bot",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "q",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "4",
+                                                    "11"
+                                                ],
+                                                "_rule": "NotE",
+                                                "_statement": "bot",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "8",
+                                            "9-10",
+                                            "11-12"
+                                        ],
+                                        "_rule": "OrE",
+                                        "_statement": "bot",
+                                        "_usedArguments": 3,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "Â¬p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "5"
+                                        ],
+                                        "_rule": "AndEL",
+                                        "_statement": "p",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "14",
+                                            "15"
+                                        ],
+                                        "_rule": "NotE",
+                                        "_statement": "bot",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "6",
+                                    "7-13",
+                                    "14-16"
+                                ],
+                                "_rule": "OrE",
+                                "_statement": "bot",
+                                "_usedArguments": 3,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "5-17"
+                        ],
+                        "_rule": "NotI",
+                        "_statement": "Â¬(p â§ (Â¬p â¨ q))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "18"
+                        ],
+                        "_rule": "OrIL",
+                        "_statement": "Â¬(p â§ (Â¬p â¨ q)) â¨ q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "2-3",
+                    "4-19"
+                ],
+                "_rule": "OrE",
+                "_statement": "Â¬(p â§ (Â¬p â¨ q)) â¨ q",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

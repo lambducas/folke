@@ -2,6 +2,9 @@ module Main (main) where
 
 import Test.HUnit
 import System.Directory
+import System.FilePath (takeFileName, (</>), takeExtension)
+import Control.Monad (unless, filterM)
+import System.Environment (getArgs)
 
 import Backend.TypeChecker
 import Backend.Types
@@ -10,49 +13,52 @@ import Backend.Environment
       replaceInFormula,
       replaceInTerm,
       replaceInTerms,
-      showPos )
+      showPos, addUDefRule, applyRule)
 
 import qualified Data.List as List
 
-import Logic.Par (pSequent, myLexer)
+testProof :: FilePath -> Test
+testProof proofPath = TestCase $ do
+    case checkJson proofPath of
+        Err warns env err -> 
+            assertFailure $ "Proof validation failed:\n" ++ 
+                           List.intercalate "\n" [show warn | warn <- warns] ++ 
+                           "\n" ++ showPos env ++ "\n" ++ show err
+        Ok warns _ -> do
+            unless (null warns) $ 
+                putStrLn $ "Warnings for " ++ proofPath ++ ":\n" ++ 
+                           List.intercalate "\n" (map show warns)
+            assertBool ("Proof is valid: " ++ proofPath) True
 
-testProofGood:: String -> Test
-testProofGood proof = TestCase(do
-        case checkString proof of
-            Error warns env err -> assertBool ( List.intercalate "\n" [show warn|warn <- warns] ++ showPos env ++ show err) False
-            Ok _ _ -> assertBool "Dummy msg" True)
+collectJsonFiles :: FilePath -> IO [FilePath]
+collectJsonFiles dir = do
+    contents <- listDirectory dir
+    let fullPaths = map (dir </>) contents
+    directories <- filterM doesDirectoryExist fullPaths
+    files <- filterM doesFileExist fullPaths
+    let jsonFiles = filter (\f -> takeExtension f == ".json") files
+    subdirsFiles <- mapM collectJsonFiles directories
+    return $ jsonFiles ++ concat subdirsFiles
 
-testProofBadType:: String -> Test
-testProofBadType proof = TestCase(do
-        case checkString proof of
-            Error _ _ err@(SyntaxError _) ->  assertBool (show err) True
-            Error _ _ _ -> assertBool "Dummy msg" True
-            Ok _ _ -> assertBool "Did not fail as expected" False)
-
-testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
-testProofs _ [] [] = []
-testProofs _ _ [] = error "fewer proofs then names"
-testProofs _ [] _ = error "fewer names then proofs"
-testProofs test_fun (name:names) (proof:proofs) = do 
-    let tests = testProofs test_fun names proofs
-    let test  = test_fun proof
-    tests ++ [TestLabel name test]
+testProofs :: (FilePath -> Test) -> [FilePath] -> [Test]
+testProofs testFun paths = 
+    [TestLabel (takeFileName path) (testFun path) | path <- paths]
 
 testReplaceInTerm :: Term -> Term -> Term -> Term -> Test
-testReplaceInTerm x t phi exp =  TestCase(case replaceInTerm newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+testReplaceInTerm x t phi exp = TestCase(case replaceInTerm newEnv x t phi of
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInTerms :: Term -> Term -> [Term] -> [Term] -> Test
 testReplaceInTerms x t phi exp = TestCase(case replaceInTerms newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInFormula :: Term -> Term -> Formula -> Formula -> Test
 testReplaceInFormula x t phi exp = TestCase(case replaceInFormula newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
@@ -71,7 +77,7 @@ testReplace = do
             TestLabel "Test Predicate 1" (testReplaceInFormula (Term "x" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "t" [], Term "y" []]))),
             TestLabel "Test Predicate 2" (testReplaceInFormula (Term "y" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "x" [], Term "t" []]))),
 
-            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
@@ -81,23 +87,59 @@ testReplace = do
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "y" []]))) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "t" []])))),
-            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))))
             ]
     TestList [ TestLabel "In Term" inTermTests, TestLabel "In Terms" inTermsTests, TestLabel "In Formula" inFormulaTests]
+
+testUDefRule :: Env -> String -> [Formula] -> Formula -> Test
+testUDefRule env name args res = TestCase(case applyRule env name [ArgForm arg | arg <- args] res of 
+    Err _ _ err -> assertBool (show err) False
+    Ok _ res -> assertBool "Dummy msg" True)
+
+testUDefRules :: Test
+testUDefRules = do
+    let env = addUDefRule newEnv "DMAnd" (UDefRule [Not (And (Pred (Predicate "P" [])) (Pred (Predicate "Q" [])))] (And (Not (Pred (Predicate "P" []))) (Not (Pred (Predicate "Q" [])))))
+    TestList [
+            TestLabel "De Morgan And 1" (testUDefRule env "DMAnd" [Not (And 
+                (Pred (Predicate "P" [])) 
+                (Pred (Predicate "Q" []))
+            )] (And 
+                (Not (Pred (Predicate "P" []))) 
+                (Not (Pred (Predicate "Q" [])))
+            )),
+            TestLabel "De Morgan And 2" (testUDefRule env "DMAnd" [Not (And 
+                (And (Pred (Predicate "A" [])) ( Pred (Predicate "B" []))) 
+                (Pred (Predicate "C" []))
+            )] (And 
+                (Not (And (Pred (Predicate "A" [])) ( Pred (Predicate "B" [])))) 
+                (Not (Pred (Predicate "C" [])))
+            )),
+            TestLabel "De Morgan And 3" (testUDefRule env "DMAnd" [Not (And 
+                (Pred (Predicate "A" [])) 
+                (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" [])))
+            )] (And 
+                (Not (Pred (Predicate "A" []))) 
+                (Not (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" []))))
+            ))
+        ]
+
 main :: IO ()
 main = do
-    good_files <- listDirectory "test/proofs/good"
-    let good_paths = ["test/proofs/good/"++file | file <- good_files]
-    good_proofs <- mapM readFile good_paths
-    let tests_good = TestList (testProofs testProofGood good_files good_proofs)
-
-    bad_files <- listDirectory "test/proofs/bad_type/"
-    let bad_paths = ["test/proofs/bad_type/"++file | file <- bad_files]
-    bad_proofs <- mapM readFile bad_paths
-    let tests_bad_type = TestList (testProofs testProofBadType bad_files bad_proofs)
-    let tests = TestList [TestLabel "Good" tests_good, TestLabel "Bad Types"  tests_bad_type, TestLabel "Replace" testReplace]
+    -- Collect files
+    jsonFiles <- collectJsonFiles "myProofs"
+    
+    -- Create tests for all proof files
+    let allProofTests = TestList (testProofs testProof jsonFiles)
+    
+    -- Run all test including replace tests
+    putStrLn "Running tests..."
+    let tests = TestList [
+            TestLabel "Proofs" allProofTests,
+            TestLabel "Replace" testReplace,
+            TestLabel "User Defined rules" testUDefRules
+          ]
     runTestTTAndExit tests

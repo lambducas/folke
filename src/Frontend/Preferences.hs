@@ -1,9 +1,4 @@
-module Frontend.Preferences (
-  preferencePath,
-  readPreferences,
-  readAndApplyPreferences,
-  savePreferences
-) where
+module Frontend.Preferences where
 
 import Frontend.Types
 import Control.Lens ((^.))
@@ -11,13 +6,27 @@ import Control.Exception (try, SomeException)
 import Data.Aeson (decode)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
-import System.Directory (doesFileExist)
+import System.Directory (doesFileExist, XdgDirectory (..), getXdgDirectory, createDirectoryIfMissing)
+import System.FilePath.Posix ((</>), takeDirectory)
 
-preferencePath :: FilePath
-preferencePath = "Settings.json"
+appName :: String
+appName = "Proof Editor"
 
+getPreferencePath :: IO FilePath
+getPreferencePath = do
+  basePath <- getXdgDirectory XdgConfig ("./" <> appName)
+  return $ basePath </> "preferences.json"
+
+getpersistentStatePath :: IO FilePath
+getpersistentStatePath = do
+  basePath <- getXdgDirectory XdgState ("./" <> appName)
+  return $ basePath </> "persistent_state.json"
+
+-- Preferences are config data and should be stored
+-- at the right place on the users system (location: ~/.config or %APPDATA%)
 readPreferences :: IO (Maybe Preferences)
 readPreferences = do
+  preferencePath <- getPreferencePath
   exists <- doesFileExist preferencePath
   if exists then
     do
@@ -25,6 +34,7 @@ readPreferences = do
       return (decode (BL.pack c) :: Maybe Preferences)
   else
     do
+      createDirectoryIfMissing True (takeDirectory preferencePath)
       writeFile preferencePath ""
       return Nothing
 
@@ -38,7 +48,37 @@ readAndApplyPreferences sendMsg = do
 savePreferences :: AppModel -> t -> (t -> IO ()) -> IO ()
 savePreferences model messageOnSuccess sendMsg = do
   let json = (BL.unpack . encodePretty) (model ^. preferences)
+  preferencePath <- getPreferencePath
   result <- try (writeFile preferencePath json) :: IO (Either SomeException ())
   case result of
     Left e -> print e
     Right _ -> sendMsg messageOnSuccess
+
+-- State is data that should persist between app restarts
+-- but not portable or import enough to the user to be
+-- stored with preferences (location: ~/.local/state or %LOCALAPPDATA%)
+readPersistentState :: IO (Maybe PersistentState)
+readPersistentState = do
+  persistentStatePath <- getpersistentStatePath
+  exists <- doesFileExist persistentStatePath
+  if exists then
+    do
+      c <- readFile persistentStatePath
+      return (decode (BL.pack c) :: Maybe PersistentState)
+  else
+    do
+      createDirectoryIfMissing True (takeDirectory persistentStatePath)
+      writeFile persistentStatePath ""
+      return Nothing
+
+savePersistentState :: AppModel -> t -> (t -> IO ()) -> IO ()
+savePersistentState model messageOnSuccess sendMsg = do
+  let json = (BL.unpack . encodePretty) (model ^. persistentState)
+  persistentStatePath <- getpersistentStatePath
+  result <- try (writeFile persistentStatePath json) :: IO (Either SomeException ())
+  case result of
+    Left e -> print e
+    Right _ -> sendMsg messageOnSuccess
+
+savePrefAndState :: AppModel -> t -> (t -> IO ()) -> IO ()
+savePrefAndState model messageOnSuccess sendMsg = savePreferences model messageOnSuccess (const $ savePersistentState model messageOnSuccess sendMsg)

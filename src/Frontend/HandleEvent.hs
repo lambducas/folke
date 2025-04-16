@@ -9,10 +9,11 @@ import Frontend.Helper
 import Frontend.Communication (startCommunication, evaluateProofString, evaluateProofFE)
 import Frontend.Parse
 import Frontend.Preferences
-import Frontend.Export (convertToLatex)
+import Frontend.Export (convertToLatex, compileLatexToPDF)
+import Frontend.History
 import Shared.Messages
+import Logic.Par (pSequent, myLexer, pArg)
 import qualified Logic.Abs as Abs
-import Logic.Par (pSequent, myLexer)
 
 import Monomer
 import Control.Lens
@@ -21,14 +22,16 @@ import Control.Concurrent (newChan)
 import Control.Monad (filterM)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.List (findIndex, isInfixOf)
-import Data.Text (Text, unpack, pack, intercalate)
+import Data.Text (Text, unpack, pack)
 import TextShow ( TextShow(showt) )
 import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
-import System.FilePath ( takeExtension )
+import System.FilePath ( takeExtension, dropExtension)
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 import qualified Data.Map as Map
+
+import qualified SDL
 
 handleEvent
   :: WidgetEnv AppModel AppEvent
@@ -39,8 +42,20 @@ handleEvent
 handleEvent wenv node model evt = case evt of
   NoEvent -> []
 
+  Undo ->
+   if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
+    let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
+        newModel = prevModel
+          & stateHistory .~ model ^. stateHistory
+          & historyIndex .~ model ^. historyIndex - 1
+          & ignoreHistoryOnce .~ True
+    in [Model newModel]
+  else []
+
+  Redo -> undefined
+
   AppInit -> [
-      Producer $ directoryFilesProducer (model ^. preferences . workingDir),
+      Producer $ directoryFilesProducer (model ^. persistentState . workingDir),
       Task $ do
         frontendChan <- newChan
         backendChan <- newChan
@@ -50,14 +65,43 @@ handleEvent wenv node model evt = case evt of
 
   AppBeforeExit -> [
       cancelExitApplication,
-      Producer (savePreferences model ExitApp)
+      Producer (savePrefAndState model ExitApp)
     ]
 
   ExitApp -> [ exitApplication ]
 
-  AppResize m -> [ Model $ model & preferences . windowMode .~ m ]
+  AppResize m -> [ Model $ model & persistentState . windowMode .~ m ]
+
+  CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t)]
+
+  OpenConfirmAction a -> [ Model $ model & confirmActionPopup %~ openPopup ]
+    where
+      openPopup Nothing = Just a
+      openPopup old@(Just _) = old
+
+  CloseConfirmAction a -> [
+      Model $ model & confirmActionPopup .~ Nothing,
+      Event a
+    ]
 
   SetOpenMenuBarItem s -> [ Model $ model & openMenuBarItem .~ s ]
+
+  OpenContextMenu actions -> [
+      Model $ model
+        & contextMenu . ctxActions .~ actions
+        & contextMenu . ctxOpen .~ True
+    ]
+
+  CloseContextMenu -> [ Model $ model & contextMenu . ctxOpen .~ False ]
+
+  DeleteFilePath p -> [ Producer (\sendMsg -> do
+      result <- try (removeFile p) :: IO (Either SomeException ())
+      case result of
+        Left e -> print e
+        Right _ -> sendMsg RefreshExplorer
+    ) ]
+
+  OpenInExplorer p -> [ Producer (\_ -> openInExplorer wenv p) ]
 
   FocusOnKey key -> [ SetFocusOnKey key ]
 
@@ -84,36 +128,39 @@ handleEvent wenv node model evt = case evt of
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-  InsertLineAfter path -> applyOnCurrentProof model insertLine ++ focusAction
+  InsertLineAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
     where
+      insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
-      insertLine = insertAfterProof path (Line "" "" 0 [])
       nextPath = init path ++ [last path + 1]
 
-  InsertSubProofAfter path -> applyOnCurrentProof model insertSubProof
-    where insertSubProof = insertAfterProof path (SubProof [Line "" "" 0 []])
-
-  AddLine -> applyOnCurrentProof model addLine
+  InsertLineBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
     where
-      addLine sequent = FESequent premises conclusion steps
-        where
-          premises = _premises sequent
-          conclusion = _conclusion sequent
-          steps = _steps sequent ++ [Line "" "" 0 []]
+      insertThis = Line "" "" 0 []
+      focusAction = fromMaybe [] maybeFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
+      getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
+      nextPath = init path ++ [last path + 0]
 
-  AddSubProof -> applyOnCurrentProof model addSubProof
-    where
-      addSubProof sequent = FESequent premises conclusion steps
-        where
-          premises = _premises sequent
-          conclusion = _conclusion sequent
-          steps = _steps sequent ++ [SubProof [Line "" "" 0 []]]
+  InsertSubProofAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef)
+    where insertThis = SubProof [Line "" "" 0 []]
 
-  RemoveLine path -> applyOnCurrentProof model removeLine ++ focusAction
+  InsertSubProofBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef)
+    where insertThis = SubProof [Line "" "" 0 []]
+
+  AddLine -> applyOnCurrentProof model insertLine
+    where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
+
+  AddSubProof -> applyOnCurrentProof model insertSubProof
+    where insertSubProof seq = insertAfterProof (pathToLastLine seq) (SubProof [Line "" "" 0 []]) seq
+
+  RemoveLine updateRef path -> applyOnCurrentProof model removeLine ++ focusAction
     where
-      removeLine = removeFromProof path
+      removeLine = removeFromProof path True . offsetFunc
+      offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber seq else seq
+        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
       getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
@@ -127,6 +174,16 @@ handleEvent wenv node model evt = case evt of
 
   EditRuleArgument path idx newText -> applyOnCurrentProof model editRuleArgument
     where editRuleArgument = editRuleArgumentInProof path idx newText
+
+  MovePathToPath target dest
+    | pathIsParentOf target dest -> []
+    | otherwise -> applyOnCurrentProof model f
+    where
+      f seq
+        | target > dest = (removeInvalidFromProof . copyTarget seq . deleteTarget) seq
+        | otherwise     = (removeInvalidFromProof . deleteTarget . copyTarget seq) seq
+      copyTarget oldestSeq = insertAfterProof dest (evalPath oldestSeq target)
+      deleteTarget = removeFromProof target False
 
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
@@ -144,25 +201,29 @@ handleEvent wenv node model evt = case evt of
       )
     ]
 
-  ToggleRulesSidebar -> [ Model $ model & preferences . rulesSidebarOpen %~ toggle]
+  ToggleRulesSidebar -> [ Model $ model & persistentState . rulesSidebarOpen %~ toggle]
     where toggle = not
 
-  ToggleFileExplorer -> [ Model $ model & preferences . fileExplorerOpen %~ toggle]
+  ToggleFileExplorer -> [ Model $ model & persistentState . fileExplorerOpen %~ toggle]
     where toggle = not
 
   RefreshExplorer -> [
-      Model $ model & filesInDirectory .~ [],
-      Producer $ directoryFilesProducer (model ^. preferences . workingDir)
+      Model $ model & filesInDirectory .~ Just [],
+      Producer $ directoryFilesProducer (model ^. persistentState . workingDir)
     ]
 
   SetFilesInDirectory fs -> [ Model $ model & filesInDirectory .~ fs ]
 
-  OpenPreferences -> handleEvent wenv node model (OpenFile_ preferencePath "")
+  OpenPreferences -> [ Producer (\sendMsg -> do
+      preferencePath <- getPreferencePath
+      sendMsg (OpenFile_ preferencePath "")
+    )]
 
   OpenGuide -> handleEvent wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
+        preferencePath <- getPreferencePath
         let fullPath = folderPath FPP.</> filePath
         pContent <- readFile fullPath
         let pContentText = pack pContent
@@ -185,94 +246,41 @@ handleEvent wenv node model evt = case evt of
                   Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited)
 
               Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
-                where pParsedContent = Just (convertSeq seq_t)
+                where pParsedContent = Just (convertBESequentToFESequent seq_t)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
     ]
-    where
-      convertSeq (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
-
-      convertForm (Abs.FormNot a) = "!" <> getOutput a
-        where
-          getOutput form = case form of
-            Abs.FormPred _ -> c
-            Abs.FormNot _ -> c
-            Abs.FormBot -> c
-            Abs.FormPar _ -> c
-            _ -> p
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormAnd a b) = getOutput a <> " & " <> getOutput b
-        where
-          getOutput form = case form of
-            Abs.FormImpl _ _ -> p
-            _ -> c
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormOr a b) = getOutput a <> " | " <> getOutput b
-        where
-          getOutput form = case form of
-            Abs.FormImpl _ _ -> p
-            _ -> c
-            where c = convertForm form; p = "(" <> c <> ")"
-
-      convertForm (Abs.FormImpl a b) = convertForm a <> " -> " <> convertForm b
-      convertForm (Abs.FormPred (Abs.Pred (Abs.Ident i) params)) = pack i <> convertParams params
-      convertForm (Abs.FormPar a) = "(" <> convertForm a <> ")"
-      convertForm (Abs.FormEq a b) = convertTerm a <> "=" <> convertTerm b
-      convertForm (Abs.FormAll (Abs.Ident i) a) = "all " <> pack i <> " " <> convertForm a
-      convertForm (Abs.FormSome (Abs.Ident i) a) = "some " <> pack i <> " " <> convertForm a
-      convertForm Abs.FormBot = "bot"
-      convertForm Abs.FormNil = ""
-
-      convertProof (Abs.Proof proofElems) = concatMap convertProofElem proofElems
-      convertProofElem (Abs.ProofElem _labels step) = convertStep step
-
-      convertStep Abs.StepNil = [Line "" "" 0 []]
-      convertStep (Abs.StepPrem _form) = []
-      convertStep (Abs.StepAssume form) = [Line (convertForm form) "assume" 0 []]
-      convertStep (Abs.StepProof proof) = [SubProof (convertProof proof)]
-      convertStep (Abs.StepForm (Abs.Ident i) args form) = [Line (convertForm form) (pack i) (length args) (map convertArg args)]
-      convertStep (Abs.StepFresh (Abs.Ident i)) = [Line (pack i) "fresh" 0 []]
-
-      convertTerm (Abs.Term (Abs.Ident i) params) = pack i <> convertParams params
-
-      convertParams (Abs.Params []) = ""
-      convertParams (Abs.Params ts) = "(" <> intercalate ", " (map convertTerm ts) <> ")"
-
-      convertArg (Abs.ArgLine i) = showt i
-      convertArg (Abs.ArgRange a b) = showt a <> "-" <> showt b
-      convertArg (Abs.ArgTerm t) = convertTerm t
-      convertArg (Abs.ArgForm t f) = convertTerm t <> ":=" <> convertForm f
 
   OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
-    where wd = fromMaybe "" (model ^. preferences . workingDir)
+    where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
   OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
-        & preferences . openFiles %~ doOpenFile
-        & preferences . tmpLoadedFiles %~ createNew file
+        & persistentState . openFiles %~ doOpenFile
+        & persistentState . tmpLoadedFiles %~ createNew file
 
-      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. preferences . openFiles]
-      createNew newFile oldFiles = if _path newFile `elem` (model ^. preferences . openFiles) then
+      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. persistentState . openFiles]
+      createNew newFile oldFiles = if _path newFile `elem` (model ^. persistentState . openFiles) then
           oldFiles else
           filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
       filePath = _path file
 
-  CloseCurrentFile -> case model ^. preferences . currentFile of
+  CloseCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> handleEvent wenv node model (CloseFile filePath)
 
   CloseFile filePath -> case file of
     Nothing -> []
-    Just file -> (if isFileEdited (Just file) then [
-        Model $ model
-          & confirmDeletePopup .~ True
-          & confirmDeleteTarget ?~ filePath
-      ] else handleEvent wenv node model (CloseFileSuccess filePath))
-    where file = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+    Just file -> (if isFileEdited (Just file)
+      then handleEvent wenv node model (OpenConfirmAction (ConfirmActionData {
+        _cadTitle = "Close without saving?",
+        _cadBody = "Are you sure you want to close\n" <> pack filePath <> "\nwithout saving? All changes will be lost!",
+        _cadAction = CloseFileSuccess filePath
+      }))
+      else handleEvent wenv node model (CloseFileSuccess filePath))
+    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
     where
@@ -283,20 +291,19 @@ handleEvent wenv node model evt = case evt of
             Right _ -> return ()
         ) | "/_tmp/" `isInfixOf` filePath]
       finalModel = modelWithClosedFile
-        & preferences . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. preferences . openFiles) else cf)
+        & persistentState . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. persistentState . openFiles) else cf)
       modelWithClosedFile = model
-        & preferences . openFiles %~ filter (filePath/=)
-        & confirmDeleteTarget .~ Nothing
-        & confirmDeletePopup .~ False
-      cf = model ^. preferences . currentFile
+        & persistentState . openFiles %~ filter (filePath/=)
+      cf = model ^. persistentState . currentFile
 
-  SaveCurrentFile -> case model ^. preferences . currentFile of
+  SaveCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
+      Just file@TemporaryProofFile {} -> handleEvent wenv node model (SaveFile file)
       Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
       _ -> []
-      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+      where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   SaveFile f -> case f of
     PreferenceFile {} -> handleEvent wenv node model SavePreferences
@@ -338,12 +345,12 @@ handleEvent wenv node model evt = case evt of
   SaveFileSuccess f -> actions
     where
       actions = fromMaybe [] (fileIndex >>= Just . getActions)
-      getActions fileIndex = [ Model $ model & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
-      fileIndex = getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles) (_path f)
+      getActions fileIndex = [ Model $ model & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ False ]
+      fileIndex = getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles) (_path f)
 
   SetCurrentFile filePath -> [
       Model $ model
-        & preferences . currentFile ?~ filePath
+        & persistentState . currentFile ?~ filePath
         & proofStatus .~ Nothing
     ]
 
@@ -362,13 +369,13 @@ handleEvent wenv node model evt = case evt of
 
   SavePreferences -> [ Producer (savePreferences model NoEvent) ]
 
-  CheckCurrentProof -> case model ^. preferences . currentFile of
+  CheckCurrentProof -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
       Just file@ProofFile {} -> handleEvent wenv node model (CheckProof file)
       Just file@TemporaryProofFile {} -> handleEvent wenv node model (CheckProof file)
       _ -> []
-      where currentFile = getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath
+      where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
@@ -389,15 +396,15 @@ handleEvent wenv node model evt = case evt of
           Just path -> sendMsg (SetWorkingDir path)
 
   SetWorkingDir path -> [
-      Model $ model & preferences . workingDir .~ newWd,
+      Model $ model & persistentState . workingDir .~ newWd,
       Producer (directoryFilesProducer newWd)
     ]
     where newWd = Just path
 
-  ExportToLaTeX -> case model ^. preferences . currentFile of
+  ExportToLaTeX -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
-    Just filePath -> case getProofFileByPath (model ^. preferences . tmpLoadedFiles) filePath of
+    Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
       Just file@ProofFile{} -> case _parsedSequent file of
         Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
         Just _ ->
@@ -423,6 +430,40 @@ handleEvent wenv node model evt = case evt of
           ]
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
+  ExportToPDF -> case model ^. persistentState . currentFile of
+    Nothing ->
+      [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
+    Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
+      Just file@ProofFile{} -> case _parsedSequent file of
+        Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
+        Just _ ->
+          [ Producer (\sendMsg -> do
+              -- Open a save dialog to let the user choose where to save the file
+              mSavePath <- openSaveDialog
+              case mSavePath of
+                Nothing -> return ()
+                Just savePath -> do
+                  -- Generate LaTeX content
+                  let basePath = if takeExtension savePath == ".pdf"
+                                 then dropExtension savePath
+                                 else savePath
+                      texPath = basePath <> ".tex"
+                      latexContent = convertToLatex model
+
+                  -- Write the LaTeX content to the file
+                  writeFile texPath (unpack latexContent)
+
+                  -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
+                  result <- compileLatexToPDF texPath
+                  case result of
+                    Right pdfPath -> do
+                      sendMsg (ExportSuccess (pack $ "Files created: " ++ texPath ++ " and " ++ pdfPath))
+                    Left err -> do
+                      sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
+            )
+          ]
+      _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
+
   ExportSuccess msg -> [Message (WidgetKey "ExportSuccess") msg]
   ExportError msg -> [Message (WidgetKey "ExportError") msg]
 
@@ -432,42 +473,44 @@ handleEvent wenv node model evt = case evt of
 directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
   case workingDir of
-    Nothing -> sendMsg (SetFilesInDirectory [])
+    Nothing -> sendMsg (SetFilesInDirectory Nothing)
     Just wd -> do
       result <- try (fmap (map (drop (length wd + 1))) (listDirectoryRecursive wd)) :: IO (Either SomeException [[Char]])
       case result of
         Left e -> do
           print e
-          sendMsg (SetFilesInDirectory [])
-        Right allFileNames -> sendMsg (SetFilesInDirectory allFileNames)
+          sendMsg (SetFilesInDirectory Nothing)
+        Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
 
-applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel e sp ep]
+
+applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
 applyOnCurrentProof model f = actions
   where
     actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. preferences . currentFile
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
     getActions fileIndex = [
-        Model $ model
-          & preferences . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
-          & preferences . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+        Model $ saveModelToHistory model $ model  -- Already using saveModelToHistory correctly
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
+          & proofStatus .~ Nothing
       ]
     maybeF (Just s) = Just (f s)
     maybeF Nothing = Nothing
 
 addPremiseToProof :: Int -> FESequent -> FESequent
-addPremiseToProof idx sequent = FESequent premises conclusion steps
+addPremiseToProof idx sequent = FESequent premises conclusion (steps' sequent)
   where
     premises = insertAt "" idx (_premises sequent)
     conclusion = _conclusion sequent
-    steps = _steps sequent
+    steps' seq = _steps (offsetAllRefs 1 (toInteger idx+1) seq)
 
 removePremiseFromProof :: Int -> FESequent -> FESequent
-removePremiseFromProof idx sequent = FESequent premises conclusion steps
+removePremiseFromProof idx sequent = FESequent premises conclusion (steps' sequent)
   where
     premises = _premises sequent ^.. folded . ifiltered (\i _ -> i /= idx)
     conclusion = _conclusion sequent
-    steps = _steps sequent
+    steps' seq = _steps (offsetAllRefs (-1) (toInteger idx+1) seq)
 
 editPremisesInProof :: Int -> Text -> FESequent -> FESequent
 editPremisesInProof idx newText sequent = FESequent premises conclusion steps
@@ -493,14 +536,14 @@ editFormulaInProof path newText = replaceSteps f
       | otherwise = f
 
 editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editRuleNameInProof path newText = replaceSteps f
+editRuleNameInProof path newRule = replaceSteps f
   where
-    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
-    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
-    el editPath newText currentPath f@(Line statement _rule usedArguments arguments)
-      | editPath == currentPath = case Map.lookup newText ruleMetaDataMap of
-        Nothing -> Line statement newText usedArguments arguments
-        Just (RuleMetaData nrArguments _) -> Line statement newText (fromIntegral nrArguments) (fillList nrArguments arguments)
+    f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
+    el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
+    el editPath currentPath f@(Line statement _rule usedArguments arguments)
+      | editPath == currentPath = case Map.lookup (parseRule newRule) ruleMetaDataMap of
+        Nothing -> Line statement newRule usedArguments arguments
+        Just (RuleMetaData nrArguments _) -> Line statement newRule (fromIntegral nrArguments) (fillList nrArguments arguments)
       | otherwise = f
 
     fillList :: Integer -> [Text] -> [Text]
@@ -529,6 +572,24 @@ replaceInProof path replaceWith = replaceSteps f
       | path == currentPath = replaceWith f
       | otherwise = f
 
+insertAfterAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
+insertAfterAndMaybeUpdateRefs path insertThis updateRef = insertAfterProof path insertThis . offsetFunc
+  where
+    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+      where
+        d = evalPath seq path
+        isSubProof (SubProof {}) = True
+        isSubProof _ = False
+        lineNumber
+          | isSubProof d = pathToLineNumberOffsetPremises seq path + proofStepLength d
+          | otherwise = pathToLineNumberOffsetPremises seq path + 1
+
+insertBeforeAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
+insertBeforeAndMaybeUpdateRefs path insertThis updateRef = insertBeforeProof path insertThis . offsetFunc
+  where
+    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
+      where lineNumber = pathToLineNumberOffsetPremises seq path
+
 insertAfterProof :: FormulaPath -> FEStep -> FESequent -> FESequent
 insertAfterProof path insertThis = replaceSteps f
   where
@@ -541,19 +602,40 @@ insertAfterProof path insertThis = replaceSteps f
       | path == currentPath = [f, insertThis]
       | otherwise = [f]
 
-removeFromProof :: FormulaPath -> FESequent -> FESequent
-removeFromProof path = replaceSteps f
+insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
+insertBeforeProof path insertThis = replaceSteps f
+  where
+    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
+    rl currentPath (SubProof p)
+      | path == currentPath = [insertThis, res]
+      | otherwise = [res]
+        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
+    rl currentPath f@(Line {})
+      | path == currentPath = [insertThis, f]
+      | otherwise = [f]
+
+removeFromProof :: FormulaPath -> Bool -> FESequent -> FESequent
+removeFromProof path removeInvalid
+  | removeInvalid = removeInvalidFromProof . replaceSteps f
+  | otherwise = replaceSteps f
+  where
+    f steps = catMaybes $ zipWith (\p idx -> rl path [idx] p) steps [0..]
+    rl removePath currentPath (SubProof p)
+      | removePath == currentPath = Nothing
+      | otherwise = Just $ SubProof $ catMaybes $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
+    rl removePath currentPath f@(Line {})
+      | removePath == currentPath = Nothing
+      | otherwise = Just f
+
+removeInvalidFromProof :: FESequent -> FESequent
+removeInvalidFromProof = replaceSteps f
   where
     f steps = if null res then startProof else res
       where
         startProof = [Line "" "" 0 []]
-        res = filterValid $ zipWith (\p idx -> rl path [idx] p) steps [0..]
-    rl removePath currentPath (SubProof p)
-      | removePath == currentPath = Nothing
-      | otherwise = Just $ SubProof $ filterValid $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-    rl removePath currentPath f@(Line {})
-      | removePath == currentPath = Nothing
-      | otherwise = Just f
+        res = filterValid $ map rl steps
+    rl (SubProof p) = Just $ SubProof $ filterValid $ map rl p
+    rl f@(Line {}) = Just f
 
     filterValid = filter validateProof . catMaybes
     validateProof (SubProof []) = False
@@ -570,10 +652,10 @@ getCurrentSequent :: AppModel -> Maybe FESequent
 getCurrentSequent model = sequent
   where
     sequent = fileIndex >>= getSequent
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. preferences . tmpLoadedFiles)
-    cf = model ^. preferences . currentFile
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
 
-    getSequent fileIndex = case model ^. preferences . tmpLoadedFiles . singular (ix fileIndex) of
+    getSequent fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
       f@ProofFile {} -> _parsedSequent f
       f@TemporaryProofFile {} -> _parsedSequent f
       _ -> Nothing
@@ -601,3 +683,26 @@ listDirectoryRecursive directory = do
     where
       appendTop :: FilePath -> FilePath
       appendTop = ((directory ++ "/") ++)
+
+offsetAllRefs :: Integer -> Integer -> FESequent -> FESequent
+offsetAllRefs by after sequent = applyOnAllRefs f sequent
+  where f = offsetLineRefBy by after
+
+applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
+applyOnAllRefs func = replaceSteps (map f)
+  where
+    f (SubProof p) = SubProof (map f p)
+    f (Line s r u a) = Line s r u (map func a)
+
+offsetLineRefBy :: Integer -> Integer -> Text -> Text
+offsetLineRefBy by after = applyOnLineNumberRef f
+  where f l
+          | l >= after = l + by
+          | otherwise = l
+
+applyOnLineNumberRef :: (Integer -> Integer) -> Text -> Text
+applyOnLineNumberRef f refText = case pArg (myLexer (unpack refText)) of
+  Left {} -> refText
+  Right (Abs.ArgRange a b) -> showt (f a) <> "-" <> showt (f b)
+  Right (Abs.ArgLine l) -> showt (f l)
+  Right _ -> refText

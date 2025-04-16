@@ -1,9 +1,30 @@
 ## TODO
+
+### General
+- [ ] Test frontend to improve UX
+- [x] Write help guide
+- [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
+- [ ] Fix crappy dependency management
+- [ ] Huge cleanup to prepare public repo
+- [ ] One single directory for storing proofs
+
 ### Backend
-- [ ] Write bad tests and make them fail
-- [ ] Implement last rules and start testing FOL proofs
-- [ ] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [ ] Add checks for side conditions for rules.
+- [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
+- [ ] Fix bug empty last line
+- [x] Improve warning system
+- [ ] Warn on unused steps (reference counting)
+- [ ] Use throwError helpers to error in typechecker
+- [ ] Produce other error message than syntax error from pLexer
+- [ ] Custom rules
+- [ ] Better messages
+- [ ] JSON proofs
+- [ ] Add warning sensitivty using our Severity type
+- [x] Alpha-equivalence formulas
+- [x] Update test system for JSON
+- [x] Add checks for side conditions for rules.
+#### If we are ambitious:
+- [ ] Suggest next step of proof
+- [ ] JSON node for error
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
 |-----------|--------------------------|
@@ -36,22 +57,23 @@
 | SomeI     | existsI, ∃I              |
 
 ### Frontend
-- [ ] Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))
-- [ ] Ctrl Z support
-- [ ] User should be able to drag to resize 'File Explorer' and rule sidebar
-- [ ] Update linenumber references when deleting or inserting line
-- [ ] Fix focus not updating correcly when inserting new line/removing line
-- [ ] `+ New line` should insert the line after the last line in same box as the last line
-- [ ] Give suggestions on which rules to use when user is inputting rule
-- [ ] Fix nativefiledialog on mac
-- [ ] Fix Markdown links on Windows
-- [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
 - [ ] Fix full Markdown support
+- [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
-- [ ] When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
-- [ ] Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)
-- [ ] Display warnings and errors on the lines they appear on
+- [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
+- [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
+- [x] ~~Ctrl Z support~~
+- [x] ~~Allow the user to rearrange proof-lines by clicking and dragging (like previous bachelor thesis [Logan](https://odr.chalmers.se/server/api/core/bitstreams/e3cadeaa-efab-4e66-9a18-a41af5617d3e/content))~~
+- [x] ~~Give suggestions on which rules to use when user is inputting rule~~
+- [x] ~~User should be able to drag to resize 'File Explorer' and rule sidebar~~
+- [x] ~~Display warnings and errors on the lines they appear on~~
+- [x] ~~Update linenumber references when deleting or inserting line~~
+- [x] ~~Fix focus not updating correcly when inserting new line/removing line~~
+- [x] ~~When current working directory is removed, it should display an error instead of an empty directory in 'File Explorer'~~
+- [x] ~~Allow the user to insert proof-lines above the current line (it's only possible to insert lines after the current line right now)~~
+- [x] ~~Fix Markdown links on Windows~~
+- [x] ~~`+ New line` should insert the line after the last line in same box as the last line~~
 - [x] ~~Display all available rules nicely on the side~~
 - [x] ~~Add textfield for every argument in rule instead of brackets in single textfield~~
 - [x] ~~Catch syntax errors before backend parser so we don't get syntax errors that aren't helpful for the user~~
@@ -61,63 +83,26 @@
 - [x] ~~When creating a new proof, open a temporary unnamed proof file first and then when the user saves it, open a file dialog and save to disk~~
 - [x] ~~All UI elements should scale not only text~~
 
-### Other
-- Test frontend to improve UX
-- Write help guide
-- Package backend with arbitrary frontend (library for proof editor backend)
 
 ## IDEAS
-- Use reference counting to check that all parts of the proof is used.
-- Latex output for proofs.
 - Support for subscript in front end, nice if x_0 renders fancy.
 
-## Directory Structure
+## Build
 
-```
-bsc-project/
-├── app/
-│   ├── Example.hs
-│   ├── Main.hs
-├── src/
-│   ├── Backend/
-│   │   ├── ExampleSequent.hs
-│   │   ├── Rules.hs
-│   │   ├── TypeChecker.hs
-│   ├── Frontend/
-│   │   ├── Communication.hs
-│   │   ├── Main.hs
-│   ├── Parser/
-│   │   ├── Logic/
-│   │   │   ├── Abs.hs
-│   ├── Shared/
-│   │   ├── Messages.hs
-├── test/
-│   ├── Main.hs
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
-├── bsc-project.cabal
-```
-
-
-# Proof Editor using Monomer & BNFC with Haskell
-
-## Overview
-
-This project is a proof editor built using the Monomer library for the frontend and BNFC for parsing logic expressions in Haskell. The editor allows users to create, edit, and verify logical proofs.
-
-## Haskell
-
-```haskell
-\_ -> undefined
-```
-
-## Building the Project
-
-To build the library and executable, run the following command:
+To build the library, run the following command:
 
 ```bash
 $ cabal build
+```
+## Run
+To run the executable, run the following command:
+
+```bash
+$ cabal run
+```
+## Test (to revert to old test system simply replace main-is field with MainOld.hs in the .cabal file)
+```bash
+$ cabal test
 ```
 
 ### Set up BNFC
@@ -225,3 +210,13 @@ Solve sdl2 build error: https://github.com/haskell-game/sdl2/issues/277#issuecom
 
 <!-- SDL2-2.0.14 build files: https://github.com/msys2/MINGW-packages/tree/76df904503a525e3043462ebf65ab6377182a22a/mingw-w64-SDL2
 Build with: `makepkg --syncdeps --skippgpcheck` in mingw64.exe in ghcup -->
+
+## Create windows installer
+Do this OUTSIDE of WSL to ensure cabal builds an exe and not a Linux executable!
+1. Install [Inno Setup](https://jrsoftware.org/isinfo.php)
+1. Build cabal following the windows build instructions above
+1. Copy `bsc.exe` from `dist-newstyle` (somewhere inside build/..../bsc-project/x/....) to `installer/releaseFiles`
+1. Copy `assets/` to to `installer/releaseFiles`
+1. Move `copyAllDLLsHere.sh` to `installer/releaseFiles` and run the script. It should generate a dozen DLL's inside `installer/releaseFiles`
+1. Build `installerGenerator.iss` with Inno Setup. A file called `mysetup.exe` should be generated in `installer/Setup output`
+1. Distribute `mysetup.exe` to user however you like

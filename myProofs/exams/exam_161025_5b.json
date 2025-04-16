@@ -1,0 +1,69 @@
+{
+    "_sequent": {
+        "_conclusion": "â x â y (x = f(y))",
+        "_premises": [
+            "â x (f(f(x)) = x)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "x_0"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "f(f(xâ)) = x_0",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "EqI",
+                        "_statement": "f(f(xâ)) = f(f(xâ))",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "4",
+                            "u:=u=f(f(xâ))"
+                        ],
+                        "_rule": "EqE",
+                        "_statement": "xâ = f(f(xâ))",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "f(xâ)"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â y (xâ = f(y))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-6"
+                ],
+                "_rule": "AllI",
+                "_statement": "â x â y (x = f(y))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

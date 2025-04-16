@@ -1,0 +1,103 @@
+{
+    "_sequent": {
+        "_conclusion": "r â¨ s",
+        "_premises": [
+            "p â¨ q",
+            "p â r",
+            "Â¬s â Â¬q"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "4"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "r",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5"
+                        ],
+                        "_rule": "OrIL",
+                        "_statement": "r â¨ s",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7"
+                        ],
+                        "_rule": "NotNotI",
+                        "_statement": "Â¬Â¬q",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "8"
+                        ],
+                        "_rule": "MT",
+                        "_statement": "Â¬Â¬s",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9"
+                        ],
+                        "_rule": "NotNotE",
+                        "_statement": "s",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10"
+                        ],
+                        "_rule": "OrIR",
+                        "_statement": "r â¨ s",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "4-6",
+                    "7-11"
+                ],
+                "_rule": "OrE",
+                "_statement": "r â¨ s",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

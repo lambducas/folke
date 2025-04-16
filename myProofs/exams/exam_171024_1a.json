@@ -1,10 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "R(a) â¨ â x S(x)",
+        "_conclusion": "(p â q) â§ (p â r)",
         "_premises": [
-            "â x P(x) â¨ â x Q(x)",
-            "P(a) â R(a)",
-            "â x Q(x) â S(b)"
+            "p â (q â§ r)"
         ],
         "_steps": [
             {
@@ -12,77 +10,26 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "â x P(x)",
+                        "_statement": "p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
-                            "4",
-                            "a"
-                        ],
-                        "_rule": "AllE",
-                        "_statement": "P(a)",
-                        "_usedArguments": 2,
-                        "tag": "Line"
-                    },
-                    {
-                        "_arguments": [
-                            "5",
+                            "1",
                             "2"
                         ],
                         "_rule": "ImplE",
-                        "_statement": "R(a)",
+                        "_statement": "q â§ r",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
-                            "6"
+                            "3"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "R(a) â¨ â x S(x)",
-                        "_usedArguments": 1,
-                        "tag": "Line"
-                    }
-                ],
-                "tag": "SubProof"
-            },
-            {
-                "contents": [
-                    {
-                        "_arguments": [],
-                        "_rule": "assume",
-                        "_statement": "â x Q(x)",
-                        "_usedArguments": 0,
-                        "tag": "Line"
-                    },
-                    {
-                        "_arguments": [
-                            "3",
-                            "8"
-                        ],
-                        "_rule": "ImplE",
-                        "_statement": "S(b)",
-                        "_usedArguments": 2,
-                        "tag": "Line"
-                    },
-                    {
-                        "_arguments": [
-                            "9",
-                            "b"
-                        ],
-                        "_rule": "SomeI",
-                        "_statement": "â x S(x)",
-                        "_usedArguments": 2,
-                        "tag": "Line"
-                    },
-                    {
-                        "_arguments": [
-                            "10"
-                        ],
-                        "_rule": "OrIR",
-                        "_statement": "R(a) â¨ â x S(x)",
+                        "_rule": "AndEL",
+                        "_statement": "q",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -91,13 +38,61 @@
             },
             {
                 "_arguments": [
-                    "1",
-                    "4-7",
-                    "8-11"
+                    "2-4"
                 ],
-                "_rule": "OrE",
-                "_statement": "R(a)â¨ â x S(x)",
-                "_usedArguments": 3,
+                "_rule": "ImplI",
+                "_statement": "p â q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "6"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "q â§ r",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7"
+                        ],
+                        "_rule": "AndER",
+                        "_statement": "r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "6-8"
+                ],
+                "_rule": "ImplI",
+                "_statement": "p â r",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "5",
+                    "9"
+                ],
+                "_rule": "AndI",
+                "_statement": "(p â q) â§ (p â r)",
+                "_usedArguments": 2,
                 "tag": "Line"
             }
         ]

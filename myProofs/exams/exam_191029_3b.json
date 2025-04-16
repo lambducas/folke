@@ -1,0 +1,103 @@
+{
+    "_sequent": {
+        "_conclusion": "â x â y â z (y = z â f(x, z) = f(x, y))",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "y_0",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "z_0",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "yâ = z_0",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5",
+                                                    "",
+                                                    "u:=f(xâ,u)=f(xâ,yâ)"
+                                                ],
+                                                "_rule": "EqE",
+                                                "_statement": "f(xâ, zâ) = f(xâ, yâ)",
+                                                "_usedArguments": 3,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-5"
+                                        ],
+                                        "_rule": "ImplI",
+                                        "_statement": "yâ = zâ â f(xâ, z) = f(xâ, yâ)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-6"
+                                ],
+                                "_rule": "AllI",
+                                "_statement": "â z (yâ = z â f(xâ, z) = f(xâ, yâ))",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-7"
+                        ],
+                        "_rule": "AllI",
+                        "_statement": "â y â z (y = z â f(xâ, x) = f(xâ, y))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-8"
+                ],
+                "_rule": "AllI",
+                "_statement": "â x â y â z (y = z â f(x, z) = f(x, y))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

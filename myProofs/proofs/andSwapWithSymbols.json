@@ -1,0 +1,38 @@
+{
+    "_sequent": {
+        "_conclusion": "B â§ A",
+        "_premises": [
+            "A â§ B"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "â§EL",
+                "_statement": "A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "â§ER",
+                "_statement": "B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "2"
+                ],
+                "_rule": "â§I",
+                "_statement": "B â§ A",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

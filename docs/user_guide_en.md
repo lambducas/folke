@@ -32,3 +32,25 @@ If you need to create a subproof below the current line, first insert a line and
 | Implies | -> | -->
 
 #### Rules
+
+##### Keyboard Shortcuts
+
+#### Exporting your proofs
+##### Export to LaTeX
+- Converts your proof into tex-typed source code with good formatting using ams and logicproof libraries
+- In the save dialog you choose the save location
+
+##### Export to LaTeX with PDF compilation
+- Same as Export to LaTeX
+- Automatically compiles the LaTeX source code into a PDF document
+- Creates both .tex source file and .pdf file at your chosen location
+- Make sure you have pdflatex installed on your system:
+  - On Ubuntu/Debian: `sudo apt-get install texlive-latex-base`
+  - On macOS with Homebrew: `brew install basictex`
+  - On Windows: Install MiKTeX or TeX Live
+
+##### Benefits of PDF Export
+- Get an immediately viewable document
+- Easy to share with others
+- Professional typesetting of mathematical formulas
+- Ready for printing or submission

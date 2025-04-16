@@ -5,13 +5,18 @@ module Frontend.Helper where
 import Frontend.Types
 import Shared.Messages
 import Monomer
+import qualified Monomer.Lens as L
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd)
 import Text.Printf
 import System.Random
-import System.FilePath.Posix (equalFilePath)
+import System.FilePath.Posix (equalFilePath, takeDirectory)
 import Backend.Types (Ref(RefRange, RefLine))
+
+import Control.Exception (SomeException, catch)
+import System.Process (callCommand)
+import Control.Lens ((^.))
 
 isFileEdited :: Maybe File -> Bool
 isFileEdited (Just f@ProofFile {}) = _isEdited f
@@ -35,12 +40,28 @@ pathToLineNumber :: FESequent -> FormulaPath -> Integer
 pathToLineNumber sequent path = ep path (SubProof $ _steps sequent) 1
   where
     ep (idx:tail) currentProof startLine = case currentProof of
-      SubProof p -> ep tail (p !! idx) (startLine + sum (map stepLength (take idx p)))
+      SubProof p -> ep tail (p !! idx) (startLine + sum (map proofStepLength (take idx p)))
       Line {} -> error "Tried to index into `Line` (not an array)"
     ep [] _ startLine = startLine
 
-    stepLength (SubProof p) = sum $ map stepLength p
-    stepLength (Line {}) = 1
+proofStepLength :: Num a => FEStep -> a
+proofStepLength (SubProof p) = sum $ map proofStepLength p
+proofStepLength (Line {}) = 1
+
+pathToLineNumberOffsetPremises :: FESequent -> FormulaPath -> Integer
+pathToLineNumberOffsetPremises sequent path = pathToLineNumber sequent path + toInteger (length (_premises sequent))
+
+pathToLastLine :: FESequent -> FormulaPath
+pathToLastLine sequent = ep (SubProof $ _steps sequent) []
+  where
+    ep currentProof path = case currentProof of
+      Line {} -> path
+      SubProof [] -> path
+      SubProof p -> ep (last p) (path ++ [length p - 1])
+
+pathIsParentOf :: FormulaPath -> FormulaPath -> Bool
+pathIsParentOf parent child = parent == basePath where
+  basePath = take (length parent) child
 
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
@@ -103,6 +124,30 @@ isErrorLine _ (Just (FEError _ (FEGlobal {}))) = False
 isErrorLine _ (Just (FEOk _)) = False
 isErrorLine _ Nothing = False
 
+getWarningsOnLine :: Integer -> Maybe FEResult -> [String]
+getWarningsOnLine lineNumber (Just (FEError warns _)) = map getMsgFromWhere $ filter (whereIsOnLine lineNumber) warns
+getWarningsOnLine lineNumber (Just (FEOk warns)) = map getMsgFromWhere $ filter (whereIsOnLine lineNumber) warns
+getWarningsOnLine _ Nothing = []
+
+getWarningsInSubProof :: Integer -> Integer -> Maybe FEResult -> [String]
+getWarningsInSubProof start end (Just (FEError warns _)) = map getMsgFromWhere $ filter (whereIsSubProof start end) warns
+getWarningsInSubProof start end (Just (FEOk warns)) = map getMsgFromWhere $ filter (whereIsSubProof start end) warns
+getWarningsInSubProof _ _ Nothing = []
+
+whereIsOnLine :: Integer -> FEErrorWhere -> Bool
+whereIsOnLine _ (FEGlobal {}) = False
+whereIsOnLine _ (FELocal (RefRange {}) _) = False
+whereIsOnLine lineNumber (FELocal (RefLine l) _) = l == lineNumber
+
+whereIsSubProof :: Integer -> Integer -> FEErrorWhere -> Bool
+whereIsSubProof _ _ (FEGlobal {}) = False
+whereIsSubProof _ _ (FELocal (RefLine _) _) = False
+whereIsSubProof start end (FELocal (RefRange s e) _) = start == s && end == e
+
+getMsgFromWhere :: FEErrorWhere -> String
+getMsgFromWhere (FEGlobal msg) = msg
+getMsgFromWhere (FELocal _ msg) = msg
+
 extractErrorMsg :: Maybe FEResult -> String
 extractErrorMsg Nothing = ""
 extractErrorMsg (Just (FEOk _)) = ""
@@ -113,3 +158,18 @@ insertAt :: a -> Int -> [a] -> [a]
 insertAt newElement _ [] = [newElement]
 insertAt newElement 0 as = newElement:as
 insertAt newElement i (a:as) = a : insertAt newElement (i - 1) as
+
+openInExplorer :: WidgetEnv s e -> FilePath -> IO ()
+openInExplorer wenv path = catchIgnore (callCommand command) where
+  os = wenv ^. L.os
+  command
+    | os == "Windows" = "start %windir%\\explorer.exe \"" ++ path ++ "\""
+    | os == "Mac OS X" = "cd \"" ++ path ++ "\"; open -R ."
+    | os == "Linux" = "xdg-open \"" ++ takeDirectory path ++ "\""
+    | otherwise = "ls"
+
+catchIgnore :: IO () -> IO ()
+catchIgnore task = catchAny task (const $ return ())
+
+catchAny :: IO a -> (SomeException -> IO a) -> IO a
+catchAny = catch

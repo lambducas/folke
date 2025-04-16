@@ -1,0 +1,173 @@
+{
+    "_sequent": {
+        "_conclusion": "(S â§ T) â â x Q(x)",
+        "_premises": [
+            "Â¬S â¨ â x P(x)",
+            "T â â x (P(x) â Q(x))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "S â§ T",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "AndEL",
+                        "_statement": "S",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "AndER",
+                        "_statement": "T",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "Â¬S",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "6",
+                                    "4"
+                                ],
+                                "_rule": "NotE",
+                                "_statement": "bot",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "7"
+                                ],
+                                "_rule": "BotE",
+                                "_statement": "â x P(x)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "â x P(x)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "6-8",
+                            "9-9"
+                        ],
+                        "_rule": "OrE",
+                        "_statement": "â x P(x)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "x_0",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(xâ)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "2",
+                                    "5"
+                                ],
+                                "_rule": "ImplE",
+                                "_statement": "â x (P(x) â Q(x))",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "13",
+                                    "x_0"
+                                ],
+                                "_rule": "AllE",
+                                "_statement": "P(xâ) â Q(xâ)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "14",
+                                    "12"
+                                ],
+                                "_rule": "ImplE",
+                                "_statement": "Q(xâ)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "15",
+                                    "x_0"
+                                ],
+                                "_rule": "SomeI",
+                                "_statement": "â x Q(x)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            "11-16"
+                        ],
+                        "_rule": "SomeE",
+                        "_statement": "â x Q(x)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3-17"
+                ],
+                "_rule": "ImplI",
+                "_statement": "(S â§ T) â â x Q(x)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

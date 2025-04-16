@@ -1,0 +1,111 @@
+{
+    "_sequent": {
+        "_conclusion": "â u u = f(u)",
+        "_premises": [
+            "â x â y (P(x, y) â§ P(y, x) â x = y)",
+            "â x P(x, f(x))",
+            "â z â x P(x, z)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "z_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "â x P(x, zâ)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "zâ"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(zâ, f(zâ))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "f(zâ)"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(f(zâ), zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "7"
+                        ],
+                        "_rule": "AndI",
+                        "_statement": "P(zâ, f(zâ)) â§ P(f(zâ), zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "z_0"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "â y (P(zâ, y) â§ P(y, zâ) â zâ = y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "f(zâ)"
+                        ],
+                        "_rule": "AllE",
+                        "_statement": "P(zâ, f(zâ)) â§ P(f(zâ), zâ) â zâ = f(zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            "8"
+                        ],
+                        "_rule": "ImplE",
+                        "_statement": "zâ = f(zâ)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "11",
+                            "z_0"
+                        ],
+                        "_rule": "SomeI",
+                        "_statement": "â u u = f(u)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4-12"
+                ],
+                "_rule": "SomeE",
+                "_statement": "â u u = f(u)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

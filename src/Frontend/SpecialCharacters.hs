@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Frontend.SpecialCharacters (
+  replaceFromLookup,
+  replaceFromInverseLookup,
   replaceSpecialSymbols,
   replaceSpecialSymbolsInverse
 ) where

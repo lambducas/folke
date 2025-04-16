@@ -1,0 +1,19 @@
+{
+    "_sequent": {
+        "_conclusion": "A",
+        "_premises": [
+            "!!A"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "NotNotE",
+                "_statement": "A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

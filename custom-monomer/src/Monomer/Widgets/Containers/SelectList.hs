@@ -333,9 +333,9 @@ makeSelectList widgetData items makeRow config state = widget where
     newResult = updateResultStyle wenv config result oldState newState
 
   handleEvent wenv node target evt = case evt of
-    ButtonAction _ btn BtnPressed _
-      | btn == wenv ^. L.mainButton -> result where
-        result = Just $ resultReqs node [SetFocus (node ^. L.info . L.widgetId)]
+    -- ButtonAction _ btn BtnPressed _
+    --   | btn == wenv ^. L.mainButton -> result where
+    --     result = Just $ resultReqs node [SetFocus (node ^. L.info . L.widgetId)]
 
     Click point _ _
       | outsideVp point -> Just ignoreEvtResult

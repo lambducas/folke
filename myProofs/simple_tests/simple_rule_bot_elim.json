@@ -1,0 +1,19 @@
+{
+    "_sequent": {
+        "_conclusion": "A",
+        "_premises": [
+            "bot"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "BotE",
+                "_statement": "A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -1,0 +1,177 @@
+{
+    "_sequent": {
+        "_conclusion": "â x (â y (â z (â w (x = z â y = w â R(x, y) â R(z, w)))))",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x_0",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "y_0",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "z_0",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "fresh",
+                                                "_statement": "w_0",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "xâ = z_0",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "contents": [
+                                                            {
+                                                                "_arguments": [],
+                                                                "_rule": "assume",
+                                                                "_statement": "yâ = w_0",
+                                                                "_usedArguments": 0,
+                                                                "tag": "Line"
+                                                            },
+                                                            {
+                                                                "contents": [
+                                                                    {
+                                                                        "_arguments": [],
+                                                                        "_rule": "assume",
+                                                                        "_statement": "R(xâ, yâ)",
+                                                                        "_usedArguments": 0,
+                                                                        "tag": "Line"
+                                                                    },
+                                                                    {
+                                                                        "_arguments": [
+                                                                            "6",
+                                                                            "7",
+                                                                            "u:=R(xâ,u)"
+                                                                        ],
+                                                                        "_rule": "EqE",
+                                                                        "_statement": "R(xâ, wâ)",
+                                                                        "_usedArguments": 3,
+                                                                        "tag": "Line"
+                                                                    },
+                                                                    {
+                                                                        "_arguments": [
+                                                                            "5",
+                                                                            "8",
+                                                                            "u:=R(u,wâ)"
+                                                                        ],
+                                                                        "_rule": "EqE",
+                                                                        "_statement": "R(zâ, wâ)",
+                                                                        "_usedArguments": 3,
+                                                                        "tag": "Line"
+                                                                    }
+                                                                ],
+                                                                "tag": "SubProof"
+                                                            },
+                                                            {
+                                                                "_arguments": [
+                                                                    "7-9"
+                                                                ],
+                                                                "_rule": "ImplI",
+                                                                "_statement": "R(xâ, yâ) â R(zâ, wâ)",
+                                                                "_usedArguments": 1,
+                                                                "tag": "Line"
+                                                            }
+                                                        ],
+                                                        "tag": "SubProof"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "6-10"
+                                                        ],
+                                                        "_rule": "ImplI",
+                                                        "_statement": "yâ = wâ â R(xâ, yâ) â R(zâ, wâ)",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5-11"
+                                                ],
+                                                "_rule": "ImplI",
+                                                "_statement": "xâ = zâ â yâ = wâ â R(xâ, yâ) â R(zâ, wâ)",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-12"
+                                        ],
+                                        "_rule": "AllI",
+                                        "_statement": "â w (xâ = zâ â yâ = w â R(xâ, yâ) â R(zâ, w))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-13"
+                                ],
+                                "_rule": "AllI",
+                                "_statement": "â z (â w (xâ = z â yâ = w â R(xâ, yâ) â R(z, w)))",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-14"
+                        ],
+                        "_rule": "AllI",
+                        "_statement": "â y (â z (â w (xâ = z â y = w â R(xâ, y) â R(z, w))))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-15"
+                ],
+                "_rule": "AllI",
+                "_statement": "â x (â y (â z (â w (x = z â y = w â R(x, y) â R(z, w)))))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

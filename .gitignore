@@ -16,5 +16,11 @@ src/Logic/*
 dist-newstyle/
 
 # Ignore proof editor preferences/settings
+preferences.json
+persistent_state.json
 Settings.json
 _tmp/
+
+# Ignore generated installer
+installer/Setup output
+installer/releaseFiles

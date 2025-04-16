@@ -1,0 +1,66 @@
+{
+    "_sequent": {
+        "_conclusion": "p & (q & r)",
+        "_premises": [
+            "(p & q) & r"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "AndEL",
+                "_statement": "p & q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "AndER",
+                "_statement": "r",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "2"
+                ],
+                "_rule": "AndEL",
+                "_statement": "p",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "2"
+                ],
+                "_rule": "AndER",
+                "_statement": "q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "5",
+                    "3"
+                ],
+                "_rule": "AndI",
+                "_statement": "q & r",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "4",
+                    "6"
+                ],
+                "_rule": "AndI",
+                "_statement": "p & (q & r)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

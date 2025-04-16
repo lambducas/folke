@@ -1,0 +1,149 @@
+{
+    "_sequent": {
+        "_conclusion": "((p -> q) -> p) -> ((q -> p) | p)",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "((p -> q) -> p)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "LEM",
+                        "_statement": "p | !p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "3"
+                                ],
+                                "_rule": "OrIR",
+                                "_statement": "(q -> p) | p",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "!p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "6",
+                                            "5"
+                                        ],
+                                        "_rule": "NotE",
+                                        "_statement": "bot",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "7"
+                                        ],
+                                        "_rule": "BotE",
+                                        "_statement": "q",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "6-8"
+                                ],
+                                "_rule": "ImplI",
+                                "_statement": "p -> q",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "9",
+                                    "1"
+                                ],
+                                "_rule": "ImplE",
+                                "_statement": "p",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "10",
+                                    "5"
+                                ],
+                                "_rule": "NotE",
+                                "_statement": "bot",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "11"
+                                ],
+                                "_rule": "BotE",
+                                "_statement": "(q -> p) | p",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "3-4",
+                            "5-12"
+                        ],
+                        "_rule": "OrE",
+                        "_statement": "(q -> p) | p",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-13"
+                ],
+                "_rule": "ImplI",
+                "_statement": "((p -> q) -> p) -> ((q -> p) | p)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -176,7 +176,7 @@ makeDraggable msg config = widget where
   }
 
   handleEvent wenv node target evt = case evt of
-    ButtonAction p btn BtnPressed 1 -> Just result where
+    ButtonAction p BtnLeft BtnPressed 1 -> Just result where
       result = resultReqs node [StartDrag wid path dragMsg]
 
     ButtonAction p btn BtnReleased _ -> Just result where
