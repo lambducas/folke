@@ -2,7 +2,8 @@ module NativeFileDialog (
   doSomeLog,
   openDialogAndLogResult,
   openFolderDialog,
-  openSaveDialog
+  openSaveDialog,
+  openDialog
 ) where
 
 import Foreign.C.Types
@@ -13,6 +14,7 @@ foreign import ccall unsafe "printFakeErrorMessage" printFakeErrorMessage :: IO 
 foreign import ccall unsafe "openDialogAndLogResult" openDialogAndLogResult :: IO CInt
 foreign import ccall unsafe "pickFolder" pickFolderC :: IO (Ptr CChar)
 foreign import ccall unsafe "saveDialog" saveDialogC :: IO (Ptr CChar)
+foreign import ccall unsafe "openDialog" openDialogC :: IO (Ptr CChar)
 
 doSomeLog = do
   putStrLn "BRURHEHHADHDBD BDDd :)"
@@ -32,6 +34,14 @@ openFolderDialog = do
 
 openSaveDialog = do
   str <- saveDialogC
+  path <- peekCString str
+
+  if path == ""
+    then return Nothing
+    else return (Just path)
+
+openDialog = do
+  str <- openDialogC
   path <- peekCString str
 
   if path == ""
