@@ -18,10 +18,10 @@
                     },
                     {
                         "_arguments": [
-                            "41",
+                            "4",
                             "2"
                         ],
-                        "_rule": "IfE",
+                        "_rule": "ImplE",
                         "_statement": "C",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -40,10 +40,10 @@
                     },
                     {
                         "_arguments": [
-                            "51",
+                            "6",
                             "3"
                         ],
-                        "_rule": "IfE",
+                        "_rule": "ImplE",
                         "_statement": "C",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -54,8 +54,8 @@
             {
                 "_arguments": [
                     "1",
-                    "4",
-                    "5"
+                    "4-5",
+                    "6-7"
                 ],
                 "_rule": "OrE",
                 "_statement": "C",

@@ -25,7 +25,7 @@
                             },
                             {
                                 "_arguments": [
-                                    "5"
+                                    "3"
                                 ],
                                 "_rule": "AndEL",
                                 "_statement": "p",
@@ -34,8 +34,8 @@
                             },
                             {
                                 "_arguments": [
-                                    "6",
-                                    "3"
+                                    "4",
+                                    "2"
                                 ],
                                 "_rule": "NotE",
                                 "_statement": "bot",
@@ -47,7 +47,7 @@
                     },
                     {
                         "_arguments": [
-                            "4"
+                            "3-5"
                         ],
                         "_rule": "NotI",
                         "_statement": "!(p & q)",
@@ -77,7 +77,7 @@
                             },
                             {
                                 "_arguments": [
-                                    "6"
+                                    "8"
                                 ],
                                 "_rule": "AndER",
                                 "_statement": "q",
@@ -87,7 +87,7 @@
                             {
                                 "_arguments": [
                                     "7",
-                                    "4"
+                                    "9"
                                 ],
                                 "_rule": "NotE",
                                 "_statement": "bot",
@@ -99,7 +99,7 @@
                     },
                     {
                         "_arguments": [
-                            "5"
+                            "8-10"
                         ],
                         "_rule": "NotI",
                         "_statement": "!(p & q)",
@@ -112,8 +112,8 @@
             {
                 "_arguments": [
                     "1",
-                    "2",
-                    "3"
+                    "2-6",
+                    "7-11"
                 ],
                 "_rule": "OrE",
                 "_statement": "!(p & q)",

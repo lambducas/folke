@@ -1,9 +1,7 @@
 {
     "_sequent": {
         "_conclusion": "(p & q) -> p",
-        "_premises": [
-            ""
-        ],
+        "_premises": [],
         "_steps": [
             {
                 "contents": [
@@ -16,7 +14,7 @@
                     },
                     {
                         "_arguments": [
-                            "2"
+                            "1"
                         ],
                         "_rule": "AndEL",
                         "_statement": "p",
@@ -28,9 +26,9 @@
             },
             {
                 "_arguments": [
-                    "1"
+                    "1-2"
                 ],
-                "_rule": "IfI",
+                "_rule": "ImplI",
                 "_statement": "(p & q) -> p",
                 "_usedArguments": 1,
                 "tag": "Line"

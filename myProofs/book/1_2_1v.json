@@ -28,7 +28,7 @@
                     },
                     {
                         "_arguments": [
-                            "4"
+                            "3"
                         ],
                         "_rule": "AndEL",
                         "_statement": "p",
@@ -41,8 +41,8 @@
             {
                 "_arguments": [
                     "1",
-                    "2",
-                    "3"
+                    "2-2",
+                    "3-4"
                 ],
                 "_rule": "OrE",
                 "_statement": "p",

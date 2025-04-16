@@ -16,7 +16,7 @@
                     },
                     {
                         "_arguments": [
-                            "3"
+                            "2"
                         ],
                         "_rule": "AndEL",
                         "_statement": "p",
@@ -34,10 +34,10 @@
                     },
                     {
                         "_arguments": [
-                            "4",
-                            "5"
+                            "3",
+                            "4"
                         ],
-                        "_rule": "IfE",
+                        "_rule": "ImplE",
                         "_statement": "r",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -47,9 +47,9 @@
             },
             {
                 "_arguments": [
-                    "2"
+                    "2-5"
                 ],
-                "_rule": "IfI",
+                "_rule": "ImplI",
                 "_statement": "p & q -> r",
                 "_usedArguments": 1,
                 "tag": "Line"

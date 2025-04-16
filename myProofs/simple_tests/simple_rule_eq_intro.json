@@ -1,9 +1,7 @@
 {
     "_sequent": {
         "_conclusion": "a=a",
-        "_premises": [
-            ""
-        ],
+        "_premises": [],
         "_steps": [
             {
                 "_arguments": [],

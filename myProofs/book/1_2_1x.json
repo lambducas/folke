@@ -18,10 +18,10 @@
                     },
                     {
                         "_arguments": [
-                            "5",
+                            "4",
                             "1"
                         ],
-                        "_rule": "IfE",
+                        "_rule": "ImplE",
                         "_statement": "q | r",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -37,10 +37,10 @@
                             },
                             {
                                 "_arguments": [
-                                    "8",
+                                    "6",
                                     "2"
                                 ],
-                                "_rule": "IfE",
+                                "_rule": "ImplE",
                                 "_statement": "s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -62,7 +62,7 @@
                                     "8",
                                     "3"
                                 ],
-                                "_rule": "IfE",
+                                "_rule": "ImplE",
                                 "_statement": "s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -72,9 +72,9 @@
                     },
                     {
                         "_arguments": [
-                            "6",
-                            "7",
-                            "9"
+                            "5",
+                            "6-7",
+                            "8-9"
                         ],
                         "_rule": "OrE",
                         "_statement": "s",
@@ -86,9 +86,9 @@
             },
             {
                 "_arguments": [
-                    "4"
+                    "4-10"
                 ],
-                "_rule": "IfI",
+                "_rule": "ImplI",
                 "_statement": "p -> s",
                 "_usedArguments": 1,
                 "tag": "Line"

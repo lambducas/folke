@@ -16,7 +16,7 @@
                     },
                     {
                         "_arguments": [
-                            "3"
+                            "2"
                         ],
                         "_rule": "AndEL",
                         "_statement": "p",
@@ -25,7 +25,7 @@
                     },
                     {
                         "_arguments": [
-                            "3"
+                            "2"
                         ],
                         "_rule": "AndER",
                         "_statement": "q",
@@ -34,7 +34,7 @@
                     },
                     {
                         "_arguments": [
-                            "5"
+                            "4"
                         ],
                         "_rule": "OrIL",
                         "_statement": "q | r",
@@ -43,8 +43,8 @@
                     },
                     {
                         "_arguments": [
-                            "4",
-                            "6"
+                            "3",
+                            "5"
                         ],
                         "_rule": "AndI",
                         "_statement": "p & (q | r)",
@@ -65,7 +65,7 @@
                     },
                     {
                         "_arguments": [
-                            "4"
+                            "7"
                         ],
                         "_rule": "AndEL",
                         "_statement": "p",
@@ -74,7 +74,7 @@
                     },
                     {
                         "_arguments": [
-                            "4"
+                            "7"
                         ],
                         "_rule": "AndER",
                         "_statement": "r",
@@ -83,7 +83,7 @@
                     },
                     {
                         "_arguments": [
-                            "6"
+                            "9"
                         ],
                         "_rule": "OrIR",
                         "_statement": "q | r",
@@ -92,8 +92,8 @@
                     },
                     {
                         "_arguments": [
-                            "5",
-                            "7"
+                            "8",
+                            "10"
                         ],
                         "_rule": "AndI",
                         "_statement": "p & (q | r)",
@@ -106,8 +106,8 @@
             {
                 "_arguments": [
                     "1",
-                    "2",
-                    "3"
+                    "2-6",
+                    "7-11"
                 ],
                 "_rule": "OrE",
                 "_statement": "p & (q | r)",
