@@ -13,9 +13,12 @@
 - [ ] Fix bug empty last line
 - [x] Improve warning system
 - [ ] Warn on unused steps (reference counting)
+- [ ] Use throwError helpers to error in typechecker
+- [ ] Produce other error message than syntax error from pLexer
 - [ ] Custom rules
 - [ ] Better messages
 - [ ] JSON proofs
+- [ ] Add warning sensitivty using our Severity type
 - [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
