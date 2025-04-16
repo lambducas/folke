@@ -42,11 +42,11 @@ symbolLookup = [
 
 replaceFromLookup :: Text -> SymbolDict -> Text
 replaceFromLookup s [] = s
-replaceFromLookup s ((key, value):ls) = replace (pack key) (pack value) $ replaceFromLookup s ls
+replaceFromLookup s ((key, value):ls) = replace key value $ replaceFromLookup s ls
 
 replaceFromInverseLookup :: Text -> SymbolDict -> Text
 replaceFromInverseLookup s [] = s
-replaceFromInverseLookup s ((key, value):ls) = replace (pack value) (pack key) $ replaceFromInverseLookup s ls
+replaceFromInverseLookup s ((key, value):ls) = replace value key $ replaceFromInverseLookup s ls
 
 replaceSpecialSymbols :: Text -> Text
 replaceSpecialSymbols s = replaceFromLookup s symbolLookup

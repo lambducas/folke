@@ -20,6 +20,7 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 
 import Data.Maybe (fromMaybe, listToMaybe)
+import Control.Exception (SomeException, try)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Shared.FESequent as FE
@@ -393,7 +394,7 @@ checkFE seq_t = do
 feToBe :: FE.FEFormula -> Result Abs.Form
 feToBe t =
     case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-        Left err -> Error [] newEnv (SyntaxError err)
+        Left err -> Err [] newEnv (createSyntaxError newEnv "Failed to parse")
         Right form -> Ok [] form
 
 premToStep :: FE.FEFormula -> FE.FEStep
@@ -413,19 +414,19 @@ premToStep form = Line {
 
 checkSequentFE :: Env -> FE.FESequent -> Result Proof
 checkSequentFE env sequent
-    | Data.Text.null (_conclusion sequent) = Error [] newEnv (TypeError "Conclusion is empty.")
+    | Data.Text.null (_conclusion sequent) = Err [] newEnv (createTypeError newEnv "Conclusion is empty.")
     | otherwise = do
         let ghoststeps = map premToStep (_premises sequent) ++ _steps sequent
         prems_t <- checkPremsFE env (_premises sequent)
         case feToBe (_conclusion sequent) of
-            Error {} -> Error [] env (SyntaxError ("Could not parse conclusion." ++ show (replaceSpecialSymbolsInverse (_conclusion sequent))))
+            Err {} -> Err [] env (createSyntaxError env ("Could not parse conclusion." ++ show (replaceSpecialSymbolsInverse (_conclusion sequent))))
             Ok [] conc_t -> do
                 conc_t2 <- checkForm env conc_t
                 proof_t <- checkProofFE env ghoststeps 1-- int needed?
                 let seq_t = Proof [] prems_t conc_t2
                 if proof_t == seq_t
                     then return seq_t
-                    else Error [] env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+                    else Err [] env (createTypeError env ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
 {- 
     Checks the syntax of the premise and converts it to BE formula
     -params:
@@ -436,7 +437,7 @@ checkPremsFE :: Env -> [FE.FEFormula] -> Result [Formula]
 checkPremsFE _ [] = Ok [] []
 checkPremsFE env (form:forms) = do
     case feToBe form of
-        Error _ _ _ -> Error [] env (SyntaxError ("Could not parse premise" ++ show form))
+        Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse premise" ++ show form))
         Ok [] form_t -> do
             form_t2 <- checkForm env form_t
             forms_t <- checkPremsFE env forms
@@ -452,12 +453,12 @@ checkPremsFE env (form:forms) = do
 checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
 checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil)
 checkProofFE env [step] i
-  | FE.SubProof _ <- step = Error [] env (TypeError "Last step in proof was another proof.")
+  | FE.SubProof _ <- step = Err [] env (createTypeError env "Last step in proof was another proof.")
   | FE.Line {} <- step = do
       (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
       case step_t of
-        ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
-        ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
+        ArgTerm _ -> Err [] env (createTypeError env "Check step could not return a term.")
+        ArgFormWith _ _ -> Err [] env (createTypeError env "Check step could not return a form with.")
         ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
 checkProofFE env (step : elems) i
   | FE.SubProof steps <- step = do
@@ -498,7 +499,7 @@ checkStepFE env step = case step of
     Line form rule numofargs args -> do
         case  unpack rule of 
             "prem" -> case feToBe form of
-                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse premise." ++ show (replaceSpecialSymbolsInverse form)))
+                Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse premise." ++ show (replaceSpecialSymbolsInverse form)))
                 Ok [] form_t -> do
                     form_t2 <- checkForm env form_t
                     new_env <- addPrem env form_t2
@@ -509,13 +510,13 @@ checkStepFE env step = case step of
                 env2 <- addFresh env1 t
                 Ok [] (env2, ArgTerm t)
             "assume" -> case feToBe form of
-                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse assumption." ++ show (replaceSpecialSymbolsInverse form)))
+                Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse assumption." ++ show (replaceSpecialSymbolsInverse form)))
                 Ok [] form_t -> do
                     form_t2 <- checkForm env form_t
                     new_env <- addPrem env form_t2
                     Ok [] (new_env, ArgForm form_t2)
             _ -> case feToBe form of
-                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse step." ++ show (replaceSpecialSymbolsInverse form)))
+                Err _ _ _ -> Err [] env (createSyntaxError env("Could not parse step." ++ show (replaceSpecialSymbolsInverse form)))
                 Ok [] form_t -> do
                     form_t2 <- checkForm env form_t
                     args_t <- argToBe (take numofargs args)
@@ -533,36 +534,6 @@ argToBe :: [Text] -> Result [Abs.Arg]
 argToBe [] = Ok [] []
 argToBe t = 
         case pListArg (myLexer (unpack (intercalate (pack ",") t))) of
-            Left _ -> Error [] newEnv (SyntaxError ("Could not parse argument list." ++ show (map replaceSpecialSymbolsInverse t)))
+            Left _ -> Err [] newEnv (createSyntaxError newEnv ("Could not parse argument list." ++ show (map replaceSpecialSymbolsInverse t)))
             Right arg -> Ok [] arg
         
-
-{-
-    Converts identifier to string
-    -params:
-        - the Abs identifier 
-    -return: string
--}
-identToString :: Abs.Ident -> String
-identToString (Abs.Ident str) = str
-
-{-
-    Allow frontend to check sequents in background-thread
--}
-
--- Sending `Result` directly to frontend freezes the program
--- (because of env?) so we use env to calculate line numbers
--- first and then send back error without env in it
-convertToFEError :: Result t -> FEResult
-convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Error warns env errorKind) = FEError (map convertWarning warns) (FELocal (getErrorLine env) (show errorKind))
-
-convertWarning :: Warning -> FEErrorWhere
-convertWarning (Warning env msg) = FELocal (getErrorLine env) msg
-
-getErrorLine :: Env -> Ref
-getErrorLine env = fromMaybe (RefLine (-1)) (maybeHead (pos env))
-
-maybeHead :: [a] -> Maybe a
-maybeHead [] = Nothing
-maybeHead (h:_) = Just h
