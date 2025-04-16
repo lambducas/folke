@@ -14,9 +14,13 @@ import Backend.Environment
 import Backend.Types
 import Backend.Helpers
 
+import Frontend.Parse (parseProofFromJSON, parseProofForBackend)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import Data.Maybe (listToMaybe)
+import Data.Text (unpack, pack)
+import Control.Exception (SomeException, try)
+import System.IO.Unsafe (unsafePerformIO)
 
 ----------------------------------------------------------------------
 -- Main API Functions
@@ -35,9 +39,28 @@ checkString proof =
         Left err -> Err [] newEnv (createSyntaxError newEnv err)
         Right seq_t -> check seq_t
 
--- | Check a proof from a JSON file (placeholder for future implementation)
+-- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
-checkJson = undefined
+checkJson filePath =  do
+    fileContent <- case unsafePerformIO (try (readFile filePath) :: IO (Either SomeException String)) of
+        Left err -> Err [] newEnv (createSyntaxError newEnv $ "Error reading file: " ++ show err)
+        Right content -> Ok [] content
+    
+    -- Process the JSON content
+    jsonText <- Ok [] (pack fileContent)
+    seq <- case parseProofFromJSON jsonText of
+        Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to parse JSON proof")
+        Just s -> Ok [] s
+    
+    backendText <- case Just (unpack (parseProofForBackend seq)) of
+        Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to convert proof to backend format")
+        Just t -> Ok [] t
+    
+    -- Check the proof with the backend
+    result <- checkString backendText
+    
+    -- Return the appropriate result
+    return ()
 
 -- | Handle a message from the frontend 
 handleFrontendMessage :: FrontendMessage -> BackendMessage

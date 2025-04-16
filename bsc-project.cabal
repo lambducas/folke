@@ -60,17 +60,31 @@ library
                     , Backend.Environment
                     , Backend.Types
                     , Backend.Helpers
+                    , Frontend.Parse
                     , Logic.Abs
                     , Logic.Par
                     , Logic.Lex
                     , Shared.Messages
+                    , Frontend.SpecialCharacters
+                    , Frontend.Types
+                    , Frontend.Helper
+                    , Shared.FESequent
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
                     , text
                     , array
-                    
+                    , aeson
+                    , aeson-pretty
+                    , bytestring
+                    , text-show
+                    , lens
+                    , monomer
+                    , random
+                    , process
+                    , filepath
 
+    default-extensions: OverloadedStrings
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -81,52 +95,52 @@ executable bsc
                     , src
                     
     build-depends:    base ^>=4.17.2.1
-                    , bsc-project
-                    , data-default
-                    , lens
-                    , monomer
-                    , cmark
-                    , text
-                    , text-show
-                    , directory
-                    , filepath
-                    , containers
-                    , array
-                    , aeson
-                    , aeson-pretty
-                    , bytestring
-                    , random
-                    , nativefiledialog
-                    , process
-                    , sdl2 >=2.5.0 && <2.7
-                    , temporary
+                , bsc-project
+                , data-default
+                , lens
+                , monomer
+                , cmark
+                , text
+                , text-show
+                , directory
+                , filepath
+                , containers
+                , array
+                , aeson
+                , aeson-pretty
+                , bytestring
+                , random
+                , nativefiledialog
+                , process
+                , sdl2 >=2.5.0 && <2.7
+                , temporary
     other-modules:
-                      Backend.TypeChecker
-                    , Backend.Environment
-                    , Backend.Types
-                    , Backend.Helpers
-                    , Shared.Messages
-                    , Example
-                    , Logic.Abs
-                    , Logic.Par
-                    , Logic.Lex
-                    , Frontend.Main
-                    , Frontend.Communication
-                    , Frontend.Types
-                    , Frontend.BuildUI
-                    , Frontend.History
-                    , Frontend.HandleEvent
-                    , Frontend.SpecialCharacters
-                    , Frontend.Helper
-                    , Frontend.Themes
-                    , Frontend.Parse
-                    , Frontend.Preferences
-                    , Frontend.Export
-                    , Frontend.Components.RenderMarkdown
-                    , Frontend.Components.Labels
-                    , Frontend.Components.RenderProofTab
-                    , Shared.Messages
-                    , Shared.FESequent
+                  Backend.TypeChecker
+                , Backend.Environment
+                , Backend.Types
+                , Backend.Helpers
+                , Shared.Messages
+                , Example
+                , Logic.Abs
+                , Logic.Par
+                , Logic.Lex
+                , Frontend.Main
+                , Frontend.Communication
+                , Frontend.Types
+                , Frontend.BuildUI
+                , Frontend.History
+                , Frontend.HandleEvent
+                , Frontend.SpecialCharacters
+                , Frontend.Helper
+                , Frontend.Themes
+                , Frontend.Parse
+                , Frontend.Preferences
+                , Frontend.Export
+                , Frontend.Components.RenderMarkdown
+                , Frontend.Components.Labels
+                , Frontend.Components.RenderProofTab
+                , Shared.Messages
+                , Shared.FESequent
     default-language: Haskell2010
     ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings
@@ -136,28 +150,37 @@ test-suite bsc-project-test
     import:           warnings
 
     -- Base language which the package is written in.
+    -- Base language which the package is written in.
     default-language: Haskell2010
 
-    -- Modules included in this executable, other than Main.
-    -- other-modules:
+-- Modules included in this executable, other than Main.
+-- other-modules:
 
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+-- LANGUAGE extensions used by modules in this package.
+-- other-extensions:
 
-    -- The interface type and version of the test suite.
+-- The interface type and version of the test suite.
     type:             exitcode-stdio-1.0
 
-    -- Directories containing source files.
+-- Directories containing source files.
     hs-source-dirs:   test
 
-    -- The entrypoint to the test suite.
-    main-is:          MainOld.hs
+-- The entrypoint to the test suite.
+    main-is:          Main.hs
 
-    -- Test dependencies.
+-- Test dependencies.
     build-depends:
         base ^>=4.17.2.1,
         bsc-project,
         HUnit,
         directory,
         filepath,
-        array
+        array,
+        aeson,
+        aeson-pretty,
+        bytestring,
+        text,
+        containers,
+        text-show
+
+   default-extensions: OverloadedStrings

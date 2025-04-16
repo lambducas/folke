@@ -1,7 +1,16 @@
 ## TODO
+
+### General
+- [ ] Test frontend to improve UX
+- [x] Write help guide
+- [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
+- [ ] Fix crappy dependency management
+- [ ] Huge cleanup to prepare public repo
+- [ ] One single directory for storing proofs
+
 ### Backend
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [x] Fix bug empty last line
+- [ ] Fix bug empty last line
 - [x] Improve warning system
 - [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
@@ -10,7 +19,7 @@
 - [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
-#### And if ambition enables:
+#### If we are ambitious:
 - [ ] Suggest next step of proof
 - [ ] JSON node for error
 #### Suggestions for new rule names
@@ -71,10 +80,6 @@
 - [x] ~~When creating a new proof, open a temporary unnamed proof file first and then when the user saves it, open a file dialog and save to disk~~
 - [x] ~~All UI elements should scale not only text~~
 
-### Other
-- Test frontend to improve UX
-- Write help guide
-- Package backend with arbitrary frontend (library for proof editor backend)
 
 ## IDEAS
 - Support for subscript in front end, nice if x_0 renders fancy.

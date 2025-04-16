@@ -3,7 +3,7 @@ module Main (main) where
 import Test.HUnit
 import System.Directory
 import System.FilePath (takeFileName, (</>))
-import Control.Monad (filterM)
+import Control.Monad (unless, filterM)
 import System.Environment (getArgs)
 
 import Backend.TypeChecker
@@ -13,19 +13,22 @@ import Backend.Environment
       replaceInFormula,
       replaceInTerm,
       replaceInTerms,
-      showPos, addUDefRule , applyRule)
+      showPos, addUDefRule, applyRule)
 
 import qualified Data.List as List
 
 testProof :: FilePath -> Test
 testProof proofPath = TestCase $ do
-    -- proofContent <- readFile proofPath (if check takes string)
     case checkJson proofPath of
-        Error warns env err -> 
+        Err warns env err -> 
             assertFailure $ "Proof validation failed:\n" ++ 
                            List.intercalate "\n" [show warn | warn <- warns] ++ 
                            "\n" ++ showPos env ++ "\n" ++ show err
-        Ok _ _ -> assertBool ("Proof is valid: " ++ proofPath) True
+        Ok warns _ -> do
+            unless (null warns) $ 
+                putStrLn $ "Warnings for " ++ proofPath ++ ":\n" ++ 
+                           List.intercalate "\n" (map show warns)
+            assertBool ("Proof is valid: " ++ proofPath) True
 
 collectJsonFiles :: FilePath -> IO [FilePath]
 collectJsonFiles dir = do
@@ -41,20 +44,20 @@ testProofs testFun paths =
     [TestLabel (takeFileName path) (testFun path) | path <- paths]
 
 testReplaceInTerm :: Term -> Term -> Term -> Term -> Test
-testReplaceInTerm x t phi exp =  TestCase(case replaceInTerm newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+testReplaceInTerm x t phi exp = TestCase(case replaceInTerm newEnv x t phi of
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInTerms :: Term -> Term -> [Term] -> [Term] -> Test
 testReplaceInTerms x t phi exp = TestCase(case replaceInTerms newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInFormula :: Term -> Term -> Formula -> Formula -> Test
 testReplaceInFormula x t phi exp = TestCase(case replaceInFormula newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
@@ -93,8 +96,8 @@ testReplace = do
 
 testUDefRule :: Env -> String -> [Formula] -> Formula -> Test
 testUDefRule env name args res = TestCase(case applyRule env name [ArgForm arg | arg <- args] res of 
-    Error _ _ err -> assertBool (show err) False
-    Ok _ res ->  assertBool "Dummy msg" True)
+    Err _ _ err -> assertBool (show err) False
+    Ok _ res -> assertBool "Dummy msg" True)
 
 testUDefRules :: Test
 testUDefRules = do
@@ -122,6 +125,7 @@ testUDefRules = do
                 (Not (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" []))))
             ))
         ]
+
 main :: IO ()
 main = do
     -- Collect files
