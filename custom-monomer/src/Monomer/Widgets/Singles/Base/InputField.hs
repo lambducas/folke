@@ -317,8 +317,9 @@ makeInputField !config !state = widget where
     newTextL = T.length newText
     newPos
       | oldText == newText = oldPos
-      | _ifcDefCursorEnd config = newTextL
-      | otherwise = 0
+      | otherwise = min oldPos (firstMissmatch oldText newText + 1) -- Try to match the old position
+      -- | _ifcDefCursorEnd config = newTextL
+      -- | otherwise = 0
     newSelStart
       | isNothing oldSel || newTextL < fromJust oldSel = Nothing
       | otherwise = oldSel
@@ -1028,3 +1029,13 @@ getDisplayText config text = displayText where
 
 delim :: Char -> Bool
 delim c = c `elem` [' ', '.', ',', '/', '-', ':']
+
+firstMissmatch :: (Num t) => Text -> Text -> t
+firstMissmatch a b = tw (T.unpack a) (T.unpack b) 0
+  where
+    tw (x:xs) (y:ys) i
+      | x == y = tw xs ys (i+1)
+      | otherwise = i
+    tw [] [] i = i
+    tw [] (x:xs) i = i
+    tw (x:xs) [] i = i
