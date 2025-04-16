@@ -8,7 +8,7 @@ module Frontend.SpecialCharacters (
 ) where
 
 import Frontend.Types ( SymbolDict )
-import Data.Text (Text, replace, pack)
+import Data.Text (Text, replace)
 
 symbolLookup :: SymbolDict
 symbolLookup = [

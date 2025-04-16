@@ -452,6 +452,7 @@ handleEvent wenv node model evt = case evt of
 
   UpdateFont s -> [Model $ model & preferences . normalFont .~ head s]
   ResetFontSize -> [Model $ model & preferences . fontSize .~ 16]
+  ResetAppScale -> [Model $ model & preferences . appScale .~ 1]
 
   ReadPreferences -> [ Producer readAndApplyPreferences ]
   ReadPreferences_ prefs -> [ Model $ model & preferences .~ prefs ]

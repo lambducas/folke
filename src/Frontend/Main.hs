@@ -31,13 +31,17 @@ main = do
 
   where
     -- Application configuration
-    config _prefs state = [
-      --appScaleFactor (_appScale prefs),
-
-      appWindowState (_windowMode state),
+    config prefs state = [
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
+      appScaleFactor (_appScale prefs),
+      appWindowState (_windowMode state),
       appTheme customLightTheme,
+
+      appInitEvent AppInit,
+      appExitEvent AppBeforeExit,
+      appResizeEvent AppResize,
+      appModelFingerprint show,
 
       appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
       appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
@@ -58,12 +62,7 @@ main = do
       appFontDef "Symbol_Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
       appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
 
-      appFontDef "Remix" "./assets/fonts/remixicon.ttf",
-
-      appInitEvent AppInit,
-      appExitEvent AppBeforeExit,
-      appResizeEvent AppResize,
-      appModelFingerprint show
+      appFontDef "Remix" "./assets/fonts/remixicon.ttf"
       ]
       
     -- Initial states
@@ -95,7 +94,8 @@ main = do
       _selectNormalFont = ["Regular", "Medium", "Bold"],
       _normalFont = "Regular",
       _logicFont = "Symbol_Regular",
-      _fontSize = 16
+      _fontSize = 16,
+      _appScale = 1
     }
 
     -- Default application state for new users

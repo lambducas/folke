@@ -328,8 +328,24 @@ buildUI wenv model = widgetTree where
   renderPreferenceTab = hstack [
     vstack [
         h3 "App scale",
-        hslider_ (preferences . fontSize) 8 32 [thumbVisible],
-        button "Reset scale" ResetFontSize,
+        paragraph "The application needs to be restarted before changes take effect",
+        spacer,
+        hstack [
+          symbolSpan (showDecimals 2 $ model ^. preferences . appScale),
+          hslider_ (preferences . appScale) 0.25 3 [thumbVisible]
+        ],
+        spacer,
+        button "Reset scale" ResetAppScale,
+        spacer, spacer,
+
+        h3 "Font size",
+        spacer,
+        hstack [
+          symbolSpan (showDecimals 0 $ model ^. preferences . fontSize),
+          hslider_ (preferences . fontSize) 8 32 [thumbVisible]
+        ],
+        spacer,
+        button "Reset font size" ResetFontSize,
         spacer, spacer,
 
         h3 "Choose font:",

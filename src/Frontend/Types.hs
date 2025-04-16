@@ -85,7 +85,8 @@ data Preferences = Preferences {
   _selectNormalFont :: [String],
   _normalFont :: String,
   _logicFont :: String,
-  _fontSize :: Double
+  _fontSize :: Double,
+  _appScale :: Double
 } deriving (Eq, Show)
 
 data PersistentState = PersistentState {
@@ -220,6 +221,7 @@ data AppEvent
   | ReadPreferences_ Preferences
   | SavePreferences
   | ResetFontSize
+  | ResetAppScale
 
   -- Export to LaTeX
   | ExportToLaTeX
