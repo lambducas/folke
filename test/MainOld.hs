@@ -19,14 +19,15 @@ import Logic.Par (pSequent, myLexer)
 testProofGood:: String -> Test
 testProofGood proof = TestCase(do
         case checkString proof of
-            Error warns env err -> assertBool ( List.intercalate "\n" [show warn|warn <- warns] ++ showPos env ++ show err) False
+            Err warns env err -> assertBool ( List.intercalate "\n" [show warn|warn <- warns] ++ showPos env ++ show err) False
             Ok _ _ -> assertBool "Dummy msg" True)
 
 testProofBadType:: String -> Test
 testProofBadType proof = TestCase(do
         case checkString proof of
-            Error _ _ err@(SyntaxError _) ->  assertBool (show err) True
-            Error _ _ _ -> assertBool "Dummy msg" True
+            Err _ _ err -> case errKind err of
+                SyntaxError _ -> assertBool (show err) True
+                _ -> assertBool "Expected syntax error but got different error" True
             Ok _ _ -> assertBool "Did not fail as expected" False)
 
 testProofs :: (String -> Test) -> [String] -> [String]-> [Test]
@@ -40,19 +41,19 @@ testProofs test_fun (name:names) (proof:proofs) = do
 
 testReplaceInTerm :: Term -> Term -> Term -> Term -> Test
 testReplaceInTerm x t phi exp =  TestCase(case replaceInTerm newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInTerms :: Term -> Term -> [Term] -> [Term] -> Test
 testReplaceInTerms x t phi exp = TestCase(case replaceInTerms newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
 testReplaceInFormula :: Term -> Term -> Formula -> Formula -> Test
 testReplaceInFormula x t phi exp = TestCase(case replaceInFormula newEnv x t phi of
-    Error _ _ err -> assertBool (show err) False
+    Err _ _ err -> assertBool (show err) False
     Ok _ res -> assertEqual ("Result " ++ show res ++ " do not match expected result " ++ show exp) res exp
     )
 
@@ -71,7 +72,7 @@ testReplace = do
             TestLabel "Test Predicate 1" (testReplaceInFormula (Term "x" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "t" [], Term "y" []]))),
             TestLabel "Test Predicate 2" (testReplaceInFormula (Term "y" []) (Term "t" []) (Pred (Predicate "P" [Term "x" [], Term "y" []])) (Pred (Predicate "P" [Term "x" [], Term "t" []]))),
 
-            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 1" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 
@@ -81,7 +82,7 @@ testReplace = do
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "y" []]))) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "t" []])))),
-            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace becasue x is bound
+            TestLabel "Test For All 3" (testReplaceInFormula -- will not replace because x is bound
                 (Term "x" []) 
                 (Term "t" []) 
                 (All (Term "x" []) (Pred (Predicate "P" [Term "x" []]))) 

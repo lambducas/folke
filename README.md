@@ -1,7 +1,8 @@
 ## TODO
 ### Backend
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [ ] Improve warning system
+- [x] Fix bug empty last line
+- [x] Improve warning system
 - [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
 - [ ] Better messages
