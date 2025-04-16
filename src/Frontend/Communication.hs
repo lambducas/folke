@@ -2,13 +2,15 @@ module Frontend.Communication (
     startCommunication,
     evaluateProofString,
     evaluateProofSegment,
-    evaluateProofStep
+    evaluateProofStep,
+    evaluateProofFE
 ) where
 
 import Control.Concurrent (Chan, forkIO, writeChan, readChan)
 import Shared.Messages
 import Logic.Abs (Sequent, Step)
 import Backend.TypeChecker (handleFrontendMessage)  -- Import the function
+import Shared.FESequent (FESequent)
 
 -- Function to start the communication between frontend and backend
 startCommunication :: Chan FrontendMessage -> Chan BackendMessage -> IO BackendMessage
@@ -29,6 +31,13 @@ evaluateProofString :: Chan FrontendMessage -> Chan BackendMessage -> String -> 
 evaluateProofString frontendChan backendChan text = do
     -- Send the sequent to the backend for evaluation
     writeChan frontendChan (CheckStringSequent text)
+    -- Wait for the backend to respond with the result
+    readChan backendChan
+
+evaluateProofFE :: Chan FrontendMessage -> Chan BackendMessage -> FESequent -> IO BackendMessage
+evaluateProofFE frontendChan backendChan tree = do
+    -- Send the sequent to the backend for evaluation
+    writeChan frontendChan (CheckFESequent tree)
     -- Wait for the backend to respond with the result
     readChan backendChan
 

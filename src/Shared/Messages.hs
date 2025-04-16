@@ -6,10 +6,12 @@ module Shared.Messages where
 
 import Logic.Abs (Sequent, Step)
 import Backend.Types (Result, Ref)
+import Shared.FESequent (FESequent)
 
 data FrontendMessage
     = CheckSequent Sequent
     | CheckStringSequent String
+    | CheckFESequent FESequent
     | CheckStep Step
     | OtherFrontendMessage String
     deriving (Show, Eq)

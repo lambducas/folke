@@ -59,15 +59,21 @@ library
     exposed-modules:  Backend.TypeChecker
                     , Backend.Environment
                     , Backend.Types
+                    , Frontend.SpecialCharacters
+                    , Frontend.Types
                     , Logic.Abs
                     , Logic.Par
                     , Logic.Lex
                     , Shared.Messages
+                    , Shared.FESequent
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
                     , text
                     , array
+                    , aeson
+                    , monomer
+                    , lens
                     
 
     hs-source-dirs:   src

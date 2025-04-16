@@ -19,7 +19,7 @@ import Data.Aeson
 import Data.Aeson.TH
 import qualified Data.Map as Map
 
-type SymbolDict = [(Text, Text)]
+type SymbolDict = [(String, String)]
 type FormulaPath = [Int]
 
 data RuleMetaData = RuleMetaData {

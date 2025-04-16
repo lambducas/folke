@@ -6,14 +6,18 @@ module Backend.TypeChecker (
 ) where
 
 import qualified Logic.Abs as Abs
-import Logic.Par (pSequent, myLexer)
+import Logic.Par (pSequent, myLexer, pForm, pListArg)
 import Shared.Messages
 import Backend.Environment
-import Backend.Types 
+import Backend.Types
 import qualified Data.List as List
 import qualified Data.Map as Map
 
 import Data.Maybe (fromMaybe)
+import Shared.FESequent as FE
+import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
+import Data.Text (Text, unpack, null, pack, intercalate)
+import Prelude hiding (intercalate)
 
 {-
     Runs the parser and then the typechecker on a given string
@@ -46,10 +50,22 @@ isProofCorrect seq_t = case check seq_t of
         - Sequent to check
     -return: Ok/Error
 -}
+
 check :: Abs.Sequent -> Result ()
 check seq_t = do
     let env = newEnv
     seq_result <- checkSequent env seq_t
+    return ()
+{- 
+    Typechecks a given proof in form FEsequent and if it matches the sequent
+    -params:
+        - Sequent to check
+    -return: Ok/Error
+-}
+checkFE :: FE.FESequent -> Result ()
+checkFE seq_t = do
+    let env = newEnv
+    seq_result <- checkSequentFE env seq_t
     return ()
 
 {-
@@ -60,7 +76,7 @@ check seq_t = do
     -return: The type of the proof
 -}
 checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) = 
+checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) =
     Error [] newEnv (TypeError "Conclusion is empty.")
 checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
     prems_t <- checkPrems env prems
@@ -71,6 +87,49 @@ checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
         then return seq_t
         else Error [] env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
 
+{- 
+    Converts a FE formula to a BNFC formula
+    -params:
+        - FE formula
+    -return: Form from BNFC
+-}
+feToBe :: FE.FEFormula -> Result Abs.Form
+feToBe t =
+    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
+        Left err -> Error [] newEnv (SyntaxError err)
+        Right form -> Ok [] form
+
+premToStep :: FE.FEFormula -> FE.FEStep
+premToStep form = Line {
+    _statement = form,
+    _rule = pack "prem",
+    _usedArguments = 0,
+    _arguments = []
+}
+{- 
+    Checks a given sequent. Both syntax and if the premise and conclusion match the proof.
+    -params:
+        - environment
+        - Sequent to check
+    -return: The type of the proof
+-}
+
+checkSequentFE :: Env -> FE.FESequent -> Result Proof
+checkSequentFE env sequent
+    | Data.Text.null (_conclusion sequent) = Error [] newEnv (TypeError "Conclusion is empty.")
+    | otherwise = do
+        let ghoststeps = map premToStep (_premises sequent) ++ _steps sequent
+        prems_t <- checkPremsFE env (_premises sequent)
+        case feToBe (_conclusion sequent) of
+            Error {} -> Error [] env (SyntaxError ("Could not parse conclusion." ++ show (replaceSpecialSymbolsInverse (_conclusion sequent))))
+            Ok [] conc_t -> do
+                conc_t2 <- checkForm env conc_t
+                proof_t <- checkProofFE env ghoststeps 1-- int needed?
+                let seq_t = Proof [] prems_t conc_t2
+                if proof_t == seq_t
+                    then return seq_t
+                    else Error [] env (TypeError ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
+
 checkPrems :: Env -> [Abs.Form] -> Result [Formula]
 checkPrems _ [] = Ok [] []
 checkPrems _ [Abs.FormNil] = Ok [] []
@@ -79,6 +138,22 @@ checkPrems env (form:forms) = do
     forms_t <- checkPrems env forms
     Ok [] (form_t : forms_t)
 
+{- 
+    Checks the syntax of the premise and converts it to BE formula
+    -params:
+        - FE formula
+    -return: Formula or Error
+-}
+checkPremsFE :: Env -> [FE.FEFormula] -> Result [Formula]
+checkPremsFE _ [] = Ok [] []
+checkPremsFE env (form:forms) = do
+    case feToBe form of
+        Error _ _ _ -> Error [] env (SyntaxError ("Could not parse premise" ++ show form))
+        Ok [] form_t -> do
+            form_t2 <- checkForm env form_t
+            forms_t <- checkPremsFE env forms
+            Ok [] (form_t2 : forms_t)
+
 {-
     Typechecks a given proof
     -params:
@@ -86,6 +161,7 @@ checkPrems env (form:forms) = do
         - List of steps in the proof
     -return: The type of the proof
 -}
+
 checkProof :: Env -> [Abs.ProofElem] -> Result Proof
 checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
 checkProof env [Abs.ProofElem labels step] = do
@@ -101,6 +177,47 @@ checkProof env (Abs.ProofElem labels step : elems) = do
     (new_env, step_t) <- checkStep (pushPos env refs_t) step
     seq_t <- checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems
     Ok [] seq_t
+{- 
+    Typechecks a given proof in form FEsequent
+    -params:
+        - environment
+        - List of steps in the proof
+        - Index of the step
+    -return: The type of the proof
+-}
+checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
+checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil)
+checkProofFE env [step] i
+  | FE.SubProof _ <- step = Error [] env (TypeError "Last step in proof was another proof.")
+  | FE.Line {} <- step = do
+      (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
+      case step_t of
+        ArgTerm _ -> Error [] env (TypeError "Check step could not return a term.")
+        ArgFormWith _ _ -> Error [] env (TypeError "Check step could not return a form with.")
+        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
+checkProofFE env (step : elems) i
+  | FE.SubProof steps <- step = do
+      let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
+      proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
+      let step_result = ArgProof proof_t
+      seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1) elems (i + countSteps (FE.SubProof steps))
+      Ok [] seq_t
+
+  | FE.Line {} <- step = do
+      let refs_t = [RefLine i]
+      (new_env, step_t) <- checkStepFE (pushPos env refs_t) step
+      seq_t <- checkProofFE (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) elems (i + 1)
+      Ok [] seq_t
+{-
+    Counts the number of steps in a proof
+    -params:
+        - Proof to count
+    -return: Number of steps in the proof
+-}
+
+countSteps :: FEStep -> Integer
+countSteps (Line _ _ _ _) = 1
+countSteps (SubProof steps) = sum (map countSteps steps)
 
 checkRefs :: [Abs.Label] -> Result [Ref]
 checkRefs [] = Ok [] []
@@ -144,6 +261,59 @@ checkStep env step = case step of
         Ok [] (env1, ArgForm res_t)
     Abs.StepNil -> Error [] env (UnknownError "Empty step.")
 
+{- 
+    Typechecks a step in a proof on FEStep form, returns the environment becuase we do not change scope between each step.
+    -params:
+        - Environment
+        - Step to check 
+    -return: (Updated environment, type of the step)
+-}
+checkStepFE :: Env -> FE.FEStep -> Result (Env, Arg)
+checkStepFE env step = case step of
+    SubProof steps -> do
+        proof_t <- checkProofFE (push env) steps 0
+        Ok [] (env, ArgProof proof_t)
+    Line form rule numofargs args -> do
+        case  unpack rule of 
+            "prem" -> case feToBe form of
+                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse premise." ++ show (replaceSpecialSymbolsInverse form)))
+                Ok [] form_t -> do
+                    form_t2 <- checkForm env form_t
+                    new_env <- addPrem env form_t2
+                    Ok [] (new_env, ArgForm form_t2)
+            "fresh" -> do
+                let t = Term (unpack $ replaceSpecialSymbolsInverse form) []
+                env1 <- regTerm env t
+                env2 <- addFresh env1 t
+                Ok [] (env2, ArgTerm t)
+            "assume" -> case feToBe form of
+                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse assumption." ++ show (replaceSpecialSymbolsInverse form)))
+                Ok [] form_t -> do
+                    form_t2 <- checkForm env form_t
+                    new_env <- addPrem env form_t2
+                    Ok [] (new_env, ArgForm form_t2)
+            _ -> case feToBe form of
+                Error _ _ _ -> Error [] env (SyntaxError ("Could not parse step." ++ show (replaceSpecialSymbolsInverse form)))
+                Ok [] form_t -> do
+                    form_t2 <- checkForm env form_t
+                    args_t <- argToBe (take numofargs args)
+                    (env1, args_t2) <- checkArgs env args_t
+                    res_t <- applyRule env1 (unpack rule) args_t2 form_t2
+                    Ok [] (env1, ArgForm res_t)
+
+{-
+    Converts a list of arguments to a list of Abs.Arg
+    -params:
+        - List of arguments in Text form
+    -return: List of Abs.Arg
+-}
+argToBe :: [Text] -> Result [Abs.Arg]
+argToBe [] = Ok [] []
+argToBe t = 
+        case pListArg (myLexer (unpack (intercalate (pack ",") t))) of
+            Left _ -> Error [] newEnv (SyntaxError ("Could not parse argument list." ++ show (map replaceSpecialSymbolsInverse t)))
+            Right arg -> Ok [] arg
+        
 checkArgs :: Env -> [Abs.Arg] -> Result (Env, [Arg])
 checkArgs env [] = Ok [] (env, [])
 checkArgs env (arg:args) = do
@@ -188,7 +358,7 @@ checkTerms env (x:xs) = do
     Ok [] (term_t : terms_t)
 
 checkForm :: Env -> Abs.Form -> Result Formula
-checkForm env f = case f of  
+checkForm env f = case f of
     Abs.FormPar form -> checkForm env form
     Abs.FormBot -> Ok [] Bot
     Abs.FormEq a b -> do
@@ -257,6 +427,7 @@ identToString (Abs.Ident str) = str
 -}
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent text) = StringSequentChecked (convertToFEError (checkString text))
+handleFrontendMessage (CheckFESequent tree) = StringSequentChecked (convertToFEError (checkFE tree))
 handleFrontendMessage (CheckSequent sequent) = SequentChecked (convertToFEError (check sequent))
 handleFrontendMessage (CheckStep _) = StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) = OtherBackendMessage text

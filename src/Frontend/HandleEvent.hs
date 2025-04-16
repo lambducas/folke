@@ -6,7 +6,7 @@ module Frontend.HandleEvent (
 
 import Frontend.Types
 import Frontend.Helper
-import Frontend.Communication (startCommunication, evaluateProofString)
+import Frontend.Communication (startCommunication, evaluateProofString, evaluateProofFE)
 import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex)
@@ -588,7 +588,7 @@ evaluateCurrentProof model file sendMsg = do
     Just seq -> do
       let text = unpack $ parseProofForBackend seq
       putStrLn text
-      answer <- evaluateProofString (model ^. frontendChan) (model ^. backendChan) text
+      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) seq
       sendMsg (BackendResponse answer)
 
 listDirectoryRecursive :: FilePath -> IO [FilePath]
