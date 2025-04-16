@@ -67,8 +67,6 @@ library
                     , Logic.Par
                     , Logic.Lex
                     , Shared.Messages
-                    , Frontend.SpecialCharacters
-                    , Frontend.Types
                     , Frontend.Helper
                     , Shared.FESequent
     build-depends:    base ^>=4.17.2.1
@@ -77,7 +75,6 @@ library
                     , text
                     , array
                     , aeson
-
                     , aeson-pretty
                     , bytestring
                     , text-show
