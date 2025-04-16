@@ -352,11 +352,13 @@ isFreeFor env t x (Impl l r) = do
     res_l <- isFreeFor env t x l
     res_r <- isFreeFor env t x r
     Ok [] (res_l && res_r)
-isFreeFor env t x (All y f) = case isFreeFor env t x f of
-    Err warns env_e err -> Err warns env_e err
-    Ok warns False -> Ok warns False
-    Ok warns True -> Ok warns (Set.member x (freeVarForm (All y f)) && 
-                               Set.notMember y (freeVarTerm t))
+isFreeFor env t x (All y phi) = if Set.member x (freeVarForm (All y phi))
+    then case isFreeFor env t x phi of
+        Err warns env_e err -> Err warns env_e err
+        Ok warns a -> if Set.notMember y (freeVarTerm t) && a
+        then Ok warns True
+        else Ok warns False
+    else Ok [] True
 isFreeFor env t x (Some y f) = case isFreeFor env t x f of
     Err warns env_e err -> Err warns env_e err
     Ok warns False -> Ok warns False
@@ -556,10 +558,14 @@ ruleImplI env forms _ = Err [] env (createArgCountError env
 
 -- | Elimination of implication (modus ponens)
 ruleImplE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleImplE env [(_, ArgForm a), (j, ArgForm (Impl b c))] _ =
+ruleImplE env [(i, ArgForm x@(Impl a b)), (j, ArgForm y@(Impl c d))] _ 
+    | x == c = Ok [] d 
+    | y == a = Ok [] b
+    | otherwise = Err [] env (createRuleArgError env j ("Premise did not match argument "++ show i ++"."))
+ruleImplE env [(i, ArgForm a), (j, ArgForm (Impl b c))] _ =
     if a == b then Ok [] c
     else Err [] env (createRuleArgError env j 
-         "Premise did not match argument 1")
+         ("Premise did not match argument "++ show i ++"."))
 ruleImplE env [b@(_, ArgForm (Impl _ _)), a@(_, ArgForm _)] r = 
     ruleImplE env [a,b] r
 ruleImplE env [(_, ArgForm _), (j, _)] _ = 
@@ -579,6 +585,10 @@ ruleNotI env forms _ = Err [] env (createArgCountError env
 
 -- | Elimination of negation
 ruleNotE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
+ruleNotE env [(i, ArgForm (Not a)), (j, ArgForm (Not b))] _
+    | a == Not b = Ok [] Bot 
+    | Not a == b = Ok [] Bot 
+    | otherwise = Err [] env (createTypeError env ("Argument " ++ show j ++ " is not the negation of argument " ++ show i ++ "."))
 ruleNotE env [(i, ArgForm a), (j, ArgForm (Not b))] _ = 
     if a == b then Ok [] Bot 
     else Err [] env (createTypeError env 
@@ -752,7 +762,7 @@ ruleSomeE env forms _ =
 
 -- | Introduction of existential quantifier
 ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeI env [(_, ArgForm a), (j, ArgTerm t@(Term _ []))] (Some x phi) = 
+ruleSomeI env [(_, ArgForm a), (j, ArgTerm t@(Term _ _))] (Some x phi) = 
     case isFreeFor env t x phi of
         Err warns env_e err -> Err warns env_e err
         Ok warns False -> Err warns env (createRuleArgError env j 
@@ -769,7 +779,7 @@ ruleSomeI env [(_, ArgForm _), (_, ArgTerm (Term _ []))] r =
     Err [] env (createRuleConcError env 
          ("The conclusion must be an exist formula not " ++ show r ++ "."))
 ruleSomeI env [(_, ArgForm _), (j, _)] _ = 
-    Err [] env (createRuleArgError env j "Must be a free variable.")
+    Err [] env (createRuleArgError env j "Must be a term.")
 ruleSomeI env [(i, _), (_, _)] _ = 
     Err [] env (createRuleArgError env i "Must be a formula.")
 ruleSomeI env forms _ = 
