@@ -17,7 +17,7 @@ module Frontend.Parse (
 
 import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
 import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
-import Frontend.Helper ( slice, trimText, pathToLineNumber )
+import Frontend.Helper.General ( slice, trimText, pathToLineNumber )
 import Logic.Par (myLexer, pForm, pArg)
 import qualified Logic.Abs as Abs
 
@@ -37,32 +37,39 @@ data FEDocument = FEDocument {
 
 $(deriveJSON defaultOptions ''FEDocument)
 
+-- | Check if the provided string is a valid way to write a formula
 validateStatement :: T.Text -> Bool
 validateStatement statement = isRight res
   where
     res = pForm (myLexer s)
     s = T.unpack (replaceSpecialSymbolsInverse statement)
 
+-- | Check if the provided string is a valid way to write a rule
 validateRule :: T.Text -> Bool
 validateRule rule = parsedRule == "" || isJust (Data.Map.lookup parsedRule ruleMetaDataMap)
   where parsedRule = parseRule rule
 
+-- | Check if the provided string is a valid way to write a rule argument
 validateRuleArgument :: T.Text -> Bool
 validateRuleArgument arg = arg == "" || isRight res
   where
     res = pArg (myLexer s)
     s = T.unpack (replaceSpecialSymbolsInverse arg)
 
+-- | Converts all valid ways to write a rule to a single rule identifier
 parseRule :: T.Text -> T.Text
 parseRule inp = replaceFromInverseLookup withSpec visualRuleNames
   where withSpec = replaceSpecialSymbols inp
 
+-- | Converts frontend sequent to a json string
 parseProofToJSON :: FESequent -> T.Text
 parseProofToJSON = T.pack . BL.unpack . encodePretty . FEDocument
 
+-- | Converts a json string to a frontend sequent
 parseProofFromJSON :: T.Text -> Maybe FESequent
 parseProofFromJSON t = (decode . BL.pack . T.unpack) t >>= Just . _sequent
 
+-- | Deprecated: Converts frontend sequent to a simple file format which is easy to parse by hand
 parseProofToSimpleFileFormat :: FESequent -> T.Text
 parseProofToSimpleFileFormat sequent = "\n" <> premises <> ";\n" <> conclusion <> ";\n" <> exportProofHelper (SubProof (_steps sequent)) 0
   where
@@ -76,6 +83,7 @@ parseProofToSimpleFileFormat sequent = "\n" <> premises <> ";\n" <> conclusion <
     tabs :: Int -> T.Text
     tabs n = T.pack $ replicate n '\t'
 
+-- | Deprecated: Converts a string-representation of a frontend sequent in a simple format to a FESequent
 parseProofFromSimpleFileFormat :: T.Text -> Maybe FESequent
 parseProofFromSimpleFileFormat p = case proof of
   Just [SubProof p] -> case premises of
@@ -142,6 +150,7 @@ parseProofFromSimpleFileFormat p = case proof of
       _ -> findClosingBracket text nestedLevel (idx + 1) cnl
       where char = text !! (idx + 1)
 
+-- | Convert frontend sequent to string-representation used by backend (.logic format)
 parseProofForBackend :: FESequent -> T.Text
 parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
   where
@@ -166,6 +175,10 @@ parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> export
     tabs :: Int -> T.Text
     tabs n = T.pack $ replicate n '\t'
 
+{-|
+Some rules omit the brackets when no arguments are passed. This function
+generates a correct string representation of the argument list
+-}
 nArg :: T.Text -> Int -> [T.Text] -> T.Text
 nArg "fresh" _ [] = ""
 nArg "prem" _ [] = ""
@@ -173,6 +186,7 @@ nArg "assume" _ [] = ""
 nArg "" _ [] = ""
 nArg _ usedArguments arguments = "[" <> T.intercalate ", " (map replaceSpecialSymbolsInverse (take usedArguments arguments)) <> "]"
 
+-- | Convert from parsed backend sequent to sequent used in frontend
 convertBESequentToFESequent :: Abs.Sequent -> FESequent
 convertBESequentToFESequent (Abs.Seq premises conclusion proof) = FESequent (map convertForm premises) (convertForm conclusion) (convertProof proof)
   where

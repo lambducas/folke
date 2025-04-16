@@ -262,9 +262,16 @@ runAppLoop window glCtx channel mRootOld newRoot config = do
 
   handleResourcesInit
 
-  (newWenv, newAppRoot, _) <- if isJust mRootOld
+  k@(kindaNewWenv, kindaNewRoot, _) <- if isJust mRootOld
     then handleWidgetResult wenv True result
     else handleWidgetInit wenv appRoot
+
+  let windowMaximized = case _apcWindowState config of
+        Just MainWindowMaximized -> True
+        _ -> False
+  let baseWidgetId = kindaNewRoot ^. L.info . L.widgetId
+  let maximizedMsgs = SendMessage baseWidgetId <$> map ($ MainWindowMaximized) (_apcResizeEvent config)
+  (newWenv, newAppRoot, _) <- handleRequests (Seq.fromList (if windowMaximized then maximizedMsgs else [])) k
 
   {-
   Deferred initialization step to account for Widgets that rely on OpenGL. They
@@ -331,7 +338,8 @@ mainLoop window fontManager config loopArgs = do
   let eventsPayload = fmap SDL.eventPayload events
   let quit = SDL.QuitEvent `elem` eventsPayload
 
-  let windowMaximized = isWindowMaximized eventsPayload
+  mx <- liftIO $ getWindowMaximized window
+  let windowMaximized = isWindowMaximizedEvent eventsPayload || (currWinSize /= windowSize && mx)
   let windowResized = currWinSize /= windowSize && isWindowResized eventsPayload
   let windowExposed = isWindowExposed eventsPayload
   let mouseEntered = isMouseEntered eventsPayload
@@ -339,6 +347,10 @@ mainLoop window fontManager config loopArgs = do
   let invertY = fromMaybe False (_apcInvertWheelY config)
   let convertCfg = ConvertEventsCfg _mlOS dpr epr invertX invertY
   let baseSystemEvents = convertEvents convertCfg mousePos eventsPayload
+
+  unless mx $
+    liftIO $ print "BRUHHR"
+
 
   -- when windowMaximized $
   --   liftIO $ print eventsPayload
@@ -637,8 +649,8 @@ renderScheduleActive currTs schedule = scheduleActive where
   stepCount = floor (fromIntegral (currTs - start) / fromIntegral ms)
   scheduleActive = maybe True (> stepCount) count
 
-isWindowMaximized :: [SDL.EventPayload] -> Bool
-isWindowMaximized eventsPayload = not status where
+isWindowMaximizedEvent :: [SDL.EventPayload] -> Bool
+isWindowMaximizedEvent eventsPayload = not status where
   status = null [ e | e@SDL.WindowMaximizedEvent {} <- eventsPayload ]
 
 isWindowResized :: [SDL.EventPayload] -> Bool

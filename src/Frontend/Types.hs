@@ -20,12 +20,34 @@ import Data.Aeson.TH
 import qualified Data.Map as Map
 
 type SymbolDict = [(Text, Text)]
-type FormulaPath = [Int]
 
 data RuleMetaData = RuleMetaData {
   _nrArguments :: Integer,
   _argumentLabels :: [Text]
 }
+
+type FormulaPath = [Int]
+
+data HistoryEvent
+  = HMultiple [HistoryEvent]
+  | HUpdateSequent FESequent FESequent
+  -- | HRemoveStep Bool FormulaPath FEStep
+  -- | HInsertStep Bool FormulaPath FEStep
+  | HEditStep FormulaPath FEStep FEStep
+  -- I would like to only need to store target and destination path
+  -- but I might have to store the whole proof :/
+  -- | HMoveStep FormulaPath FormulaPath
+  -- | HMoveStep [FEStep] [FEStep]
+  -- | HRemovePremise Int Text
+  -- | HInsertPremise Int Text
+  | HEditPremise Int Text Text
+  | HEditConclusion Text Text
+  deriving (Eq, Show)
+
+data History = History {
+  _hState :: [HistoryEvent],
+  _hIndex :: Int
+} deriving (Eq, Show)
 
 data File
   = OtherFile {
@@ -44,12 +66,14 @@ data File
     _path :: FilePath,
     _content :: Text,
     _parsedSequent :: Maybe FESequent,
-    _isEdited :: Bool
+    _isEdited :: Bool,
+    _history :: History
   }
   | TemporaryProofFile {
     _path :: FilePath,
     _parsedSequent :: Maybe FESequent,
-    _isEdited :: Bool
+    _isEdited :: Bool,
+    _history :: History
   }
   deriving (Eq, Show)
 
@@ -95,10 +119,6 @@ data AppModel = AppModel {
 
   _filesInDirectory :: Maybe [FilePath],
   _confirmActionPopup :: Maybe ConfirmActionData,
-
-  _stateHistory :: [AppModel],
-  _historyIndex :: Int,    
-  _ignoreHistoryOnce :: Bool,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
@@ -210,6 +230,7 @@ data AppEvent
 
 makeLenses 'PersistentState
 makeLenses 'Preferences
+makeLenses 'History
 makeLenses 'ProofFile
 makeLenses 'ConfirmActionData
 makeLenses 'ContextMenu
@@ -219,6 +240,8 @@ feFileExt :: String
 feFileExt = "json"
 
 $(deriveJSON defaultOptions ''SelectableTheme)
+$(deriveJSON defaultOptions ''HistoryEvent)
+$(deriveJSON defaultOptions ''History)
 $(deriveJSON defaultOptions ''File)
 $(deriveJSON defaultOptions ''MainWindowState)
 $(deriveJSON defaultOptions ''Preferences)

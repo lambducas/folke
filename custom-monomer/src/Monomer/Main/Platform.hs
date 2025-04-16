@@ -16,6 +16,7 @@ module Monomer.Main.Platform (
   destroySDLWindow,
   getCurrentMousePos,
   getDrawableSize,
+  getWindowMaximized,
   getWindowSize,
   getViewportSize,
   getPlatform,
@@ -47,6 +48,9 @@ import qualified SDL.Video.Renderer as SVR
 import Monomer.Common
 import Monomer.Helper (catchAny, putStrLnErr)
 import Monomer.Main.Types
+import SDL.Raw.Video (getWindowFlags)
+import SDL.Internal.Numbered
+import GHC.Bits
 
 foreign import ccall unsafe "initGlew" glewInit :: IO CInt
 foreign import ccall unsafe "initDpiAwareness" initDpiAwareness :: IO CInt
@@ -195,6 +199,15 @@ getWindowSize window = do
   SDL.V2 rw rh <- SDL.get (SDL.windowSize window)
 
   return $ Size (fromIntegral rw) (fromIntegral rh)
+
+-- | Check if window is maximized
+getWindowMaximized :: SDL.Window -> IO Bool
+getWindowMaximized (SIT.Window winPtr) = do
+  flags <- getWindowFlags winPtr
+  let maxw32 = toNumber SDL.Maximized
+  let isMax = flags .|. maxw32 /= 0
+
+  return isMax
 
 {-|
 Returns the viewport size. This is the size of the viewport the application will

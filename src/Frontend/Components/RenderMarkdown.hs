@@ -8,7 +8,7 @@ import Prelude hiding (span)
 
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
-import Frontend.Components.Labels
+import Frontend.Components.GeneralUIComponents
 import CMark
 import Monomer
 import Data.Text (Text)

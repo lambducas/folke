@@ -67,12 +67,13 @@ library
                     , Logic.Par
                     , Logic.Lex
                     , Shared.Messages
-                    , Frontend.Helper
+                    , Frontend.Helper.General
                     , Shared.FESequent
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
                     , text
+                    , directory
                     , array
                     , aeson
                     , aeson-pretty
@@ -131,13 +132,14 @@ executable bsc
                 , Frontend.History
                 , Frontend.HandleEvent
                 , Frontend.SpecialCharacters
-                , Frontend.Helper
+                , Frontend.Helper.General
+                , Frontend.Helper.ProofHelper
                 , Frontend.Themes
                 , Frontend.Parse
                 , Frontend.Preferences
                 , Frontend.Export
                 , Frontend.Components.RenderMarkdown
-                , Frontend.Components.Labels
+                , Frontend.Components.GeneralUIComponents
                 , Frontend.Components.RenderProofTab
                 , Shared.Messages
                 , Shared.FESequent
@@ -150,25 +152,24 @@ test-suite bsc-project-test
     import:           warnings
 
     -- Base language which the package is written in.
-    -- Base language which the package is written in.
     default-language: Haskell2010
 
--- Modules included in this executable, other than Main.
--- other-modules:
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
 
--- LANGUAGE extensions used by modules in this package.
--- other-extensions:
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
 
--- The interface type and version of the test suite.
+    -- The interface type and version of the test suite.
     type:             exitcode-stdio-1.0
 
--- Directories containing source files.
+    -- Directories containing source files.
     hs-source-dirs:   test
 
--- The entrypoint to the test suite.
+    -- The entrypoint to the test suite.
     main-is:          Main.hs
 
--- Test dependencies.
+    -- Test dependencies.
     build-depends:
         base ^>=4.17.2.1,
         bsc-project,
@@ -183,4 +184,4 @@ test-suite bsc-project-test
         containers,
         text-show
 
-   default-extensions: OverloadedStrings
+    default-extensions: OverloadedStrings

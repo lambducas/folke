@@ -8,9 +8,9 @@ import Prelude hiding (span)
 
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
-import Frontend.Components.Labels
+import Frontend.Components.GeneralUIComponents
 import Frontend.SpecialCharacters (replaceSpecialSymbols, replaceSpecialSymbolsInverse)
-import Frontend.Helper (firstKeystroke, trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Logic.Par (myLexer, pForm)
@@ -47,27 +47,27 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
   u = model ^. preferences . fontSize
 
-  h1 = Frontend.Components.Labels.h1 model
-  h2 = Frontend.Components.Labels.h2 model
-  -- h3 = Frontend.Components.Labels.h3 model
-  span = Frontend.Components.Labels.span model
-  -- span_ = Frontend.Components.Labels.span_ model
-  symbolSpan = Frontend.Components.Labels.symbolSpan model
-  symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
-  paragraph = Frontend.Components.Labels.paragraph model
-  -- paragraph_ = Frontend.Components.Labels.paragraph_ model
-  -- iconLabel = Frontend.Components.Labels.iconLabel model
-  -- iconButton = Frontend.Components.Labels.iconButton model
-  trashButton = Frontend.Components.Labels.trashButton model
-  -- bold = Frontend.Components.Labels.bold model
-  -- normalStyle = Frontend.Components.Labels.normalStyle model
-  symbolStyle = Frontend.Components.Labels.symbolStyle model
+  h1 = Frontend.Components.GeneralUIComponents.h1 model
+  h2 = Frontend.Components.GeneralUIComponents.h2 model
+  -- h3 = Frontend.Components.GeneralUIComponents.h3 model
+  span = Frontend.Components.GeneralUIComponents.span model
+  -- span_ = Frontend.Components.GeneralUIComponents.span_ model
+  symbolSpan = Frontend.Components.GeneralUIComponents.symbolSpan model
+  symbolSpan_ = Frontend.Components.GeneralUIComponents.symbolSpan_ model
+  paragraph = Frontend.Components.GeneralUIComponents.paragraph model
+  -- paragraph_ = Frontend.Components.GeneralUIComponents.paragraph_ model
+  -- iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
+  -- iconButton = Frontend.Components.GeneralUIComponents.iconButton model
+  trashButton = Frontend.Components.GeneralUIComponents.trashButton model
+  -- bold = Frontend.Components.GeneralUIComponents.bold model
+  -- normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
+  symbolStyle = Frontend.Components.GeneralUIComponents.symbolStyle model
 
-  button = Frontend.Components.Labels.button model
-  fastTooltip = Frontend.Components.Labels.fastTooltip model
-  -- fastScroll = Frontend.Components.Labels.fastScroll
-  fastVScroll = Frontend.Components.Labels.fastVScroll
-  -- fastHScroll = Frontend.Components.Labels.fastHScroll
+  button = Frontend.Components.GeneralUIComponents.button model
+  fastTooltip = Frontend.Components.GeneralUIComponents.fastTooltip model
+  -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
+  fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
+  -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
   renderProofTab' :: File -> Text -> WidgetNode AppModel AppEvent
   renderProofTab' file heading = case parsedSequent of
@@ -447,10 +447,10 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           lastIndex = index + 1
           prevIndexExists = index > 1
           nextIndexExists = not (isLastLine && length path == 1)
-          isSubProofSingleton = length path /= 1 && isSingleton (evalPath sequent pathToParentSubProof)
+          isSubProofSingleton = length path /= 1 && isSingleton (evalPath pathToParentSubProof sequent)
           isSingleton (SubProof p) = length p == 1
           isSingleton _ = False
-          isLastLine = case evalPath sequent pathToParentSubProof of
+          isLastLine = case evalPath pathToParentSubProof sequent of
             SubProof p -> length p == last path + 1
             _ -> False
 

@@ -13,10 +13,11 @@ import Data.Maybe (fromMaybe)
 
 main :: IO ()
 main = do
-  -- Read preferences from file or use default on error
+  -- Read preferences from file or use default on error/first time opening app
   readPrefs <- readPreferences
   let prefs = fromMaybe defaultPrefs readPrefs
 
+  -- Read app state from file or use default on error/first time opening app
   readState <- readPersistentState
   let state = fromMaybe defaultState readState
 
@@ -29,6 +30,7 @@ main = do
   startApp (model prefs state currentFrontendChan currentBackendChan) handleEvent buildUI (config prefs state)
 
   where
+    -- Application configuration
     config _prefs state = [
       --appScaleFactor (_appScale prefs),
 
@@ -74,9 +76,10 @@ main = do
 
       _filesInDirectory = Just [],
       _confirmActionPopup = Nothing,
-       _stateHistory = [],
-      _historyIndex = 0,
-      _ignoreHistoryOnce = False,
+
+      --  _stateHistory = [],
+      -- _historyIndex = 0,
+      -- _ignoreHistoryOnce = False,
 
       _frontendChan = currentFrontendChan,
       _backendChan = currentBackendChan,
@@ -86,6 +89,7 @@ main = do
       _persistentState = state
     }
 
+    -- Default preferences for new users
     defaultPrefs = Preferences {
       _selectedTheme = Dark,
       _selectNormalFont = ["Regular", "Medium", "Bold"],
@@ -94,6 +98,7 @@ main = do
       _fontSize = 16
     }
 
+    -- Default application state for new users
     defaultState = PersistentState {
       _windowMode = MainWindowNormal (800, 600),
       _workingDir = Nothing, --Just "./myProofs",

@@ -2,14 +2,14 @@
 
 module Frontend.Export (
   convertToLatex,
-  compileLatexToPDF  -- Export this function too
+  compileLatexToPDF
 ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Frontend.Types
 import Frontend.SpecialCharacters (replaceSpecialSymbols)
-import Frontend.Helper (getProofFileByPath)
+import Frontend.Helper.General (getProofFileByPath)
 import Control.Lens ((^.))
 
 import System.Exit (ExitCode(..))

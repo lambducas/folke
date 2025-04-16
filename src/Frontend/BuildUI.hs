@@ -7,9 +7,9 @@ module Frontend.BuildUI (
 import Prelude hiding (span)
 
 import Frontend.Types
-import Frontend.Helper
+import Frontend.Helper.General
 import Frontend.Themes
-import Frontend.Components.Labels
+import Frontend.Components.GeneralUIComponents
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 import Frontend.Components.RenderProofTab (renderProofTab)
 
@@ -85,28 +85,28 @@ buildUI wenv model = widgetTree where
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   -- proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
 
-  h1 = Frontend.Components.Labels.h1 model
-  h2 = Frontend.Components.Labels.h2 model
-  h3 = Frontend.Components.Labels.h3 model
-  span = Frontend.Components.Labels.span model
-  span_ = Frontend.Components.Labels.span_ model
-  symbolSpan = Frontend.Components.Labels.symbolSpan model
-  -- symbolSpan_ = Frontend.Components.Labels.symbolSpan_ model
-  paragraph = Frontend.Components.Labels.paragraph model
-  -- paragraph_ = Frontend.Components.Labels.paragraph_ model
-  iconLabel = Frontend.Components.Labels.iconLabel model
-  iconButton = Frontend.Components.Labels.iconButton model
-  -- trashButton = Frontend.Components.Labels.trashButton model
-  bold = Frontend.Components.Labels.bold model
-  normalStyle = Frontend.Components.Labels.normalStyle model
-  -- symbolStyle = Frontend.Components.Labels.symbolStyle model
+  h1 = Frontend.Components.GeneralUIComponents.h1 model
+  h2 = Frontend.Components.GeneralUIComponents.h2 model
+  h3 = Frontend.Components.GeneralUIComponents.h3 model
+  span = Frontend.Components.GeneralUIComponents.span model
+  span_ = Frontend.Components.GeneralUIComponents.span_ model
+  symbolSpan = Frontend.Components.GeneralUIComponents.symbolSpan model
+  -- symbolSpan_ = Frontend.Components.GeneralUIComponents.symbolSpan_ model
+  paragraph = Frontend.Components.GeneralUIComponents.paragraph model
+  -- paragraph_ = Frontend.Components.GeneralUIComponents.paragraph_ model
+  iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
+  iconButton = Frontend.Components.GeneralUIComponents.iconButton model
+  -- trashButton = Frontend.Components.GeneralUIComponents.trashButton model
+  bold = Frontend.Components.GeneralUIComponents.bold model
+  normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
+  -- symbolStyle = Frontend.Components.GeneralUIComponents.symbolStyle model
   u = model ^. preferences . fontSize
 
-  button = Frontend.Components.Labels.button model
-  fastTooltip = Frontend.Components.Labels.fastTooltip model
-  -- fastScroll = Frontend.Components.Labels.fastScroll
-  fastVScroll = Frontend.Components.Labels.fastVScroll
-  fastHScroll = Frontend.Components.Labels.fastHScroll
+  button = Frontend.Components.GeneralUIComponents.button model
+  fastTooltip = Frontend.Components.GeneralUIComponents.fastTooltip model
+  -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
+  fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
+  fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
   globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd menuBarCategories
     where
@@ -411,3 +411,11 @@ buildUI wenv model = widgetTree where
       body = fromMaybe "" (cad >>= Just . _cadBody)
       action = fromMaybe NoEvent (cad >>= Just . _cadAction)
       cad = model ^. confirmActionPopup
+
+-- | Converts a list of font styles for a given font to a readable name
+fontListToText :: [String] -> Text
+fontListToText fontList | head fontList == "Regular" = "Default"
+                        | head fontList == "Roboto_Regular" = "Roboto"
+                        | head fontList == "Comic_Sans_Thin" = "Comic Sans"
+                        | head fontList == "Dyslexic" = "Dyslexic"
+                        | otherwise = "forgor_to_label"

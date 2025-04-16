@@ -5,31 +5,29 @@ module Frontend.HandleEvent (
 ) where
 
 import Frontend.Types
-import Frontend.Helper
-import Frontend.Communication (startCommunication, evaluateProofString, evaluateProofFE)
+import Frontend.Helper.General
+import Frontend.Helper.ProofHelper
+import Frontend.Communication (startCommunication)
 import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex, compileLatexToPDF)
-import Frontend.History
+import Frontend.History ( applyRedo, applyUndo )
 import Shared.Messages
-import Logic.Par (pSequent, myLexer, pArg)
-import qualified Logic.Abs as Abs
+import Logic.Par (pSequent, myLexer)
 
 import Monomer
 import Control.Lens
 import Control.Exception (try, SomeException)
 import Control.Concurrent (newChan)
-import Control.Monad (filterM)
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.List (findIndex, isInfixOf)
-import Data.Text (Text, unpack, pack)
+import Data.Maybe (fromMaybe)
+import Data.List (isInfixOf)
+import Data.Text (unpack, pack)
 import TextShow ( TextShow(showt) )
-import System.Directory ( doesFileExist, listDirectory, doesDirectoryExist, removeFile, createDirectoryIfMissing )
+import System.Directory ( removeFile, createDirectoryIfMissing )
 import System.FilePath ( takeExtension, dropExtension)
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
-import qualified Data.Map as Map
 
 import qualified SDL
 
@@ -42,17 +40,19 @@ handleEvent
 handleEvent wenv node model evt = case evt of
   NoEvent -> []
 
-  Undo ->
-   if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
-    let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
-        newModel = prevModel
-          & stateHistory .~ model ^. stateHistory
-          & historyIndex .~ model ^. historyIndex - 1
-          & ignoreHistoryOnce .~ True
-    in [Model newModel]
-  else []
+  Undo -> applyOnCurrentFile model applyUndo
 
-  Redo -> undefined
+  Redo -> applyOnCurrentFile model applyRedo
+
+  -- Undo ->
+  --  if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
+  --   let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
+  --       newModel = prevModel
+  --         & stateHistory .~ model ^. stateHistory
+  --         & historyIndex .~ model ^. historyIndex - 1
+  --         & ignoreHistoryOnce .~ True
+  --   in [Model newModel]
+  -- else []
 
   AppInit -> [
       Producer $ directoryFilesProducer (model ^. persistentState . workingDir),
@@ -107,83 +107,164 @@ handleEvent wenv node model evt = case evt of
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddPremise idx -> applyOnCurrentProof model (addPremiseToProof (idx + 1)) ++ [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx + 1)) ]
+  AddPremise idx -> applyOnCurrentProofAndRecordSequentHistory model (addPremiseToProof (idx + 1) "") ++ [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx + 1)) ]
+    -- where f seq = (addPremiseToProof (idx + 1) "" seq, HInsertPremise (idx + 1) "")
 
-  RemovePremise idx -> applyOnCurrentProof model (removePremiseFromProof idx)
+  RemovePremise idx -> applyOnCurrentProofAndRecordSequentHistory model (removePremiseFromProof idx)
+    -- where f seq = (removePremiseFromProof idx seq, HRemovePremise idx (_premises seq !! idx))
 
-  EditPremise idx newText -> applyOnCurrentProof model (editPremisesInProof idx newText)
+  EditPremise idx newText -> applyOnCurrentProofAndRecordHistory model f
+    where f seq = (editPremisesInProof idx newText seq, HEditPremise idx (_premises seq !! idx) newText)
 
-  EditConclusion newText -> applyOnCurrentProof model (editConclusionInProof newText)
+  EditConclusion newText -> applyOnCurrentProofAndRecordHistory model f
+    where f seq = (editConclusionInProof newText seq, HEditConclusion (_conclusion seq) newText)
 
-  SwitchLineToSubProof path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey]
+  SwitchLineToSubProof path widgetKey -> applyOnCurrentProofAndRecordHistory model f ++ [SetFocusOnKey widgetKey]
     where
+      f seq = (newSeq, HEditStep path (evalPath path seq) (evalPath path newSeq))
+        where newSeq = switch seq
       switch = replaceInProof path (\oldLine -> SubProof [oldLine])
 
-  SwitchSubProofToLine path widgetKey -> applyOnCurrentProof model switch ++ [SetFocusOnKey widgetKey]
+  SwitchSubProofToLine path widgetKey -> applyOnCurrentProofAndRecordHistory model f ++ [SetFocusOnKey widgetKey]
     where
-      switch p = if not $ isSingleton $ evalPath p path then p else replaceInProof path (\oldLine -> case oldLine of
+      f seq = (newSeq, HEditStep path (evalPath path seq) (evalPath path newSeq))
+        where newSeq = switch seq
+      switch p = if not $ isSingleton $ evalPath path p then p else replaceInProof path (\oldLine -> case oldLine of
           SubProof p -> head p
           _ -> error ""
         ) p
       isSingleton (SubProof p) = length p == 1
       isSingleton _ = False
 
-  InsertLineAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
+  InsertLineAfter updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f ++ focusAction
     where
+      f = insertAfterAndMaybeUpdateRefs path insertThis updateRef
+      -- f seq = (insertAfterAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef nextPath insertThis)
       insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 1]
 
-  InsertLineBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef) ++ focusAction
+  InsertLineBefore updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f ++ focusAction
     where
+      f = insertBeforeAndMaybeUpdateRefs path insertThis updateRef
+      -- f seq = (insertBeforeAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef nextPath insertThis)
       insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
       maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
       nextPath = init path ++ [last path + 0]
 
-  InsertSubProofAfter updateRef path -> applyOnCurrentProof model (insertAfterAndMaybeUpdateRefs path insertThis updateRef)
-    where insertThis = SubProof [Line "" "" 0 []]
+  InsertSubProofAfter updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f
+    where
+      f = insertAfterAndMaybeUpdateRefs path insertThis updateRef
+      -- f seq = (insertAfterAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef nextPath insertThis)
+      -- nextPath = init path ++ [last path + 1]
+      insertThis = SubProof [Line "" "" 0 []]
 
-  InsertSubProofBefore updateRef path -> applyOnCurrentProof model (insertBeforeAndMaybeUpdateRefs path insertThis updateRef)
-    where insertThis = SubProof [Line "" "" 0 []]
+  InsertSubProofBefore updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f
+    where
+      f = insertBeforeAndMaybeUpdateRefs path insertThis updateRef
+      -- f seq = (insertBeforeAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef path insertThis)
+      insertThis = SubProof [Line "" "" 0 []]
 
-  AddLine -> applyOnCurrentProof model insertLine
-    where insertLine seq = insertAfterProof (pathToLastLine seq) (Line "" "" 0 []) seq
+  AddLine -> applyOnCurrentProofAndRecordSequentHistory model f
+    where
+      f seq = insertAfterProof (pathToLastLine seq) insertThis seq
+      -- f seq = (insertAfterProof path insertThis seq, HInsertStep False (nextSibling path) insertThis)
+      --   where path = pathToLastLine seq
+      insertThis = Line "" "" 0 []
 
-  AddSubProof -> applyOnCurrentProof model insertSubProof
-    where insertSubProof seq = insertAfterProof (pathToLastLine seq) (SubProof [Line "" "" 0 []]) seq
+  AddSubProof -> applyOnCurrentProofAndRecordSequentHistory model f
+    where
+      f seq = insertAfterProof (pathToLastLine seq) insertThis seq
+      -- f seq = (insertAfterProof path insertThis seq, HInsertStep False (nextSibling path) insertThis)
+      --   where path = pathToLastLine seq
+      insertThis = SubProof [Line "" "" 0 []]
 
-  RemoveLine updateRef path -> applyOnCurrentProof model removeLine ++ focusAction
+  RemoveLine updateRef path -> applyOnCurrentProofAndRecordSequentHistory model removeLine ++ focusAction
     where
       removeLine = removeFromProof path True . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber seq else seq
+      offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber True seq else seq
         where lineNumber = pathToLineNumberOffsetPremises seq path + 1
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
       getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
         where l = pathToLineNumber sequent path - 1
 
-  EditFormula path newText -> applyOnCurrentProof model editFormula
-    where editFormula = editFormulaInProof path newText
+  -- RemoveLine _updateRef path -> applyOnCurrentFile model removeLine
+  --   where
+  --     removeLine file =
+  --       file
+  --         & parsedSequent %~ maybeF (removeFromProof path True)
+  --         & history . hIndex %~ (+1)
+  --         & history . hState %~ forkHistory (_hIndex (_history file))
+  --       where
+  --         forkHistory index state = fromMaybe state $ _parsedSequent file >>= Just . f
+  --           where
+  --             f seq = take (index + 1) state ++ [HMultiple (reverse extraEvents ++ [HRemoveStep path rs])]
+  --               where
+  --                 rs = evalPath path seq
+  --                 extraEvents = snd $ removeInvalidFromProofWithHistory (removeFromProof path False seq)
 
-  EditRuleName path newText -> applyOnCurrentProof model editRuleName
-    where editRuleName = editRuleNameInProof path newText
+  --     maybeF f (Just s) = Just (f s)
+  --     maybeF _ Nothing = Nothing
 
-  EditRuleArgument path idx newText -> applyOnCurrentProof model editRuleArgument
-    where editRuleArgument = editRuleArgumentInProof path idx newText
+  -- RemoveLine updateRef path -> applyOnCurrentProofAndRecordHistory model f ++ focusAction
+  --   where
+  --     f seq = (removeLine seq, historyEvent)
+  --       where
+  --         historyEvent = HMultiple (reverse cleanupEvents ++ [removeEvent])
+  --         removeEvent = HRemoveStep updateRef path (evalPath path seq)
+  --         cleanupEvents = snd $ removeInvalidFromProofWithHistory (removeFromProof path False seq)
+
+  --     removeLine = removeFromProof path True . offsetFunc
+  --     offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber True seq else seq
+  --       where lineNumber = pathToLineNumberOffsetPremises seq path
+
+  --     focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
+  --     getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
+  --       where l = pathToLineNumber sequent path - 1
+
+  -- RemoveLine _ path -> [ Producer (\sendMsg -> do
+  --     case model ^. persistentState . currentFile of
+  --       Nothing -> return ()
+  --       Just filePath -> do
+  --         case getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles) filePath of
+  --           Nothing -> return ()
+  --           Just idx -> do
+  --             let file = model ^. persistentState . tmpLoadedFiles . singular (ix idx)
+  --             case _parsedSequent file of
+  --               Nothing -> return ()
+  --               Just seq -> do
+  --                 let newSeqAndEvents = removeInvalidFromProofWithHistory (removeFromProof path False seq)
+  --                 print $ snd newSeqAndEvents
+  --                 return ()
+  --   )]
+
+  EditFormula path newText -> editLineAndRecordHistory model path (editFormulaInProof path newText)
+
+  EditRuleName path newText -> editLineAndRecordHistory model path (editRuleNameInProof path newText)
+
+  EditRuleArgument path idx newText -> editLineAndRecordHistory model path (editRuleArgumentInProof path idx newText)
 
   MovePathToPath target dest
-    | pathIsParentOf target dest -> []
-    | otherwise -> applyOnCurrentProof model f
-    where
-      f seq
-        | target > dest = (removeInvalidFromProof . copyTarget seq . deleteTarget) seq
-        | otherwise     = (removeInvalidFromProof . deleteTarget . copyTarget seq) seq
-      copyTarget oldestSeq = insertAfterProof dest (evalPath oldestSeq target)
-      deleteTarget = removeFromProof target False
+    | pathIsParentOf target (nextSibling dest) -> []
+    | otherwise -> applyOnCurrentProofAndRecordSequentHistory model f
+      where f = moveInProof target (nextSibling dest) True
+
+  -- MovePathToPath target dest
+  --   | pathIsParentOf target (nextSibling dest) -> []
+  --   | otherwise -> applyOnCurrentProofAndRecordHistory model f
+  --     where
+  --       f seq = (newSeq, historyEvent)
+  --         where
+  --           newSeq = moveInProof target (nextSibling dest) True seq
+  --           historyEvent = HMoveStep (_steps seq) (_steps newSeq)
+  --           -- historyEvent = HMultiple (reverse cleanupEvents ++ [moveEvent])
+  --           -- moveEvent = HMoveStep target (nextSibling dest)
+  --           -- cleanupEvents = snd $ removeInvalidFromProofWithHistory (moveInProof target (nextSibling dest) False seq)
 
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
@@ -196,7 +277,11 @@ handleEvent wenv node model evt = case evt of
           Left e -> print e
           Right _ -> do
             let emptySeq = Just $ FESequent [] "" [Line "" "" 0 []]
-            let file = TemporaryProofFile randomPath emptySeq False
+            let emptyHistory = History {
+              _hState = [],
+              _hIndex = -1
+            }
+            let file = TemporaryProofFile randomPath emptySeq False emptyHistory
             sendMsg (OpenFileSuccess file)
       )
     ]
@@ -228,6 +313,10 @@ handleEvent wenv node model evt = case evt of
         pContent <- readFile fullPath
         let pContentText = pack pContent
         let pIsEdited = False
+        let pHistory = History {
+          _hState = [],
+          _hIndex = -1
+        }
 
         if takeExtension fullPath == ".md" then
           sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
@@ -236,16 +325,16 @@ handleEvent wenv node model evt = case evt of
         else if takeExtension fullPath == "." <> feFileExt then
           do
             let seq = parseProofFromJSON pContentText
-            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
+            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
         else if takeExtension fullPath == ".logic" then
           do
             case pSequent (myLexer pContent) of
               Left _err -> do
                 case parseProofFromSimpleFileFormat pContentText of
-                  seq@(Just _) -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited)
-                  Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited)
+                  seq@(Just _) -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
+                  Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited pHistory)
 
-              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited)
+              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited pHistory)
                 where pParsedContent = Just (convertBESequentToFESequent seq_t)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
@@ -470,6 +559,10 @@ handleEvent wenv node model evt = case evt of
   Print s -> [ Producer (\_ -> print s) ]
   f -> [ Producer (\_ -> print f) ]
 
+{-|
+Recursively gets all files in working directory and
+sends back `SetFilesInDirectory` event with the files
+-}
 directoryFilesProducer :: Maybe FilePath -> (AppEvent -> IO ()) -> IO ()
 directoryFilesProducer workingDir sendMsg = do
   case workingDir of
@@ -481,228 +574,3 @@ directoryFilesProducer workingDir sendMsg = do
           print e
           sendMsg (SetFilesInDirectory Nothing)
         Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
-
-
-applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
-applyOnCurrentProof model f = actions
-  where
-    actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
-    cf = model ^. persistentState . currentFile
-    getActions fileIndex = [
-        Model $ saveModelToHistory model $ model  -- Already using saveModelToHistory correctly
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
-          & proofStatus .~ Nothing
-      ]
-    maybeF (Just s) = Just (f s)
-    maybeF Nothing = Nothing
-
-addPremiseToProof :: Int -> FESequent -> FESequent
-addPremiseToProof idx sequent = FESequent premises conclusion (steps' sequent)
-  where
-    premises = insertAt "" idx (_premises sequent)
-    conclusion = _conclusion sequent
-    steps' seq = _steps (offsetAllRefs 1 (toInteger idx+1) seq)
-
-removePremiseFromProof :: Int -> FESequent -> FESequent
-removePremiseFromProof idx sequent = FESequent premises conclusion (steps' sequent)
-  where
-    premises = _premises sequent ^.. folded . ifiltered (\i _ -> i /= idx)
-    conclusion = _conclusion sequent
-    steps' seq = _steps (offsetAllRefs (-1) (toInteger idx+1) seq)
-
-editPremisesInProof :: Int -> Text -> FESequent -> FESequent
-editPremisesInProof idx newText sequent = FESequent premises conclusion steps
-  where
-    premises = _premises sequent & element idx .~ newText
-    conclusion = _conclusion sequent
-    steps = _steps sequent
-
-editConclusionInProof :: Text -> FESequent -> FESequent
-editConclusionInProof newText sequent = FESequent premises conclusion steps
-  where
-    premises = _premises sequent
-    conclusion = newText
-    steps = _steps sequent
-
-editFormulaInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editFormulaInProof path newText = replaceSteps f
-  where
-    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
-    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
-    el editPath newText currentPath f@(Line _statement rule usedArguments arguments)
-      | editPath == currentPath = Line newText rule usedArguments arguments
-      | otherwise = f
-
-editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editRuleNameInProof path newRule = replaceSteps f
-  where
-    f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
-    el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
-    el editPath currentPath f@(Line statement _rule usedArguments arguments)
-      | editPath == currentPath = case Map.lookup (parseRule newRule) ruleMetaDataMap of
-        Nothing -> Line statement newRule usedArguments arguments
-        Just (RuleMetaData nrArguments _) -> Line statement newRule (fromIntegral nrArguments) (fillList nrArguments arguments)
-      | otherwise = f
-
-    fillList :: Integer -> [Text] -> [Text]
-    fillList targetLen arr
-      | currLen < targetLen = arr ++ replicate (fromIntegral targetLen - length arr) ""
-      | otherwise = arr
-      where currLen = toInteger (length arr)
-
-editRuleArgumentInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
-editRuleArgumentInProof path idx newText = replaceSteps f
-  where
-    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
-    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
-    el editPath newText currentPath f@(Line statement rule usedArguments arguments)
-      | editPath == currentPath = Line statement rule usedArguments (arguments & element idx .~ newText)
-      | otherwise = f
-
-replaceInProof :: FormulaPath -> (FEStep -> FEStep) -> FESequent -> FESequent
-replaceInProof path replaceWith = replaceSteps f
-  where
-    f steps = zipWith (\p idx -> rl [idx] p) steps [0..]
-    rl currentPath f@(SubProof p)
-      | path == currentPath = replaceWith f
-      | otherwise = SubProof $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Line {})
-      | path == currentPath = replaceWith f
-      | otherwise = f
-
-insertAfterAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
-insertAfterAndMaybeUpdateRefs path insertThis updateRef = insertAfterProof path insertThis . offsetFunc
-  where
-    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-      where
-        d = evalPath seq path
-        isSubProof (SubProof {}) = True
-        isSubProof _ = False
-        lineNumber
-          | isSubProof d = pathToLineNumberOffsetPremises seq path + proofStepLength d
-          | otherwise = pathToLineNumberOffsetPremises seq path + 1
-
-insertBeforeAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
-insertBeforeAndMaybeUpdateRefs path insertThis updateRef = insertBeforeProof path insertThis . offsetFunc
-  where
-    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber seq else seq
-      where lineNumber = pathToLineNumberOffsetPremises seq path
-
-insertAfterProof :: FormulaPath -> FEStep -> FESequent -> FESequent
-insertAfterProof path insertThis = replaceSteps f
-  where
-    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
-    rl currentPath (SubProof p)
-      | path == currentPath = [res, insertThis]
-      | otherwise = [res]
-        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Line {})
-      | path == currentPath = [f, insertThis]
-      | otherwise = [f]
-
-insertBeforeProof :: FormulaPath -> FEStep -> FESequent -> FESequent
-insertBeforeProof path insertThis = replaceSteps f
-  where
-    f steps = concat (zipWith (\p idx -> rl [idx] p) steps [0..])
-    rl currentPath (SubProof p)
-      | path == currentPath = [insertThis, res]
-      | otherwise = [res]
-        where res = SubProof $ concat $ zipWith (\p idx -> rl (currentPath ++ [idx]) p) p [0..]
-    rl currentPath f@(Line {})
-      | path == currentPath = [insertThis, f]
-      | otherwise = [f]
-
-removeFromProof :: FormulaPath -> Bool -> FESequent -> FESequent
-removeFromProof path removeInvalid
-  | removeInvalid = removeInvalidFromProof . replaceSteps f
-  | otherwise = replaceSteps f
-  where
-    f steps = catMaybes $ zipWith (\p idx -> rl path [idx] p) steps [0..]
-    rl removePath currentPath (SubProof p)
-      | removePath == currentPath = Nothing
-      | otherwise = Just $ SubProof $ catMaybes $ zipWith (\p idx -> rl removePath (currentPath ++ [idx]) p) p [0..]
-    rl removePath currentPath f@(Line {})
-      | removePath == currentPath = Nothing
-      | otherwise = Just f
-
-removeInvalidFromProof :: FESequent -> FESequent
-removeInvalidFromProof = replaceSteps f
-  where
-    f steps = if null res then startProof else res
-      where
-        startProof = [Line "" "" 0 []]
-        res = filterValid $ map rl steps
-    rl (SubProof p) = Just $ SubProof $ filterValid $ map rl p
-    rl f@(Line {}) = Just f
-
-    filterValid = filter validateProof . catMaybes
-    validateProof (SubProof []) = False
-    validateProof _ = True
-
-replaceSteps :: ([FEStep] -> [FEStep]) -> FESequent -> FESequent
-replaceSteps f sequent = FESequent premises conclusion steps
-  where
-    premises = _premises sequent
-    conclusion = _conclusion sequent
-    steps = f $ _steps sequent
-
-getCurrentSequent :: AppModel -> Maybe FESequent
-getCurrentSequent model = sequent
-  where
-    sequent = fileIndex >>= getSequent
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
-    cf = model ^. persistentState . currentFile
-
-    getSequent fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
-      f@ProofFile {} -> _parsedSequent f
-      f@TemporaryProofFile {} -> _parsedSequent f
-      _ -> Nothing
-
-getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
-getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f == filePath) allFiles
-
-evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO ()) -> IO ()
-evaluateCurrentProof model file sendMsg = do
-  case _parsedSequent file of
-    Nothing -> return ()
-    Just seq -> do
-      let text = unpack $ parseProofForBackend seq
-      putStrLn text
-      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) seq
-      sendMsg (BackendResponse answer)
-
-listDirectoryRecursive :: FilePath -> IO [FilePath]
-listDirectoryRecursive directory = do
-  content <- listDirectory directory
-  onlyFiles <- filterM doesFileExist (map appendTop content)
-  onlyDirs <- filterM doesDirectoryExist (map appendTop content)
-  extraFiles <- fmap concat (mapM listDirectoryRecursive onlyDirs)
-  return $ onlyFiles ++ extraFiles
-    where
-      appendTop :: FilePath -> FilePath
-      appendTop = ((directory ++ "/") ++)
-
-offsetAllRefs :: Integer -> Integer -> FESequent -> FESequent
-offsetAllRefs by after sequent = applyOnAllRefs f sequent
-  where f = offsetLineRefBy by after
-
-applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
-applyOnAllRefs func = replaceSteps (map f)
-  where
-    f (SubProof p) = SubProof (map f p)
-    f (Line s r u a) = Line s r u (map func a)
-
-offsetLineRefBy :: Integer -> Integer -> Text -> Text
-offsetLineRefBy by after = applyOnLineNumberRef f
-  where f l
-          | l >= after = l + by
-          | otherwise = l
-
-applyOnLineNumberRef :: (Integer -> Integer) -> Text -> Text
-applyOnLineNumberRef f refText = case pArg (myLexer (unpack refText)) of
-  Left {} -> refText
-  Right (Abs.ArgRange a b) -> showt (f a) <> "-" <> showt (f b)
-  Right (Abs.ArgLine l) -> showt (f l)
-  Right _ -> refText

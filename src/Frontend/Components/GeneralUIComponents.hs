@@ -1,4 +1,4 @@
-module Frontend.Components.Labels where
+module Frontend.Components.GeneralUIComponents where
 
 import Prelude hiding (span)
 
@@ -16,64 +16,72 @@ u :: AppModel -> Double
 u model = model ^. preferences . fontSize
 -- u = 16
 
+-- | Get `StyleState` for normal text
 normalTextFont :: CmbTextFont t => AppModel -> t
 normalTextFont model = textFont $ fromString $ model ^. preferences . normalFont
 
+-- | Get `StyleState` for bold text
 boldTextFont :: CmbTextFont t => AppModel -> t
 boldTextFont model = textFont $ fromString $ last $ model ^. preferences . selectNormalFont
 
+-- | Get `StyleState` for monospace/symbol text
 logicTextFont :: CmbTextFont t => AppModel -> t
 logicTextFont model = textFont $ fromString $ model ^. preferences . logicFont
 
--- Using HTML tag name convention
 h1, h2, h3, h4, h5, h6, span, paragraph, iconLabel, symbolSpan :: AppModel -> Text -> WidgetNode s e
 h1_, h2_, h3_, h4_, h5_, h6_, span_, paragraph_, iconLabel_, symbolSpan_ :: AppModel -> Text -> [LabelCfg s e] -> WidgetNode s e
 
--- Main heading
+-- | Main heading
 h1 model t = label t `styleBasic` [ textSize (1.75 * u model), boldTextFont model ]
 h1_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u model), boldTextFont model ]
 
--- Secondary heading
+-- | Secondary heading
 h2 model t = label t `styleBasic` [ textSize (1.25 * u model), boldTextFont model ]
 h2_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.25 * u model), boldTextFont model ]
 
--- Smaller headings
+-- | Level 3 heading
 h3 model t = label t `styleBasic` [ textSize (1.125 * u model), boldTextFont model ]
 h3_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.125 * u model), boldTextFont model ]
 
+-- | Level 4 heading
 h4 model t = label t `styleBasic` [ textSize (1 * u model), boldTextFont model ]
 h4_ model t cfg = label_ t cfg `styleBasic` [ textSize (1 * u model), boldTextFont model ]
 
+-- | Level 5 heading
 h5 model t = label t `styleBasic` [ textSize (0.95 * u model), boldTextFont model ]
 h5_ model t cfg = label_ t cfg `styleBasic` [ textSize (0.95 * u model), boldTextFont model ]
 
+-- | Level 6 heading
 h6 model t = label t `styleBasic` [ textSize (0.9 * u model), boldTextFont model ]
 h6_ model t cfg = label_ t cfg `styleBasic` [ textSize (0.9 * u model), boldTextFont model ]
 
--- Plain text
+-- | Plain text without word-wrap
 span model t = label t `styleBasic` [ textSize (u model), normalTextFont model ]
 span_ model t cfg = label_ t cfg `styleBasic` [ textSize (u model), normalTextFont model ]
 
--- Monospaced text (used for symbols in logic)
+-- | Monospaced text (used for symbols in logic) without word-wrap
 symbolSpan model t = label t `styleBasic` [ textSize (u model), logicTextFont model ]
 symbolSpan_ model t cfg = label_ t cfg `styleBasic` [ textSize (u model), logicTextFont model ]
 -- symbolSpan t = label t `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
 -- symbolSpan_ t cfg = label_ t cfg `styleBasic` [ textSize u, textFont "Symbol_Regular" ]
 
--- Plain text when used as paragraph but can wrap to multiple lines (same as span right now but usually has margin at bottom and top)
+{-|
+Plain text when used as paragraph but can wrap to multiple lines
+(Usually has margin at bottom and top but this is missing right now)
+-}
 paragraph model t = label_ t [multiline] `styleBasic` [ textSize (u model), normalTextFont model ]
 paragraph_ model t cfg = label_ t cfg `styleBasic` [ textSize (u model), normalTextFont model ]
 
--- For rendering icons
+-- | For rendering icons
 iconLabel model iconIdent = label iconIdent `styleBasic` [textFont "Remix", textBottom, textSize (u model)]
 iconLabel_ model iconIdent cfg = label_ iconIdent cfg `styleBasic` [textFont "Remix", textBottom, textSize (u model)]
 
--- For rendering icons inside buttons
+-- | For rendering icons inside buttons
 iconButton :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
-iconButton model iconIdent action = Frontend.Components.Labels.button model iconIdent action
+iconButton model iconIdent action = Frontend.Components.GeneralUIComponents.button model iconIdent action
   `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 1 transparent, textSize (u model)]
 
--- Button with trashcan icon
+-- | Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent
 trashButton model action = iconButton model remixDeleteBinFill action
   `styleBasic` [textColor orangeRed, textSize (u model)]
@@ -84,24 +92,42 @@ trashButton model action = iconButton model remixDeleteBinFill action
     hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
     selTheme = getActualTheme $ model ^. preferences . selectedTheme
 
--- Make widget bold
+-- | Make widget text bold
 bold :: CmbStyleBasic t => AppModel -> t -> t
 bold model widget = widget `styleBasic` [ boldTextFont model ]
 
--- Make general widgets adhere to font and text size change
+-- | Make general widgets adhere to normal font and text size change
 normalStyle :: AppModel -> WidgetNode s e -> WidgetNode s e
 normalStyle model widget = widget `styleBasic` [textSize (u model), normalTextFont model]
 
+-- | Make general widgets adhere to symbol font and text size change
 symbolStyle :: AppModel -> WidgetNode s e -> WidgetNode s e
 symbolStyle model widget = widget `styleBasic` [textSize (u model), logicTextFont model]
 
+-- | Default button with user-selected fontsize
 button :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
 button model a b = Monomer.button a b `styleBasic` [textSize (u model)]
 
+-- | Appears faster than the default tooltip and is scaled by user-selected fontsize
 fastTooltip :: AppModel -> Text -> WidgetNode s e -> WidgetNode s e
 fastTooltip model tip widget = Monomer.tooltip_ tip [tooltipDelay 400] widget `styleBasic` [textSize (u model)]
 
 fastScroll, fastVScroll, fastHScroll :: WidgetNode s e -> WidgetNode s e
+
+-- | `scroll` but with more reasonable scroll rate
 fastScroll = scroll_ [wheelRate 50]
+
+-- | `vscroll` but with more reasonable scroll rate
 fastVScroll = vscroll_ [wheelRate 50]
+
+-- | `hscroll` but with more reasonable scroll rate
 fastHScroll = hscroll_ [wheelRate 50]
+
+{-|
+Will handle keystrokes from start to end of list and stop when a
+key-combination matches currently presssed keys (if it is enabled).
+Children will not receive the key-event
+-}
+firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
+firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
+firstKeystroke [] widget = widget
