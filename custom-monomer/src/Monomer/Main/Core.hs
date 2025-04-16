@@ -348,10 +348,6 @@ mainLoop window fontManager config loopArgs = do
   let convertCfg = ConvertEventsCfg _mlOS dpr epr invertX invertY
   let baseSystemEvents = convertEvents convertCfg mousePos eventsPayload
 
-  unless mx $
-    liftIO $ print "BRUHHR"
-
-
   -- when windowMaximized $
   --   liftIO $ print eventsPayload
 

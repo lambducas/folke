@@ -205,8 +205,7 @@ getWindowMaximized :: SDL.Window -> IO Bool
 getWindowMaximized (SIT.Window winPtr) = do
   flags <- getWindowFlags winPtr
   let maxw32 = toNumber SDL.Maximized
-  let isMax = flags .|. maxw32 /= 0
-
+  let isMax = flags .&. maxw32 /= 0
   return isMax
 
 {-|
