@@ -2,7 +2,7 @@ module Main (main) where
 
 import Test.HUnit
 import System.Directory
-import System.FilePath (takeFileName, (</>))
+import System.FilePath (takeFileName, (</>), takeExtension)
 import Control.Monad (unless, filterM)
 import System.Environment (getArgs)
 
@@ -36,8 +36,9 @@ collectJsonFiles dir = do
     let fullPaths = map (dir </>) contents
     directories <- filterM doesDirectoryExist fullPaths
     files <- filterM doesFileExist fullPaths
+    let jsonFiles = filter (\f -> takeExtension f == ".json") files
     subdirsFiles <- mapM collectJsonFiles directories
-    return $ files ++ concat subdirsFiles
+    return $ jsonFiles ++ concat subdirsFiles
 
 testProofs :: (FilePath -> Test) -> [FilePath] -> [Test]
 testProofs testFun paths = 
