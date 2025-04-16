@@ -533,7 +533,7 @@ checkStepFE env step = case step of
 argToBe :: [Text] -> Result [Abs.Arg]
 argToBe [] = Ok [] []
 argToBe t = 
-        case pListArg (myLexer (unpack (intercalate (pack ",") t))) of
+        case pListArg (myLexer (unpack (intercalate (pack ",") (map replaceSpecialSymbolsInverse t)))) of
             Left _ -> Err [] newEnv (createSyntaxError newEnv ("Could not parse argument list." ++ show (map replaceSpecialSymbolsInverse t)))
             Right arg -> Ok [] arg
         
