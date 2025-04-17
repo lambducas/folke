@@ -306,6 +306,16 @@ findPlaceholdersInArg env i (Pred a) b ph = case Map.lookup a ph of
         then Ok [] ph
         else Err [] env (createRuleArgError env i 
               "Did not match previous instance of placeholder.")
+findPlaceholdersInArg env i (All x a) (All y b) ph = if x == y 
+    then findPlaceholdersInArg env i a b ph
+    else do
+        phi <- replaceInFormula env y x b
+        findPlaceholdersInArg env i a phi ph
+findPlaceholdersInArg env i (Some x a) (Some y b) ph = if x == y 
+    then findPlaceholdersInArg env i a b ph
+    else do
+        phi <- replaceInFormula env y x b
+        findPlaceholdersInArg env i a phi ph
 findPlaceholdersInArg env i _ _ ph = Err [] env (createUnknownError env "Unimplemented.")
 
 -- | Replace placeholders in a formula
