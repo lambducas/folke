@@ -245,6 +245,10 @@ checkStep env step = case step of
 -- Argument Checking
 ----------------------------------------------------------------------
 
+checkArgsFE :: Env -> [Text] -> Result (Env, [Arg])
+checkArgsFE env a = do
+    args <- parseArgs a
+    checkArgs env args
 -- | Check a list of arguments
 checkArgs :: Env -> [Abs.Arg] -> Result (Env, [Arg])
 checkArgs env [] = Ok [] (env, [])
@@ -299,6 +303,99 @@ checkTerms env (x:xs) = do
     terms_t <- checkTerms env xs
     Ok [] (term_t : terms_t)
 
+-- | Check a predicate
+checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
+checkPred env (Abs.Pred ident (Abs.Params terms)) = do
+    let name = identToString ident
+    case Map.lookup name (ids env) of
+        Nothing -> do
+            terms_t <- checkTerms env terms
+            Ok [] (env, Predicate name terms_t)
+
+        Just (IDTypeTerm _) ->
+            Err [] env (createTypeError env (name ++ " is a term."))
+
+        Just (IDTypePred n) -> do
+            let i = toInteger (length terms)
+            if n /= i
+                then Err [] env (createTypeError env (name ++
+                      " is arity " ++ show n ++ " not " ++ show i ++ "."))
+                else do
+                    terms_t <- checkTerms env terms
+                    Ok [] (env, Predicate name terms_t)
+
+checkFE :: FE.FESequent -> Result ()
+checkFE seq_t = do
+    let env = newEnv
+    seq_result <- checkSequentFE env seq_t
+    return ()
+{- 
+    Converts a FE formula to a BNFC formula
+    -params:
+        - FE formula
+    -return: Form from BNFC
+-}
+parseFormula :: FE.FEFormula -> Result Abs.Form
+parseFormula t =
+    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
+        Left err -> Err [] newEnv (createSyntaxError newEnv "Failed to parse")
+        Right form -> Ok [] form
+
+premToStep :: FE.FEFormula -> FE.FEStep
+premToStep form = Line {
+    _statement = form,
+    _rule = pack "prem",
+    _usedArguments = 0,
+    _arguments = []
+}
+{- 
+    Checks a given sequent. Both syntax and if the premise and conclusion match the proof.
+    -params:
+        - environment
+        - Sequent to check
+    -return: The type of the proof
+-}
+
+checkSequentFE :: Env -> FE.FESequent -> Result Proof
+checkSequentFE env sequent = do
+    let steps = map premToStep (_premises sequent) ++ _steps sequent
+    prems_t <- checkPremsFE env (_premises sequent)
+    conc_t <- checkFormFE env (_conclusion sequent) 
+    proof_t <-checkProofFE env steps 1 -- int needed?
+
+    validateRefs env
+
+    let endsWithEmptyLine = hasNilConclusion proof_t
+    -- Filter out Nil conclusion from the proof
+    let filteredProof = filterNilConclusion proof_t
+    let seq_t = Proof [] prems_t conc_t
+
+    if filteredProof == seq_t
+        then return seq_t
+        else if endsWithEmptyLine && not (hasInvalidConclusion filteredProof seq_t)
+            then Ok [createIncompleteWarning env seq_t filteredProof] filteredProof
+            else Err [] env (createMismatchedFormulaError env
+                              (getConclusion seq_t)
+                              (getConclusion filteredProof))
+  where
+    createIncompleteWarning env seq_t filteredProof = Warning {
+        warnLocation = listToMaybe (pos env),
+        warnSeverity = Medium,
+        warnKind = IncompleteProof (getConclusion seq_t) (getConclusion filteredProof),
+        warnMessage = "Unfinished proof. The last line doesn't match the expected conclusion.",
+        warnSuggestion = Just "Complete your proof to derive the required conclusion"
+    }
+{- 
+    Checks the syntax of the premise and converts it to BE formula
+    -params:
+        - FE formula
+    -return: Formula or Error
+-}
+
+checkFormFE :: Env -> FE.FEFormula -> Result Formula
+checkFormFE env fef = do 
+    f <- parseFormula fef
+    checkForm env f
 -- | Check a formula
 checkForm :: Env -> Abs.Form -> Result Formula
 checkForm env f = case f of
@@ -353,89 +450,13 @@ checkForm env f = case f of
     Abs.FormNil ->
         Err [] env (createTypeError env "Formula is empty.")
 
--- | Check a predicate
-checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
-checkPred env (Abs.Pred ident (Abs.Params terms)) = do
-    let name = identToString ident
-    case Map.lookup name (ids env) of
-        Nothing -> do
-            terms_t <- checkTerms env terms
-            Ok [] (env, Predicate name terms_t)
 
-        Just (IDTypeTerm _) ->
-            Err [] env (createTypeError env (name ++ " is a term."))
-
-        Just (IDTypePred n) -> do
-            let i = toInteger (length terms)
-            if n /= i
-                then Err [] env (createTypeError env (name ++
-                      " is arity " ++ show n ++ " not " ++ show i ++ "."))
-                else do
-                    terms_t <- checkTerms env terms
-                    Ok [] (env, Predicate name terms_t)
-
-checkFE :: FE.FESequent -> Result ()
-checkFE seq_t = do
-    let env = newEnv
-    seq_result <- checkSequentFE env seq_t
-    return ()
-{- 
-    Converts a FE formula to a BNFC formula
-    -params:
-        - FE formula
-    -return: Form from BNFC
--}
-feToBe :: FE.FEFormula -> Result Abs.Form
-feToBe t =
-    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-        Left err -> Err [] newEnv (createSyntaxError newEnv "Failed to parse")
-        Right form -> Ok [] form
-
-premToStep :: FE.FEFormula -> FE.FEStep
-premToStep form = Line {
-    _statement = form,
-    _rule = pack "prem",
-    _usedArguments = 0,
-    _arguments = []
-}
-{- 
-    Checks a given sequent. Both syntax and if the premise and conclusion match the proof.
-    -params:
-        - environment
-        - Sequent to check
-    -return: The type of the proof
--}
-
-checkSequentFE :: Env -> FE.FESequent -> Result Proof
-checkSequentFE env sequent
-    | Data.Text.null (_conclusion sequent) = Err [] newEnv (createTypeError newEnv "Conclusion is empty.")
-    | otherwise = do
-        let ghoststeps = map premToStep (_premises sequent) ++ _steps sequent
-        prems_t <- checkPremsFE env (_premises sequent)
-        case feToBe (_conclusion sequent) of
-            Err {} -> Err [] env (createSyntaxError env ("Could not parse conclusion." ++ show (replaceSpecialSymbolsInverse (_conclusion sequent))))
-            Ok [] conc_t -> do
-                conc_t2 <- checkForm env conc_t
-                proof_t <- checkProofFE env ghoststeps 1-- int needed?
-                let seq_t = Proof [] prems_t conc_t2
-                if proof_t == seq_t
-                    then return seq_t
-                    else Err [] env (createTypeError env ("The proof " ++ show proof_t ++ " did not match the expected " ++ show seq_t ++ "."))
-{- 
-    Checks the syntax of the premise and converts it to BE formula
-    -params:
-        - FE formula
-    -return: Formula or Error
--}
 checkPremsFE :: Env -> [FE.FEFormula] -> Result [Formula]
 checkPremsFE _ [] = Ok [] []
 checkPremsFE env (form:forms) = do
-    case feToBe form of
-        Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse premise" ++ show form))
-        Ok [] form_t -> do
-            form_t2 <- checkForm env form_t
-            forms_t <- checkPremsFE env forms
-            Ok [] (form_t2 : forms_t)
+    form_t <- checkFormFE env form
+    forms_t <- checkPremsFE env forms
+    Ok [] (form_t : forms_t)
 {- 
     Typechecks a given proof in form FEsequent
     -params:
@@ -492,31 +513,28 @@ checkStepFE env step = case step of
         Ok [] (env, ArgProof proof_t)
     Line form rule numofargs args -> do
         case  unpack rule of 
-            "prem" -> case feToBe form of
-                Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse premise." ++ show (replaceSpecialSymbolsInverse form)))
-                Ok [] form_t -> do
-                    form_t2 <- checkForm env form_t
-                    new_env <- addPrem env form_t2
-                    Ok [] (new_env, ArgForm form_t2)
+            "prem" -> if depth env == 0
+                then do
+                    form_t <- checkFormFE env form
+                    new_env <- addPrem env form_t
+                    Ok [] (new_env, ArgForm form_t)
+                else Err [] env (createTypeError env "A premise is not allowed in a subproof.")
             "fresh" -> do
                 let t = Term (unpack $ replaceSpecialSymbolsInverse form) []
                 env1 <- regTerm env t
                 env2 <- addFresh env1 t
                 Ok [] (env2, ArgTerm t)
-            "assume" -> case feToBe form of
-                Err _ _ _ -> Err [] env (createSyntaxError env ("Could not parse assumption." ++ show (replaceSpecialSymbolsInverse form)))
-                Ok [] form_t -> do
-                    form_t2 <- checkForm env form_t
-                    new_env <- addPrem env form_t2
-                    Ok [] (new_env, ArgForm form_t2)
-            _ -> case feToBe form of
-                Err _ _ _ -> Err [] env (createSyntaxError env("Could not parse step." ++ show (replaceSpecialSymbolsInverse form)))
-                Ok [] form_t -> do
-                    form_t2 <- checkForm env form_t
-                    args_t <- argToBe (take numofargs args)
-                    (env1, args_t2) <- checkArgs env args_t
-                    res_t <- applyRule env1 (unpack rule) args_t2 form_t2
-                    Ok [] (env1, ArgForm res_t)
+            "assume" ->if depth env /= 0
+                then do
+                    form_t <- checkFormFE env form
+                    new_env <- addPrem env form_t
+                    Ok [] (new_env, ArgForm form_t)
+                else Err [] env (createTypeError env "An assumption is not allowed in a proof.")
+            _ -> do
+                form_t <- checkFormFE env form
+                (env1, args_t) <- checkArgsFE env (take numofargs args)
+                res_t <- applyRule env1 (unpack rule) args_t form_t
+                Ok [] (env1, ArgForm res_t)
 
 {-
     Converts a list of arguments to a list of Abs.Arg
@@ -524,9 +542,9 @@ checkStepFE env step = case step of
         - List of arguments in Text form
     -return: List of Abs.Arg
 -}
-argToBe :: [Text] -> Result [Abs.Arg]
-argToBe [] = Ok [] []
-argToBe t = 
+parseArgs :: [Text] -> Result [Abs.Arg]
+parseArgs [] = Ok [] []
+parseArgs t = 
         case pListArg (myLexer (unpack (intercalate (pack ",") (map replaceSpecialSymbolsInverse t)))) of
             Left _ -> Err [] newEnv (createSyntaxError newEnv ("Could not parse argument list." ++ show (map replaceSpecialSymbolsInverse t)))
             Right arg -> Ok [] arg
