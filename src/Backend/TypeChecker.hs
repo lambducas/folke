@@ -64,15 +64,9 @@ checkJson filePath =  do
         Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to parse JSON proof")
         Just s -> Ok [] s
     
-    backendText <- case Just (unpack (parseProofForBackend seq)) of
-        Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to convert proof to backend format")
-        Just t -> Ok [] t
-    
     -- Check the proof with the backend
-    result <- checkString backendText
-    
-    -- Return the appropriate result
-    return ()
+    checkFE seq
+
 
 -- | Handle a message from the frontend 
 handleFrontendMessage :: FrontendMessage -> BackendMessage
