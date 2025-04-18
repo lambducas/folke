@@ -200,6 +200,8 @@ data EventResponse s e sp ep
   crashes without returning a value, the composite will not know about it.
   -}
   | Task (TaskHandler e)
+  -- | Task but blocking
+  | SyncTask (TaskHandler e)
   {-|
   Runs an asynchronous task that will produce unlimited result. The producer is
   responsible for reporting errors using the expected event type. If the
@@ -968,6 +970,7 @@ evtResponseToRequest widgetComp widgetKeys response = case response of
   MoveFocusFromKey key dir -> Just $ sendMsgTo widgetComp (CompMsgMoveFocus key dir)
   Message key msg -> Just $ sendMsgTo widgetComp (CompMsgMessage key msg)
   Task task -> Just $ RunTask widgetId path task
+  SyncTask task -> Just $ RunInRenderThread widgetId path task
   Producer producer -> Just $ RunProducer widgetId path producer
   NoOpResponse -> Nothing
   where

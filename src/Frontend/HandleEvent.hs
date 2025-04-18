@@ -477,13 +477,13 @@ handleEvent wenv node model evt = case evt of
 
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
 
-  OpenSetWorkingDir -> [ Producer openDiag ]
+  OpenSetWorkingDir -> [ SyncTask openDiag ]
     where
-      openDiag sendMsg = do
+      openDiag = do
         path <- openFolderDialog
         case path of
-          Nothing -> return ()
-          Just path -> sendMsg (SetWorkingDir path)
+          Nothing -> return NoEvent
+          Just path -> return $ SetWorkingDir path
 
   SetWorkingDir path -> [
       Model $ model & persistentState . workingDir .~ newWd,
