@@ -116,7 +116,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
-    Just (FEError _warns error) -> span ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
+    Just (FEError _warns error) -> paragraph ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
     Just (FEOk warns) ->
         if null warns
         then span "Proof is correct :)" `styleBasic` [textColor lime]
@@ -218,7 +218,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ]
                 `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8],
 
-              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
+              widgetIf isError ((paragraph . pack . extractErrorMsg) (model ^. proofStatus))
                 `styleBasic` [textColor red, paddingT (0.5*u)],
 
               vstack (map warningLabel warnings)

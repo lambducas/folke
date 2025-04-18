@@ -20,7 +20,7 @@ module Backend.Helpers
     catchError,
     mapError,
     mapErrorMsg,
-  
+
     ---------------------------------------
     -- Result manipulation
     ---------------------------------------
@@ -31,13 +31,13 @@ module Backend.Helpers
     resultApp,
     liftResult,
     sequence,
-  
+
     ---------------------------------------
     -- Warning helpers
     ---------------------------------------
     addWarning,
     clearWarnings,
-  
+
     ---------------------------------------
     -- Proof verification helpers
     ---------------------------------------
@@ -45,7 +45,7 @@ module Backend.Helpers
     hasInvalidConclusion,
     filterNilConclusion,
     validateRefs,
-  
+
     ---------------------------------------
     -- Utility functions
     ---------------------------------------
@@ -254,13 +254,21 @@ getConclusion :: Proof -> Formula
 getConclusion (Proof _ _ conc) = conc
 
 -- | Convert a Result to a frontend-friendly error format
--- Sending `Result` directly to frontend freezes the program
--- (because of env?) so we use env to calculate line numbers
--- first and then send back error without env in it
 convertToFEError :: Result t -> FEResult
 convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Err warns env err) = 
-  FEError (map convertWarning warns) (FELocal (getErrorLine env) (show err))
+convertToFEError (Err warns env err) =
+  let 
+    baseMsg = errMessage err ++ 
+              maybe "" (\ctx -> ": " ++ ctx) (errContext err)
+    
+    suggestionText = case errSuggestions err of
+      [] -> ""
+      [s] -> " Suggestion: " ++ s
+      ss -> " Suggestions: " ++ List.intercalate "; " ss
+      
+    errorText = baseMsg ++ suggestionText
+  in
+    FEError (map convertWarning warns) (FELocal (getErrorLine env) errorText)
 
 -- | Convert a warning to a frontend-friendly format
 convertWarning :: Warning -> FEErrorWhere

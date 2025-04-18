@@ -45,6 +45,7 @@ import qualified Data.Map as Map
 import qualified Data.List as List
 import qualified Data.Set as Set
 import Data.Maybe (listToMaybe)
+import Data.Char (toLower)
 import Backend.Types
 
 ----------------------------------------------------------------------
@@ -232,7 +233,9 @@ popPos env n = env {pos = drop (fromIntegral n) (pos env)}
 -- | Apply a rule to a list of arguments and check the result
 applyRule :: Env -> String -> [Arg] -> Formula -> Result Formula
 applyRule e name args res =
-    case Map.lookup name (rules env) of
+    let env = e{rule=name}
+        availableRules = Map.keys (rules env) ++ Map.keys (user_rules env)
+    in case Map.lookup name (rules env) of
         Just rule_f ->
             case rule_f env (zip [1..] args) res of
                 Err warns env_e err -> Err warns env_e err
@@ -249,8 +252,33 @@ applyRule e name args res =
                     else Err warns env (createRuleConcError env 
                          ("Wrong conclusion when using rule, expected " ++ 
                           show res ++ ", got " ++ show res_t))
-            Nothing -> Err [] env (createRuleNotFoundError env name)
-  where env = e{rule=name}
+            Nothing -> 
+                let
+                    prefixMatches = filter (List.isPrefixOf name) availableRules
+                    
+                    caseInsensitiveMatches = 
+                        if null prefixMatches then
+                            filter (\r -> map toLower name `List.isPrefixOf` map toLower r) availableRules
+                        else []
+                    
+                    substringMatches = 
+                        if null prefixMatches && null caseInsensitiveMatches then
+                            filter (\r -> name `List.isInfixOf` r || 
+                                         map toLower name `List.isInfixOf` map toLower r) availableRules
+                        else []
+                    
+                    allSuggestions = take 5 (prefixMatches ++ caseInsensitiveMatches ++ substringMatches)
+                    
+                    baseError = createRuleNotFoundError env name
+                    updatedError = 
+                        if null allSuggestions 
+                        then baseError
+                        else baseError { 
+                            errSuggestions = errSuggestions baseError ++ 
+                                ["Did you mean: " ++ 
+                                List.intercalate ", " allSuggestions ++ "?"]
+                        }
+                in Err [] env updatedError
 
 -- | Apply a user-defined rule
 applyUDefRule :: Env -> UDefRule -> [(Integer, Arg)] -> Result Formula
@@ -657,7 +685,7 @@ rulePBC :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 rulePBC _ [(_, ArgProof (Proof _ [Not a] Bot))] _ = Ok [] a
 rulePBC env [(_, ArgProof (Proof _ [Not _] _))] _ = 
     Err [] env (createRuleArgError env 1 "Conclusion needs to be a bot formula.")
-rulePBC env [(_, ArgProof (Proof _ [_] _))] _ = 
+rulePBC env [(_, ArgProof (Proof [_] _ _))] _ = 
     Err [] env (createRuleArgError env 1 "Premise needs to be a not formula.")
 rulePBC env [_] _ = Err [] env (createRuleArgError env 1 "Needs to be a proof.")
 rulePBC env forms _ = Err [] env (createArgCountError env 
