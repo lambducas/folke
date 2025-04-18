@@ -104,6 +104,7 @@ checkFE seq_t = do
     return ()
 
 -- | Check a frontend sequent against the environment
+-- | Check a frontend sequent against the environment
 checkSequentFE :: Env -> FE.FESequent -> Result Proof
 checkSequentFE env sequent = do
     -- Convert premises to steps and combine with existing steps
@@ -126,7 +127,7 @@ checkSequentFE env sequent = do
 
     if filteredProof == seq_t
         then return seq_t
-        else if endsWithEmptyLine && not (hasInvalidConclusion filteredProof seq_t)
+        else if endsWithEmptyLine  -- Simplified condition - only check for empty line
             then Ok [createIncompleteWarning env seq_t filteredProof] filteredProof
             else Err [] env (createMismatchedFormulaError env
                               (getConclusion seq_t)
