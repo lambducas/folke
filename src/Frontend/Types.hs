@@ -90,6 +90,7 @@ data Preferences = Preferences {
 } deriving (Eq, Show)
 
 data PersistentState = PersistentState {
+  _firstTime :: Bool,
   _windowMode :: MainWindowState,
   _workingDir :: Maybe FilePath,
   _currentFile :: Maybe FilePath,

@@ -100,6 +100,7 @@ main = do
 
     -- Default application state for new users
     defaultState = PersistentState {
+      _firstTime = True,
       _windowMode = MainWindowNormal (800, 600),
       _workingDir = Nothing, --Just "./myProofs",
       _currentFile = Nothing,

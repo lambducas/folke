@@ -61,7 +61,14 @@ handleEvent wenv node model evt = case evt of
         backendChan <- newChan
         answer <- startCommunication frontendChan backendChan
         return $ BackendResponse answer
-    ]
+    ] ++ firstTimeEvent
+    where
+      firstTimeEvent = if model ^. persistentState . firstTime
+        then [
+          Model $ model & persistentState . firstTime .~ False,
+          Event OpenGuide
+        ]
+        else []
 
   AppBeforeExit -> [
       cancelExitApplication,
