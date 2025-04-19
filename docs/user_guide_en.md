@@ -2,10 +2,8 @@
 A quick guide to get you started
 
 ## Create your first proof
-Begin by creating a proof-file:
-1. Press `Ctrl+N` to create a proof
-2. Enter a filename for your proof-file
-3. Press `Enter` or "+ Create proof"
+Begin by [creating a proof-file](runinternalevent://CreateEmptyProof):
+1. Press `Ctrl+N` to create an empty proof
 
 ## Write your proof
 ### Premises
@@ -36,6 +34,8 @@ If you need to create a subproof below the current line, first insert a line and
 ##### Keyboard Shortcuts
 
 #### Exporting your proofs
+You can either export your proof as LaTeX code or as a ready-to-use PDF
+
 ##### Export to LaTeX
 - Converts your proof into tex-typed source code with good formatting using ams and logicproof libraries
 - In the save dialog you choose the save location
