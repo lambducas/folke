@@ -12,17 +12,17 @@ import Frontend.Themes
 import Frontend.Components.GeneralUIComponents
 import Frontend.Components.RenderMarkdown (renderMarkdown)
 import Frontend.Components.RenderProofTab (renderProofTab)
+import Frontend.Components.Details
 
 import Monomer
 import qualified Monomer.Lens as L
 import Control.Lens
 import Data.Text (Text, pack, intercalate, splitOn, toLower)
 import qualified Data.Text (length)
-import Data.List (sort, groupBy, isInfixOf)
+import Data.List (sort, isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
-import System.FilePath (takeExtension, takeFileName, takeBaseName)
-import System.FilePath.Posix ((</>))
+import System.FilePath (takeFileName, takeBaseName)
 import Data.Maybe (fromMaybe, isJust)
 
 import Monomer.Widgets.Containers.BoxDragToResize
@@ -50,10 +50,11 @@ menuBarCategories = [
     ]),
     ("View", [
       ("Toggle File Explorer", "Ctrl+B", ToggleFileExplorer),
-      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences),
-      ("Open Guide", "", OpenGuide)
+      ("Toggle Rules Dictionary", "", ToggleRulesSidebar),
+      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences)
     ]),
     ("Help", [
+      ("Open Welcome Page", "", OpenWelcome),
       ("Open Guide", "", OpenGuide)
     ])
   ]
@@ -89,12 +90,12 @@ buildUI wenv model = widgetTree where
   h2 = Frontend.Components.GeneralUIComponents.h2 model
   h3 = Frontend.Components.GeneralUIComponents.h3 model
   span = Frontend.Components.GeneralUIComponents.span model
-  span_ = Frontend.Components.GeneralUIComponents.span_ model
+  -- span_ = Frontend.Components.GeneralUIComponents.span_ model
   symbolSpan = Frontend.Components.GeneralUIComponents.symbolSpan model
   -- symbolSpan_ = Frontend.Components.GeneralUIComponents.symbolSpan_ model
   paragraph = Frontend.Components.GeneralUIComponents.paragraph model
   -- paragraph_ = Frontend.Components.GeneralUIComponents.paragraph_ model
-  iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
+  -- iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
   iconButton = Frontend.Components.GeneralUIComponents.iconButton model
   -- trashButton = Frontend.Components.GeneralUIComponents.trashButton model
   bold = Frontend.Components.GeneralUIComponents.bold model
@@ -226,57 +227,14 @@ buildUI wenv model = widgetTree where
                       `styleHover` [bgColor hoverColor]
                   ]) `styleBasic` [borderB 1 dividerColor, paddingV 2, paddingH 16],
 
-                fastVScroll $ fileTreeUI parts 1
+                fastVScroll $ details [DetailsCfg {
+                      _dcOnOpenFile = [RaiseEvent . OpenFile],
+                      _dcOnOpenContextMenu = [\g l -> RaiseEvent $ OpenContextMenu (ctxFileExplorer g l)]
+                    }] model parts
               ] `styleBasic` [ borderR 1 dividerColor ]
               where
                 parts = map (\f -> (splitOn "/" (pack f), f)) files
                 files = sort fid
-
-                fileTreeUI parts indent = vstack [
-                    vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile,
-                    vstack $ map folder groups
-                  ]
-                  where
-                    -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-                    partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-                    partFolder = filter (\i -> length (fst i) > 1) parts
-                    groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
-
-                    folder seqs = vstack [
-                        hstack [
-                          span ((head . fst . head) seqs),
-                          iconLabel remixFolder5Line `styleBasic` [paddingL 8]
-                        ] `styleBasic` [paddingL (16 * indent), paddingV 8],
-                        fileTreeUI newParts (indent + 1)
-                      ]
-                      where
-                        newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-                        -- newParts = map (\f -> (splitOn "/" (pack f), f)) newFiles
-                        -- newFiles = map (unpack . intercalate "/" . tail . fst) seqs
-
-  fileItem indent text filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
-      iconLabel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
-      span_ text [ellipsis]
-    ]
-      `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
-    where
-      handleBtn BtnLeft _ = OpenFile filePath
-      handleBtn BtnRight _ = OpenContextMenu (ctxFileExplorer fullPath filePath)
-      handleBtn _ _ = NoEvent
-      isCurrent = (model ^. persistentState . currentFile) == Just fullPath
-      fullPath = case model ^. persistentState . workingDir of
-        Nothing -> ""
-        Just wd -> wd </> filePath
-      ext = takeExtension filePath
-      iconIdent
-        | ext == ".md" = remixMarkdownFill
-        | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
-        | otherwise = remixMenu2Line
-      iconColor
-        | ext == ".md" = Just $ rgb 94 156 255
-        | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
-        | otherwise = Nothing
 
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
@@ -322,7 +280,7 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [padding u]
 
   renderMarkdownTab :: Text -> WidgetNode AppModel AppEvent
-  renderMarkdownTab content = fastVScroll (renderMarkdown model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+  renderMarkdownTab content = fastVScroll (renderMarkdown wenv model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
 
   renderPreferenceTab :: WidgetNode AppModel AppEvent
   renderPreferenceTab = hstack [

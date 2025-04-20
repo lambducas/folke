@@ -7,13 +7,13 @@ module NativeFileDialog (
 ) where
 
 import Foreign.C.Types
-import Foreign.C (peekCString, CString)
+import Foreign.C (peekCString, CString, newCString)
 import Foreign.Ptr
 
 foreign import ccall unsafe "printFakeErrorMessage" printFakeErrorMessage :: IO CInt
 foreign import ccall unsafe "openDialogAndLogResult" openDialogAndLogResult :: IO CInt
 foreign import ccall unsafe "pickFolder" pickFolderC :: IO (Ptr CChar)
-foreign import ccall unsafe "saveDialog" saveDialogC :: IO (Ptr CChar)
+foreign import ccall unsafe "saveDialog" saveDialogC :: Ptr CChar -> IO (Ptr CChar)
 foreign import ccall unsafe "openDialog" openDialogC :: IO (Ptr CChar)
 
 doSomeLog = do
@@ -32,8 +32,10 @@ openFolderDialog = do
     then return Nothing
     else return (Just path)
 
-openSaveDialog = do
-  str <- saveDialogC
+openSaveDialog :: String -> IO (Maybe String)
+openSaveDialog filter = do
+  cFilter <- newCString filter
+  str <- saveDialogC cFilter
   path <- peekCString str
 
   if path == ""

@@ -141,6 +141,7 @@ executable bsc
                 , Frontend.Components.RenderMarkdown
                 , Frontend.Components.GeneralUIComponents
                 , Frontend.Components.RenderProofTab
+                , Frontend.Components.Details
                 , Shared.Messages
                 , Shared.FESequent
     default-language: Haskell2010
