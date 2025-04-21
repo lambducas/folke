@@ -33,7 +33,7 @@ h1_, h2_, h3_, h4_, h5_, h6_, span_, paragraph_, iconLabel_, symbolSpan_ :: AppM
 
 -- | Main heading
 h1 model t = label t `styleBasic` [ textSize (1.75 * u model), boldTextFont model ]
-h1_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.5 * u model), boldTextFont model ]
+h1_ model t cfg = label_ t cfg `styleBasic` [ textSize (1.75 * u model), boldTextFont model ]
 
 -- | Secondary heading
 h2 model t = label t `styleBasic` [ textSize (1.25 * u model), boldTextFont model ]

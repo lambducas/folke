@@ -195,6 +195,7 @@ data AppEvent
   -- Handle files
   | OpenPreferences
   | OpenGuide
+  | OpenWelcome
   | ToggleFileExplorer
   | ToggleRulesSidebar
   | RefreshExplorer

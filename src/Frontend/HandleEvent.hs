@@ -68,7 +68,7 @@ handleEvent wenv node model evt = case evt of
       firstTimeEvent = if model ^. persistentState . firstTime
         then [
           Model $ model & persistentState . firstTime .~ False,
-          Event OpenGuide
+          Event OpenWelcome
         ]
         else []
 
@@ -315,6 +315,8 @@ handleEvent wenv node model evt = case evt of
 
   OpenGuide -> handleEvent wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
+  OpenWelcome -> handleEvent wenv node model (OpenFile_ "welcome.md" "./docs")
+
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
         preferencePath <- getPreferencePath
@@ -422,7 +424,7 @@ handleEvent wenv node model evt = case evt of
       Nothing -> []
       Just seq -> [
           Producer (\sendMsg -> do
-            mNewPath <- openSaveDialog
+            mNewPath <- openSaveDialog "json"
             case mNewPath of
               Nothing -> return ()
               Just newPath -> do
@@ -531,7 +533,7 @@ handleEvent wenv node model evt = case evt of
         Just _ ->
           [ Producer (\sendMsg -> do
               -- Open a save dialog to let the user choose where to save the LaTeX file
-              mSavePath <- openSaveDialog
+              mSavePath <- openSaveDialog "tex"
               case mSavePath of
                 Nothing ->
                   -- User cancelled the dialog
@@ -560,7 +562,7 @@ handleEvent wenv node model evt = case evt of
         Just _ ->
           [ Producer (\sendMsg -> do
               -- Open a save dialog to let the user choose where to save the file
-              mSavePath <- openSaveDialog
+              mSavePath <- openSaveDialog "pdf"
               case mSavePath of
                 Nothing -> return ()
                 Just savePath -> do

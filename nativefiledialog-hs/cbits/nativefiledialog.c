@@ -70,10 +70,10 @@ nfdchar_t* pickFolder( void )
     return "";
 }
 
-nfdchar_t* saveDialog( void )
+nfdchar_t* saveDialog(nfdchar_t* filterList)
 {
     nfdchar_t *savePath = NULL;
-    nfdresult_t result = NFD_SaveDialog( "*", NULL, &savePath );
+    nfdresult_t result = NFD_SaveDialog(filterList, NULL, &savePath );
     if ( result == NFD_OKAY )
     {
         // puts("Success!");
