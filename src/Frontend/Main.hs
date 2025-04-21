@@ -87,7 +87,7 @@ main = do
       _preferences = prefs,
       _persistentState = state,
 
-      _autoCheckProofTracker = AutoCheckProofTracker {_previousThreadId = Nothing, _autoCheckProofIf = False}
+      _autoCheckProofTracker = AutoCheckProofTracker {_previousThreadId = Nothing, _autoCheckProofIf = True}
     }
 
     -- Default preferences for new users

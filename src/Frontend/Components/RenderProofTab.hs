@@ -31,10 +31,8 @@ import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
 import Data.Set (fromList, toList)
-
-import Control.Concurrent.Timer
-import Control.Concurrent.Suspend
-import Control.Concurrent (threadDelay)
+import qualified Data.Sequence as Data.Sequence.Internal
+--import Control.Concurrent (threadDelay)
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -250,26 +248,27 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                   -- spacer,
 
                   -- textFieldV "" (\_ -> NoEvent),
+                  keystroke [("Up", _hACP mempty),("Down", _hACP mempty),("Enter", _hACP mempty)] (
+                    firstKeystroke [
+                      ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
+                      ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
+                      ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
+                      -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
-                  firstKeystroke [
-                    ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
-                    ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-                    ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
-                    -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
-
-                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
-                    ("Delete", RemoveLine False path, trashActive),
-                    ("Backspace", RemoveLine False path, canBackspaceToDelete),
-                    ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                    ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
-                    ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) 
-                      [onKeyDown handleFormulaKey, placeholder "Empty statement", onChange handleAutoCheckProof]
-                    `styleBasic` [styleIf isWarning (border 1 orange)]
-                    `styleBasic` [styleIf isStatementError (border 1 red)]
-                    `nodeKey` (showt index <> ".statement"))
-                      `nodeKey` (showt index <> ".statement.keystroke"),
+                      ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+                      ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
+                      ("Delete", RemoveLine False path, trashActive),
+                      ("Backspace", RemoveLine False path, canBackspaceToDelete),
+                      ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                      ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
+                      ("Enter", NextFocus 1, True)
+                    ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) 
+                        [onKeyDown handleFormulaKey, placeholder "Empty statement", onChange handleAutoCheckProof, onBlur _hACP]
+                      `styleBasic` [styleIf isWarning (border 1 orange)]
+                      `styleBasic` [styleIf isStatementError (border 1 red)]
+                      `nodeKey` (showt index <> ".statement"))
+                        `nodeKey` (showt index <> ".statement.keystroke")
+                      ),
 
                   spacer,
 
@@ -295,7 +294,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ]
               `nodeKey` showt index
 
-          ruleKeystrokes w = firstKeystroke [
+          ruleKeystrokes w = keystroke [("Up", _hACP mempty),("Down", _hACP mempty),("Enter", _hACP mempty)] (firstKeystroke [
               ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
               ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
               ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
@@ -311,9 +310,10 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ("Enter", InsertLineAfter False path, usedArguments == 0)
               -- ("Enter", InsertLineAfter path, True)
             ] w
-              `nodeKey` (showt index <> ".rule.keystroke")
+              `nodeKey` (showt index <> ".rule.keystroke"))
 
-          ruleField = symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
+          ruleField = symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) 
+            [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus, onChange handleAutoCheckProof, onBlur _hACP]
               `styleBasic` [styleIf isWarning (border 1 orange)]
               `styleBasic` [styleIf isRuleError (border 1 red)]
               `nodeKey` (showt index <> ".rule")
@@ -321,7 +321,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = hstack [
               symbolSpan (labels !! idx),
-              firstKeystroke [
+              keystroke [("Up", _hACP mempty),("Down", _hACP mempty),("Enter", _hACP mempty)] (firstKeystroke [
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
@@ -334,11 +334,12 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
-              ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
-              `nodeKey` (showt index <> ".ruleArg." <> showt idx)
-              `styleBasic` [width 70]
-              `styleBasic` [styleIf isWarning (border 1 orange)]
-              `styleBasic` [styleIf isRuleArgError (border 1 red)])
+              ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) 
+                [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus, onChange handleAutoCheckProof, onBlur _hACP]
+                  `nodeKey` (showt index <> ".ruleArg." <> showt idx)
+                  `styleBasic` [width 70]
+                  `styleBasic` [styleIf isWarning (border 1 orange)]
+                  `styleBasic` [styleIf isRuleArgError (border 1 red)]))
             ]
             where
               isFirstArg = idx == 0
@@ -444,7 +445,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               cursorPos = _ifsCursorPos state
           
           handleAutoCheckProof :: Text -> AppEvent
-          handleAutoCheckProof text = AutoCheckProof
+          handleAutoCheckProof _ = AutoCheckProof
+          _hACP :: Data.Sequence.Internal.Seq PathStep -> AppEvent
+          _hACP _ = MaybeCheckProof file $ model ^. autoCheckProofTracker . autoCheckProofIf
 
           isStatementError = isError || not (validateStatement statement)
           isRuleError = isError || not (validateRule rule)
@@ -472,18 +475,18 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-      autoCheckingProof :: IO AppEvent
-      autoCheckingProof = do
-        threadDelay 1048576
-        yn <- return (model ^. autoCheckProofTracker . autoCheckProofIf)
-        case yn of
-          False -> do 
-            _ <- return NoEvent
-            autoCheckingProof
-          True -> do
-            _ <- return (CheckProof file)
-            _ <- return (SetAutoCheckProofIf False)
-            autoCheckingProof
+      -- autoCheckingProof :: IO AppEvent
+      -- autoCheckingProof = do
+      --   threadDelay 1048576
+      --   yn <- return (model ^. autoCheckProofTracker . autoCheckProofIf)
+      --   case yn of
+      --     False -> do 
+      --       _ <- return NoEvent
+      --       autoCheckingProof
+      --     True -> do
+      --       _ <- return (CheckProof file)
+      --       _ <- return (SetAutoCheckProofIf False)
+      --       autoCheckingProof
 
       lineNumbers = ui
         where

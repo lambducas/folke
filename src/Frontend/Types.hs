@@ -222,6 +222,7 @@ data AppEvent
   | AutoCheckProof
   | SetAutoCheckProofIf Bool
   | SetPreviousThreadId ThreadId
+  | MaybeCheckProof File Bool
 
   -- Theme
   | SwitchTheme

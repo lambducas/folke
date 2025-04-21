@@ -484,14 +484,24 @@ handleEvent wenv node model evt = case evt of
   AutoCheckProof -> [
     Producer (\sendMsg -> do
         maybeKillThread $ model ^. autoCheckProofTracker . previousThreadId
+        sendMsg (SetAutoCheckProofIf False)
         tid <- myThreadId
         sendMsg (SetPreviousThreadId tid)
-        threadDelay 1048576
+        threadDelay 2097152
         sendMsg (SetAutoCheckProofIf True)
       )
     ]
   SetPreviousThreadId tid -> [Model $ model & autoCheckProofTracker . previousThreadId .~ (Just tid)]
   SetAutoCheckProofIf tf -> [Model $ model & autoCheckProofTracker . autoCheckProofIf .~ tf]
+  MaybeCheckProof file tf -> [
+    Producer (\sendMsg -> do
+        case tf of
+          False -> sendMsg(NoEvent)
+          True -> do
+            sendMsg(CheckProof file)
+            sendMsg(SetAutoCheckProofIf False)
+      )
+    ]
 
   BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
