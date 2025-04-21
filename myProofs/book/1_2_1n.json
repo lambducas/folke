@@ -19,7 +19,7 @@
                     "1"
                 ],
                 "_rule": "AndEL",
-                "_statement": "p | (q -> p)",
+                "_statement": "p â¨ (q â p)",
                 "_usedArguments": 1,
                 "tag": "Line"
             },
@@ -40,7 +40,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "q -> p",
+                        "_statement": "q â p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },

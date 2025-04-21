@@ -117,7 +117,8 @@ data ConfirmActionData = ConfirmActionData {
 
 data AutoCheckProofTracker = AutoCheckProofTracker {
   _previousThreadId :: Maybe ThreadId,
-  _autoCheckProofIf :: Bool
+  _autoCheckProofIf :: Bool,
+  _autoCheckProofToggle :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {

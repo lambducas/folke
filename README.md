@@ -61,7 +61,7 @@
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
 - [ ] When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders
-- [ ] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
+- [a] Auto-check proof for errors (only display critical errors and skip e.g empty line errors)
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Add drag to resize on bottom bar where the error message is
 - [ ] Allow user to open files that aren't in working directory by pressing `Ctrl+O` and selecting a single file
