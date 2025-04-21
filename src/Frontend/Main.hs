@@ -85,7 +85,9 @@ main = do
       _proofStatus = Nothing,
 
       _preferences = prefs,
-      _persistentState = state
+      _persistentState = state,
+
+      _autoCheckProofTracker = AutoCheckProofTracker {_previousThreadId = Nothing, _autoCheckProofIf = False}
     }
 
     -- Default preferences for new users

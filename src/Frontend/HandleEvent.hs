@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use if" #-}
 
 module Frontend.HandleEvent (
   handleEvent
@@ -18,7 +20,7 @@ import Logic.Par (pSequent, myLexer)
 import Monomer
 import Control.Lens
 import Control.Exception (try, SomeException)
-import Control.Concurrent (newChan)
+import Control.Concurrent ( newChan, killThread, threadDelay, myThreadId, ThreadId )
 import Data.Maybe (fromMaybe)
 import Data.List (isInfixOf)
 import Data.Text (unpack, pack)
@@ -478,6 +480,18 @@ handleEvent wenv node model evt = case evt of
       Model $ model & proofStatus .~ Nothing,
       Producer (evaluateCurrentProof model file)
     ]
+  
+  AutoCheckProof -> [
+    Producer (\sendMsg -> do
+        maybeKillThread $ model ^. autoCheckProofTracker . previousThreadId
+        tid <- myThreadId
+        sendMsg (SetPreviousThreadId tid)
+        threadDelay 1048576
+        sendMsg (SetAutoCheckProofIf True)
+      )
+    ]
+  SetPreviousThreadId tid -> [Model $ model & autoCheckProofTracker . previousThreadId .~ (Just tid)]
+  SetAutoCheckProofIf tf -> [Model $ model & autoCheckProofTracker . autoCheckProofIf .~ tf]
 
   BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
@@ -582,3 +596,7 @@ directoryFilesProducer workingDir sendMsg = do
           print e
           sendMsg (SetFilesInDirectory Nothing)
         Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
+
+maybeKillThread :: Maybe ThreadId -> IO ()
+maybeKillThread (Just tid) = killThread tid
+maybeKillThread Nothing = return ()

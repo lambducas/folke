@@ -12,7 +12,7 @@ module Frontend.Types (
 import Shared.FESequent
 import Monomer
 import Data.Text (Text)
-import Control.Concurrent (Chan)
+import Control.Concurrent (Chan, ThreadId)
 import Control.Lens ( makeLenses )
 import Shared.Messages ( BackendMessage, FrontendMessage, FEResult )
 import Data.Aeson
@@ -115,6 +115,11 @@ data ConfirmActionData = ConfirmActionData {
   _cadAction :: AppEvent
 } deriving (Eq, Show)
 
+data AutoCheckProofTracker = AutoCheckProofTracker {
+  _previousThreadId :: Maybe ThreadId,
+  _autoCheckProofIf :: Bool
+} deriving (Eq, Show)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
   _contextMenu :: ContextMenu,
@@ -127,7 +132,9 @@ data AppModel = AppModel {
   _proofStatus :: Maybe FEResult,
 
   _preferences :: Preferences,
-  _persistentState :: PersistentState
+  _persistentState :: PersistentState,
+
+  _autoCheckProofTracker :: AutoCheckProofTracker
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -212,6 +219,9 @@ data AppEvent
   | CheckProof File
   | CheckCurrentProof
   | BackendResponse BackendMessage
+  | AutoCheckProof
+  | SetAutoCheckProofIf Bool
+  | SetPreviousThreadId ThreadId
 
   -- Theme
   | SwitchTheme
@@ -238,6 +248,7 @@ makeLenses 'ProofFile
 makeLenses 'ConfirmActionData
 makeLenses 'ContextMenu
 makeLenses 'AppModel
+makeLenses 'AutoCheckProofTracker
 
 feFileExt :: String
 feFileExt = "json"

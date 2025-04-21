@@ -1,4 +1,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use if" #-}
+{-# HLINT ignore "Use let" #-}
 
 module Frontend.Components.RenderProofTab (
   renderProofTab
@@ -28,6 +31,10 @@ import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
 import Data.Set (fromList, toList)
+
+import Control.Concurrent.Timer
+import Control.Concurrent.Suspend
+import Control.Concurrent (threadDelay)
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -257,7 +264,8 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) [onKeyDown handleFormulaKey, placeholder "Empty statement"]
+                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) 
+                      [onKeyDown handleFormulaKey, placeholder "Empty statement", onChange handleAutoCheckProof]
                     `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
@@ -434,6 +442,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               textLen = Data.Text.length (_ifsCurrText state)
               isAtBeginning = cursorPos == 0
               cursorPos = _ifsCursorPos state
+          
+          handleAutoCheckProof :: Text -> AppEvent
+          handleAutoCheckProof text = AutoCheckProof
 
           isStatementError = isError || not (validateStatement statement)
           isRuleError = isError || not (validateRule rule)
@@ -461,8 +472,18 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
 
-
-
+      autoCheckingProof :: IO AppEvent
+      autoCheckingProof = do
+        threadDelay 1048576
+        yn <- return (model ^. autoCheckProofTracker . autoCheckProofIf)
+        case yn of
+          False -> do 
+            _ <- return NoEvent
+            autoCheckingProof
+          True -> do
+            _ <- return (CheckProof file)
+            _ <- return (SetAutoCheckProofIf False)
+            autoCheckingProof
 
       lineNumbers = ui
         where
