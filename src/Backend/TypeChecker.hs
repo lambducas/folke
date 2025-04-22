@@ -155,32 +155,37 @@ parseFormula t =
 checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
 checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil)
 checkProofFE env [step] i
-  | FE.SubProof _ <- step = Err [] env (createTypeError env "Last step in proof was another proof.")
-  | FE.Line {} <- step = do
-      (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
-      case step_t of
-        ArgTerm _ -> Err [] env (createTypeError env "Check step could not return a term.")
-        ArgFormWith _ _ -> Err [] env (createTypeError env "Check step could not return a form with.")
-        ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
+    | FE.SubProof steps <- step = do
+            -- Handle subproof: create reference for the entire subproof range
+            let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
+            _ <- checkProofFE (push (pushPos env refs_t)) steps i
+            Err [] env (createTypeError env "Last step in proof was another proof.")
+    | FE.Line {} <- step = do
+        (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
+        case step_t of
+            ArgTerm _ -> Err [] env (createTypeError env "Check step could not return a term.")
+            ArgFormWith _ _ -> Err [] env (createTypeError env "Check step could not return a form with.")
+            ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
 checkProofFE env (step : elems) i
-  | FE.SubProof steps <- step = do
-      -- Handle subproof: create reference for the entire subproof range
-      let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
-      proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
-      let step_result = ArgProof proof_t
-      -- Continue checking the remaining elements with updated position
-      seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1) 
-                           elems (i + countSteps (FE.SubProof steps))
-      Ok [] seq_t
+    | FE.SubProof steps <- step = do
+        -- Handle subproof: create reference for the entire subproof range
+        let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
+        proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
+        let step_result = ArgProof proof_t
+        -- Continue checking the remaining elements with updated position
+        seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1) 
+                                elems (i + countSteps (FE.SubProof steps))
+        Ok [] seq_t
 
-  | FE.Line {} <- step = do
-      -- Handle line: create reference for this single line
-      let refs_t = [RefLine i]
-      (new_env, step_t) <- checkStepFE (pushPos env refs_t) step
-      -- Continue checking the remaining elements
-      seq_t <- checkProofFE (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)) 
-                           elems (i + 1)
-      Ok [] seq_t
+    | FE.Line {} <- step = do
+        -- Handle line: create reference for this single line
+        let refs_t = [RefLine i]
+        (new_env, step_t) <- checkStepFE (pushPos env refs_t) step
+        -- Continue checking the remaining elements
+        seq_t <- checkProofFE (popPos (addRefs new_env refs_t step_t) 
+                                (toInteger $ List.length refs_t)) 
+                                elems (i + 1)
+        Ok [] seq_t
 
 -- | Count the number of steps in a proof (for reference numbering)
 countSteps :: FEStep -> Integer
