@@ -202,6 +202,7 @@ data AppEvent
   | OpenSetWorkingDir
   | SetWorkingDir FilePath
   | SetFilesInDirectory (Maybe [FilePath])
+  | OpenFileFromFileSystem
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath
   | OpenFileSuccess File

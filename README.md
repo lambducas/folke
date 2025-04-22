@@ -65,7 +65,7 @@
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Add drag to resize on bottom bar where the error message is
 - [ ] Auto-checker should only display critical errors and skip e.g empty line errors
-- [ ] Allow user to open files that aren't in working directory by pressing `Ctrl+O` and selecting a single file
+- [x] ~~Allow user to open files that aren't in working directory by pressing `Ctrl+O` and selecting a single file~~
 - [x] ~~Auto-check proof for errors~~
 - [x] ~~Force user to save proofs as .json (or as a custom file ext.)~~
 - [x] ~~When inserting a special character into a field, the cursor should not move to the end~~

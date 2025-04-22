@@ -30,7 +30,7 @@ import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing )
 import System.FilePath ( takeExtension, dropExtension)
 
-import NativeFileDialog ( openFolderDialog, openSaveDialog )
+import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
 import qualified System.FilePath.Posix as FPP
 
 import qualified SDL
@@ -322,6 +322,14 @@ handleEvent env wenv node model evt = case evt of
   OpenGuide -> handleEvent env wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
   OpenWelcome -> handleEvent env wenv node model (OpenFile_ "welcome.md" "./docs")
+
+  OpenFileFromFileSystem -> [ SyncTask openDiag ]
+    where
+      openDiag = do
+        path <- openDialog
+        case path of
+          Nothing -> return NoEvent
+          Just path -> return $ OpenFile_ path ""
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
