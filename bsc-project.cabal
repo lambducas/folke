@@ -84,6 +84,7 @@ library
                     , random
                     , process
                     , filepath
+                    , stm
 
     default-extensions: OverloadedStrings
     hs-source-dirs:   src
@@ -115,6 +116,7 @@ executable bsc
                 , process
                 , sdl2 >=2.5.0 && <2.7
                 , temporary
+                , stm
     other-modules:
                   Backend.TypeChecker
                 , Backend.Environment

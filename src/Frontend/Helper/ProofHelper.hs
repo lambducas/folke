@@ -18,26 +18,22 @@ import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
 import System.FilePath.Posix (equalFilePath)
 
--- {-|
--- Applies a function on the proof of the currently opened file-tab.
--- The function assumes that the current file is a proof-file and will
--- fail otherwise
--- -}
--- applyOnCurrentProof :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
--- applyOnCurrentProof model f = actions
---   where
---     actions = fromMaybe [] (fileIndex >>= Just . getActions)
---     fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
---     cf = model ^. persistentState . currentFile
---     getActions fileIndex = [
---         -- Model $ saveModelToHistory model $ model  -- Already using saveModelToHistory correctly
---         Model $ model
---           & persistentState . tmpLoadedFiles . singular (ix fileIndex) . parsedSequent %~ maybeF
---           & persistentState . tmpLoadedFiles . singular (ix fileIndex) . isEdited .~ True
---           & proofStatus .~ Nothing
---       ]
---     maybeF (Just s) = Just (f s)
---     maybeF Nothing = Nothing
+{-|
+Applies a function on the currently opened file-tab
+-}
+applyOnCurrentFile :: AppModel -> (File -> File) -> [EventResponse AppModel AppEvent sp ep]
+applyOnCurrentFile model f = actions
+  where
+    actions = fromMaybe [] (fileIndex >>= Just . getActions)
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
+    getActions fileIndex = [
+        Model $ model
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ f
+          & proofStatus .~ Nothing,
+
+        Event AutoCheckProof
+      ]
 
 {-|
 Applies a function on the proof of the currently opened file-tab.
@@ -56,39 +52,14 @@ applyOnCurrentProof model f = actions
     maybeF Nothing = Nothing
 
 {-|
-Applies a function on the currently opened file-tab
--}
-applyOnCurrentFile :: AppModel -> (File -> File) -> [EventResponse AppModel AppEvent sp ep]
-applyOnCurrentFile model f = actions
-  where
-    actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
-    cf = model ^. persistentState . currentFile
-    getActions fileIndex = [
-        Model $ model
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ f
-          & proofStatus .~ Nothing
-      ]
-
-{-|
 Applies a function on the proof of the currently opened file-tab.
 The function should return the new sequent and an event describing the change.
 The function assumes that the current file is a proof-file and will
 fail otherwise.
 -}
 applyOnCurrentProofAndRecordHistory :: AppModel -> (FESequent -> (FESequent, HistoryEvent)) -> [EventResponse AppModel AppEvent sp ep]
-applyOnCurrentProofAndRecordHistory model f = actions
+applyOnCurrentProofAndRecordHistory model f = applyOnCurrentFile model updateFile
   where
-    actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
-    cf = model ^. persistentState . currentFile
-
-    getActions fileIndex = [
-        Model $ model
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ updateFile
-          & proofStatus .~ Nothing
-      ]
-
     updateFile file = case _parsedSequent file of
       Nothing -> file
       Just sequent -> file
@@ -107,28 +78,10 @@ The function assumes that the current file is a proof-file and will
 fail otherwise.
 -}
 applyOnCurrentProofAndRecordSequentHistory :: AppModel -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
-applyOnCurrentProofAndRecordSequentHistory model f = actions
+applyOnCurrentProofAndRecordSequentHistory model f = applyOnCurrentProofAndRecordHistory model newF
   where
-    actions = fromMaybe [] (fileIndex >>= Just . getActions)
-    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
-    cf = model ^. persistentState . currentFile
-
-    getActions fileIndex = [
-        Model $ model
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ updateFile
-          & proofStatus .~ Nothing
-      ]
-
-    updateFile file = case _parsedSequent file of
-      Nothing -> file
-      Just sequent -> file
-        & isEdited .~ True
-        & parsedSequent ?~ newSequent
-        & history . hIndex %~ (+1)
-        & history . hState %~ forkHistory (_hIndex (_history file))
-        where
-          forkHistory index state = take (index + 1) state ++ [HUpdateSequent sequent newSequent]
-          newSequent = f sequent
+    newF seq = (newSeq, HUpdateSequent seq newSeq)
+      where newSeq = f seq
 
 -- | Insert premise at index and updates all line references
 addPremiseToProof :: Int -> Text -> FESequent -> FESequent
@@ -390,8 +343,8 @@ evaluateCurrentProof model file sendMsg = do
   case _parsedSequent file of
     Nothing -> return ()
     Just seq -> do
-      let text = unpack $ parseProofForBackend seq
-      putStrLn text
+      -- let text = unpack $ parseProofForBackend seq
+      -- putStrLn text
       answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) seq
       sendMsg (BackendResponse answer)
 

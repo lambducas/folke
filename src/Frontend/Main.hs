@@ -10,6 +10,7 @@ import Frontend.Preferences (readPreferences, readPersistentState)
 import Monomer
 import Control.Concurrent (newChan)
 import Data.Maybe (fromMaybe)
+import Control.Concurrent.STM (newTChanIO)
 
 main :: IO ()
 main = do
@@ -26,8 +27,11 @@ main = do
   currentBackendChan <- newChan
   _ <- startCommunication currentFrontendChan currentBackendChan
 
+  channel <- newTChanIO
+  let env = AppEnv channel
+
   -- Start Monomer application
-  startApp (model prefs state currentFrontendChan currentBackendChan) handleEvent buildUI (config prefs state)
+  startApp (model prefs state currentFrontendChan currentBackendChan) (handleEvent env) buildUI (config prefs state)
 
   where
     -- Application configuration
@@ -87,7 +91,7 @@ main = do
       _preferences = prefs,
       _persistentState = state,
 
-      _autoCheckProofTracker = AutoCheckProofTracker {_previousThreadId = Nothing, _autoCheckProofIf = False, _autoCheckProofToggle = True}
+      _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True }
     }
 
     -- Default preferences for new users

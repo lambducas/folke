@@ -31,8 +31,6 @@ import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
 import Data.Set (fromList, toList)
-import qualified Data.Sequence as Data.Sequence.Internal
---import Control.Concurrent (threadDelay)
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -136,7 +134,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         hstack_ [childSpacing] [
           h2 "Premises",
           filler,
-          toggleButton "Auto-check proof" (autoCheckProofTracker . autoCheckProofToggle),
+          labeledCheckbox "Auto-check proof" (autoCheckProofTracker . acpEnabled),
           spacer
         ],
         vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
@@ -268,7 +266,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) 
-                      [onKeyDown handleFormulaKey, placeholder "Empty statement", onChange handleAutoCheckProof, onFocus _hACP]
+                      [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                     `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
@@ -317,7 +315,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               `nodeKey` (showt index <> ".rule.keystroke")
 
           ruleField = symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) 
-            [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus, onChange handleAutoCheckProof, onFocus _hACP]
+            [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
               `styleBasic` [styleIf isWarning (border 1 orange)]
               `styleBasic` [styleIf isRuleError (border 1 red)]
               `nodeKey` (showt index <> ".rule")
@@ -339,7 +337,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
               ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) 
-                [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus, onChange handleAutoCheckProof, onFocus _hACP]
+                [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
                   `nodeKey` (showt index <> ".ruleArg." <> showt idx)
                   `styleBasic` [width 70]
                   `styleBasic` [styleIf isWarning (border 1 orange)]
@@ -447,12 +445,6 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               textLen = Data.Text.length (_ifsCurrText state)
               isAtBeginning = cursorPos == 0
               cursorPos = _ifsCursorPos state
-          
-          handleAutoCheckProof :: Text -> AppEvent
-          handleAutoCheckProof _ | model ^. autoCheckProofTracker . autoCheckProofToggle = AutoCheckProof
-                                 | otherwise = NoEvent
-          _hACP :: Data.Sequence.Internal.Seq PathStep -> AppEvent
-          _hACP _ = MaybeCheckProof file $ model ^. autoCheckProofTracker . autoCheckProofIf
 
           isStatementError = isError || not (validateStatement statement)
           isRuleError = isError || not (validateRule rule)

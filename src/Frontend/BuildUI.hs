@@ -284,7 +284,7 @@ buildUI wenv model = widgetTree where
 
   renderPreferenceTab :: WidgetNode AppModel AppEvent
   renderPreferenceTab = hstack [
-    vstack [
+      vstack [
         h3 "App scale",
         paragraph "The application needs to be restarted before changes take effect",
         spacer,

@@ -12,7 +12,8 @@ module Frontend.Types (
 import Shared.FESequent
 import Monomer
 import Data.Text (Text)
-import Control.Concurrent (Chan, ThreadId)
+import Control.Concurrent.STM.TChan (TChan)
+import Control.Concurrent (Chan)
 import Control.Lens ( makeLenses )
 import Shared.Messages ( BackendMessage, FrontendMessage, FEResult )
 import Data.Aeson
@@ -115,10 +116,8 @@ data ConfirmActionData = ConfirmActionData {
   _cadAction :: AppEvent
 } deriving (Eq, Show)
 
-data AutoCheckProofTracker = AutoCheckProofTracker {
-  _previousThreadId :: Maybe ThreadId,
-  _autoCheckProofIf :: Bool,
-  _autoCheckProofToggle :: Bool
+newtype AutoCheckProofTracker = AutoCheckProofTracker {
+  _acpEnabled :: Bool
 } deriving (Eq, Show)
 
 data AppModel = AppModel {
@@ -222,9 +221,6 @@ data AppEvent
   | CheckCurrentProof
   | BackendResponse BackendMessage
   | AutoCheckProof
-  | SetAutoCheckProofIf Bool
-  | SetPreviousThreadId ThreadId
-  | MaybeCheckProof File Bool
 
   -- Theme
   | SwitchTheme
@@ -252,6 +248,12 @@ makeLenses 'ConfirmActionData
 makeLenses 'ContextMenu
 makeLenses 'AppModel
 makeLenses 'AutoCheckProofTracker
+
+newtype AppEnv = AppEnv {
+  _envChannel :: TChan ()
+}
+
+makeLenses 'AppEnv
 
 feFileExt :: String
 feFileExt = "json"

@@ -20,7 +20,9 @@ import Logic.Par (pSequent, myLexer)
 import Monomer
 import Control.Lens
 import Control.Exception (try, SomeException)
-import Control.Concurrent ( newChan, killThread, threadDelay, myThreadId, ThreadId )
+import Control.Concurrent ( newChan, threadDelay )
+import Control.Concurrent.STM.TChan
+import Control.Monad (forever, when)
 import Data.Maybe (fromMaybe)
 import Data.List (isInfixOf)
 import Data.Text (unpack, pack)
@@ -32,14 +34,17 @@ import NativeFileDialog ( openFolderDialog, openSaveDialog )
 import qualified System.FilePath.Posix as FPP
 
 import qualified SDL
+import Control.Concurrent.STM (atomically)
+import Monomer.Helper (collectJustM)
 
 handleEvent
-  :: WidgetEnv AppModel AppEvent
+  :: AppEnv
+  -> WidgetEnv AppModel AppEvent
   -> WidgetNode AppModel AppEvent
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent wenv node model evt = case evt of
+handleEvent env wenv node model evt = case evt of
   NoEvent -> []
 
   Undo -> applyOnCurrentFile model applyUndo
@@ -57,6 +62,7 @@ handleEvent wenv node model evt = case evt of
   -- else []
 
   AppInit -> [
+      Producer (startDebouncer env),
       Producer $ directoryFilesProducer (model ^. persistentState . workingDir),
       Task $ do
         frontendChan <- newChan
@@ -313,9 +319,9 @@ handleEvent wenv node model evt = case evt of
       sendMsg (OpenFile_ preferencePath "")
     )]
 
-  OpenGuide -> handleEvent wenv node model (OpenFile_ "user_guide_en.md" "./docs")
+  OpenGuide -> handleEvent env wenv node model (OpenFile_ "user_guide_en.md" "./docs")
 
-  OpenWelcome -> handleEvent wenv node model (OpenFile_ "welcome.md" "./docs")
+  OpenWelcome -> handleEvent env wenv node model (OpenFile_ "welcome.md" "./docs")
 
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
@@ -352,10 +358,10 @@ handleEvent wenv node model evt = case evt of
       )
     ]
 
-  OpenFile filePath -> handleEvent wenv node model (OpenFile_ filePath wd)
+  OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd)
     where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
-  OpenFileSuccess file -> Model newModel : handleEvent wenv node newModel (SetCurrentFile filePath)
+  OpenFileSuccess file -> Model newModel : handleEvent env wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
         & persistentState . openFiles %~ doOpenFile
@@ -369,17 +375,17 @@ handleEvent wenv node model evt = case evt of
 
   CloseCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
-    Just filePath -> handleEvent wenv node model (CloseFile filePath)
+    Just filePath -> handleEvent env wenv node model (CloseFile filePath)
 
   CloseFile filePath -> case file of
     Nothing -> []
     Just file -> (if isFileEdited (Just file)
-      then handleEvent wenv node model (OpenConfirmAction (ConfirmActionData {
+      then handleEvent env wenv node model (OpenConfirmAction (ConfirmActionData {
         _cadTitle = "Close without saving?",
         _cadBody = "Are you sure you want to close\n" <> pack filePath <> "\nwithout saving? All changes will be lost!",
         _cadAction = CloseFileSuccess filePath
       }))
-      else handleEvent wenv node model (CloseFileSuccess filePath))
+      else handleEvent env wenv node model (CloseFileSuccess filePath))
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
@@ -399,14 +405,14 @@ handleEvent wenv node model evt = case evt of
   SaveCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent wenv node model (SaveFile file)
-      Just file@TemporaryProofFile {} -> handleEvent wenv node model (SaveFile file)
-      Just file@PreferenceFile {} -> handleEvent wenv node model (SaveFile file)
+      Just file@ProofFile {} -> handleEvent env wenv node model (SaveFile file)
+      Just file@TemporaryProofFile {} -> handleEvent env wenv node model (SaveFile file)
+      Just file@PreferenceFile {} -> handleEvent env wenv node model (SaveFile file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   SaveFile f -> case f of
-    PreferenceFile {} -> handleEvent wenv node model SavePreferences
+    PreferenceFile {} -> handleEvent env wenv node model SavePreferences
     f@ProofFile {} -> case _parsedSequent f of
       Nothing -> []
       Just seq -> [
@@ -473,8 +479,8 @@ handleEvent wenv node model evt = case evt of
   CheckCurrentProof -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent wenv node model (CheckProof file)
-      Just file@TemporaryProofFile {} -> handleEvent wenv node model (CheckProof file)
+      Just file@ProofFile {} -> handleEvent env wenv node model (CheckProof file)
+      Just file@TemporaryProofFile {} -> handleEvent env wenv node model (CheckProof file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
@@ -482,28 +488,10 @@ handleEvent wenv node model evt = case evt of
       Model $ model & proofStatus .~ Nothing,
       Producer (evaluateCurrentProof model file)
     ]
-  
-  AutoCheckProof -> [
-    Producer (\sendMsg -> do
-        maybeKillThread $ model ^. autoCheckProofTracker . previousThreadId
-        sendMsg (SetAutoCheckProofIf False)
-        tid <- myThreadId
-        sendMsg (SetPreviousThreadId tid)
-        threadDelay 2097152
-        sendMsg (SetAutoCheckProofIf True)
-      )
-    ]
-  SetPreviousThreadId tid -> [Model $ model & autoCheckProofTracker . previousThreadId .~ (Just tid)]
-  SetAutoCheckProofIf tf -> [Model $ model & autoCheckProofTracker . autoCheckProofIf .~ tf]
-  MaybeCheckProof file tf -> [
-    Producer (\sendMsg -> do
-        case tf of
-          False -> sendMsg(NoEvent)
-          True -> do
-            sendMsg(CheckProof file)
-            sendMsg(SetAutoCheckProofIf False)
-      )
-    ]
+
+  AutoCheckProof
+    | model ^. autoCheckProofTracker . acpEnabled -> [ Task $ sendProofDidChange env ]
+    | otherwise -> []
 
   BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
@@ -609,6 +597,28 @@ directoryFilesProducer workingDir sendMsg = do
           sendMsg (SetFilesInDirectory Nothing)
         Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
 
-maybeKillThread :: Maybe ThreadId -> IO ()
-maybeKillThread (Just tid) = killThread tid
-maybeKillThread Nothing = return ()
+{-|
+"Debounce" changes in current proof and only check the proof
+if no changes has been made for some time
+-}
+startDebouncer :: AppEnv -> (AppEvent -> IO ()) -> IO ()
+startDebouncer env sendMsg = forever $ do
+  -- Get number of changes since last update
+  inputs <- collectJustM . atomically $ tryReadTChan channel
+
+  -- No new changes, check proof
+  when (null inputs) $ do
+    sendMsg CheckCurrentProof
+    -- Wait here for next change
+    atomically $ readTChan channel
+
+  threadDelay _250ms
+  where
+    _250ms = 250 * 1000
+    channel = env ^. envChannel
+
+-- | Notify debouncer that changes have been made to proof
+sendProofDidChange :: AppEnv -> IO AppEvent
+sendProofDidChange env = do
+  atomically $ writeTChan (env ^. envChannel) ()
+  return NoEvent
