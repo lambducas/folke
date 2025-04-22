@@ -136,14 +136,14 @@ checkPremsFE env (form:forms) = do
 -- | Check a frontend formula
 checkFormFE :: Env -> FE.FEFormula -> Result Formula
 checkFormFE env fef = do 
-    f <- parseFormula fef
+    f <- parseFormula env fef
     checkForm env f
 
 -- | Parse a frontend formula to an abstract syntax formula
-parseFormula :: FE.FEFormula -> Result Abs.Form
-parseFormula t =
+parseFormula :: Env -> FE.FEFormula -> Result Abs.Form
+parseFormula env t =
     case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-        Left err -> throwTypeError newEnv $ 
+        Left err -> throwSyntaxError env $ 
             "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
         Right form -> Ok [] form
 
@@ -233,15 +233,15 @@ checkStepFE env step = case step of
 -- | Check frontend arguments against rules
 checkArgsFE :: Env -> [Text] -> Result (Env, [Arg])
 checkArgsFE env a = do
-    args <- parseArgs a
+    args <- parseArgs env a
     checkArgs env args
 
 -- | Parse arguments from frontend text format
-parseArgs :: [Text] -> Result [Abs.Arg]
-parseArgs t = 
+parseArgs :: Env -> [Text] -> Result [Abs.Arg]
+parseArgs env t = 
     let argText = unpack (intercalate (pack ",") (map replaceSpecialSymbolsInverse t))
     in case pListArg (myLexer argText) of
-        Left err -> throwTypeError newEnv $ 
+        Left err -> throwSyntaxError env $ 
             "Could not parse argument list: '" ++ argText ++ "'\nError: " ++ err
         Right arg -> Ok [] arg
 

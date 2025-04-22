@@ -14,6 +14,7 @@ module Backend.Helpers
     ---------------------------------------
     throwError,
     throwTypeError,
+    throwSyntaxError,
     throwRuleError,
     throwArgError,
     throwUnknownError,
@@ -57,23 +58,7 @@ module Backend.Helpers
     maybeHead
   ) where
 
-import Backend.Types (
-    Severity(Low, Medium, High, Hint),
-    WarningKind(StyleIssue, UnusedReference, GeneralWarning, IncompleteProof,
-                PossibleSimplification, RedundantStep),
-    Ref(..),
-    Warning(..),
-    Result(..),
-    Error(..),
-    ErrorKind(..),
-    Env(..),
-    Arg(ArgProof),
-    Formula(Pred, Impl, And, Or, Not, All, Some, Eq, Bot, Nil),
-    Proof(..),
-    createTypeError,
-    createRuleConcError,
-    createRuleArgError,
-    createUnknownError )
+import Backend.Types
 
 import Prelude hiding (sequence)
 
@@ -157,6 +142,9 @@ throwError errCons env msg = Err [] env (errCons env msg)
 -- | Throw a type error
 throwTypeError :: Env -> String -> Result a
 throwTypeError = throwError createTypeError
+
+throwSyntaxError :: Env -> String -> Result a
+throwSyntaxError = throwError createSyntaxError
 
 -- | Throw a rule conclusion error
 throwRuleError :: Env -> String -> Result a
