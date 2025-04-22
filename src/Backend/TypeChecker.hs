@@ -10,58 +10,32 @@ It handles both the syntactic correctness (type checking) and semantic correctne
 -}
 module Backend.TypeChecker (
     -- * Main API functions
-    isProofCorrect,
-    check,
-    checkString,
     checkJson,
     handleFrontendMessage,
 ) where
 
 import qualified Logic.Abs as Abs
-import Logic.Par (pSequent, myLexer, pForm, pListArg)
+import Logic.Par (myLexer, pForm, pListArg)
 import Shared.Messages
 import Shared.FESequent as FE
 import Backend.Environment
 import Backend.Types
 import Backend.Helpers
 
-import Frontend.Parse (parseProofFromJSON, parseProofForBackend)
+import Frontend.Parse (parseProofFromJSON)
 import qualified Data.List as List
 import qualified Data.Map as Map
 
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Control.Exception (SomeException, try)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Shared.FESequent as FE
 import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
-import Data.Text (Text, unpack, null, pack, intercalate)
-import Prelude hiding (intercalate)
+import Data.Text (Text, unpack, pack, intercalate)
 
 ----------------------------------------------------------------------
 -- Main API Functions
 ----------------------------------------------------------------------
-
--- | Check if a proof is correct (returns a boolean)
-isProofCorrect :: Abs.Sequent -> Bool
-isProofCorrect seq_t = case check seq_t of
-    Err {} ->  False
-    Ok _ _ -> True
-
--- | Check a proof from a sequent AST (main checking function)
-check :: Abs.Sequent -> Result ()
-check seq_t = do
-    let env = newEnv
-    _ <- checkSequent env seq_t
-    return ()
-
--- | Check a proof from a string (for external interfaces)
-checkString :: String -> Result ()
-checkString proof =
-    case pSequent (myLexer proof) of
-        Left err -> Err [] newEnv (createSyntaxError newEnv err)
-        Right seq_t -> check seq_t
-
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
 checkJson filePath =  do
@@ -81,10 +55,10 @@ checkJson filePath =  do
 
 -- | Handle a message from the frontend
 handleFrontendMessage :: FrontendMessage -> BackendMessage
-handleFrontendMessage (CheckStringSequent text) =
-    StringSequentChecked (convertToFEError (checkString text))
-handleFrontendMessage (CheckSequent sequent) =
-    SequentChecked (convertToFEError (check sequent))
+handleFrontendMessage (CheckStringSequent _) =
+    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
+handleFrontendMessage (CheckSequent _) =
+    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
 handleFrontendMessage (CheckStep _) =
     StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) =
@@ -265,166 +239,6 @@ parseArgs t =
         Left err -> throwTypeError newEnv $ 
             "Could not parse argument list: '" ++ argText ++ "'\nError: " ++ err
         Right arg -> Ok [] arg
-
-----------------------------------------------------------------------
--- BNFC Sequent Checking
-----------------------------------------------------------------------
-
--- | Check a sequent AST and return the resulting proof
-checkSequent :: Env -> Abs.Sequent -> Result Proof
-checkSequent _ (Abs.Seq _ Abs.FormNil (Abs.Proof _)) =
-    Err [] newEnv (createTypeError newEnv "Conclusion is empty.")
-checkSequent env (Abs.Seq prems conc (Abs.Proof proof)) = do
-    -- Check premises, conclusion, and proof steps
-    prems_t <- checkPrems env prems
-    conc_t <- checkForm env conc
-    proof_t <- checkProof env proof
-
-    -- Check for unused references
-    validateRefs env
-
-    -- Handle empty lines and check if proof is complete
-    let endsWithEmptyLine = hasNilConclusion proof_t
-    let filteredProof = filterNilConclusion proof_t
-    let seq_t = Proof [] prems_t conc_t
-
-    if filteredProof == seq_t
-        then return seq_t
-        else if endsWithEmptyLine && not (hasInvalidConclusion filteredProof seq_t)
-            then Ok [createIncompleteWarning env seq_t filteredProof] filteredProof
-            else Err [] env (createMismatchedFormulaError env
-                              (getConclusion seq_t)
-                              (getConclusion filteredProof))
-  where
-    createIncompleteWarning env seq_t filteredProof = Warning {
-        warnLocation = listToMaybe (pos env),
-        warnSeverity = Medium,
-        warnKind = IncompleteProof (getConclusion seq_t) (getConclusion filteredProof),
-        warnMessage = "Unfinished proof. The last line doesn't match the expected conclusion.",
-        warnSuggestion = Just "Complete your proof to derive the required conclusion"
-    }
-
--- | Check premises of a sequent
-checkPrems :: Env -> [Abs.Form] -> Result [Formula]
-checkPrems _ [] = Ok [] []
-checkPrems _ [Abs.FormNil] = Ok [] []
-checkPrems env (form:forms) = do
-    form_t <- checkForm env form
-    forms_t <- checkPrems env forms
-    Ok [] (form_t : forms_t)
-
-----------------------------------------------------------------------
--- BNFC Proof and Step Checking
-----------------------------------------------------------------------
-
--- | Check a proof and return its type
-checkProof :: Env -> [Abs.ProofElem] -> Result Proof
-checkProof env [] = Ok [] (Proof [] (getPrems env) Nil)
-checkProof env [Abs.ProofElem labels step] =
-    case step of
-        Abs.StepNil -> Ok [] (Proof (getFreshs env) (getPrems env) Nil)
-        _ -> do
-            refs_t <- checkRefs labels
-            (new_env, step_t) <- checkStep (pushPos env refs_t) step
-            case step_t of
-                ArgProof _ ->
-                    Err [] env (createTypeError env "Last step in proof was another proof.")
-                ArgTerm _ ->
-                    Err [] env (createTypeError env "Check step could not return a term.")
-                ArgFormWith _ _ ->
-                    Err [] env (createTypeError env "Check step could not return a form with.")
-                ArgForm step_t ->
-                    Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
-
-checkProof env (Abs.ProofElem labels step : elems) =
-    case step of
-        Abs.StepNil ->
-            let warning = Warning {
-                warnLocation = listToMaybe (pos env),
-                warnSeverity = Low,
-                warnKind = StyleIssue "Empty line",
-                warnMessage = "Empty line in proof",
-                warnSuggestion = Just "Consider removing unnecessary empty lines for clarity"
-            }
-            in case checkProof env elems of
-                Ok warns proof -> Ok (warning : warns) proof
-                Err warns env_e err -> Err (warning : warns) env_e err
-        _ -> do
-            refs_t <- checkRefs labels
-            (new_env, step_t) <- checkStep (pushPos env refs_t) step
-            case elems of
-                [Abs.ProofElem _ Abs.StepNil] ->
-                    case step_t of
-                        ArgForm conclusion ->
-                            Ok [] (Proof (getFreshs new_env) (getPrems new_env) conclusion)
-                        _ -> checkProofContinuation new_env refs_t step_t elems
-                _ -> checkProofContinuation new_env refs_t step_t elems
-  where
-    checkProofContinuation new_env refs_t step_t = 
-        checkProof (popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t))
-
--- | Check references in a proof step
-checkRefs :: [Abs.Label] -> Result [Ref]
-checkRefs [] = Ok [] []
-checkRefs (label:labels) = do
-    refs_t <- checkRefs labels
-    case label of
-        Abs.LabelRange i j -> Ok [] (RefRange i j : refs_t)
-        Abs.LabelLine i -> Ok [] (RefLine i : refs_t)
-
--- | Check a step in a proof
-checkStep :: Env -> Abs.Step -> Result (Env, Arg)
-checkStep env step = case step of
-    -- Handle premise steps
-    Abs.StepPrem form ->
-        if depth env == 0
-            then do
-                form_t <- checkForm env form
-                new_env <- addPrem env form_t
-                Ok [] (new_env, ArgForm form_t)
-            else Err [] env (createTypeError env "A premise is not allowed in a subproof.")
-
-    -- Handle fresh variable steps
-    Abs.StepFresh ident -> do
-        let t = Term (identToString ident) []
-        env1 <- regTerm env t
-        env2 <- addFresh env1 t
-        Ok [] (env2, ArgTerm t)
-
-    -- Handle assumption steps (in subproofs)
-    Abs.StepAssume form ->
-        if depth env /= 0
-            then do
-                form_t <- checkForm env form
-                new_env <- addPrem env form_t
-                Ok [] (new_env, ArgForm form_t)
-            else Err [] env (createTypeError env "An assumption is not allowed in a proof.")
-
-    -- Handle subproof steps
-    Abs.StepProof (Abs.Proof steps) ->
-        case steps of
-            [] -> Ok [] (env, ArgForm Nil)
-            [Abs.ProofElem _ Abs.StepNil] -> Ok [] (env, ArgForm Nil)
-            _ ->
-                let lastStep = last steps
-                in case lastStep of
-                    Abs.ProofElem _ Abs.StepNil -> do
-                        proof_t <- checkProof (push env) (init steps)
-                        Ok [] (env, ArgForm (getConclusion proof_t))
-                    _ -> do
-                        proof_t <- checkProof (push env) steps
-                        Ok [] (env, ArgProof proof_t)
-
-    -- Handle rule application steps
-    Abs.StepForm name args form -> do
-        form_t <- checkForm env form
-        (env1, args_t) <- checkArgs env args
-        res_t <- applyRule env1 (identToString name) args_t form_t
-        Ok [] (env1, ArgForm res_t)
-
-    -- Handle empty lines
-    Abs.StepNil ->
-        Err [] env (createUnknownError env "Unexpected empty line in proof")
 
 ----------------------------------------------------------------------
 -- BNFC Argument and Formula Checking

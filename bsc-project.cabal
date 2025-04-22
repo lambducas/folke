@@ -121,7 +121,6 @@ executable bsc
                 , Backend.Types
                 , Backend.Helpers
                 , Shared.Messages
-                , Example
                 , Logic.Abs
                 , Logic.Par
                 , Logic.Lex
