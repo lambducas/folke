@@ -202,7 +202,7 @@ handleEvent env wenv node model evt = case evt of
     where
       removeLine = removeFromProof path True . offsetFunc
       offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber True seq else seq
-        where lineNumber = pathToLineNumberOffsetPremises seq path + 1
+        where lineNumber = pathToLineNumberOffsetPremises seq path
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
       getFocusAction sequent = [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]

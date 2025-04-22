@@ -227,7 +227,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 `styleBasic` [border 1 proofBoxColor, styleIf isWarning (border 1 orange), styleIf isError (border 1 red), borderR 0 transparent, paddingV 8],
 
               widgetIf isError ((paragraph . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)],
+                `styleBasic` [textColor red, paddingT (0.5*u), logicTextFont model],
 
               vstack (map warningLabel warnings)
             ]
@@ -289,8 +289,8 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 b
               ],
 
-              widgetIf isError ((span . pack . extractErrorMsg) (model ^. proofStatus))
-                `styleBasic` [textColor red, paddingT (0.5*u)],
+              widgetIf isError ((paragraph . pack . extractErrorMsg) (model ^. proofStatus))
+                `styleBasic` [textColor red, paddingT (0.5*u), logicTextFont model],
 
               vstack (map warningLabel warnings)
             ]
@@ -465,7 +465,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             SubProof p -> length p == last path + 1
             _ -> False
 
-      warningLabel w = span (pack w) `styleBasic` [textColor orange, paddingT (0.5*u)]
+      warningLabel w = paragraph (pack w) `styleBasic` [textColor orange, paddingT (0.5*u), logicTextFont model]
 
       getSubProof p path arrayIndex visualIndex
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
