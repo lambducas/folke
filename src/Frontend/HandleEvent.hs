@@ -468,6 +468,11 @@ handleEvent env wenv node model evt = case evt of
         & proofStatus .~ Nothing
     ]
 
+  MoveTab fromIdx toIdx
+    | fromIdx < toIdx -> [ Model $ model & persistentState . openFiles %~ removeIdx fromIdx . insertAt (model ^. persistentState . openFiles . element fromIdx) (toIdx + 1) ]
+    | fromIdx > toIdx -> [ Model $ model & persistentState . openFiles %~ insertAt (model ^. persistentState . openFiles . element fromIdx) (toIdx + 1) . removeIdx fromIdx ]
+    | otherwise -> []
+
   SwitchTheme -> [
       Model $ model & preferences . selectedTheme %~ switchTheme
     ]

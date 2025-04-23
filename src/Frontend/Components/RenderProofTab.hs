@@ -40,10 +40,7 @@ renderProofTab
   -> WidgetNode AppModel AppEvent
 renderProofTab _wenv model file heading = renderProofTab' file heading where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
-  -- accentColor = selTheme ^. L.userColorMap . at "accent" . non def
-  -- popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
-  -- backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
-  -- selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
+  accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
@@ -187,8 +184,8 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
 
       -- pfDropTarget idx w = dropTarget_ ((\msg -> Print (show msg <> " to " <> show idx)) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
-      pfDropTarget idx w = dropTarget_ ((\p -> MovePathToPath p idx) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
-        where hoverStyle = [border 3 red, bgColor hoverColor]
+      pfDropTarget idx = dropTarget_ ((\p -> MovePathToPath p idx) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle]
+        where hoverStyle = [borderB 3 accentColor, bgColor hoverColor]
 
       tree = vstack [
           ui,

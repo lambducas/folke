@@ -36,6 +36,12 @@ removeIdx idx lst
   | otherwise = part1 ++ drop 1 part2
   where (part1, part2) = splitAt idx lst
 
+-- | Inserts an element into a list such that the new element has the given index
+insertAt :: a -> Int -> [a] -> [a]
+insertAt newElement _ [] = [newElement]
+insertAt newElement 0 as = newElement:as
+insertAt newElement i (a:as) = a : insertAt newElement (i - 1) as
+
 {-|
 Takes part of list. Start is inclusive and end is exclusive.
 Will not fail if start or end is outside the range of the list.
@@ -63,12 +69,6 @@ trimExtension ext text
 -- | Round value to a given number of decimal places
 showDecimals :: (PrintfArg t2) => Integer -> t2 -> Text
 showDecimals decimals number = pack (printf "%0.*f" decimals number)
-
--- | Inserts an element into a list such that the new element has the given index
-insertAt :: a -> Int -> [a] -> [a]
-insertAt newElement _ [] = [newElement]
-insertAt newElement 0 as = newElement:as
-insertAt newElement i (a:as) = a : insertAt newElement (i - 1) as
 
 
 

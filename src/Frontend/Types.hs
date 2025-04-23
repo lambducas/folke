@@ -215,6 +215,7 @@ data AppEvent
   | SaveFile File
   | SaveFileSuccess File
   | SetCurrentFile FilePath
+  | MoveTab Int Int
 
   -- Handle creation of proof
   | CreateEmptyProof

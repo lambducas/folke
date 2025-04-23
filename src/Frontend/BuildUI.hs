@@ -244,18 +244,19 @@ buildUI wenv model = widgetTree where
       tabWindow (model ^. persistentState . currentFile)
     ]
 
-  fileNavBar filePaths = fastHScroll (hstack (map boxedLabel filePaths))
-    `styleBasic` [bgColor selectedColor, maxHeight 50, minHeight 50, height 50]
+  fileNavBar filePaths = fastHScroll (hstack (zipWith renderTabHandle filePaths [0..]))
+    `styleBasic` [bgColor selectedColor, maxHeight 40, minHeight 40, height 40]
     where
-      boxedLabel filePath = box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
+      renderTabHandle filePath idx = dt $ dg $ box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
           spacer,
           fastTooltip (pack filePath) $ span displayName,
+          spacer,
           fastTooltip "Close tab" $
             box_ [onClick (CloseFile filePath)] (symbolSpan closeText
               `styleBasic` [textSize (1.5*u), radius 8, padding 4]
               `styleHover` [bgColor hoverColor])
         ]
-          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand]
+          `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand, paddingH 4]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
             displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
@@ -263,6 +264,12 @@ buildUI wenv model = widgetTree where
             file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
             isCurrent = (model ^. persistentState . currentFile) == Just filePath
             isTemp = "/_tmp/" `isInfixOf` filePath
+
+            dt = dropTarget_ (\from -> MoveTab from idx) [dropTargetStyle hoverStyle]
+            hoverStyle = [borderR 3 accentColor]
+
+            dg = draggable_ idx [draggableStyle dragStyle]
+            dragStyle = [bgColor hoverColor]
 
   tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
   tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
