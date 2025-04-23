@@ -12,7 +12,7 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.SpecialCharacters (replaceSpecialSymbols, replaceSpecialSymbolsInverse)
+import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
@@ -87,33 +87,30 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           symbolSpan_ (_content file) [multiline]
         ]) `styleBasic` [padding 10]
       ]
-    Just parsedSequent -> vstack [
+    Just parsedSequent -> vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
         vstack [
-          h1 heading,
-          spacer,
-          subheading
-        ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        fastVScroll (proofTreeUI parsedSequent) `styleBasic` [padding 10],
+          vstack [
+            h1 heading,
+            spacer,
+            subheading
+          ] `styleBasic` [padding 10, borderB 1 dividerColor],
+          fastVScroll (proofTreeUI parsedSequent) `styleBasic` [paddingT 10, paddingL 10]
+        ],
         hstack [
           proofStatusLabel,
           filler,
-          button "Save proof" (SaveFile file),
+          box $ button "Save proof" (SaveFile file),
           spacer,
-          button "Check proof" (CheckProof file)
-          -- button "Export to LaTeX" ExportToLaTeX 
-          --   `styleBasic` [padding 5]
-          --   `nodeKey` "ExportSuccess"
-          --   `nodeKey` "ExportError",
-          -- spacer
-        ] `styleBasic` [padding 10, borderT 1 dividerColor]
-      ]
+          box $ button "Check proof" (CheckProof file)
+        ] `styleBasic` [padding 10, borderT 1 dividerColor, rangeHeight 50 300]
+      )
       where
         subheading
           | null premises && conclusion == "" = span "Empty proof"
           | otherwise = symbolSpan prettySequent
         prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-        conclusion = replaceSpecialSymbols (_conclusion parsedSequent)
-        premises = map replaceSpecialSymbols (_premises parsedSequent)
+        conclusion = _conclusion parsedSequent
+        premises = _premises parsedSequent
     where
       parsedSequent = _parsedSequent file
 
@@ -152,7 +149,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
             ("Down", NextFocus 1, True),
             ("Enter", NextFocus 1, True)
-          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols (_conclusion sequent)) EditConclusion [placeholder "Enter conclusion here"]
+          ] (symbolStyle $ textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"]
             `styleBasic` [maxWidth 600]
             `styleBasic` [styleIf isConclusionError (border 1 red)]
             `nodeKey` "conclusion.input")
@@ -180,7 +177,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
             ("Delete", RemovePremise idx, True),
             ("Ctrl-Enter", AddPremise idx, True)
-          ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols premise) (EditPremise idx) [placeholder "Enter premise"]
+          ] (symbolStyle $ textFieldV_ premise (EditPremise idx) [placeholder "Enter premise"]
             `nodeKey` ("premise.input." <> showt idx)
             `styleBasic` [styleIf isPremiseError (border 1 red)]),
           spacer,
@@ -207,13 +204,12 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
           ghostPremises = map ghostPremise (_premises sequent)
           ghostPremise premise = hstack [
-              symbolSpan pp,
+              symbolSpan premise,
               filler,
               symbolSpan "premise" `styleBasic` [width 300, paddingH 10],
               spacer,
               vstack [] `styleBasic` [width 250]
             ] `styleBasic` [height 34]
-            where pp = replaceSpecialSymbols premise
 
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
@@ -265,7 +261,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols statement) (EditFormula path) 
+                  ] (symbolStyle $ textFieldV_ statement (EditFormula path) 
                       [onKeyDown handleFormulaKey, placeholder "Empty statement"]
                     `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
@@ -277,7 +273,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                   hstack_ [childSpacing] [
                     -- ruleKeystrokes ruleField
 
-                    ruleKeystrokes $ textFieldSuggestionsV (replaceSpecialSymbols rule) (\_i t -> EditRuleName path t) allRules (const ruleField) label
+                    ruleKeystrokes $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) allRules (const ruleField) label
                       `styleBasic` [styleIf isWarning (border 1 orange)]
                       `styleBasic` [styleIf isRuleError (border 1 red)],
 
@@ -314,7 +310,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ] w
               `nodeKey` (showt index <> ".rule.keystroke")
 
-          ruleField = symbolStyle $ textFieldV_ (replaceSpecialSymbols rule) (EditRuleName path) 
+          ruleField = symbolStyle $ textFieldV_ rule (EditRuleName path) 
             [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
               `styleBasic` [styleIf isWarning (border 1 orange)]
               `styleBasic` [styleIf isRuleError (border 1 red)]
@@ -336,7 +332,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
-              ] (symbolStyle $ textFieldV_ (replaceSpecialSymbols argument) (EditRuleArgument path idx) 
+              ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) 
                 [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
                   `nodeKey` (showt index <> ".ruleArg." <> showt idx)
                   `styleBasic` [width 70]
@@ -381,7 +377,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ] `styleBasic` [width 250]
 
           -- allRules = map fst visualRuleNames
-          allRules = (toList . fromList) $ filter (\f -> (toLower . replaceSpecialSymbols) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
+          allRules = (toList . fromList) $ filter (\f -> toLower rule `isInfixOf` toLower f) (map fst visualRuleNames ++ map snd visualRuleNames)
           -- allRules = (toList . fromList) $ replaceSpecialSymbols rule : filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
           --   where rules (Env _ _ r _ _ _ _ _) = r

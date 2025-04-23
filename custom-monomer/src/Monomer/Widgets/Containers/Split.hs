@@ -34,6 +34,8 @@ module Monomer.Widgets.Containers.Split (
   splitHandlePosV,
   splitHandleSize,
   splitIgnoreChildResize,
+  firstIsMain,
+  secondIsMain,
   -- * Constructors
   hsplit,
   hsplit_,
@@ -53,6 +55,7 @@ import Monomer.Widgets.Container
 import Monomer.Widgets.Containers.Stack (assignStackAreas)
 
 import qualified Monomer.Lens as L
+import Monomer.Helper (clamp)
 
 {-|
 Configuration options for split:
@@ -69,7 +72,8 @@ data SplitCfg s e = SplitCfg {
   _spcHandlePos :: Maybe (WidgetData s Double),
   _spcHandleSize :: Maybe Double,
   _spcIgnoreChildResize :: Maybe Bool,
-  _spcOnChangeReq :: [Double -> WidgetRequest s e]
+  _spcOnChangeReq :: [Double -> WidgetRequest s e],
+  _spcFirstIsMain :: Maybe Bool
 }
 
 instance Default (SplitCfg s e) where
@@ -77,7 +81,8 @@ instance Default (SplitCfg s e) where
     _spcHandlePos = Nothing,
     _spcHandleSize = Nothing,
     _spcIgnoreChildResize = Nothing,
-    _spcOnChangeReq = []
+    _spcOnChangeReq = [],
+    _spcFirstIsMain = Nothing
   }
 
 instance Semigroup (SplitCfg s e) where
@@ -85,7 +90,8 @@ instance Semigroup (SplitCfg s e) where
     _spcHandlePos = _spcHandlePos s2 <|> _spcHandlePos s1,
     _spcHandleSize = _spcHandleSize s2 <|> _spcHandleSize s1,
     _spcIgnoreChildResize = _spcIgnoreChildResize s2 <|> _spcIgnoreChildResize s1,
-    _spcOnChangeReq = _spcOnChangeReq s2 <|> _spcOnChangeReq s1
+    _spcOnChangeReq = _spcOnChangeReq s2 <|> _spcOnChangeReq s1,
+    _spcFirstIsMain = _spcFirstIsMain s2 <|> _spcFirstIsMain s1
   }
 
 instance Monoid (SplitCfg s e) where
@@ -123,6 +129,18 @@ splitHandleSize w = def {
 splitIgnoreChildResize :: Bool -> SplitCfg s e
 splitIgnoreChildResize ignore = def {
   _spcIgnoreChildResize = Just ignore
+}
+
+-- | Whether the first child should keep its size when resizing parent
+firstIsMain :: SplitCfg s e
+firstIsMain = def {
+  _spcFirstIsMain = Just True
+}
+
+-- | Whether the second child should keep its size when resizing parent
+secondIsMain :: SplitCfg s e
+secondIsMain = def {
+  _spcFirstIsMain = Just False
 }
 
 data SplitState = SplitState {
@@ -196,6 +214,7 @@ makeSplit isHorizontal config state = widget where
   }
 
   handleW = fromMaybe 5 (_spcHandleSize config)
+  firstIsMain = fromMaybe True (_spcFirstIsMain config)
 
   init wenv node = result where
     useModelValue value = resultNode newNode where
@@ -289,6 +308,7 @@ makeSplit isHorizontal config state = widget where
     contentArea = fromMaybe def (removeOuterBounds style viewport)
     Rect rx ry rw rh = contentArea
     (areas, newSize) = assignStackAreas isHorizontal contentArea 0 children
+
     oldHandlePos = _spsHandlePos state
 
     sizeReq1 = sizeReq $ Seq.index children 0
@@ -306,7 +326,23 @@ makeSplit isHorizontal config state = widget where
     useOldPos = customPos || ignoreSizeReq || sizeReqEquals
     initialPos = initialHandlePos children
 
+    Rect ox oy _ _ = _spsHandleRect state
+    oldSize = _spsMaxSize state
+
+    -- When resizing the parent, the main child should keep its size in pixels.
+    -- handlePos is a factor between 0 and 1 and that factor need to change when
+    -- the parent changes size for the child to keep its size in pixels :)
+    keepPixelsHandlePos
+      | isHorizontal && firstIsMain = clamp 0 1 $ (ox - rx) / (newSize - handleW)
+      | isHorizontal = 1 - clamp 0 1 ((oldSize - (ox - rx + handleW)) / (newSize - handleW))
+      | firstIsMain = clamp 0 1 $ (oy - ry) / (newSize - handleW)
+      | otherwise = 1 - clamp 0 1 ((oldSize - (oy - ry + handleW)) / (newSize - handleW))
+
+    -- keepPixelsHandlePos = 1
+
     handlePos
+      -- Did the parent change size? Recalculate handlePos!
+      | newSize /= oldSize && oldSize > 10 && newSize > 10 = calcHandlePos newSize keepPixelsHandlePos viewport children
       | useOldPos && handlePosUserSet && validSize = oldHandlePos
       | resizeNeeded = calcHandlePos newSize initialPos viewport children
       | otherwise = calcHandlePos newSize oldHandlePos viewport children

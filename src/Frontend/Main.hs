@@ -107,13 +107,14 @@ main = do
     -- Default application state for new users
     defaultState = PersistentState {
       _firstTime = True,
-      _windowMode = MainWindowNormal (800, 600),
+      _windowMode = MainWindowNormal (1200, 800),
       _workingDir = Nothing, --Just "./myProofs",
       _currentFile = Nothing,
       _openFiles = [],
       _tmpLoadedFiles = [],
       _fileExplorerOpen = True,
-      _fileExplorerWidth = 300,
+      _fileExplorerWidth = 0.27,
       _rulesSidebarOpen = True,
-      _rulesSidebarWidth = 300
+      _rulesSidebarWidth = 0.82,
+      _proofStatusBarHeight = 0.91
     }

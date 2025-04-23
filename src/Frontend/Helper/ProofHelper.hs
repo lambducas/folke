@@ -17,6 +17,7 @@ import Data.List (findIndex)
 import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
 import System.FilePath.Posix (equalFilePath)
+import Frontend.SpecialCharacters (replaceSpecialSymbols)
 
 {-|
 Applies a function on the currently opened file-tab
@@ -103,7 +104,7 @@ removePremiseFromProof idx sequent = FESequent premises conclusion (steps' seque
 editPremisesInProof :: Int -> Text -> FESequent -> FESequent
 editPremisesInProof idx newText sequent = FESequent premises conclusion steps
   where
-    premises = _premises sequent & element idx .~ newText
+    premises = _premises sequent & element idx .~ replaceSpecialSymbols newText
     conclusion = _conclusion sequent
     steps = _steps sequent
 
@@ -112,7 +113,7 @@ editConclusionInProof :: Text -> FESequent -> FESequent
 editConclusionInProof newText sequent = FESequent premises conclusion steps
   where
     premises = _premises sequent
-    conclusion = newText
+    conclusion = replaceSpecialSymbols newText
     steps = _steps sequent
 
 -- | Updates the formula on line at given path
@@ -122,7 +123,7 @@ editFormulaInProof path newText = replaceSteps f
     f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
     el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
     el editPath newText currentPath f@(Line _statement rule usedArguments arguments)
-      | editPath == currentPath = Line newText rule usedArguments arguments
+      | editPath == currentPath = Line (replaceSpecialSymbols newText) rule usedArguments arguments
       | otherwise = f
 
 -- | Updates the rule on line at given path
@@ -133,8 +134,8 @@ editRuleNameInProof path newRule = replaceSteps f
     el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
     el editPath currentPath f@(Line statement _rule usedArguments arguments)
       | editPath == currentPath = case Data.Map.lookup (parseRule newRule) ruleMetaDataMap of
-        Nothing -> Line statement newRule usedArguments arguments
-        Just (RuleMetaData nrArguments _) -> Line statement newRule (fromIntegral nrArguments) (fillList nrArguments arguments)
+        Nothing -> Line statement (replaceSpecialSymbols newRule) usedArguments arguments
+        Just (RuleMetaData nrArguments _) -> Line statement (replaceSpecialSymbols newRule) (fromIntegral nrArguments) (fillList nrArguments arguments)
       | otherwise = f
 
     fillList :: Integer -> [Text] -> [Text]
@@ -147,10 +148,10 @@ editRuleNameInProof path newRule = replaceSteps f
 editRuleArgumentInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
 editRuleArgumentInProof path idx newText = replaceSteps f
   where
-    f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
-    el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
-    el editPath newText currentPath f@(Line statement rule usedArguments arguments)
-      | editPath == currentPath = Line statement rule usedArguments (arguments & element idx .~ newText)
+    f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
+    el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
+    el editPath currentPath f@(Line statement rule usedArguments arguments)
+      | editPath == currentPath = Line statement rule usedArguments (arguments & element idx .~ replaceSpecialSymbols newText)
       | otherwise = f
 
 -- | Apply function to sequent and record history
