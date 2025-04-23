@@ -22,12 +22,12 @@ import Control.Lens
 import Control.Exception (try, SomeException)
 import Control.Concurrent ( newChan, threadDelay )
 import Control.Concurrent.STM.TChan
-import Control.Monad (forever, when)
+import Control.Monad (forever, when, filterM)
 import Data.Maybe (fromMaybe)
 import Data.List (isInfixOf)
 import Data.Text (unpack, pack)
 import TextShow ( TextShow(showt) )
-import System.Directory ( removeFile, createDirectoryIfMissing )
+import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist )
 import System.FilePath ( takeExtension, dropExtension)
 
 import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
@@ -308,7 +308,7 @@ handleEvent env wenv node model evt = case evt of
     where toggle = not
 
   RefreshExplorer -> [
-      Model $ model & filesInDirectory .~ Just [],
+      Model $ model & filesInDirectory ?~ LoadedFiles [] [],
       Producer $ directoryFilesProducer (model ^. persistentState . workingDir)
     ]
 
@@ -603,12 +603,23 @@ directoryFilesProducer workingDir sendMsg = do
   case workingDir of
     Nothing -> sendMsg (SetFilesInDirectory Nothing)
     Just wd -> do
-      result <- try (fmap (map (drop (length wd + 1))) (listDirectoryRecursive wd)) :: IO (Either SomeException [[Char]])
+      result <- try (listDirectory wd) :: IO (Either SomeException [FilePath])
       case result of
         Left e -> do
           print e
           sendMsg (SetFilesInDirectory Nothing)
-        Right allFileNames -> sendMsg (SetFilesInDirectory (Just allFileNames))
+        Right allFileNames -> do
+          let fullFilePaths = map appendTop allFileNames
+          onlyFiles <- filterM doesFileExist fullFilePaths
+          onlyDirs <- filterM doesDirectoryExist fullFilePaths
+          let loadedFiles = LoadedFiles {
+            _lFiles = onlyFiles,
+            _lDirectories = onlyDirs
+          }
+          sendMsg (SetFilesInDirectory (Just loadedFiles))
+      where
+        appendTop :: FilePath -> FilePath
+        appendTop = ((wd ++ "/") ++)
 
 {-|
 "Debounce" changes in current proof and only check the proof

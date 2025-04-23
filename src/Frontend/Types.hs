@@ -122,11 +122,16 @@ newtype AutoCheckProofTracker = AutoCheckProofTracker {
   _acpEnabled :: Bool
 } deriving (Eq, Show)
 
+data LoadedFiles = LoadedFiles {
+  _lFiles :: [FilePath],
+  _lDirectories :: [FilePath]
+} deriving (Show, Eq)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
   _contextMenu :: ContextMenu,
 
-  _filesInDirectory :: Maybe [FilePath],
+  _filesInDirectory :: Maybe LoadedFiles,
   _confirmActionPopup :: Maybe ConfirmActionData,
 
   _frontendChan :: Chan FrontendMessage,
@@ -203,7 +208,7 @@ data AppEvent
   | RefreshExplorer
   | OpenSetWorkingDir
   | SetWorkingDir FilePath
-  | SetFilesInDirectory (Maybe [FilePath])
+  | SetFilesInDirectory (Maybe LoadedFiles)
   | OpenFileFromFileSystem
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath

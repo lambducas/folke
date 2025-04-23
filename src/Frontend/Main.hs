@@ -77,7 +77,7 @@ main = do
         _ctxActions = []
       },
 
-      _filesInDirectory = Just [],
+      _filesInDirectory = Just $ LoadedFiles [] [],
       _confirmActionPopup = Nothing,
 
       --  _stateHistory = [],

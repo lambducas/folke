@@ -19,7 +19,7 @@ import qualified Monomer.Lens as L
 import Control.Lens
 import Data.Text (Text, pack, intercalate, splitOn, toLower)
 import qualified Data.Text (length)
-import Data.List (sort, isInfixOf)
+import Data.List (isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeFileName, takeBaseName)
@@ -232,11 +232,8 @@ buildUI wenv model = widgetTree where
               fastVScroll $ details [DetailsCfg {
                     _dcOnOpenFile = [RaiseEvent . OpenFile],
                     _dcOnOpenContextMenu = [\g l -> RaiseEvent $ OpenContextMenu (ctxFileExplorer g l)]
-                  }] model parts
+                  }] model fid
             ] `styleBasic` [ borderR 1 dividerColor, rangeWidth 200 1000 ]
-            where
-              parts = map (\f -> (splitOn "/" (pack f), f)) files
-              files = sort fid
 
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [

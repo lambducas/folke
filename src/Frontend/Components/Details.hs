@@ -24,33 +24,37 @@ import Monomer.Widgets.Containers.Stack
 
 import qualified Monomer.Lens as L
 import Monomer.Widgets.Composite
-import Data.Text (Text)
-import Data.List (groupBy)
+import Data.Text (Text, pack)
+import Data.List (sort)
 import Frontend.Components.GeneralUIComponents ( iconLabel, span_ )
 import Monomer
 import Frontend.Types
 import Frontend.Themes ( getActualTheme )
-import System.FilePath.Posix ((</>), takeExtension)
+import System.FilePath.Posix ((</>), takeExtension, takeFileName, splitDirectories, makeRelative)
+import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
+import Control.Monad (filterM)
 
-newtype DetailsModel = DetailsModel {
-  _dOpen :: Bool
+data DetailsModel = DetailsModel {
+  _dOpen :: Bool,
+  _dLoadedFiles :: Maybe LoadedFiles
 } deriving (Show, Eq)
 
 instance Default DetailsModel where
   def = DetailsModel {
-    _dOpen = False
+    _dOpen = False,
+    _dLoadedFiles = Nothing
   }
 
+makeLensesWith abbreviatedFields 'LoadedFiles
 makeLensesWith abbreviatedFields 'DetailsModel
 
 data DetailsEvt
   = DNoEvent
   | DToggleOpen
+  | DLoadedFiles LoadedFiles
   | DOpenFile FilePath
   | DOpenContextMenu FilePath FilePath
   deriving (Eq, Show)
-
-type Parts = [([Text], String)]
 
 data DetailsCfg s e = DetailsCfg {
   _dcOnOpenFile :: [FilePath -> WidgetRequest s e],
@@ -75,111 +79,78 @@ instance Monoid (DetailsCfg s e) where
 details
   :: [DetailsCfg AppModel AppEvent]
   -> AppModel
-  -> Parts
+  -> LoadedFiles
   -> WidgetNode AppModel AppEvent
-details configs appModel parts = newNode where
+details configs appModel loadedFiles = newNode where
   config = mconcat configs
-  model = WidgetValue def
-  uiBuilder = buildUI appModel parts 1
-  eventHandler =  handleEvent config
-  mergeModel _wenv _parentModel oldModel _newModel = oldModel
+
+  model = WidgetValue $ def {
+    _dLoadedFiles = Just loadedFiles
+  }
+
+  uiBuilder = buildUI appModel "" 1
+  eventHandler =  handleEvent "" config
+  mergeModel _wenv _parentModel oldModel _newModel = oldModel {
+      _dLoadedFiles = Just loadedFiles
+    }
   compCfg = [compositeMergeModel mergeModel]
   newNode = compositeD_ "details" model uiBuilder eventHandler compCfg
 
 details2
   :: [DetailsCfg DetailsModel DetailsEvt]
   -> AppModel
+  -> FilePath
   -> Text
-  -> Parts
   -> Double
   -> WidgetNode DetailsModel DetailsEvt
-details2 configs appModel header parts indent = newNode where
+details2 configs appModel parentDirPath header indent = newNode where
   config = mconcat configs
   model = WidgetValue def
-  uiBuilder = buildUI2 configs appModel header parts indent
-  eventHandler = handleEvent config
+  uiBuilder = buildUI2 configs appModel parentDirPath header indent
+  eventHandler = handleEvent parentDirPath config
   mergeModel _wenv _parentModel oldModel _newModel = oldModel
   compCfg = [compositeMergeModel mergeModel]
   newNode = compositeD_ "details2" model uiBuilder eventHandler compCfg
 
 buildUI
   :: AppModel
-  -> Parts
+  -> FilePath
   -> Double
   -> WidgetEnv DetailsModel DetailsEvt
   -> DetailsModel
   -> WidgetNode DetailsModel DetailsEvt
-buildUI appModel parts indent _wenv _model = widgetTree where
-  selTheme = getActualTheme $ appModel ^. preferences . selectedTheme
-  selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
-  dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
-  hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+buildUI appModel parentDirPath indent _wenv model = widgetTree where
+  widgetTree = case model ^. loadedFiles of
+    Nothing -> label ""
+    Just loadedFiles -> vstack [
+        vstack $ map folder (loadedFiles ^. directories),
+        vstack $ map (fileItem appModel indent) (loadedFiles ^. files)
+      ]
 
-  widgetTree = fileTreeUI parts indent
+  folder directoryPath = details2 newCfg appModel (parentDirPath </> directoryPath) heading (indent + 1)
+    where heading = pack . last . splitDirectories $ directoryPath
 
-  fileTreeUI parts indent = vstack [
-      vstack $ map folder groups,
-      vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile
-    ]
-    where
-      -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-      partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-      partFolder = filter (\i -> length (fst i) > 1) parts
-      groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
-
-      -- oldCfg = map (\func fp -> RaiseEvent $ ) $ _dcOnOpenFile cfg
-      newCfg = DetailsCfg {
-        _dcOnOpenFile = [RaiseEvent . DOpenFile],
-        _dcOnOpenContextMenu = [\a b -> RaiseEvent $ DOpenContextMenu a b]
-      }
-
-      folder seqs = details2 [newCfg] appModel heading newParts (indent + 1)
-        where
-          heading = (head . fst . head) seqs
-          newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-
-  fileItem indent text filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
-      iconLabel appModel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
-      span_ appModel text [ellipsis]
-    ]
-      `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
-    where
-      handleBtn BtnLeft _ = DOpenFile filePath
-      handleBtn BtnRight _ = DOpenContextMenu fullPath filePath
-      handleBtn _ _ = DNoEvent
-      isCurrent = (appModel ^. persistentState . currentFile) == Just fullPath
-      fullPath = case appModel ^. persistentState . workingDir of
-        Nothing -> ""
-        Just wd -> wd </> filePath
-      ext = takeExtension filePath
-      iconIdent
-        | ext == ".md" = remixMarkdownFill
-        | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
-        | otherwise = remixMenu2Line
-      iconColor
-        | ext == ".md" = Just $ rgb 94 156 255
-        | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
-        | otherwise = Nothing
+  newCfg = [DetailsCfg {
+    _dcOnOpenFile = [RaiseEvent . DOpenFile],
+    _dcOnOpenContextMenu = [\a b -> RaiseEvent $ DOpenContextMenu a b]
+  }]
 
 buildUI2
   :: [DetailsCfg DetailsModel DetailsEvt]
   -> AppModel
+  -> FilePath
   -> Text
-  -> Parts
   -> Double
   -> WidgetEnv DetailsModel DetailsEvt
   -> DetailsModel
   -> WidgetNode DetailsModel DetailsEvt
-buildUI2 cfg appModel headerText parts indent _wenv model = widgetTree where
+buildUI2 cfg appModel parentDirPath headerText indent _wenv model = widgetTree where
   selTheme = getActualTheme $ appModel ^. preferences . selectedTheme
-  selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
-  hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
 
   widgetTree = vstack [
       box_ [onClick DToggleOpen, expandContent] header,
-      fileTreeUI parts indent `nodeVisible` _dOpen model
+      fileTreeUI `nodeVisible` _dOpen model
     ]
 
   header = hstack [
@@ -187,59 +158,83 @@ buildUI2 cfg appModel headerText parts indent _wenv model = widgetTree where
       label headerText
     ] `styleBasic` [paddingL (16 * (indent - 1)), paddingV 8, cursorHand]
 
-  fileTreeUI parts indent = vstack [
-      vstack $ map folder groups,
-      vstack $ map (\f -> fileItem indent (fst f) (snd f)) partFile
-    ]
-    where
-      -- parts = map (\f -> (splitOn "/" (pack f), f)) files
-      partFile = map (\f -> ((head . fst) f, snd f)) (filter (\i -> length (fst i) == 1) parts)
-      partFolder = filter (\i -> length (fst i) > 1) parts
-      groups = groupBy (\a b -> head (fst a) == head (fst b)) partFolder
+  fileTreeUI = case model ^. loadedFiles of
+    Nothing -> label "Loading files..." `styleBasic` [paddingL (16 * indent), paddingR 16, paddingV 8, textColor dividerColor]
+    Just loadedFiles
+      | loadedFilesAreEmpty loadedFiles -> label "Empty directory" `styleBasic` [paddingL (16 * indent), paddingR 16, paddingV 8, textColor dividerColor]
+      | otherwise -> vstack [
+          vstack $ map folder (loadedFiles ^. directories),
+          vstack $ map (fileItem appModel indent) (loadedFiles ^. files)
+        ]
 
-      folder seqs = details2 cfg appModel heading newParts (indent + 1)
-        where
-          heading = (head . fst . head) seqs
-          newParts = map (\f -> ((tail . fst) f, snd f)) seqs
-
-  fileItem indent text filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
-      iconLabel appModel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
-      span_ appModel text [ellipsis]
-    ]
-      `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-      `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
-    where
-      handleBtn BtnLeft _ = DOpenFile filePath
-      handleBtn BtnRight _ = DOpenContextMenu fullPath filePath
-      handleBtn _ _ = DNoEvent
-      isCurrent = (appModel ^. persistentState . currentFile) == Just fullPath
-      fullPath = case appModel ^. persistentState . workingDir of
-        Nothing -> ""
-        Just wd -> wd </> filePath
-      ext = takeExtension filePath
-      iconIdent
-        | ext == ".md" = remixMarkdownFill
-        | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
-        | otherwise = remixMenu2Line
-      iconColor
-        | ext == ".md" = Just $ rgb 94 156 255
-        | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
-        | otherwise = Nothing
+  folder directoryPath = details2 cfg appModel (parentDirPath </> directoryPath) heading (indent + 1)
+    where heading = pack . last . splitDirectories $ directoryPath
 
 handleEvent
   :: WidgetModel sp
-  => DetailsCfg sp ep
+  => FilePath
+  -> DetailsCfg sp ep
   -> WidgetEnv DetailsModel DetailsEvt
   -> WidgetNode DetailsModel DetailsEvt
   -> DetailsModel
   -> DetailsEvt
   -> [EventResponse DetailsModel DetailsEvt sp ep]
-handleEvent cfg _wenv _node model evt = case evt of
+handleEvent parentDirPath cfg _wenv _node model evt = case evt of
   DNoEvent -> []
   DOpenFile filePath -> reportOpenFile filePath
   DOpenContextMenu fullPath filePath -> reportOpenContextMenu fullPath filePath
-  DToggleOpen -> [ Model $ model & open %~ not ]
+  DToggleOpen -> case model ^. loadedFiles of
+    Nothing -> [ Model $ model & open %~ not, Producer loadFiles ]
+    Just _ -> [ Model $ model & open %~ not ]
+  DLoadedFiles files -> [ Model $ model & loadedFiles ?~ files ]
   where
     report reqs = RequestParent <$> reqs
     reportOpenFile filePath = report (($ filePath) <$> _dcOnOpenFile cfg)
     reportOpenContextMenu fullPath filePath = report (($ filePath) . ($ fullPath) <$> _dcOnOpenContextMenu cfg)
+
+    loadFiles sendMsg = do
+      content <- listDirectory parentDirPath
+      onlyFiles <- filterM doesFileExist (map appendTop content)
+      onlyDirs <- filterM doesDirectoryExist (map appendTop content)
+      sendMsg $ DLoadedFiles LoadedFiles {
+        _lFiles = sort onlyFiles,
+        _lDirectories = sort onlyDirs
+      }
+
+      where
+        appendTop :: FilePath -> FilePath
+        appendTop = ((parentDirPath ++ "/") ++)
+
+fileItem :: AppModel -> Double -> FilePath -> WidgetNode DetailsModel DetailsEvt
+fileItem appModel indent filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [
+    iconLabel appModel iconIdent `styleBasic` [fromMaybe mempty (iconColor >>= Just . textColor)],
+    span_ appModel displayLabel [ellipsis]
+  ]
+    `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
+    `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
+  where
+    handleBtn BtnLeft _ = DOpenFile relativePath
+    handleBtn BtnRight _ = DOpenContextMenu filePath relativePath
+    handleBtn _ _ = DNoEvent
+    isCurrent = (appModel ^. persistentState . currentFile) == Just filePath
+    relativePath = case appModel ^. persistentState . workingDir of
+      Nothing -> filePath
+      Just wd -> makeRelative wd filePath
+    ext = takeExtension filePath
+    iconIdent
+      | ext == ".md" = remixMarkdownFill
+      | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
+      | otherwise = remixMenu2Line
+    iconColor
+      | ext == ".md" = Just $ rgb 94 156 255
+      | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
+      | otherwise = Nothing
+    displayLabel = pack (takeFileName filePath)
+
+    selTheme = getActualTheme $ appModel ^. preferences . selectedTheme
+    dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
+    hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+    selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
+
+loadedFilesAreEmpty :: LoadedFiles -> Bool
+loadedFilesAreEmpty loadedFiles = null (loadedFiles ^. files) && null (loadedFiles ^. directories)
