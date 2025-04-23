@@ -329,7 +329,14 @@ buildUI wenv model = widgetTree where
         spacer, spacer,
 
         h3 "Theme",
-        normalStyle $ button "Switch light/dark mode" SwitchTheme
+        normalStyle $ button "Switch light/dark mode" SwitchTheme,
+        spacer, spacer,
+
+        h3 "Extra character shortcuts",
+        paragraph "Replace A and E in formula fields",
+        labeledCheckbox "Enabled" (preferences . replaceAEInFormula),
+        spacer, spacer
+
       ] `styleBasic` [maxWidth 1024]
     ] `styleBasic` [padding 30]
     where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]

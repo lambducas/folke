@@ -87,7 +87,8 @@ data Preferences = Preferences {
   _normalFont :: String,
   _logicFont :: String,
   _fontSize :: Double,
-  _appScale :: Double
+  _appScale :: Double,
+  _replaceAEInFormula :: Bool
 } deriving (Eq, Show)
 
 data PersistentState = PersistentState {

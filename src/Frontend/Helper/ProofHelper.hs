@@ -12,7 +12,7 @@ import Logic.Par (pArg, myLexer)
 import Monomer
 import Control.Lens
 import TextShow (showt)
-import Data.Text (Text, unpack)
+import Data.Text (Text, unpack, pack)
 import Data.List (findIndex)
 import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
@@ -117,14 +117,46 @@ editConclusionInProof newText sequent = FESequent premises conclusion steps
     steps = _steps sequent
 
 -- | Updates the formula on line at given path
-editFormulaInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editFormulaInProof path newText = replaceSteps f
+editFormulaInProof :: AppModel -> FormulaPath -> Text -> FESequent -> FESequent
+editFormulaInProof model path newText seq = replaceSteps f seq
   where
+    oldText = case evalPath path seq of
+      SubProof _ -> ""
+      Line statement _ _ _  -> statement
     f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
     el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
     el editPath newText currentPath f@(Line _statement rule usedArguments arguments)
-      | editPath == currentPath = Line (replaceSpecialSymbols newText) rule usedArguments arguments
+      | editPath == currentPath = Line (parseFormulaInput model oldText newText) rule usedArguments arguments
       | otherwise = f
+
+-- | Replace special characters and also A, E if setting is enabled (always right now...)
+parseFormulaInput :: AppModel -> Text -> Text -> Text
+parseFormulaInput model oldText newText
+  | model ^. preferences . replaceAEInFormula = replaceSpecialSymbols . doReplaceText $ newText
+  | otherwise = replaceSpecialSymbols newText
+  where
+    -- Guess where insertion was made
+    afterIdx = firstMissmatch oldText newText :: Integer
+
+    doReplaceText = pack . doReplace 0 . unpack
+    doReplace _ [] = ""
+    doReplace idx (x:xs)
+      | idx == afterIdx = replaceSingleChar x : doReplace (idx + 1) xs
+      | otherwise = x : doReplace (idx + 1) xs
+
+    replaceSingleChar 'A' = '∀'
+    replaceSingleChar 'E' = '∃'
+    replaceSingleChar t = t
+
+firstMissmatch :: (Num t) => Text -> Text -> t
+firstMissmatch a b = tw (unpack a) (unpack b) 0
+  where
+    tw (x:xs) (y:ys) i
+      | x == y = tw xs ys (i+1)
+      | otherwise = i
+    tw [] [] i = i
+    tw [] _ i = i
+    tw _ [] i = i
 
 -- | Updates the rule on line at given path
 editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent

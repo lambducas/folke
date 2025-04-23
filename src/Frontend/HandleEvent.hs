@@ -258,7 +258,7 @@ handleEvent env wenv node model evt = case evt of
   --                 return ()
   --   )]
 
-  EditFormula path newText -> editLineAndRecordHistory model path (editFormulaInProof path newText)
+  EditFormula path newText -> editLineAndRecordHistory model path (editFormulaInProof model path newText)
 
   EditRuleName path newText -> editLineAndRecordHistory model path (editRuleNameInProof path newText)
 

@@ -101,7 +101,8 @@ main = do
       _normalFont = "Regular",
       _logicFont = "Symbol_Regular",
       _fontSize = 16,
-      _appScale = 1
+      _appScale = 1,
+      _replaceAEInFormula = False
     }
 
     -- Default application state for new users
