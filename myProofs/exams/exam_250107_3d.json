@@ -1,9 +1,9 @@
 {
     "_sequent": {
-        "_conclusion": "all x (P(x) -> Q(x))",
+        "_conclusion": "∀ x (P(x) → Q(x))",
         "_premises": [
-            "some x (P(x) & Q(x))",
-            "some x (P(x) & all y (P(y) -> x=y))"
+            "∃ x (P(x) ∧ Q(x))",
+            "∃ x (P(x) ∧ ∀ y (P(y) → x=y))"
         ],
         "_steps": [
             {
@@ -11,7 +11,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -20,7 +20,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "P(x_0)",
+                                "_statement": "P(x₀)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -29,14 +29,14 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "x_1",
+                                        "_statement": "x₁",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "P(x_1) & Q(x_1)",
+                                        "_statement": "P(x₁) ∧ Q(x₁)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -44,8 +44,8 @@
                                         "_arguments": [
                                             "6"
                                         ],
-                                        "_rule": "AndEL",
-                                        "_statement": "P(x_1)",
+                                        "_rule": "∧EL",
+                                        "_statement": "P(x₁)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -53,8 +53,8 @@
                                         "_arguments": [
                                             "6"
                                         ],
-                                        "_rule": "AndER",
-                                        "_statement": "Q(x_1)",
+                                        "_rule": "∧ER",
+                                        "_statement": "Q(x₁)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -63,14 +63,14 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "fresh",
-                                                "_statement": "x_2",
+                                                "_statement": "x₂",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "P(x_2) & all y (P(y) -> x_2=y)",
+                                                "_statement": "P(x₂) ∧ ∀ y (P(y) → x₂=y)",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -78,18 +78,18 @@
                                                 "_arguments": [
                                                     "10"
                                                 ],
-                                                "_rule": "AndER",
-                                                "_statement": "all y (P(y) -> x_2=y)",
+                                                "_rule": "∧ER",
+                                                "_statement": "∀ y (P(y) → x₂=y)",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [
                                                     "11",
-                                                    "x_0"
+                                                    "x₀"
                                                 ],
-                                                "_rule": "AllE",
-                                                "_statement": "P(x_0) -> x_2=x_0",
+                                                "_rule": "∀E",
+                                                "_statement": "P(x₀) → x₂=x₀",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -98,18 +98,18 @@
                                                     "12",
                                                     "4"
                                                 ],
-                                                "_rule": "ImplE",
-                                                "_statement": "x_2=x_0",
+                                                "_rule": "→E",
+                                                "_statement": "x₂=x₀",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [
                                                     "11",
-                                                    "x_1"
+                                                    "x₁"
                                                 ],
-                                                "_rule": "AllE",
-                                                "_statement": "P(x_1) -> x_2=x_1",
+                                                "_rule": "∀E",
+                                                "_statement": "P(x₁) → x₂=x₁",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -118,15 +118,15 @@
                                                     "14",
                                                     "7"
                                                 ],
-                                                "_rule": "ImplE",
-                                                "_statement": "x_2=x_1",
+                                                "_rule": "→E",
+                                                "_statement": "x₂=x₁",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [],
-                                                "_rule": "EqI",
-                                                "_statement": "x_2=x_2",
+                                                "_rule": "=I",
+                                                "_statement": "x₂=x₂",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -134,10 +134,10 @@
                                                 "_arguments": [
                                                     "15",
                                                     "16",
-                                                    "u:=u=x_2"
+                                                    "u:=u=x₂"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "x_1=x_2",
+                                                "_rule": "=E",
+                                                "_statement": "x₁=x₂",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             },
@@ -145,10 +145,10 @@
                                                 "_arguments": [
                                                     "13",
                                                     "17",
-                                                    "u:=x_1=u"
+                                                    "u:=x₁=u"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "x_1=x_0",
+                                                "_rule": "=E",
+                                                "_statement": "x₁=x₀",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             },
@@ -158,8 +158,8 @@
                                                     "8",
                                                     "u:=Q(u)"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "Q(x_0)",
+                                                "_rule": "=E",
+                                                "_statement": "Q(x₀)",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             }
@@ -171,8 +171,8 @@
                                             "2",
                                             "9-19"
                                         ],
-                                        "_rule": "SomeE",
-                                        "_statement": "Q(x_0)",
+                                        "_rule": "∃E",
+                                        "_statement": "Q(x₀)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     }
@@ -184,8 +184,8 @@
                                     "1",
                                     "5-20"
                                 ],
-                                "_rule": "SomeE",
-                                "_statement": "Q(x_0)",
+                                "_rule": "∃E",
+                                "_statement": "Q(x₀)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -196,8 +196,8 @@
                         "_arguments": [
                             "4-21"
                         ],
-                        "_rule": "ImplI",
-                        "_statement": "P(x_0) -> Q(x_0)",
+                        "_rule": "→I",
+                        "_statement": "P(x₀) → Q(x₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -208,8 +208,8 @@
                 "_arguments": [
                     "3-22"
                 ],
-                "_rule": "AllI",
-                "_statement": "all x (P(x) -> Q(x))",
+                "_rule": "∀I",
+                "_statement": "∀ x (P(x) → Q(x))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

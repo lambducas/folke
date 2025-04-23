@@ -2,7 +2,7 @@
     "_sequent": {
         "_conclusion": "p",
         "_premises": [
-            "p | (p & q)"
+            "p ∨ (p ∧ q)"
         ],
         "_steps": [
             {
@@ -22,7 +22,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "p & q",
+                        "_statement": "p ∧ q",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -30,7 +30,7 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "AndEL",
+                        "_rule": "∧EL",
                         "_statement": "p",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -44,7 +44,7 @@
                     "2-2",
                     "3-4"
                 ],
-                "_rule": "OrE",
+                "_rule": "∨E",
                 "_statement": "p",
                 "_usedArguments": 3,
                 "tag": "Line"

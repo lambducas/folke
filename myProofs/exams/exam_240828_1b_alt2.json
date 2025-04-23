@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "((p -> q) -> p) -> ((q -> p) | p)",
+        "_conclusion": "((p → q) → p) → ((q → p) ∨ p)",
         "_premises": [],
         "_steps": [
             {
@@ -8,14 +8,14 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "((p -> q) -> p)",
+                        "_statement": "((p → q) → p)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [],
                         "_rule": "LEM",
-                        "_statement": "p | !p",
+                        "_statement": "p ∨ ¬p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -32,8 +32,8 @@
                                 "_arguments": [
                                     "3"
                                 ],
-                                "_rule": "OrIR",
-                                "_statement": "(q -> p) | p",
+                                "_rule": "∨IR",
+                                "_statement": "(q → p) ∨ p",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -45,7 +45,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "!p",
+                                "_statement": "¬p",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -63,8 +63,8 @@
                                             "6",
                                             "5"
                                         ],
-                                        "_rule": "NotE",
-                                        "_statement": "bot",
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -72,7 +72,7 @@
                                         "_arguments": [
                                             "7"
                                         ],
-                                        "_rule": "BotE",
+                                        "_rule": "⊥E",
                                         "_statement": "q",
                                         "_usedArguments": 1,
                                         "tag": "Line"
@@ -84,8 +84,8 @@
                                 "_arguments": [
                                     "6-8"
                                 ],
-                                "_rule": "ImplI",
-                                "_statement": "p -> q",
+                                "_rule": "→I",
+                                "_statement": "p → q",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -94,7 +94,7 @@
                                     "9",
                                     "1"
                                 ],
-                                "_rule": "ImplE",
+                                "_rule": "→E",
                                 "_statement": "p",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -104,8 +104,8 @@
                                     "10",
                                     "5"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -113,8 +113,8 @@
                                 "_arguments": [
                                     "11"
                                 ],
-                                "_rule": "BotE",
-                                "_statement": "(q -> p) | p",
+                                "_rule": "⊥E",
+                                "_statement": "(q → p) ∨ p",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -127,8 +127,8 @@
                             "3-4",
                             "5-12"
                         ],
-                        "_rule": "OrE",
-                        "_statement": "(q -> p) | p",
+                        "_rule": "∨E",
+                        "_statement": "(q → p) ∨ p",
                         "_usedArguments": 3,
                         "tag": "Line"
                     }
@@ -139,8 +139,8 @@
                 "_arguments": [
                     "1-13"
                 ],
-                "_rule": "ImplI",
-                "_statement": "((p -> q) -> p) -> ((q -> p) | p)",
+                "_rule": "→I",
+                "_statement": "((p → q) → p) → ((q → p) ∨ p)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

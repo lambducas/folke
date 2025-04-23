@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "(p -> q) -> q",
+        "_conclusion": "(p → q) → q",
         "_premises": [
             "p"
         ],
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "p -> q",
+                        "_statement": "p → q",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,7 +19,7 @@
                             "1",
                             "2"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "q",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -31,8 +31,8 @@
                 "_arguments": [
                     "2-3"
                 ],
-                "_rule": "ImplI",
-                "_statement": "(p -> q) -> q",
+                "_rule": "→I",
+                "_statement": "(p → q) → q",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

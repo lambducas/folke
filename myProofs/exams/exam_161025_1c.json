@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "Â¬q â p",
+        "_conclusion": "¬q → p",
         "_premises": [
-            "p â¨ q"
+            "p ∨ q"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "Â¬q",
+                        "_statement": "¬q",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -40,8 +40,8 @@
                                     "2",
                                     "4"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -49,7 +49,7 @@
                                 "_arguments": [
                                     "5"
                                 ],
-                                "_rule": "BotE",
+                                "_rule": "⊥E",
                                 "_statement": "p",
                                 "_usedArguments": 1,
                                 "tag": "Line"
@@ -63,7 +63,7 @@
                             "3-3",
                             "4-6"
                         ],
-                        "_rule": "OrE",
+                        "_rule": "∨E",
                         "_statement": "p",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -75,8 +75,8 @@
                 "_arguments": [
                     "2-7"
                 ],
-                "_rule": "ImplI",
-                "_statement": "!q â p",
+                "_rule": "→I",
+                "_statement": "¬q → p",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

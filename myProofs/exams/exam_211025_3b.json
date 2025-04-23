@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+        "_conclusion": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
         "_premises": [
             "P(a)",
             "Q(b)"
@@ -9,7 +9,7 @@
             {
                 "_arguments": [],
                 "_rule": "LEM",
-                "_statement": "a = b â¨ Â¬(a = b)",
+                "_statement": "a = b ∨ ¬(a = b)",
                 "_usedArguments": 0,
                 "tag": "Line"
             },
@@ -28,7 +28,7 @@
                             "1",
                             "u:=P(u)"
                         ],
-                        "_rule": "EqE",
+                        "_rule": "=E",
                         "_statement": "P(b)",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -38,8 +38,8 @@
                             "5",
                             "2"
                         ],
-                        "_rule": "AndI",
-                        "_statement": "P(b) â§ Q(b)",
+                        "_rule": "∧I",
+                        "_statement": "P(b) ∧ Q(b)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -48,8 +48,8 @@
                             "6",
                             "b"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â x (P(x) â§ Q(x))",
+                        "_rule": "∃I",
+                        "_statement": "∃ x (P(x) ∧ Q(x))",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -57,8 +57,8 @@
                         "_arguments": [
                             "7"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                        "_rule": "∨IL",
+                        "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -70,7 +70,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "Â¬(a = b)",
+                        "_statement": "¬(a = b)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -79,8 +79,8 @@
                             "9",
                             "b"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â y Â¬(a = y)",
+                        "_rule": "∃I",
+                        "_statement": "∃ y ¬(a = y)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -89,8 +89,8 @@
                             "10",
                             "a"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â x â y Â¬(x = y)",
+                        "_rule": "∃I",
+                        "_statement": "∃ x ∃ y ¬(x = y)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -98,8 +98,8 @@
                         "_arguments": [
                             "11"
                         ],
-                        "_rule": "OrIR",
-                        "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                        "_rule": "∨IR",
+                        "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -112,8 +112,8 @@
                     "4-8",
                     "9-12"
                 ],
-                "_rule": "OrE",
-                "_statement": "â x (P(x) â§ Q(x)) â¨ â x â y Â¬(x = y)",
+                "_rule": "∨E",
+                "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
                 "_usedArguments": 3,
                 "tag": "Line"
             }

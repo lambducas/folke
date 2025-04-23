@@ -1,10 +1,10 @@
 {
     "_sequent": {
-        "_conclusion": "â u u = f(u)",
+        "_conclusion": "∃ u u = f(u)",
         "_premises": [
-            "â x â y (P(x, y) â§ P(y, x) â x = y)",
-            "â x P(x, f(x))",
-            "â z â x P(x, z)"
+            "∀ x ∀ y (P(x, y) ∧ P(y, x) → x = y)",
+            "∀ x P(x, f(x))",
+            "∃ z ∀ x P(x, z)"
         ],
         "_steps": [
             {
@@ -12,34 +12,34 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "z_0",
+                        "_statement": "z₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "â x P(x, zâ)",
+                        "_statement": "∀ x P(x, z₀)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "2",
-                            "zâ"
+                            "z₀"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "P(zâ, f(zâ))",
+                        "_rule": "∀E",
+                        "_statement": "P(z₀, f(z₀))",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "5",
-                            "f(zâ)"
+                            "f(z₀)"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "P(f(zâ), zâ)",
+                        "_rule": "∀E",
+                        "_statement": "P(f(z₀), z₀)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -48,28 +48,28 @@
                             "6",
                             "7"
                         ],
-                        "_rule": "AndI",
-                        "_statement": "P(zâ, f(zâ)) â§ P(f(zâ), zâ)",
+                        "_rule": "∧I",
+                        "_statement": "P(z₀, f(z₀)) ∧ P(f(z₀), z₀)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "1",
-                            "z_0"
+                            "z₀"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "â y (P(zâ, y) â§ P(y, zâ) â zâ = y)",
+                        "_rule": "∀E",
+                        "_statement": "∀ y (P(z₀, y) ∧ P(y, z₀) → z₀ = y)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "9",
-                            "f(zâ)"
+                            "f(z₀)"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "P(zâ, f(zâ)) â§ P(f(zâ), zâ) â zâ = f(zâ)",
+                        "_rule": "∀E",
+                        "_statement": "P(z₀, f(z₀)) ∧ P(f(z₀), z₀) → z₀ = f(z₀)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -78,18 +78,18 @@
                             "10",
                             "8"
                         ],
-                        "_rule": "ImplE",
-                        "_statement": "zâ = f(zâ)",
+                        "_rule": "→E",
+                        "_statement": "z₀ = f(z₀)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "11",
-                            "z_0"
+                            "z₀"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â u u = f(u)",
+                        "_rule": "∃I",
+                        "_statement": "∃ u u = f(u)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -101,8 +101,8 @@
                     "3",
                     "4-12"
                 ],
-                "_rule": "SomeE",
-                "_statement": "â u u = f(u)",
+                "_rule": "∃E",
+                "_statement": "∃ u u = f(u)",
                 "_usedArguments": 2,
                 "tag": "Line"
             }

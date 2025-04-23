@@ -2,9 +2,9 @@
     "_sequent": {
         "_conclusion": "r",
         "_premises": [
-            "p -> (q -> r)",
-            "p | r",
-            "!q -> !p"
+            "p → (q → r)",
+            "p ∨ r",
+            "¬q → ¬p"
         ],
         "_steps": [
             {
@@ -20,8 +20,8 @@
                         "_arguments": [
                             "4"
                         ],
-                        "_rule": "NotNotI",
-                        "_statement": "!!p",
+                        "_rule": "¬¬I",
+                        "_statement": "¬¬p",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -31,7 +31,7 @@
                             "5"
                         ],
                         "_rule": "MT",
-                        "_statement": "!!q",
+                        "_statement": "¬¬q",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -39,7 +39,7 @@
                         "_arguments": [
                             "6"
                         ],
-                        "_rule": "NotNotE",
+                        "_rule": "¬¬E",
                         "_statement": "q",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -49,8 +49,8 @@
                             "4",
                             "1"
                         ],
-                        "_rule": "ImplE",
-                        "_statement": "q -> r",
+                        "_rule": "→E",
+                        "_statement": "q → r",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -59,7 +59,7 @@
                             "7",
                             "8"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "r",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -85,7 +85,7 @@
                     "4-9",
                     "10-10"
                 ],
-                "_rule": "OrE",
+                "_rule": "∨E",
                 "_statement": "r",
                 "_usedArguments": 3,
                 "tag": "Line"

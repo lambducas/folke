@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "(p & q) -> p",
+        "_conclusion": "(p ∧ q) → p",
         "_premises": [],
         "_steps": [
             {
@@ -8,7 +8,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "p & q",
+                        "_statement": "p ∧ q",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -16,7 +16,7 @@
                         "_arguments": [
                             "1"
                         ],
-                        "_rule": "AndEL",
+                        "_rule": "∧EL",
                         "_statement": "p",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -28,8 +28,8 @@
                 "_arguments": [
                     "1-2"
                 ],
-                "_rule": "ImplI",
-                "_statement": "(p & q) -> p",
+                "_rule": "→I",
+                "_statement": "(p ∧ q) → p",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

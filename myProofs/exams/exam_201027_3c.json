@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "â x â y (P(x, y) â¨ Q(x, y))",
+        "_conclusion": "∀ x ∃ y (P(x, y) ∨ Q(x, y))",
         "_premises": [
-            "â x (â y P(x, y) â¨â y Q(x, y))"
+            "∀ x (∀ y P(x, y) ∨∀ y Q(x, y))"
         ],
         "_steps": [
             {
@@ -10,17 +10,17 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "1",
-                            "x_0"
+                            "x₀"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "â y P(xâ, y) â¨ â y Q(xâ, y)",
+                        "_rule": "∀E",
+                        "_statement": "∀ y P(x₀, y) ∨ ∀ y Q(x₀, y)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -29,24 +29,24 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "â y P(xâ, y)",
+                                "_statement": "∀ y P(x₀, y)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "4",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "AllE",
-                                "_statement": "P(xâ, yâ)",
+                                "_rule": "∀E",
+                                "_statement": "P(x₀, y₀)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -54,18 +54,18 @@
                                 "_arguments": [
                                     "6"
                                 ],
-                                "_rule": "OrIL",
-                                "_statement": "P(xâ, yâ) â¨ Q(xâ, yâ)",
+                                "_rule": "∨IL",
+                                "_statement": "P(x₀, y₀) ∨ Q(x₀, y₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "7",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "SomeI",
-                                "_statement": "â y (P(xâ, y) â¨ Q(xâ, y))",
+                                "_rule": "∃I",
+                                "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -77,24 +77,24 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "â y Q(xâ, y)",
+                                "_statement": "∀ y Q(x₀, y)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "9",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "AllE",
-                                "_statement": "Q(xâ, yâ)",
+                                "_rule": "∀E",
+                                "_statement": "Q(x₀, y₀)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -102,18 +102,18 @@
                                 "_arguments": [
                                     "11"
                                 ],
-                                "_rule": "OrIR",
-                                "_statement": "P(xâ, yâ) â¨ Q(xâ, yâ)",
+                                "_rule": "∨IR",
+                                "_statement": "P(x₀, y₀) ∨ Q(x₀, y₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "12",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "SomeI",
-                                "_statement": "â y (P(xâ, y) â¨ Q(xâ, y))",
+                                "_rule": "∃I",
+                                "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -126,8 +126,8 @@
                             "4-8",
                             "9-13"
                         ],
-                        "_rule": "OrE",
-                        "_statement": "â y (P(xâ, y) â¨ Q(xâ, y))",
+                        "_rule": "∨E",
+                        "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
                         "_usedArguments": 3,
                         "tag": "Line"
                     }
@@ -138,8 +138,8 @@
                 "_arguments": [
                     "2-14"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x â y (P(x, y) â¨ Q(x, y))",
+                "_rule": "∀I",
+                "_statement": "∀ x ∃ y (P(x, y) ∨ Q(x, y))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "â x P(x) â§ â y â z (P(y) â§ P(z) â y = z)",
+        "_conclusion": "∃ x P(x) ∧ ∀ y ∀ z (P(y) ∧ P(z) → y = z)",
         "_premises": [
-            "â x (P(x) â§ â y (P(y) â y = x))"
+            "∃ x (P(x) ∧ ∀ y (P(y) → y = x))"
         ],
         "_steps": [
             {
@@ -10,14 +10,14 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "P(xâ) â§ â y (P(y) â y = xâ)",
+                        "_statement": "P(x₀) ∧ ∀ y (P(y) → y = x₀)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -25,8 +25,8 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "AndEL",
-                        "_statement": "P(xâ)",
+                        "_rule": "∧EL",
+                        "_statement": "P(x₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -34,8 +34,8 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "AndER",
-                        "_statement": "â y (P(y) â y = xâ)",
+                        "_rule": "∧ER",
+                        "_statement": "∀ y (P(y) → y = x₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -44,17 +44,17 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "5",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "AllE",
-                                "_statement": "P(yâ) â yâ = x_0",
+                                "_rule": "∀E",
+                                "_statement": "P(y₀) → y₀ = x₀",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -63,17 +63,17 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "z_0",
+                                        "_statement": "z₀",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [
                                             "5",
-                                            "z_0"
+                                            "z₀"
                                         ],
-                                        "_rule": "AllE",
-                                        "_statement": "P(zâ) â zâ = xâ",
+                                        "_rule": "∀E",
+                                        "_statement": "P(z₀) → z₀ = x₀",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -82,7 +82,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "P(yâ) â§ P(zâ)",
+                                                "_statement": "P(y₀) ∧ P(z₀)",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -90,8 +90,8 @@
                                                 "_arguments": [
                                                     "10"
                                                 ],
-                                                "_rule": "AndEL",
-                                                "_statement": "P(yâ)",
+                                                "_rule": "∧EL",
+                                                "_statement": "P(y₀)",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
@@ -99,8 +99,8 @@
                                                 "_arguments": [
                                                     "10"
                                                 ],
-                                                "_rule": "AndER",
-                                                "_statement": "P(zâ)",
+                                                "_rule": "∧ER",
+                                                "_statement": "P(z₀)",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
@@ -109,8 +109,8 @@
                                                     "7",
                                                     "11"
                                                 ],
-                                                "_rule": "ImplE",
-                                                "_statement": "yâ = x_0",
+                                                "_rule": "→E",
+                                                "_statement": "y₀ = x₀",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -119,15 +119,15 @@
                                                     "9",
                                                     "12"
                                                 ],
-                                                "_rule": "ImplE",
-                                                "_statement": "zâ = x_0",
+                                                "_rule": "→E",
+                                                "_statement": "z₀ = x₀",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [],
-                                                "_rule": "EqI",
-                                                "_statement": "zâ = z_0",
+                                                "_rule": "=I",
+                                                "_statement": "z₀ = z₀",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -135,10 +135,10 @@
                                                 "_arguments": [
                                                     "14",
                                                     "15",
-                                                    "u:=u=z_0"
+                                                    "u:=u=z₀"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "xâ = z_0",
+                                                "_rule": "=E",
+                                                "_statement": "x₀ = z₀",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             },
@@ -146,10 +146,10 @@
                                                 "_arguments": [
                                                     "16",
                                                     "13",
-                                                    "u:=yâ=u"
+                                                    "u:=y₀=u"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "yâ = zâ",
+                                                "_rule": "=E",
+                                                "_statement": "y₀ = z₀",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             }
@@ -160,8 +160,8 @@
                                         "_arguments": [
                                             "10-17"
                                         ],
-                                        "_rule": "ImplI",
-                                        "_statement": "P(yâ) â§ P(zâ) â yâ = z_0",
+                                        "_rule": "→I",
+                                        "_statement": "P(y₀) ∧ P(z₀) → y₀ = z₀",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -172,8 +172,8 @@
                                 "_arguments": [
                                     "8-18"
                                 ],
-                                "_rule": "AllI",
-                                "_statement": "â z (P(y_0) â§ P(z) â yâ = z)",
+                                "_rule": "∀I",
+                                "_statement": "∀ z (P(y₀) ∧ P(z) → y₀ = z)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -184,18 +184,18 @@
                         "_arguments": [
                             "6-19"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "â y â z (P(y) â§ P(z) â y = z)",
+                        "_rule": "∀I",
+                        "_statement": "∀ y ∀ z (P(y) ∧ P(z) → y = z)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "4",
-                            "x_0"
+                            "x₀"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â x P(x)",
+                        "_rule": "∃I",
+                        "_statement": "∃ x P(x)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -204,8 +204,8 @@
                             "21",
                             "20"
                         ],
-                        "_rule": "AndI",
-                        "_statement": "â x P(x) â§ â y â z (P(y) â§ P(z) â y = z)",
+                        "_rule": "∧I",
+                        "_statement": "∃ x P(x) ∧ ∀ y ∀ z (P(y) ∧ P(z) → y = z)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -217,8 +217,8 @@
                     "1",
                     "2-22"
                 ],
-                "_rule": "SomeE",
-                "_statement": "â x P(x) â§ â y â z (P(y) â§ P(z) â y = z)",
+                "_rule": "∃E",
+                "_statement": "∃ x P(x) ∧ ∀ y ∀ z (P(y) ∧ P(z) → y = z)",
                 "_usedArguments": 2,
                 "tag": "Line"
             }

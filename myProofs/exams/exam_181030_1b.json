@@ -1,9 +1,9 @@
 {
     "_sequent": {
-        "_conclusion": "s â q",
+        "_conclusion": "s → q",
         "_premises": [
-            "p â¨ q",
-            "p â Â¬s"
+            "p ∨ q",
+            "p → ¬s"
         ],
         "_steps": [
             {
@@ -29,8 +29,8 @@
                                     "2",
                                     "4"
                                 ],
-                                "_rule": "ImplE",
-                                "_statement": "Â¬s",
+                                "_rule": "→E",
+                                "_statement": "¬s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -39,8 +39,8 @@
                                     "5",
                                     "3"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -48,7 +48,7 @@
                                 "_arguments": [
                                     "6"
                                 ],
-                                "_rule": "BotE",
+                                "_rule": "⊥E",
                                 "_statement": "q",
                                 "_usedArguments": 1,
                                 "tag": "Line"
@@ -74,7 +74,7 @@
                             "4-7",
                             "8-8"
                         ],
-                        "_rule": "OrE",
+                        "_rule": "∨E",
                         "_statement": "q",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -86,8 +86,8 @@
                 "_arguments": [
                     "3-9"
                 ],
-                "_rule": "ImplI",
-                "_statement": "s â q",
+                "_rule": "→I",
+                "_statement": "s → q",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

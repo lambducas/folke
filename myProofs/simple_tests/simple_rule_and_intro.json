@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "A & B",
+        "_conclusion": "A ∧ B",
         "_premises": [
             "A",
             "B"
@@ -11,8 +11,8 @@
                     "1",
                     "2"
                 ],
-                "_rule": "AndI",
-                "_statement": "A & B",
+                "_rule": "∧I",
+                "_statement": "A ∧ B",
                 "_usedArguments": 2,
                 "tag": "Line"
             }

@@ -1,9 +1,9 @@
 {
     "_sequent": {
-        "_conclusion": "Â¬((p â§ r) â§ q)",
+        "_conclusion": "¬((p ∧ r) ∧ q)",
         "_premises": [
-            "Â¬(p â§ s)",
-            "Â¬(Â¬s â§ q)"
+            "¬(p ∧ s)",
+            "¬(¬s ∧ q)"
         ],
         "_steps": [
             {
@@ -11,7 +11,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "((p â§ r) â§ q)",
+                        "_statement": "((p ∧ r) ∧ q)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,7 +19,7 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "AndER",
+                        "_rule": "∧ER",
                         "_statement": "q",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -28,8 +28,8 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "AndEL",
-                        "_statement": "p â§ r",
+                        "_rule": "∧EL",
+                        "_statement": "p ∧ r",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -37,7 +37,7 @@
                         "_arguments": [
                             "5"
                         ],
-                        "_rule": "AndEL",
+                        "_rule": "∧EL",
                         "_statement": "p",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -45,7 +45,7 @@
                     {
                         "_arguments": [],
                         "_rule": "LEM",
-                        "_statement": "s â¨ Â¬s",
+                        "_statement": "s ∨ ¬s",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -63,8 +63,8 @@
                                     "6",
                                     "8"
                                 ],
-                                "_rule": "AndI",
-                                "_statement": "p â§ s",
+                                "_rule": "∧I",
+                                "_statement": "p ∧ s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -73,8 +73,8 @@
                                     "1",
                                     "9"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -86,7 +86,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "Â¬s",
+                                "_statement": "¬s",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -95,8 +95,8 @@
                                     "11",
                                     "4"
                                 ],
-                                "_rule": "AndI",
-                                "_statement": "Â¬s â§ q",
+                                "_rule": "∧I",
+                                "_statement": "¬s ∧ q",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -105,8 +105,8 @@
                                     "2",
                                     "12"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -119,8 +119,8 @@
                             "8-10",
                             "11-13"
                         ],
-                        "_rule": "OrE",
-                        "_statement": "bot",
+                        "_rule": "∨E",
+                        "_statement": "⊥",
                         "_usedArguments": 3,
                         "tag": "Line"
                     }
@@ -131,8 +131,8 @@
                 "_arguments": [
                     "3-14"
                 ],
-                "_rule": "NotI",
-                "_statement": "Â¬((p â§ r) â§ q)",
+                "_rule": "¬I",
+                "_statement": "¬((p ∧ r) ∧ q)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

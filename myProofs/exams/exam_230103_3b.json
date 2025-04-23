@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "â x â y (R(x, y) â Â¬(â z Â¬(R(x, z) â§ R(z, y))))",
+        "_conclusion": "∀ x ∀ y (R(x, y) → ¬(∀ z ¬(R(x, z) ∧ R(z, y))))",
         "_premises": [
-            "â x R(x, x)"
+            "∀ x R(x, x)"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,7 +19,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -28,7 +28,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "R(xâ, yâ)",
+                                        "_statement": "R(x₀, y₀)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -37,27 +37,27 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "â z Â¬(R(xâ, z) â§ R(z, yâ))",
+                                                "_statement": "∀ z ¬(R(x₀, z) ∧ R(z, y₀))",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [
                                                     "5",
-                                                    "xâ"
+                                                    "x₀"
                                                 ],
-                                                "_rule": "AllE",
-                                                "_statement": "Â¬(R(xâ, xâ) â§ R(x_0, yâ))",
+                                                "_rule": "∀E",
+                                                "_statement": "¬(R(x₀, x₀) ∧ R(x₀, y₀))",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [
                                                     "1",
-                                                    "xâ"
+                                                    "x₀"
                                                 ],
-                                                "_rule": "AllE",
-                                                "_statement": "R(xâ, xâ)",
+                                                "_rule": "∀E",
+                                                "_statement": "R(x₀, x₀)",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -66,8 +66,8 @@
                                                     "7",
                                                     "4"
                                                 ],
-                                                "_rule": "AndI",
-                                                "_statement": "R(xâ, xâ) â§ R(xâ, yâ)",
+                                                "_rule": "∧I",
+                                                "_statement": "R(x₀, x₀) ∧ R(x₀, y₀)",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -76,8 +76,8 @@
                                                     "6",
                                                     "8"
                                                 ],
-                                                "_rule": "NotE",
-                                                "_statement": "bot",
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             }
@@ -88,8 +88,8 @@
                                         "_arguments": [
                                             "5-9"
                                         ],
-                                        "_rule": "NotI",
-                                        "_statement": "Â¬(â z Â¬(R(xâ, z) â§ R(z, yâ)))",
+                                        "_rule": "¬I",
+                                        "_statement": "¬(∀ z ¬(R(x₀, z) ∧ R(z, y₀)))",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -100,8 +100,8 @@
                                 "_arguments": [
                                     "4-10"
                                 ],
-                                "_rule": "ImplI",
-                                "_statement": "R(xâ, yâ) â Â¬(â z Â¬(R(xâ, z) â§ R(z, yâ)))",
+                                "_rule": "→I",
+                                "_statement": "R(x₀, y₀) → ¬(∀ z ¬(R(x₀, z) ∧ R(z, y₀)))",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -112,8 +112,8 @@
                         "_arguments": [
                             "3-11"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "â y (R(xâ, y) â Â¬(â z Â¬(R(xâ, z) â§ R(z, y))))",
+                        "_rule": "∀I",
+                        "_statement": "∀ y (R(x₀, y) → ¬(∀ z ¬(R(x₀, z) ∧ R(z, y))))",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -124,8 +124,8 @@
                 "_arguments": [
                     "2-12"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x â y (R(x, y) â Â¬(â z Â¬(R(x, z) â§ R(z, y))))",
+                "_rule": "∀I",
+                "_statement": "∀ x ∀ y (R(x, y) → ¬(∀ z ¬(R(x, z) ∧ R(z, y))))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

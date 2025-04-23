@@ -1,10 +1,10 @@
 {
     "_sequent": {
-        "_conclusion": "p -> s",
+        "_conclusion": "p → s",
         "_premises": [
-            "p -> (q | r)",
-            "q -> s",
-            "r -> s"
+            "p → (q ∨ r)",
+            "q → s",
+            "r → s"
         ],
         "_steps": [
             {
@@ -21,8 +21,8 @@
                             "4",
                             "1"
                         ],
-                        "_rule": "ImplE",
-                        "_statement": "q | r",
+                        "_rule": "→E",
+                        "_statement": "q ∨ r",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -40,7 +40,7 @@
                                     "6",
                                     "2"
                                 ],
-                                "_rule": "ImplE",
+                                "_rule": "→E",
                                 "_statement": "s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -62,7 +62,7 @@
                                     "8",
                                     "3"
                                 ],
-                                "_rule": "ImplE",
+                                "_rule": "→E",
                                 "_statement": "s",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -76,7 +76,7 @@
                             "6-7",
                             "8-9"
                         ],
-                        "_rule": "OrE",
+                        "_rule": "∨E",
                         "_statement": "s",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -88,8 +88,8 @@
                 "_arguments": [
                     "4-10"
                 ],
-                "_rule": "ImplI",
-                "_statement": "p -> s",
+                "_rule": "→I",
+                "_statement": "p → s",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

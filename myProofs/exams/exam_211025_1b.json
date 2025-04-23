@@ -1,14 +1,14 @@
 {
     "_sequent": {
-        "_conclusion": "p â¨ (q â r)",
+        "_conclusion": "p ∨ (q → r)",
         "_premises": [
-            "p â¨ q â p â¨ r"
+            "p ∨ q → p ∨ r"
         ],
         "_steps": [
             {
                 "_arguments": [],
                 "_rule": "LEM",
-                "_statement": "p â¨ Â¬p",
+                "_statement": "p ∨ ¬p",
                 "_usedArguments": 0,
                 "tag": "Line"
             },
@@ -25,8 +25,8 @@
                         "_arguments": [
                             "3"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "p â¨ (q â r)",
+                        "_rule": "∨IL",
+                        "_statement": "p ∨ (q → r)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -38,7 +38,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "Â¬p",
+                        "_statement": "¬p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -55,8 +55,8 @@
                                 "_arguments": [
                                     "6"
                                 ],
-                                "_rule": "OrIR",
-                                "_statement": "p â¨ q",
+                                "_rule": "∨IR",
+                                "_statement": "p ∨ q",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -65,8 +65,8 @@
                                     "7",
                                     "1"
                                 ],
-                                "_rule": "ImplE",
-                                "_statement": "p â¨ r",
+                                "_rule": "→E",
+                                "_statement": "p ∨ r",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -84,8 +84,8 @@
                                             "5",
                                             "9"
                                         ],
-                                        "_rule": "NotE",
-                                        "_statement": "bot",
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -93,7 +93,7 @@
                                         "_arguments": [
                                             "10"
                                         ],
-                                        "_rule": "BotE",
+                                        "_rule": "⊥E",
                                         "_statement": "r",
                                         "_usedArguments": 1,
                                         "tag": "Line"
@@ -119,7 +119,7 @@
                                     "9-11",
                                     "12-12"
                                 ],
-                                "_rule": "OrE",
+                                "_rule": "∨E",
                                 "_statement": "r",
                                 "_usedArguments": 3,
                                 "tag": "Line"
@@ -131,8 +131,8 @@
                         "_arguments": [
                             "6-13"
                         ],
-                        "_rule": "ImplI",
-                        "_statement": "q â r",
+                        "_rule": "→I",
+                        "_statement": "q → r",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -140,8 +140,8 @@
                         "_arguments": [
                             "14"
                         ],
-                        "_rule": "OrIR",
-                        "_statement": "p â¨ (q â r)",
+                        "_rule": "∨IR",
+                        "_statement": "p ∨ (q → r)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -154,8 +154,8 @@
                     "3-4",
                     "5-15"
                 ],
-                "_rule": "OrE",
-                "_statement": "p â¨ (q â r)",
+                "_rule": "∨E",
+                "_statement": "p ∨ (q → r)",
                 "_usedArguments": 3,
                 "tag": "Line"
             }

@@ -3,7 +3,7 @@
         "_conclusion": "B",
         "_premises": [
             "A",
-            "A -> B"
+            "A → B"
         ],
         "_steps": [
             {
@@ -11,7 +11,7 @@
                     "1",
                     "2"
                 ],
-                "_rule": "ImplE",
+                "_rule": "→E",
                 "_statement": "B",
                 "_usedArguments": 2,
                 "tag": "Line"

@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "Â¬(a = b)",
+        "_conclusion": "¬(a = b)",
         "_premises": [
-            "â x â y (P(x, y) â Â¬P(y, x))",
+            "∀ x ∀ y (P(x, y) → ¬P(y, x))",
             "P(a, b)"
         ],
         "_steps": [
@@ -11,8 +11,8 @@
                     "1",
                     "a"
                 ],
-                "_rule": "AllE",
-                "_statement": "â y (P(a, y) â Â¬P(y, a))",
+                "_rule": "∀E",
+                "_statement": "∀ y (P(a, y) → ¬P(y, a))",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -21,8 +21,8 @@
                     "3",
                     "b"
                 ],
-                "_rule": "AllE",
-                "_statement": "P(a, b) â Â¬P(b, a)",
+                "_rule": "∀E",
+                "_statement": "P(a, b) → ¬P(b, a)",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -31,8 +31,8 @@
                     "4",
                     "2"
                 ],
-                "_rule": "ImplE",
-                "_statement": "Â¬P(b, a)",
+                "_rule": "→E",
+                "_statement": "¬P(b, a)",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -51,14 +51,14 @@
                             "2",
                             "u:=P(u,b)"
                         ],
-                        "_rule": "EqE",
+                        "_rule": "=E",
                         "_statement": "P(b, b)",
                         "_usedArguments": 3,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [],
-                        "_rule": "EqI",
+                        "_rule": "=I",
                         "_statement": "a = a",
                         "_usedArguments": 0,
                         "tag": "Line"
@@ -69,7 +69,7 @@
                             "8",
                             "u:=u=a"
                         ],
-                        "_rule": "EqE",
+                        "_rule": "=E",
                         "_statement": "b = a",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -80,7 +80,7 @@
                             "7",
                             "u:=P(b, u)"
                         ],
-                        "_rule": "EqE",
+                        "_rule": "=E",
                         "_statement": "P(b, a)",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -90,8 +90,8 @@
                             "5",
                             "10"
                         ],
-                        "_rule": "NotE",
-                        "_statement": "bot",
+                        "_rule": "¬E",
+                        "_statement": "⊥",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -102,8 +102,8 @@
                 "_arguments": [
                     "6-11"
                 ],
-                "_rule": "NotI",
-                "_statement": "Â¬(a = b)",
+                "_rule": "¬I",
+                "_statement": "¬(a = b)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

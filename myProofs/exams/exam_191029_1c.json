@@ -1,15 +1,15 @@
 {
     "_sequent": {
-        "_conclusion": "s â¨ p",
+        "_conclusion": "s ∨ p",
         "_premises": [
-            "Â¬p â r",
-            "r â s"
+            "¬p → r",
+            "r → s"
         ],
         "_steps": [
             {
                 "_arguments": [],
                 "_rule": "LEM",
-                "_statement": "p â¨ Â¬p",
+                "_statement": "p ∨ ¬p",
                 "_usedArguments": 0,
                 "tag": "Line"
             },
@@ -26,8 +26,8 @@
                         "_arguments": [
                             "4"
                         ],
-                        "_rule": "OrIR",
-                        "_statement": "s â¨ p",
+                        "_rule": "∨IR",
+                        "_statement": "s ∨ p",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -39,7 +39,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "Â¬p",
+                        "_statement": "¬p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -48,7 +48,7 @@
                             "1",
                             "6"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "r",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -58,7 +58,7 @@
                             "2",
                             "7"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "s",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -67,8 +67,8 @@
                         "_arguments": [
                             "8"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "s â¨ p",
+                        "_rule": "∨IL",
+                        "_statement": "s ∨ p",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -81,8 +81,8 @@
                     "4-5",
                     "6-9"
                 ],
-                "_rule": "OrE",
-                "_statement": "s â¨ p",
+                "_rule": "∨E",
+                "_statement": "s ∨ p",
                 "_usedArguments": 3,
                 "tag": "Line"
             }

@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "â x x = f(x)",
+        "_conclusion": "∀ x x = f(x)",
         "_premises": [
-            "â x â y (x = y â¨ x = f(x))"
+            "∀ x ∀ y (x = y ∨ x = f(x))"
         ],
         "_steps": [
             {
@@ -19,8 +19,8 @@
                             "1",
                             "a"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "â y (a = y â¨ a = f(a))",
+                        "_rule": "∀E",
+                        "_statement": "∀ y (a = y ∨ a = f(a))",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -29,8 +29,8 @@
                             "3",
                             "f(a)"
                         ],
-                        "_rule": "AllE",
-                        "_statement": "a = f(a) â¨ a = f(a)",
+                        "_rule": "∀E",
+                        "_statement": "a = f(a) ∨ a = f(a)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -64,7 +64,7 @@
                             "5-5",
                             "6-6"
                         ],
-                        "_rule": "OrE",
+                        "_rule": "∨E",
                         "_statement": "a = f(a)",
                         "_usedArguments": 3,
                         "tag": "Line"
@@ -76,8 +76,8 @@
                 "_arguments": [
                     "2-7"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x x = f(x)",
+                "_rule": "∀I",
+                "_statement": "∀ x x = f(x)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

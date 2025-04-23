@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "A | B",
+        "_conclusion": "A ∨ B",
         "_premises": [
             "A"
         ],
@@ -9,8 +9,8 @@
                 "_arguments": [
                     "1"
                 ],
-                "_rule": "OrIL",
-                "_statement": "A | B",
+                "_rule": "∨IL",
+                "_statement": "A ∨ B",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

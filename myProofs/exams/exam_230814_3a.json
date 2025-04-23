@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "â x (â y (â z (â w (x = z â y = w â R(x, y) â R(z, w)))))",
+        "_conclusion": "∀ x (∀ y (∀ z (∀ w (x = z → y = w → R(x, y) → R(z, w)))))",
         "_premises": [],
         "_steps": [
             {
@@ -8,7 +8,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -17,7 +17,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -26,7 +26,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "z_0",
+                                        "_statement": "z₀",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -35,7 +35,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "fresh",
-                                                "_statement": "w_0",
+                                                "_statement": "w₀",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -44,7 +44,7 @@
                                                     {
                                                         "_arguments": [],
                                                         "_rule": "assume",
-                                                        "_statement": "xâ = z_0",
+                                                        "_statement": "x₀ = z₀",
                                                         "_usedArguments": 0,
                                                         "tag": "Line"
                                                     },
@@ -53,7 +53,7 @@
                                                             {
                                                                 "_arguments": [],
                                                                 "_rule": "assume",
-                                                                "_statement": "yâ = w_0",
+                                                                "_statement": "y₀ = w₀",
                                                                 "_usedArguments": 0,
                                                                 "tag": "Line"
                                                             },
@@ -62,7 +62,7 @@
                                                                     {
                                                                         "_arguments": [],
                                                                         "_rule": "assume",
-                                                                        "_statement": "R(xâ, yâ)",
+                                                                        "_statement": "R(x₀, y₀)",
                                                                         "_usedArguments": 0,
                                                                         "tag": "Line"
                                                                     },
@@ -70,10 +70,10 @@
                                                                         "_arguments": [
                                                                             "6",
                                                                             "7",
-                                                                            "u:=R(xâ,u)"
+                                                                            "u:=R(x₀,u)"
                                                                         ],
-                                                                        "_rule": "EqE",
-                                                                        "_statement": "R(xâ, wâ)",
+                                                                        "_rule": "=E",
+                                                                        "_statement": "R(x₀, w₀)",
                                                                         "_usedArguments": 3,
                                                                         "tag": "Line"
                                                                     },
@@ -81,10 +81,10 @@
                                                                         "_arguments": [
                                                                             "5",
                                                                             "8",
-                                                                            "u:=R(u,wâ)"
+                                                                            "u:=R(u,w₀)"
                                                                         ],
-                                                                        "_rule": "EqE",
-                                                                        "_statement": "R(zâ, wâ)",
+                                                                        "_rule": "=E",
+                                                                        "_statement": "R(z₀, w₀)",
                                                                         "_usedArguments": 3,
                                                                         "tag": "Line"
                                                                     }
@@ -95,8 +95,8 @@
                                                                 "_arguments": [
                                                                     "7-9"
                                                                 ],
-                                                                "_rule": "ImplI",
-                                                                "_statement": "R(xâ, yâ) â R(zâ, wâ)",
+                                                                "_rule": "→I",
+                                                                "_statement": "R(x₀, y₀) → R(z₀, w₀)",
                                                                 "_usedArguments": 1,
                                                                 "tag": "Line"
                                                             }
@@ -107,8 +107,8 @@
                                                         "_arguments": [
                                                             "6-10"
                                                         ],
-                                                        "_rule": "ImplI",
-                                                        "_statement": "yâ = wâ â R(xâ, yâ) â R(zâ, wâ)",
+                                                        "_rule": "→I",
+                                                        "_statement": "y₀ = w₀ → R(x₀, y₀) → R(z₀, w₀)",
                                                         "_usedArguments": 1,
                                                         "tag": "Line"
                                                     }
@@ -119,8 +119,8 @@
                                                 "_arguments": [
                                                     "5-11"
                                                 ],
-                                                "_rule": "ImplI",
-                                                "_statement": "xâ = zâ â yâ = wâ â R(xâ, yâ) â R(zâ, wâ)",
+                                                "_rule": "→I",
+                                                "_statement": "x₀ = z₀ → y₀ = w₀ → R(x₀, y₀) → R(z₀, w₀)",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             }
@@ -131,8 +131,8 @@
                                         "_arguments": [
                                             "4-12"
                                         ],
-                                        "_rule": "AllI",
-                                        "_statement": "â w (xâ = zâ â yâ = w â R(xâ, yâ) â R(zâ, w))",
+                                        "_rule": "∀I",
+                                        "_statement": "∀ w (x₀ = z₀ → y₀ = w → R(x₀, y₀) → R(z₀, w))",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -143,8 +143,8 @@
                                 "_arguments": [
                                     "3-13"
                                 ],
-                                "_rule": "AllI",
-                                "_statement": "â z (â w (xâ = z â yâ = w â R(xâ, yâ) â R(z, w)))",
+                                "_rule": "∀I",
+                                "_statement": "∀ z (∀ w (x₀ = z → y₀ = w → R(x₀, y₀) → R(z, w)))",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -155,8 +155,8 @@
                         "_arguments": [
                             "2-14"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "â y (â z (â w (xâ = z â y = w â R(xâ, y) â R(z, w))))",
+                        "_rule": "∀I",
+                        "_statement": "∀ y (∀ z (∀ w (x₀ = z → y = w → R(x₀, y) → R(z, w))))",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -167,8 +167,8 @@
                 "_arguments": [
                     "1-15"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x (â y (â z (â w (x = z â y = w â R(x, y) â R(z, w)))))",
+                "_rule": "∀I",
+                "_statement": "∀ x (∀ y (∀ z (∀ w (x = z → y = w → R(x, y) → R(z, w)))))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

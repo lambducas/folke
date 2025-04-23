@@ -2,14 +2,14 @@
     "_sequent": {
         "_conclusion": "A",
         "_premises": [
-            "!!A"
+            "¬¬A"
         ],
         "_steps": [
             {
                 "_arguments": [
                     "1"
                 ],
-                "_rule": "NotNotE",
+                "_rule": "¬¬E",
                 "_statement": "A",
                 "_usedArguments": 1,
                 "tag": "Line"

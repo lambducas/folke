@@ -2,14 +2,14 @@
     "_sequent": {
         "_conclusion": "A",
         "_premises": [
-            "A & B"
+            "A ∧ B"
         ],
         "_steps": [
             {
                 "_arguments": [
                     "1"
                 ],
-                "_rule": "AndEL",
+                "_rule": "∧EL",
                 "_statement": "A",
                 "_usedArguments": 1,
                 "tag": "Line"

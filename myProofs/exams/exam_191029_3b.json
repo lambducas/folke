@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "â x â y â z (y = z â f(x, z) = f(x, y))",
+        "_conclusion": "∀ x ∀ y ∀ z (y = z → f(x, z) = f(x, y))",
         "_premises": [],
         "_steps": [
             {
@@ -8,7 +8,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -17,7 +17,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -26,7 +26,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "z_0",
+                                        "_statement": "z₀",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -35,7 +35,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "yâ = z_0",
+                                                "_statement": "y₀ = z₀",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -43,10 +43,10 @@
                                                 "_arguments": [
                                                     "5",
                                                     "",
-                                                    "u:=f(xâ,u)=f(xâ,yâ)"
+                                                    "u:=f(x₀,u)=f(x₀,y₀)"
                                                 ],
-                                                "_rule": "EqE",
-                                                "_statement": "f(xâ, zâ) = f(xâ, yâ)",
+                                                "_rule": "=E",
+                                                "_statement": "f(x₀, z₀) = f(x₀, y₀)",
                                                 "_usedArguments": 3,
                                                 "tag": "Line"
                                             }
@@ -57,8 +57,8 @@
                                         "_arguments": [
                                             "4-5"
                                         ],
-                                        "_rule": "ImplI",
-                                        "_statement": "yâ = zâ â f(xâ, z) = f(xâ, yâ)",
+                                        "_rule": "→I",
+                                        "_statement": "y₀ = z₀ → f(x₀, z) = f(x₀, y₀)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -69,8 +69,8 @@
                                 "_arguments": [
                                     "3-6"
                                 ],
-                                "_rule": "AllI",
-                                "_statement": "â z (yâ = z â f(xâ, z) = f(xâ, yâ))",
+                                "_rule": "∀I",
+                                "_statement": "∀ z (y₀ = z → f(x₀, z) = f(x₀, y₀))",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -81,8 +81,8 @@
                         "_arguments": [
                             "2-7"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "â y â z (y = z â f(xâ, x) = f(xâ, y))",
+                        "_rule": "∀I",
+                        "_statement": "∀ y ∀ z (y = z → f(x₀, x) = f(x₀, y))",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -93,8 +93,8 @@
                 "_arguments": [
                     "1-8"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x â y â z (y = z â f(x, z) = f(x, y))",
+                "_rule": "∀I",
+                "_statement": "∀ x ∀ y ∀ z (y = z → f(x, z) = f(x, y))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "some x (P(x) -> S)",
+        "_conclusion": "∃ x (P(x) → S)",
         "_premises": [
-            "all x P(x) -> S"
+            "∀ x P(x) → S"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "!(some x (P(x) -> S))",
+                        "_statement": "¬(∃ x (P(x) → S))",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,7 +19,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "x_0",
+                                "_statement": "x₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -28,7 +28,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "!P(x_0)",
+                                        "_statement": "¬P(x₀)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -37,7 +37,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "P(x_0)",
+                                                "_statement": "P(x₀)",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -46,8 +46,8 @@
                                                     "5",
                                                     "4"
                                                 ],
-                                                "_rule": "NotE",
-                                                "_statement": "bot",
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
                                                 "_usedArguments": 2,
                                                 "tag": "Line"
                                             },
@@ -55,7 +55,7 @@
                                                 "_arguments": [
                                                     "6"
                                                 ],
-                                                "_rule": "BotE",
+                                                "_rule": "⊥E",
                                                 "_statement": "S",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
@@ -67,18 +67,18 @@
                                         "_arguments": [
                                             "5-7"
                                         ],
-                                        "_rule": "ImplI",
-                                        "_statement": "P(x_0) -> S",
+                                        "_rule": "→I",
+                                        "_statement": "P(x₀) → S",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [
                                             "8",
-                                            "x_0"
+                                            "x₀"
                                         ],
-                                        "_rule": "SomeI",
-                                        "_statement": "some x (P(x) -> S)",
+                                        "_rule": "∃I",
+                                        "_statement": "∃ x (P(x) → S)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -87,8 +87,8 @@
                                             "9",
                                             "2"
                                         ],
-                                        "_rule": "NotE",
-                                        "_statement": "bot",
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     }
@@ -99,8 +99,8 @@
                                 "_arguments": [
                                     "4-10"
                                 ],
-                                "_rule": "NotI",
-                                "_statement": "!!P(x_0)",
+                                "_rule": "¬I",
+                                "_statement": "¬¬P(x₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -108,8 +108,8 @@
                                 "_arguments": [
                                     "11"
                                 ],
-                                "_rule": "NotNotE",
-                                "_statement": "P(x_0)",
+                                "_rule": "¬¬E",
+                                "_statement": "P(x₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -120,8 +120,8 @@
                         "_arguments": [
                             "3-12"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "all x P(x)",
+                        "_rule": "∀I",
+                        "_statement": "∀ x P(x)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -130,7 +130,7 @@
                             "1",
                             "13"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "S",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -160,8 +160,8 @@
                         "_arguments": [
                             "15-16"
                         ],
-                        "_rule": "ImplI",
-                        "_statement": "P(t) -> S",
+                        "_rule": "→I",
+                        "_statement": "P(t) → S",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -170,8 +170,8 @@
                             "17",
                             "t"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "some x (P(x) -> S)",
+                        "_rule": "∃I",
+                        "_statement": "∃ x (P(x) → S)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -180,8 +180,8 @@
                             "18",
                             "2"
                         ],
-                        "_rule": "NotE",
-                        "_statement": "bot",
+                        "_rule": "¬E",
+                        "_statement": "⊥",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -192,8 +192,8 @@
                 "_arguments": [
                     "2-19"
                 ],
-                "_rule": "NotI",
-                "_statement": "!!(some x (P(x) -> S))",
+                "_rule": "¬I",
+                "_statement": "¬¬(∃ x (P(x) → S))",
                 "_usedArguments": 1,
                 "tag": "Line"
             },
@@ -201,8 +201,8 @@
                 "_arguments": [
                     "20"
                 ],
-                "_rule": "NotNotE",
-                "_statement": "some x (P(x) -> S)",
+                "_rule": "¬¬E",
+                "_statement": "∃ x (P(x) → S)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

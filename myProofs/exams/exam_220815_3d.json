@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "â x Â¬Â¬A(x)",
+        "_conclusion": "∀ x ¬¬A(x)",
         "_premises": [
-            "Â¬Â¬â x A(x)"
+            "¬¬∀ x A(x)"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,7 +19,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "Â¬A(xâ)",
+                                "_statement": "¬A(x₀)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -28,17 +28,17 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "â x A(x)",
+                                        "_statement": "∀ x A(x)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [
                                             "4",
-                                            "x_0"
+                                            "x₀"
                                         ],
-                                        "_rule": "AllE",
-                                        "_statement": "A(xâ)",
+                                        "_rule": "∀E",
+                                        "_statement": "A(x₀)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -47,8 +47,8 @@
                                             "3",
                                             "5"
                                         ],
-                                        "_rule": "NotE",
-                                        "_statement": "bot",
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     }
@@ -59,8 +59,8 @@
                                 "_arguments": [
                                     "4-6"
                                 ],
-                                "_rule": "NotI",
-                                "_statement": "Â¬â x A(x)",
+                                "_rule": "¬I",
+                                "_statement": "¬∀ x A(x)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -69,8 +69,8 @@
                                     "1",
                                     "7"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -81,8 +81,8 @@
                         "_arguments": [
                             "3-8"
                         ],
-                        "_rule": "NotI",
-                        "_statement": "Â¬Â¬A(xâ)",
+                        "_rule": "¬I",
+                        "_statement": "¬¬A(x₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -93,8 +93,8 @@
                 "_arguments": [
                     "2-9"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x Â¬Â¬A(x)",
+                "_rule": "∀I",
+                "_statement": "∀ x ¬¬A(x)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

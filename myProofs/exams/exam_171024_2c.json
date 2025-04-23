@@ -1,9 +1,9 @@
 {
     "_sequent": {
-        "_conclusion": "â z (S(z) â§ Â¬M(z))",
+        "_conclusion": "∃ z (S(z) ∧ ¬M(z))",
         "_premises": [
-            "â x (M(x) â Â¬P(x))",
-            "â y (P(y) â§ S(y))"
+            "∀ x (M(x) → ¬P(x))",
+            "∃ y (P(y) ∧ S(y))"
         ],
         "_steps": [
             {
@@ -11,14 +11,14 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "y_0",
+                        "_statement": "y₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "P(yâ) â§ S(yâ)",
+                        "_statement": "P(y₀) ∧ S(y₀)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -27,17 +27,17 @@
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "M(yâ)",
+                                "_statement": "M(y₀)",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
                                     "1",
-                                    "y_0"
+                                    "y₀"
                                 ],
-                                "_rule": "AllE",
-                                "_statement": "M(yâ) â Â¬P(yâ)",
+                                "_rule": "∀E",
+                                "_statement": "M(y₀) → ¬P(y₀)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -46,8 +46,8 @@
                                     "6",
                                     "5"
                                 ],
-                                "_rule": "ImplE",
-                                "_statement": "Â¬P(yâ)",
+                                "_rule": "→E",
+                                "_statement": "¬P(y₀)",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             },
@@ -55,8 +55,8 @@
                                 "_arguments": [
                                     "4"
                                 ],
-                                "_rule": "AndEL",
-                                "_statement": "P(yâ)",
+                                "_rule": "∧EL",
+                                "_statement": "P(y₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -65,8 +65,8 @@
                                     "7",
                                     "8"
                                 ],
-                                "_rule": "NotE",
-                                "_statement": "bot",
+                                "_rule": "¬E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -77,8 +77,8 @@
                         "_arguments": [
                             "5-9"
                         ],
-                        "_rule": "NotI",
-                        "_statement": "Â¬M(yâ)",
+                        "_rule": "¬I",
+                        "_statement": "¬M(y₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -86,8 +86,8 @@
                         "_arguments": [
                             "4"
                         ],
-                        "_rule": "AndER",
-                        "_statement": "S(yâ)",
+                        "_rule": "∧ER",
+                        "_statement": "S(y₀)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -96,18 +96,18 @@
                             "11",
                             "10"
                         ],
-                        "_rule": "AndI",
-                        "_statement": "S(yâ) â§ Â¬M(yâ)",
+                        "_rule": "∧I",
+                        "_statement": "S(y₀) ∧ ¬M(y₀)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
                             "12",
-                            "y_0"
+                            "y₀"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â z (S(z) â§ Â¬M(z))",
+                        "_rule": "∃I",
+                        "_statement": "∃ z (S(z) ∧ ¬M(z))",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -119,8 +119,8 @@
                     "2",
                     "3-13"
                 ],
-                "_rule": "SomeE",
-                "_statement": "â z (S(z) â§ Â¬M(z))",
+                "_rule": "∃E",
+                "_statement": "∃ z (S(z) ∧ ¬M(z))",
                 "_usedArguments": 2,
                 "tag": "Line"
             }

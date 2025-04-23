@@ -2,9 +2,9 @@
     "_sequent": {
         "_conclusion": "C",
         "_premises": [
-            "A | B",
-            "A -> C",
-            "B -> C"
+            "A ∨ B",
+            "A → C",
+            "B → C"
         ],
         "_steps": [
             {
@@ -21,7 +21,7 @@
                             "4",
                             "2"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "C",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -43,7 +43,7 @@
                             "6",
                             "3"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "C",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -57,7 +57,7 @@
                     "4-5",
                     "6-7"
                 ],
-                "_rule": "OrE",
+                "_rule": "∨E",
                 "_statement": "C",
                 "_usedArguments": 3,
                 "tag": "Line"

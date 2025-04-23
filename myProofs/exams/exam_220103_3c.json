@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "â x â y â z (x = z â y = z â x = y)",
+        "_conclusion": "∀ x ∀ y ∀ z (x = z → y = z → x = y)",
         "_premises": [],
         "_steps": [
             {
@@ -8,7 +8,7 @@
                     {
                         "_arguments": [],
                         "_rule": "fresh",
-                        "_statement": "x_0",
+                        "_statement": "x₀",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -17,7 +17,7 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "y_0",
+                                "_statement": "y₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -26,7 +26,7 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "z_0",
+                                        "_statement": "z₀",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -35,7 +35,7 @@
                                             {
                                                 "_arguments": [],
                                                 "_rule": "assume",
-                                                "_statement": "xâ = z_0",
+                                                "_statement": "x₀ = z₀",
                                                 "_usedArguments": 0,
                                                 "tag": "Line"
                                             },
@@ -44,14 +44,14 @@
                                                     {
                                                         "_arguments": [],
                                                         "_rule": "assume",
-                                                        "_statement": "yâ = z_0",
+                                                        "_statement": "y₀ = z₀",
                                                         "_usedArguments": 0,
                                                         "tag": "Line"
                                                     },
                                                     {
                                                         "_arguments": [],
-                                                        "_rule": "EqI",
-                                                        "_statement": "yâ = yâ",
+                                                        "_rule": "=I",
+                                                        "_statement": "y₀ = y₀",
                                                         "_usedArguments": 0,
                                                         "tag": "Line"
                                                     },
@@ -59,10 +59,10 @@
                                                         "_arguments": [
                                                             "5",
                                                             "6",
-                                                            "u:=u=y_0"
+                                                            "u:=u=y₀"
                                                         ],
-                                                        "_rule": "EqE",
-                                                        "_statement": "zâ = y_0",
+                                                        "_rule": "=E",
+                                                        "_statement": "z₀ = y₀",
                                                         "_usedArguments": 3,
                                                         "tag": "Line"
                                                     },
@@ -70,10 +70,10 @@
                                                         "_arguments": [
                                                             "7",
                                                             "4",
-                                                            "u:=xâ=u"
+                                                            "u:=x₀=u"
                                                         ],
-                                                        "_rule": "EqE",
-                                                        "_statement": "xâ = yâ",
+                                                        "_rule": "=E",
+                                                        "_statement": "x₀ = y₀",
                                                         "_usedArguments": 3,
                                                         "tag": "Line"
                                                     }
@@ -84,8 +84,8 @@
                                                 "_arguments": [
                                                     "5-8"
                                                 ],
-                                                "_rule": "ImplI",
-                                                "_statement": "yâ = zâ â xâ = y_0",
+                                                "_rule": "→I",
+                                                "_statement": "y₀ = z₀ → x₀ = y₀",
                                                 "_usedArguments": 1,
                                                 "tag": "Line"
                                             }
@@ -96,8 +96,8 @@
                                         "_arguments": [
                                             "4-9"
                                         ],
-                                        "_rule": "ImplI",
-                                        "_statement": "xâ = zâ â yâ = zâ â xâ = y_0",
+                                        "_rule": "→I",
+                                        "_statement": "x₀ = z₀ → y₀ = z₀ → x₀ = y₀",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -108,8 +108,8 @@
                                 "_arguments": [
                                     "3-10"
                                 ],
-                                "_rule": "AllI",
-                                "_statement": "â z (xâ = z -> yâ = z â xâ = yâ)",
+                                "_rule": "∀I",
+                                "_statement": "∀ z (x₀ = z → y₀ = z → x₀ = y₀)",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -120,8 +120,8 @@
                         "_arguments": [
                             "2-11"
                         ],
-                        "_rule": "AllI",
-                        "_statement": "â y â z (xâ = z â y = z â xâ = y)",
+                        "_rule": "∀I",
+                        "_statement": "∀ y ∀ z (x₀ = z → y = z → x₀ = y)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -132,8 +132,8 @@
                 "_arguments": [
                     "1-12"
                 ],
-                "_rule": "AllI",
-                "_statement": "â x â y â z (x = z â y = z â x = y)",
+                "_rule": "∀I",
+                "_statement": "∀ x ∀ y ∀ z (x = z → y = z → x = y)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

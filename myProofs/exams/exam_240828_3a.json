@@ -1,10 +1,10 @@
 {
     "_sequent": {
-        "_conclusion": "R(a) â¨ â x S(x)",
+        "_conclusion": "R(a) ∨ ∃ x S(x)",
         "_premises": [
-            "â x P(x) â¨ â x Q(x)",
-            "P(a) â R(a)",
-            "â x Q(x) â S(b)"
+            "∀ x P(x) ∨ ∃ x Q(x)",
+            "P(a) → R(a)",
+            "∃ x Q(x) → S(b)"
         ],
         "_steps": [
             {
@@ -12,7 +12,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "â x P(x)",
+                        "_statement": "∀ x P(x)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -21,7 +21,7 @@
                             "4",
                             "a"
                         ],
-                        "_rule": "AllE",
+                        "_rule": "∀E",
                         "_statement": "P(a)",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -31,7 +31,7 @@
                             "2",
                             "5"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "R(a)",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -40,8 +40,8 @@
                         "_arguments": [
                             "6"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "R(a) â¨ â x S(x)",
+                        "_rule": "∨IL",
+                        "_statement": "R(a) ∨ ∃ x S(x)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -53,7 +53,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "â x Q(x)",
+                        "_statement": "∃ x Q(x)",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -62,7 +62,7 @@
                             "3",
                             "8"
                         ],
-                        "_rule": "ImplE",
+                        "_rule": "→E",
                         "_statement": "S(b)",
                         "_usedArguments": 2,
                         "tag": "Line"
@@ -72,8 +72,8 @@
                             "9",
                             "b"
                         ],
-                        "_rule": "SomeI",
-                        "_statement": "â x S(x)",
+                        "_rule": "∃I",
+                        "_statement": "∃ x S(x)",
                         "_usedArguments": 2,
                         "tag": "Line"
                     },
@@ -81,8 +81,8 @@
                         "_arguments": [
                             "10"
                         ],
-                        "_rule": "OrIR",
-                        "_statement": "R(a) â¨ â x S(x)",
+                        "_rule": "∨IR",
+                        "_statement": "R(a) ∨ ∃ x S(x)",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -95,8 +95,8 @@
                     "4-7",
                     "8-11"
                 ],
-                "_rule": "OrE",
-                "_statement": "R(a) â¨â x S(x)",
+                "_rule": "∨E",
+                "_statement": "R(a) ∨∃ x S(x)",
                 "_usedArguments": 3,
                 "tag": "Line"
             }

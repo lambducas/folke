@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "((p -> q) -> p) -> ((q -> p) | p)",
+        "_conclusion": "((p → q) → p) → ((q → p) ∨ p)",
         "_premises": [],
         "_steps": [
             {
@@ -8,7 +8,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "(p â q) â p",
+                        "_statement": "(p → q) → p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -46,8 +46,8 @@
                                 "_arguments": [
                                     "3-4"
                                 ],
-                                "_rule": "ImplI",
-                                "_statement": "p -> q",
+                                "_rule": "→I",
+                                "_statement": "p → q",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             },
@@ -56,7 +56,7 @@
                                     "5",
                                     "1"
                                 ],
-                                "_rule": "ImplE",
+                                "_rule": "→E",
                                 "_statement": "p",
                                 "_usedArguments": 2,
                                 "tag": "Line"
@@ -68,8 +68,8 @@
                         "_arguments": [
                             "2-6"
                         ],
-                        "_rule": "ImplI",
-                        "_statement": "q â p",
+                        "_rule": "→I",
+                        "_statement": "q → p",
                         "_usedArguments": 1,
                         "tag": "Line"
                     },
@@ -77,8 +77,8 @@
                         "_arguments": [
                             "7"
                         ],
-                        "_rule": "OrIL",
-                        "_statement": "(q -> p) | p",
+                        "_rule": "∨IL",
+                        "_statement": "(q → p) ∨ p",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -89,8 +89,8 @@
                 "_arguments": [
                     "1-8"
                 ],
-                "_rule": "ImplI",
-                "_statement": "((p -> q) -> p) -> ((q -> p) | p)",
+                "_rule": "→I",
+                "_statement": "((p → q) → p) → ((q → p) ∨ p)",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

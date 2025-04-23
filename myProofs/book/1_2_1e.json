@@ -1,9 +1,9 @@
 {
     "_sequent": {
-        "_conclusion": "!p",
+        "_conclusion": "¬p",
         "_premises": [
-            "q -> (p -> r)",
-            "!r",
+            "q → (p → r)",
+            "¬r",
             "q"
         ],
         "_steps": [
@@ -12,8 +12,8 @@
                     "3",
                     "1"
                 ],
-                "_rule": "ImplE",
-                "_statement": "p -> r",
+                "_rule": "→E",
+                "_statement": "p → r",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -23,7 +23,7 @@
                     "2"
                 ],
                 "_rule": "MT",
-                "_statement": "!p",
+                "_statement": "¬p",
                 "_usedArguments": 2,
                 "tag": "Line"
             }

@@ -13,6 +13,7 @@ module Frontend.Parse (
   validateRuleArgument,
   parseRule,
   convertBESequentToFESequent,
+  FEDocument(..)
 ) where
 
 import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
@@ -22,16 +23,19 @@ import Logic.Par (myLexer, pForm, pArg)
 import qualified Logic.Abs as Abs
 
 import Data.Aeson ( decode, defaultOptions )
-import Data.Aeson.Encode.Pretty (encodePretty)
-import Data.Aeson.TH ( deriveJSON )
+import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
+import Data.Aeson.TH (deriveJSON)
 import Data.Either (isRight)
 import Data.Maybe (isJust)
+import Data.Text.Internal.Builder (toLazyText)
+import Data.Text.Lazy (toStrict)
+import Data.Text.Encoding (encodeUtf8Builder)
+import Data.ByteString.Builder(toLazyByteString)
 import qualified Data.Text as T
-import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Map
 import TextShow (showt)
 
-data FEDocument = FEDocument {
+newtype FEDocument = FEDocument {
   _sequent :: FESequent
 } deriving (Show, Eq)
 
@@ -63,11 +67,11 @@ parseRule inp = replaceFromInverseLookup withSpec visualRuleNames
 
 -- | Converts frontend sequent to a json string
 parseProofToJSON :: FESequent -> T.Text
-parseProofToJSON = T.pack . BL.unpack . encodePretty . FEDocument
+parseProofToJSON = toStrict . toLazyText . encodePrettyToTextBuilder . FEDocument
 
 -- | Converts a json string to a frontend sequent
 parseProofFromJSON :: T.Text -> Maybe FESequent
-parseProofFromJSON t = (decode . BL.pack . T.unpack) t >>= Just . _sequent
+parseProofFromJSON t = (decode . toLazyByteString . encodeUtf8Builder) t >>= Just . _sequent
 
 -- | Deprecated: Converts frontend sequent to a simple file format which is easy to parse by hand
 parseProofToSimpleFileFormat :: FESequent -> T.Text

@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "(p â¨ r) â q â r",
+        "_conclusion": "(p ∨ r) → q → r",
         "_premises": [
-            "(p â q) â p â r"
+            "(p → q) → p → r"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "p â¨ r",
+                        "_statement": "p ∨ r",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -57,8 +57,8 @@
                                         "_arguments": [
                                             "5-6"
                                         ],
-                                        "_rule": "ImplI",
-                                        "_statement": "p â q",
+                                        "_rule": "→I",
+                                        "_statement": "p → q",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -67,8 +67,8 @@
                                             "1",
                                             "7"
                                         ],
-                                        "_rule": "ImplE",
-                                        "_statement": "p â r",
+                                        "_rule": "→E",
+                                        "_statement": "p → r",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -77,7 +77,7 @@
                                             "8",
                                             "4"
                                         ],
-                                        "_rule": "ImplE",
+                                        "_rule": "→E",
                                         "_statement": "r",
                                         "_usedArguments": 2,
                                         "tag": "Line"
@@ -103,7 +103,7 @@
                                     "4-9",
                                     "10-10"
                                 ],
-                                "_rule": "OrE",
+                                "_rule": "∨E",
                                 "_statement": "r",
                                 "_usedArguments": 3,
                                 "tag": "Line"
@@ -115,8 +115,8 @@
                         "_arguments": [
                             "3-11"
                         ],
-                        "_rule": "ImplI",
-                        "_statement": "q â r",
+                        "_rule": "→I",
+                        "_statement": "q → r",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -127,8 +127,8 @@
                 "_arguments": [
                     "2-12"
                 ],
-                "_rule": "ImplI",
-                "_statement": "(p â¨ r) â q â r",
+                "_rule": "→I",
+                "_statement": "(p ∨ r) → q → r",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

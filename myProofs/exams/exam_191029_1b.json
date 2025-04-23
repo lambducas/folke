@@ -2,9 +2,9 @@
     "_sequent": {
         "_conclusion": "r",
         "_premises": [
-            "Â¬r â (s â§ p)",
-            "s â q",
-            "Â¬q"
+            "¬r → (s ∧ p)",
+            "s → q",
+            "¬q"
         ],
         "_steps": [
             {
@@ -13,7 +13,7 @@
                     "3"
                 ],
                 "_rule": "MT",
-                "_statement": "Â¬s",
+                "_statement": "¬s",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -22,7 +22,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "s â§ p",
+                        "_statement": "s ∧ p",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -30,7 +30,7 @@
                         "_arguments": [
                             "5"
                         ],
-                        "_rule": "AndEL",
+                        "_rule": "∧EL",
                         "_statement": "s",
                         "_usedArguments": 1,
                         "tag": "Line"
@@ -40,8 +40,8 @@
                             "4",
                             "6"
                         ],
-                        "_rule": "NotE",
-                        "_statement": "bot",
+                        "_rule": "¬E",
+                        "_statement": "⊥",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -53,8 +53,8 @@
                     "5-7",
                     ""
                 ],
-                "_rule": "NotI",
-                "_statement": "Â¬(s â§ p)",
+                "_rule": "¬I",
+                "_statement": "¬(s ∧ p)",
                 "_usedArguments": 1,
                 "tag": "Line"
             },
@@ -64,7 +64,7 @@
                     "8"
                 ],
                 "_rule": "MT",
-                "_statement": "Â¬Â¬r",
+                "_statement": "¬¬r",
                 "_usedArguments": 2,
                 "tag": "Line"
             },
@@ -72,7 +72,7 @@
                 "_arguments": [
                     "9"
                 ],
-                "_rule": "NotNotE",
+                "_rule": "¬¬E",
                 "_statement": "r",
                 "_usedArguments": 1,
                 "tag": "Line"

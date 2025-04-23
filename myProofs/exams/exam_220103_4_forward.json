@@ -1,8 +1,8 @@
 {
     "_sequent": {
-        "_conclusion": "Â¬(â x â y (P(x) â§ T(y, x)))",
+        "_conclusion": "¬(∃ x ∃ y (P(x) ∧ T(y, x)))",
         "_premises": [
-            "â x â y (P(x) â Â¬T(y, x))"
+            "∀ x ∀ y (P(x) → ¬T(y, x))"
         ],
         "_steps": [
             {
@@ -10,7 +10,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "â x â y (P(x) â§ T(y, x))",
+                        "_statement": "∃ x ∃ y (P(x) ∧ T(y, x))",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
@@ -19,14 +19,14 @@
                             {
                                 "_arguments": [],
                                 "_rule": "fresh",
-                                "_statement": "x_0",
+                                "_statement": "x₀",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [],
                                 "_rule": "assume",
-                                "_statement": "â y (P(xâ) â§ T(y, xâ))",
+                                "_statement": "∃ y (P(x₀) ∧ T(y, x₀))",
                                 "_usedArguments": 0,
                                 "tag": "Line"
                             },
@@ -35,14 +35,14 @@
                                     {
                                         "_arguments": [],
                                         "_rule": "fresh",
-                                        "_statement": "y_0",
+                                        "_statement": "y₀",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [],
                                         "_rule": "assume",
-                                        "_statement": "P(xâ) â§ T(yâ, xâ)",
+                                        "_statement": "P(x₀) ∧ T(y₀, x₀)",
                                         "_usedArguments": 0,
                                         "tag": "Line"
                                     },
@@ -50,8 +50,8 @@
                                         "_arguments": [
                                             "6"
                                         ],
-                                        "_rule": "AndEL",
-                                        "_statement": "P(xâ)",
+                                        "_rule": "∧EL",
+                                        "_statement": "P(x₀)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
@@ -59,28 +59,28 @@
                                         "_arguments": [
                                             "6"
                                         ],
-                                        "_rule": "AndER",
-                                        "_statement": "T(yâ, xâ)",
+                                        "_rule": "∧ER",
+                                        "_statement": "T(y₀, x₀)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [
                                             "1",
-                                            "x_0"
+                                            "x₀"
                                         ],
-                                        "_rule": "AllE",
-                                        "_statement": "â y (P(xâ) â Â¬T(y, xâ))",
+                                        "_rule": "∀E",
+                                        "_statement": "∀ y (P(x₀) → ¬T(y, x₀))",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
                                     {
                                         "_arguments": [
                                             "9",
-                                            "y_0"
+                                            "y₀"
                                         ],
-                                        "_rule": "AllE",
-                                        "_statement": "P(xâ) â Â¬T(yâ, xâ)",
+                                        "_rule": "∀E",
+                                        "_statement": "P(x₀) → ¬T(y₀, x₀)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -89,8 +89,8 @@
                                             "10",
                                             "7"
                                         ],
-                                        "_rule": "ImplE",
-                                        "_statement": "Â¬T(yâ, xâ)",
+                                        "_rule": "→E",
+                                        "_statement": "¬T(y₀, x₀)",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     },
@@ -99,8 +99,8 @@
                                             "11",
                                             "8"
                                         ],
-                                        "_rule": "NotE",
-                                        "_statement": "bot",
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
                                         "_usedArguments": 2,
                                         "tag": "Line"
                                     }
@@ -112,8 +112,8 @@
                                     "4",
                                     "5-12"
                                 ],
-                                "_rule": "SomeE",
-                                "_statement": "bot",
+                                "_rule": "∃E",
+                                "_statement": "⊥",
                                 "_usedArguments": 2,
                                 "tag": "Line"
                             }
@@ -125,8 +125,8 @@
                             "2",
                             "3-13"
                         ],
-                        "_rule": "SomeE",
-                        "_statement": "bot",
+                        "_rule": "∃E",
+                        "_statement": "⊥",
                         "_usedArguments": 2,
                         "tag": "Line"
                     }
@@ -137,8 +137,8 @@
                 "_arguments": [
                     "2-14"
                 ],
-                "_rule": "NotI",
-                "_statement": "Â¬(â x â y (P(x) â§ T(y, x)))",
+                "_rule": "¬I",
+                "_statement": "¬(∃ x ∃ y (P(x) ∧ T(y, x)))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

@@ -5,7 +5,7 @@
         "_steps": [
             {
                 "_arguments": [],
-                "_rule": "EqI",
+                "_rule": "=I",
                 "_statement": "a=a",
                 "_usedArguments": 0,
                 "tag": "Line"

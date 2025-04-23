@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "!!A",
+        "_conclusion": "¬¬A",
         "_premises": [
             "A"
         ],
@@ -9,8 +9,8 @@
                 "_arguments": [
                     "1"
                 ],
-                "_rule": "NotNotI",
-                "_statement": "!!A",
+                "_rule": "¬¬I",
+                "_statement": "¬¬A",
                 "_usedArguments": 1,
                 "tag": "Line"
             }
