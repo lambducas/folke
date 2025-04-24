@@ -81,13 +81,6 @@ module Backend.Environment (
     Terms,
     Refs,
     
-    -------------------------------------
-    -- Helper functions
-    -------------------------------------
-    -- | Formula manipulation
-    occursFree,
-    substitute,
-    
     -- | Error creation
     createRuleArgError,
     createArgCountError,
@@ -1064,13 +1057,21 @@ instance Eq Formula where
 
     All x a == All y b =
         (x == y && a == b) ||
-        -- todo replace with dedicated functions
-        (not (occursFree x b) && a == substitute y x b)
+        (case isFreeFor env y x b of
+            Ok _ True -> case replaceInFormula env x y b of
+                Ok _ replaced -> a == replaced
+                _ -> False
+            _ -> False)
+      where env = newEnv
 
     Some x a == Some y b =
-        -- If variables are the same, just compare subformulas
         (x == y && a == b) ||
-        (not (occursFree x b) && a == substitute y x b)
+        (case isFreeFor env y x b of
+            Ok _ True -> case replaceInFormula env x y b of
+                Ok _ replaced -> a == replaced
+                _ -> False
+            _ -> False)
+      where env = newEnv
 
     Not a == Not b = a == b
     Bot == Bot = True
@@ -1143,40 +1144,6 @@ instance Monad Result where
         Ok newWarns y -> Ok (warns ++ newWarns) y
         Err newWarns env err -> Err (warns ++ newWarns) env err
     (Err warns env err) >>= _ = Err warns env err
-
-----------------------------------------------------------------------
--- Helper functions for formulas
-----------------------------------------------------------------------
-
--- | Check if a variable occurs free in a formula (not bound by a quantifier)
-occursFree :: Term -> Formula -> Bool
-occursFree v@(Term name []) formula = case formula of
-    Pred (Predicate _ terms) -> v `elem` terms
-    And f1 f2 -> occursFree v f1 || occursFree v f2
-    Or f1 f2 -> occursFree v f1 || occursFree v f2
-    Impl f1 f2 -> occursFree v f1 || occursFree v f2
-    Eq t1 t2 -> v == t1 || v == t2
-    All x f -> v /= x && occursFree v f
-    Some x f -> v /= x && occursFree v f
-    Not f -> occursFree v f
-    Bot -> False
-    Nil -> False
-occursFree _ _ = False
-
--- | Substitute a term for a variable in a formula
-substitute :: Term -> Term -> Formula -> Formula
-substitute old new formula = case formula of
-    Pred (Predicate name terms) ->
-        Pred (Predicate name (map (\t -> if t == old then new else t) terms))
-    And f1 f2 -> And (substitute old new f1) (substitute old new f2)
-    Or f1 f2 -> Or (substitute old new f1) (substitute old new f2)
-    Impl f1 f2 -> Impl (substitute old new f1) (substitute old new f2)
-    Eq t1 t2 -> Eq (if t1 == old then new else t1) (if t2 == old then new else t2)
-    All x f -> if x == old then All x f else All x (substitute old new f)
-    Some x f -> if x == old then Some x f else Some x (substitute old new f)
-    Not f -> Not (substitute old new f)
-    Bot -> Bot
-    Nil -> Nil
 
 ----------------------------------------------------------------------
 -- Error creation functions
