@@ -1,6 +1,6 @@
 {
     "_sequent": {
-        "_conclusion": "∀ x (∀ y (∀ z (∀ w (x = z → y = w → R(x, y) → R(z, w)))))",
+        "_conclusion": "∀ x ∀ y ∀ z ∀ w (x = z → y = w → R(x, y) → R(z, w))",
         "_premises": [],
         "_steps": [
             {
@@ -144,7 +144,7 @@
                                     "3-13"
                                 ],
                                 "_rule": "∀I",
-                                "_statement": "∀ z (∀ w (x₀ = z → y₀ = w → R(x₀, y₀) → R(z, w)))",
+                                "_statement": "∀ z ∀ w (x₀ = z → y₀ = w → R(x₀, y₀) → R(z, w))",
                                 "_usedArguments": 1,
                                 "tag": "Line"
                             }
@@ -156,7 +156,7 @@
                             "2-14"
                         ],
                         "_rule": "∀I",
-                        "_statement": "∀ y (∀ z (∀ w (x₀ = z → y = w → R(x₀, y) → R(z, w))))",
+                        "_statement": "∀ y ∀ z ∀ w (x₀ = z → y = w → R(x₀, y) → R(z, w))",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -168,7 +168,7 @@
                     "1-15"
                 ],
                 "_rule": "∀I",
-                "_statement": "∀ x (∀ y (∀ z (∀ w (x = z → y = w → R(x, y) → R(z, w)))))",
+                "_statement": "∀ x ∀ y ∀ z ∀ w (x = z → y = w → R(x, y) → R(z, w))",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

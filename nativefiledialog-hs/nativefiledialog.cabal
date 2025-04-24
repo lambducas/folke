@@ -23,20 +23,24 @@ library
 
   if os(windows)
     install-includes:  nfd.h
-  else
+  if os(linux)
     install-includes:  nfd.h
                        gtk.h
+  if os(osx)
+    install-includes:  nfd.h
 
   c-sources:           nativefiledialog/src/nfd_common.c
                        cbits/nativefiledialog.c
                        cbits/fakeError.c
   if os(windows)
     c-sources: nativefiledialog/src/nfd_win.cpp
-  else
+  if os(linux)
     c-sources: nativefiledialog/src/nfd_gtk.c
+  -- Comment these two lines below if building doesn't work on mac
+  if os(osx)
+    c-sources: nativefiledialog/src/nfd_cocoa.m
 
   if os(windows)
-    
   else
     pkgconfig-depends: gtk+-3.0
 

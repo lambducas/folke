@@ -15,13 +15,13 @@ A quick guide to get you started
 
 ## Quick-type characters
 Type the right characters to get the left ones:
-**¬** . . . . !
-**→** . . . . ->
-**∧** . . . . &
-**∨** . . . . |
-**⊥** . . . . bot
-**∀** . . . . all
-**∃** . . . . some/exists
+* **¬** . . . . !
+* **→** . . . . ->
+* **∧** . . . . &
+* **∨** . . . . |
+* **⊥** . . . . bot
+* **∀** . . . . all
+* **∃** . . . . some/exists
 
 ## Exporting your proof
 Navigate to `File` in the menu bar and press `Export to LaTeX` or `Export to LaTeX and PDF` to export your proof as LaTeX code or as a ready-to-use PDF

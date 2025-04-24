@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-deprecations #-}
 module Frontend.Main where
 
 import Frontend.Types
@@ -8,6 +9,7 @@ import Frontend.Communication (startCommunication)
 import Frontend.Preferences (readPreferences, readPersistentState)
 
 import Monomer
+import Monomer.Main.Platform (getPlatform)
 import Control.Concurrent (newChan)
 import Data.Maybe (fromMaybe)
 import Control.Concurrent.STM (newTChanIO)
@@ -30,12 +32,19 @@ main = do
   channel <- newTChanIO
   let env = AppEnv channel
 
+  os <- getPlatform
+  let isMac = os == "Mac OS X"
+
+  let createModel = model prefs state currentFrontendChan currentBackendChan
+  let createHandleEvent = handleEvent env
+  let createConfig = config isMac prefs state
+
   -- Start Monomer application
-  startApp (model prefs state currentFrontendChan currentBackendChan) (handleEvent env) buildUI (config prefs state)
+  startApp createModel createHandleEvent buildUI createConfig
 
   where
     -- Application configuration
-    config prefs state = [
+    config isMac prefs state = [
       appWindowTitle "Proof Editor",
       appWindowIcon "./assets/images/icon.png",
       appScaleFactor (_appScale prefs),
@@ -67,7 +76,7 @@ main = do
       appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
 
       appFontDef "Remix" "./assets/fonts/remixicon.ttf"
-      ]
+      ] ++ [appRenderOnMainThread | isMac]
       
     -- Initial states
     model prefs state currentFrontendChan currentBackendChan = AppModel {
@@ -79,10 +88,6 @@ main = do
 
       _filesInDirectory = Just $ LoadedFiles [] [],
       _confirmActionPopup = Nothing,
-
-      --  _stateHistory = [],
-      -- _historyIndex = 0,
-      -- _ignoreHistoryOnce = False,
 
       _frontendChan = currentFrontendChan,
       _backendChan = currentBackendChan,
