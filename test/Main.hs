@@ -7,14 +7,7 @@ import Control.Monad (unless, filterM)
 import System.Environment (getArgs)
 
 import Backend.TypeChecker
-import Backend.Types
 import Backend.Environment
-    ( newEnv,
-      replaceInFormula,
-      replaceInTerm,
-      replaceInTerms,
-      showPos, addUDefRule, applyRule)
-
 import qualified Data.List as List
 
 testProof :: FilePath -> Test

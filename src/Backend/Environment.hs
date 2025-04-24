@@ -1065,7 +1065,7 @@ instance Eq Formula where
     All x a == All y b =
         (x == y && a == b) ||
         -- todo replace with dedicated functions
-        (not (occursFree ix b) && a == substitute y x b)
+        (not (occursFree x b) && a == substitute y x b)
 
     Some x a == Some y b =
         -- If variables are the same, just compare subformulas

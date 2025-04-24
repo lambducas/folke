@@ -4,14 +4,7 @@ import Test.HUnit
 import System.Directory
 
 import Backend.TypeChecker
-import Backend.Types
 import Backend.Environment
-    ( newEnv,
-      replaceInFormula,
-      replaceInTerm,
-      replaceInTerms,
-      showPos )
-
 import qualified Data.List as List
 
 import Logic.Par (pSequent, myLexer)
