@@ -58,14 +58,13 @@ module Backend.Helpers
     maybeHead
   ) where
 
-import Backend.Types
-
 import Prelude hiding (sequence)
-
 import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
+
+import Backend.Environment
 import Shared.Messages
 
 ----------------------------------------------------------------------

@@ -58,7 +58,6 @@ library
     import:           warnings
     exposed-modules:  Backend.TypeChecker
                     , Backend.Environment
-                    , Backend.Types
                     , Frontend.SpecialCharacters
                     , Frontend.Types
                     , Backend.Helpers
@@ -120,7 +119,6 @@ executable bsc
     other-modules:
                   Backend.TypeChecker
                 , Backend.Environment
-                , Backend.Types
                 , Backend.Helpers
                 , Shared.Messages
                 , Logic.Abs

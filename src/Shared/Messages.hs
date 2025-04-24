@@ -5,7 +5,7 @@
 module Shared.Messages where
 
 import Logic.Abs (Sequent, Step)
-import Backend.Types (Result, Ref)
+import Backend.Environment
 import Shared.FESequent (FESequent)
 
 data FrontendMessage

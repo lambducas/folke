@@ -4,7 +4,7 @@ module Frontend.Helper.General where
 
 import Frontend.Types
 import Shared.Messages
-import Backend.Types (Ref(RefRange, RefLine))
+import Backend.Environment
 
 import Monomer
 import qualified Monomer.Lens as L

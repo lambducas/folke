@@ -19,7 +19,6 @@ import Logic.Par (myLexer, pForm, pListArg)
 import Shared.Messages
 import Shared.FESequent as FE
 import Backend.Environment
-import Backend.Types
 import Backend.Helpers
 
 import Frontend.Parse (parseProofFromJSON)
