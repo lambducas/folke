@@ -8,6 +8,9 @@ This module provides functions to verify the correctness of logical proofs.
 It handles both the syntactic correctness (type checking) and semantic correctness
 (proof verification).
 -}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use lambda-case" #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 module Backend.TypeChecker (
     -- * Main API functions
     checkJson,
@@ -42,13 +45,13 @@ checkJson filePath =  do
     fileContent <- case unsafePerformIO (try (readFile filePath) :: IO (Either SomeException String)) of
         Left err -> Err [] newEnv (createSyntaxError newEnv $ "Error reading file: " ++ show err)
         Right content -> Ok [] content
-    
+
     -- Process the JSON content
     jsonText <- Ok [] (pack fileContent)
     seq <- case parseProofFromJSON jsonText of
         Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to parse JSON proof")
         Just s -> Ok [] s
-    
+
     -- Check the proof with the backend
     checkFE seq
 
@@ -62,7 +65,7 @@ handleFrontendMessage (CheckStep _) =
     StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFESequent tree) = 
+handleFrontendMessage (CheckFESequent tree) =
     StringSequentChecked (convertToFEError (checkFE tree))
 
 ----------------------------------------------------------------------
@@ -80,40 +83,30 @@ checkFE seq_t = do
 -- | Check a frontend sequent against the environment
 checkSequentFE :: Env -> FE.FESequent -> Result Proof
 checkSequentFE env sequent = do
-    -- Convert premises to steps and combine with existing steps
-    let steps = map premToStep (_premises sequent) ++ _steps sequent
-    
+
+    let steps = stepsWithFilter sequent
+
     -- Check premises and conclusion
     prems_t <- checkPremsFE env (_premises sequent)
-    conc_t <- checkFormFE env (_conclusion sequent) 
-    
+    conc_t <- checkFormFE env (_conclusion sequent)
+
     -- Check the proof steps
     proof_t <- checkProofFE env steps 1
-    
+
     -- Validate references
     validateRefs env
 
-    -- Handle empty lines and check if proof is complete
-    let endsWithEmptyLine = hasNilConclusion proof_t
-    let filteredProof = filterNilConclusion proof_t
     let seq_t = Proof [] prems_t conc_t
 
-    if filteredProof == seq_t
-        then return seq_t
-        else if endsWithEmptyLine  -- Simplified condition - only check for empty line
-            then Ok [createIncompleteWarning env seq_t filteredProof] filteredProof
-            else Err [] env (createMismatchedFormulaError env
-                              (getConclusion seq_t)
-                              (getConclusion filteredProof))
-  where
-    -- Create a warning for incomplete proofs
-    createIncompleteWarning env seq_t filteredProof = Warning {
-        warnLocation = listToMaybe (pos env),
-        warnSeverity = Medium,
-        warnKind = IncompleteProof (getConclusion seq_t) (getConclusion filteredProof),
-        warnMessage = "Unfinished proof. The last line doesn't match the expected conclusion.",
-        warnSuggestion = Just "Complete your proof to derive the required conclusion"
-    }
+    if proof_t == seq_t
+         then return seq_t
+             else Err [] env (createMismatchedFormulaError env conc_t (getConclusion proof_t))
+
+stepsWithFilter :: FE.FESequent -> [FEStep]
+stepsWithFilter sequent = map premToStep (_premises sequent) ++ 
+                               filter (\s -> case s of
+                                  FE.Line stmt _ _ _ -> stmt /= pack ""
+                                  FE.SubProof _ -> True) (_steps sequent)
 
 -- | Convert a premise to a proof step for verification
 premToStep :: FE.FEFormula -> FE.FEStep
@@ -134,7 +127,7 @@ checkPremsFE env (form:forms) = do
 
 -- | Check a frontend formula
 checkFormFE :: Env -> FE.FEFormula -> Result Formula
-checkFormFE env fef = do 
+checkFormFE env fef = do
     f <- parseFormula env fef
     checkForm env f
 
@@ -142,7 +135,7 @@ checkFormFE env fef = do
 parseFormula :: Env -> FE.FEFormula -> Result Abs.Form
 parseFormula env t =
     case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-        Left err -> throwSyntaxError env $ 
+        Left err -> throwSyntaxError env $
             "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
         Right form -> Ok [] form
 
@@ -172,7 +165,7 @@ checkProofFE env (step : elems) i
         proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
         let step_result = ArgProof proof_t
         -- Continue checking the remaining elements with updated position
-        seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1) 
+        seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1)
                                 elems (i + countSteps (FE.SubProof steps))
         Ok [] seq_t
 
@@ -181,8 +174,8 @@ checkProofFE env (step : elems) i
         let refs_t = [RefLine i]
         (new_env, step_t) <- checkStepFE (pushPos env refs_t) step
         -- Continue checking the remaining elements
-        seq_t <- checkProofFE (popPos (addRefs new_env refs_t step_t) 
-                                (toInteger $ List.length refs_t)) 
+        seq_t <- checkProofFE (popPos (addRefs new_env refs_t step_t)
+                                (toInteger $ List.length refs_t))
                                 elems (i + 1)
         Ok [] seq_t
 
@@ -198,7 +191,7 @@ checkStepFE env step = case step of
         proof_t <- checkProofFE (push env) steps 0
         Ok [] (env, ArgProof proof_t)
     Line form rule numofargs args -> do
-        case unpack rule of 
+        case unpack rule of
             -- Handle premises
             "prem" -> if depth env == 0
                 then do
@@ -206,14 +199,14 @@ checkStepFE env step = case step of
                     new_env <- addPrem env form_t
                     Ok [] (new_env, ArgForm form_t)
                 else Err [] env (createTypeError env "A premise is not allowed in a subproof.")
-            
+
             -- Handle fresh variables
             "fresh" -> do
                 let t = Term (unpack $ replaceSpecialSymbolsInverse form) []
                 env1 <- regTerm env t
                 env2 <- addFresh env1 t
                 Ok [] (env2, ArgTerm t)
-            
+
             -- Handle assumptions (for subproofs)
             "assume" -> if depth env /= 0
                 then do
@@ -221,7 +214,7 @@ checkStepFE env step = case step of
                     new_env <- addPrem env form_t
                     Ok [] (new_env, ArgForm form_t)
                 else Err [] env (createTypeError env "An assumption is not allowed in a proof.")
-            
+
             -- Handle general rule applications
             _ -> do
                 form_t <- checkFormFE env form
@@ -237,10 +230,10 @@ checkArgsFE env a = do
 
 -- | Parse arguments from frontend text format
 parseArgs :: Env -> [Text] -> Result [Abs.Arg]
-parseArgs env t = 
+parseArgs env t =
     let argText = unpack (intercalate (pack ",") (map replaceSpecialSymbolsInverse t))
     in case pListArg (myLexer argText) of
-        Left err -> throwSyntaxError env $ 
+        Left err -> throwSyntaxError env $
             "Could not parse argument list: '" ++ argText ++ "'\nError: " ++ err
         Right arg -> Ok [] arg
 
