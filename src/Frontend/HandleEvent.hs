@@ -24,8 +24,7 @@ import Control.Concurrent ( newChan, threadDelay )
 import Control.Concurrent.STM.TChan
 import Control.Monad (forever, when, filterM)
 import Data.Maybe (fromMaybe)
-import Data.List (isInfixOf)
-import Data.Text (unpack, pack)
+import Data.Text (unpack, pack, Text)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist )
 import System.FilePath ( takeExtension, dropExtension)
@@ -36,6 +35,13 @@ import qualified System.FilePath.Posix as FPP
 import qualified SDL
 import Control.Concurrent.STM (atomically)
 import Monomer.Helper (collectJustM)
+
+import qualified SDL.Raw
+import Foreign (alloca, poke)
+import Foreign.C (castCharToCChar)
+import qualified Data.ByteString.Char8 as C8
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.Text.Encoding as TE
 
 handleEvent
   :: AppEnv
@@ -87,7 +93,9 @@ handleEvent env wenv node model evt = case evt of
 
   AppResize m -> [ Model $ model & persistentState . windowMode .~ m ]
 
-  CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t)]
+  CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t) ]
+
+  SimulateTextInput t -> [ Producer (const (simulateTextInput t)) ]
 
   OpenConfirmAction a -> [ Model $ model & confirmActionPopup %~ openPopup ]
     where
@@ -122,11 +130,20 @@ handleEvent env wenv node model evt = case evt of
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
 
-  AddPremise idx -> applyOnCurrentProofAndRecordSequentHistory model (addPremiseToProof (idx + 1) "") ++ [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx + 1)) ]
-    -- where f seq = (addPremiseToProof (idx + 1) "" seq, HInsertPremise (idx + 1) "")
+  AddPremise idx -> events
+    where
+      events = editEvent ++ focusEvent
+      focusEvent = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx + 1)) ]
+      editEvent = applyOnCurrentProofAndRecordSequentHistory model (addPremiseToProof (idx + 1) "")
 
-  RemovePremise idx -> applyOnCurrentProofAndRecordSequentHistory model (removePremiseFromProof idx)
-    -- where f seq = (removePremiseFromProof idx seq, HRemovePremise idx (_premises seq !! idx))
+  RemovePremise idx -> events
+    where
+      events = editEvent ++ getEventUsingCurrentSequent model getFocusEvent
+      getFocusEvent seq
+        | length (_premises seq) == 1 = [ SetFocusOnKey "addPremiseButton" ]
+        | length (_premises seq) == idx + 1 = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt (idx - 1)) ]
+        | otherwise = [ SetFocusOnKey (WidgetKey $ "premise.input." <> showt idx) ]
+      editEvent = applyOnCurrentProofAndRecordSequentHistory model (removePremiseFromProof idx)
 
   EditPremise idx newText -> applyOnCurrentProofAndRecordHistory model f
     where f seq = (editPremisesInProof idx newText seq, HEditPremise idx (_premises seq !! idx) newText)
@@ -298,6 +315,7 @@ handleEvent env wenv node model evt = case evt of
             }
             let file = TemporaryProofFile randomPath emptySeq False emptyHistory
             sendMsg (OpenFileSuccess file)
+            sendMsg (FocusOnKey "addPremiseButton")
       )
     ]
 
@@ -390,10 +408,14 @@ handleEvent env wenv node model evt = case evt of
     Just file -> (if isFileEdited (Just file)
       then handleEvent env wenv node model (OpenConfirmAction (ConfirmActionData {
         _cadTitle = "Close without saving?",
-        _cadBody = "Are you sure you want to close\n" <> pack filePath <> "\nwithout saving? All changes will be lost!",
+        _cadBody = "Are you sure you want to close\n" <> displayedPath <> "\nwithout saving? All changes will be lost!",
         _cadAction = CloseFileSuccess filePath
       }))
       else handleEvent env wenv node model (CloseFileSuccess filePath))
+      where
+        displayedPath
+          | isTmpFile filePath = "Unsaved proof"
+          | otherwise = pack filePath
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CloseFileSuccess filePath -> Model finalModel : deleteTmp
@@ -403,7 +425,7 @@ handleEvent env wenv node model evt = case evt of
           case result of
             Left e -> print e
             Right _ -> return ()
-        ) | "/_tmp/" `isInfixOf` filePath]
+        ) | isTmpFile filePath]
       finalModel = modelWithClosedFile
         & persistentState . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. persistentState . openFiles) else cf)
       modelWithClosedFile = model
@@ -646,3 +668,24 @@ sendProofDidChange :: AppEnv -> IO AppEvent
 sendProofDidChange env = do
   atomically $ writeTChan (env ^. envChannel) ()
   return NoEvent
+
+-- | Send text event to SDL to fake keyboard input
+simulateTextInput :: Text -> IO ()
+simulateTextInput t = do
+  let typ = SDL.Raw.SDL_TEXTINPUT
+  let timestamp = 0
+  let windowID = 0
+  let text = map castCharToCChar . C8.unpack . TE.encodeUtf8 $ t <> "\x00"
+
+  let rawEvent = SDL.Raw.TextInputEvent {
+    SDL.Raw.eventType = typ,
+    SDL.Raw.eventTimestamp = timestamp,
+    SDL.Raw.textInputEventWindowID = windowID,
+    SDL.Raw.textInputEventText = text
+  }
+
+  _ <- liftIO . alloca $ \eventPtr -> do
+    poke eventPtr rawEvent
+    SDL.Raw.pushEvent eventPtr
+  
+  return ()

@@ -19,7 +19,6 @@ import qualified Monomer.Lens as L
 import Control.Lens
 import Data.Text (Text, pack, intercalate, splitOn, toLower)
 import qualified Data.Text (length)
-import Data.List (isInfixOf)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeFileName, takeBaseName)
@@ -156,7 +155,7 @@ buildUI wenv model = widgetTree where
           fileExplorerSidebar,
           editWindow
         ),
-        ruleSidebar
+        rulesSidebar
       )
     ] `styleBasic` [expandHeight 100000]
 
@@ -256,11 +255,10 @@ buildUI wenv model = widgetTree where
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand, paddingH 4]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
-            displayName = if isTemp then "Untitled proof" else pack $ takeFileName filePath
+            displayName = if isTmpFile filePath then "Untitled proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
             isCurrent = (model ^. persistentState . currentFile) == Just filePath
-            isTemp = "/_tmp/" `isInfixOf` filePath
 
             dt = dropTarget_ (\from -> MoveTab from idx) [dropTargetStyle hoverStyle]
             hoverStyle = [borderR 3 accentColor]
@@ -345,7 +343,10 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [padding 30]
     where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
 
-  ruleSidebar = widgetIf (model ^. persistentState . rulesSidebarOpen) $ fastVScroll (vstack [
+  rulesSidebar = widgetIf (model ^. persistentState . rulesSidebarOpen) $ fastVScroll (vstack [
+      h2 "Symbols" `styleBasic` [padding u],
+      vgrid (map (hgrid . map symbolItem) symbolChunks),
+
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",
@@ -360,6 +361,13 @@ buildUI wenv model = widgetTree where
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
+
+      symbolItem s = box_ [onClick (SimulateTextInput s), onClickEmpty (SimulateTextInput s)] (symbolSpan s)
+        `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
+        `styleHover` [bgColor hoverColor]
+        `styleActive` [bgColor selectedColor]
+      
+      symbolChunks = chunksOf 3 symbolsList
 
   contextMenuUI = popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
     (vstack (map dropdownButton actions)

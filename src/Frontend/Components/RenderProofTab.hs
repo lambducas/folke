@@ -135,7 +135,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         widgetIf (null $ _premises sequent) (span "No premises")
       ],
       spacer,
-      hstack [button "+ Premise" (AddPremise (nrPremises - 1))],
+      hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"],
       spacer, spacer,
 
       vstack_ [childSpacing] [

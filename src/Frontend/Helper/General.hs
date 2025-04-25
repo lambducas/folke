@@ -13,7 +13,7 @@ import Control.Exception (SomeException, catch)
 import Control.Monad (filterM)
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
-import Data.List (find, dropWhileEnd)
+import Data.List (find, dropWhileEnd, isInfixOf)
 import Text.Printf
 import System.Random
 import System.FilePath.Posix (equalFilePath, takeDirectory)
@@ -70,6 +70,12 @@ trimExtension ext text
 showDecimals :: (PrintfArg t2) => Integer -> t2 -> Text
 showDecimals decimals number = pack (printf "%0.*f" decimals number)
 
+-- | Split list into chunks of `n` elements
+chunksOf :: Int -> [a] -> [[a]]
+chunksOf _ [] = []
+chunksOf n l
+  | n > 0 = take n l : chunksOf n (drop n l)
+  | otherwise = error "Negative or zero chunk size"
 
 
 
@@ -84,6 +90,10 @@ isFileEdited (Just f@TemporaryProofFile {}) = _isEdited f
 isFileEdited (Just f@PreferenceFile {}) = _isEdited f
 isFileEdited Nothing = False
 isFileEdited _ = False
+
+-- | Check if FilePath is new, unsaved file
+isTmpFile :: FilePath -> Bool
+isTmpFile filePath = "/_tmp/" `isInfixOf` filePath
 
 -- | Gets a `File` by it's (hopefully) unique `FilePath` in a given list of files
 getProofFileByPath :: [File] -> FilePath -> Maybe File

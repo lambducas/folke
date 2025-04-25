@@ -157,6 +157,7 @@ data AppEvent
   | ExitApp
   | AppResize MainWindowState
   | CopyToClipboard Text
+  | SimulateTextInput Text
   | Print String
 
   -- Confirm action
@@ -303,6 +304,29 @@ ruleMetaDataMap = Map.fromList [
     ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
     ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
     ("SomeI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]})
+  ]
+
+symbolsList :: [Text]
+symbolsList = [
+    "¬",
+    "→",
+    "∧",
+    "∨",
+    "⊥",
+    "∀",
+    "∃",
+    "⊬",
+    "⊢",
+    "₁",
+    "₂",
+    "₃",
+    "₄",
+    "₅",
+    "₆",
+    "₇",
+    "₈",
+    "₉",
+    "₀"
   ]
 
 visualRuleNames :: [(Text, Text)]

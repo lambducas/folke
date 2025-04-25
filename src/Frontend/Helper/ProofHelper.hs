@@ -363,6 +363,13 @@ getCurrentSequent model = sequent
       f@TemporaryProofFile {} -> _parsedSequent f
       _ -> Nothing
 
+-- | Generates a list of events based on the current sequent
+getEventUsingCurrentSequent :: AppModel -> (FESequent -> [a]) -> [a]
+getEventUsingCurrentSequent model f = focusAction
+  where
+    focusAction = fromMaybe [] maybeFocusAction
+    maybeFocusAction = getCurrentSequent model >>= Just . f
+
 -- | Gets the index to a `File` by it's (hopefully) unique `FilePath` in a given list of files
 getProofFileIndexByPath :: [File] -> FilePath -> Maybe Int
 getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f `equalFilePath` filePath) allFiles
