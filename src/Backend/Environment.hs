@@ -308,6 +308,9 @@ applyRule e name args res =
                          ("Wrong conclusion when using rule, expected " ++ 
                           show res ++ ", got " ++ show res_t))
             Nothing -> 
+                if null name then
+                    Err [] env (createNoRuleProvidedError env "No rule was provided.")
+                else
                 let
                     prefixMatches = filter (List.isPrefixOf name) availableRules
                     
@@ -1178,6 +1181,15 @@ instance Monad Result where
 ----------------------------------------------------------------------
 -- Error creation functions
 ----------------------------------------------------------------------
+
+createNoRuleProvidedError :: Env -> String -> Error
+createNoRuleProvidedError env message = Error {
+  errLocation = listToMaybe (pos env),
+  errKind = RuleNotFoundError message,
+  errMessage = "Something went wrong with the rule application",
+  errContext = Just message,
+  errSuggestions = ["Check that the rule is defined and accessible"]
+}
 
 -- | Create an error for an invalid rule argument
 createRuleArgError :: Env -> Integer -> String -> Error

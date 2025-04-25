@@ -103,7 +103,7 @@ checkSequentFE env sequent = do
              else Err [] env (createMismatchedFormulaError env conc_t (getConclusion proof_t))
 
 stepsWithFilter :: FE.FESequent -> [FEStep]
-stepsWithFilter sequent = map premToStep (_premises sequent) ++ 
+stepsWithFilter sequent = map premToStep (_premises sequent) ++
                                filter (\s -> case s of
                                   FE.Line stmt _ _ _ -> stmt /= pack ""
                                   FE.SubProof _ -> True) (_steps sequent)
@@ -181,7 +181,7 @@ checkProofFE env (step : elems) i
 
 -- | Count the number of steps in a proof (for reference numbering)
 countSteps :: FEStep -> Integer
-countSteps (Line _ _ _ _) = 1
+countSteps (Line {}) = 1
 countSteps (SubProof steps) = sum (map countSteps steps)
 
 -- | Check a single frontend proof step
@@ -191,7 +191,9 @@ checkStepFE env step = case step of
         proof_t <- checkProofFE (push env) steps 0
         Ok [] (env, ArgProof proof_t)
     Line form rule numofargs args -> do
-        case unpack rule of
+        if rule == pack "" && form == pack "" then Ok [createEmptyLineWarning env] (env, ArgForm Nil) else 
+            
+          case unpack rule of
             -- Handle premises
             "prem" -> if depth env == 0
                 then do
@@ -221,6 +223,14 @@ checkStepFE env step = case step of
                 (env1, args_t) <- checkArgsFE env (take numofargs args)
                 res_t <- applyRule env1 (unpack rule) args_t form_t
                 Ok [] (env1, ArgForm res_t)
+
+            where createEmptyLineWarning env = Warning {
+            warnLocation = listToMaybe (pos env),
+            warnSeverity = Low,
+            warnKind = StyleIssue "Empty line in proof",
+            warnMessage = "Empty formula line detected in the proof",
+            warnSuggestion = Just "Consider removing empty lines to improve proof clarity"
+          }
 
 -- | Check frontend arguments against rules
 checkArgsFE :: Env -> [Text] -> Result (Env, [Arg])
@@ -327,7 +337,8 @@ checkForm env f = case f of
 
     -- Handle empty formulas
     Abs.FormNil ->
-        Err [] env (createTypeError env "Formula is empty.")
+        return Nil
+        
 
 -- | Check a term
 checkTerm :: Env -> Abs.Term -> Result Term
