@@ -295,7 +295,7 @@ applyRule e name args res =
             case rule_f env (zip [1..] args) res of
                 Err warns env_e err -> Err warns env_e err
                 Ok warns res_t ->
-                    if res_t == res then Ok warns res_t
+                    if cmp env res_t res then Ok warns res_t
                     else Err warns env (createRuleConcError env 
                          ("Wrong conclusion when using rule, expected " ++ 
                           show res ++ ", got " ++ show res_t))
@@ -303,7 +303,7 @@ applyRule e name args res =
             Just rule_s -> case applyUDefRule env rule_s (zip [1..] args) of 
                 Err warns env_e err -> Err warns env_e err
                 Ok warns res_t ->
-                    if res_t == res then Ok warns res_t
+                    if cmp env res_t res then Ok warns res_t
                     else Err warns env (createRuleConcError env 
                          ("Wrong conclusion when using rule, expected " ++ 
                           show res ++ ", got " ++ show res_t))
@@ -553,6 +553,34 @@ replaceInFormula env (Term _ []) _ Nil = Err [] env
 replaceInFormula env x _ _ = Err [] env 
     (createUnknownError env (show x ++ " needs to be a variable."))
 
+-- | Compare two formulas with environment
+cmp :: Env -> Formula -> Formula -> Bool
+cmp _ (Pred a) (Pred b) = a == b
+cmp env (And a1 a2) (And b1 b2) = cmp env a1 b1 && cmp env a2 b2
+cmp env (Or a1 a2) (Or b1 b2) = cmp env a1 b1 && cmp env a2 b2
+cmp env (Impl a1 a2) (Impl b1 b2) = cmp env a1 b1 && cmp env a2 b2
+cmp env (Eq a1 a2) (Eq b1 b2) = a1 == b1 && a2 == b2
+
+cmp env (All x a) (All y b) =
+    (x == y && cmp env a b) ||
+    (case isFreeFor env y x b of
+        Ok _ True -> case replaceInFormula env x y b of
+            Ok _ replaced -> cmp env a replaced
+            _ -> False
+        _ -> False)
+
+cmp env (Some x a) (Some y b) =
+    (x == y && cmp env a b) ||
+    (case isFreeFor env y x b of
+        Ok _ True -> case replaceInFormula env x y b of
+            Ok _ replaced -> cmp env a replaced
+            _ -> False
+        _ -> False)
+
+cmp env (Not a) (Not b) = cmp env a b
+cmp _ Bot Bot = True
+cmp _ Nil Nil = True
+cmp _ _ _ = False
 ----------------------------------------------------------------------
 -- Predefined Rules
 ----------------------------------------------------------------------
@@ -592,7 +620,7 @@ ruleAndER env forms _ = Err [] env (createArgCountError env
 -- | Introduction of disjunction (left)
 ruleOrIL :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleOrIL env [(_, ArgForm a)] r@(Or b _) = 
-    if a == b then Ok [] r
+    if cmp env a b then Ok [] r
     else Err [] env (createRuleArgError env 1 
          "Did not match left hand side of conclusion.")
 ruleOrIL env [(_, ArgForm _)] _ = Err [] env (createRuleConcError env 
@@ -605,7 +633,7 @@ ruleOrIL env forms _ = Err [] env (createArgCountError env
 -- | Introduction of disjunction (right)
 ruleOrIR :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleOrIR env [(_, ArgForm a)] r@(Or _ b) = 
-    if a == b then Ok [] r
+    if cmp env a b then Ok [] r
     else Err [] env (createRuleArgError env 1 
          "Did not match right hand side of conclusion.")
 ruleOrIR env [(_, ArgForm _)] _ = Err [] env (createRuleConcError env 
@@ -619,9 +647,9 @@ ruleOrIR env forms _ = Err [] env (createArgCountError env
 ruleOrE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleOrE env [(_, ArgForm (Or a b)), (j, ArgProof (Proof _ [p1] c1)), 
               (k, ArgProof (Proof _ [p2] c2))] _ =
-    if a == p1 then
-        if b == p2 then
-            if c1 == c2 then Ok [] c1 
+    if cmp env a p1 then
+        if cmp env b p2 then
+            if cmp env c1 c2 then Ok [] c1 
             else Err [] env (createRuleConcError env 
                  "The conclusions of the two proofs did not match.")
         else Err [] env (createRuleArgError env k 
@@ -652,11 +680,11 @@ ruleImplI env forms _ = Err [] env (createArgCountError env
 -- | Elimination of implication (modus ponens)
 ruleImplE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleImplE env [(i, ArgForm x@(Impl a b)), (j, ArgForm y@(Impl c d))] _ 
-    | x == c = Ok [] d 
-    | y == a = Ok [] b
+    | cmp env x c = Ok [] d 
+    | cmp env y a = Ok [] b
     | otherwise = Err [] env (createRuleArgError env j ("Premise did not match argument "++ show i ++"."))
 ruleImplE env [(i, ArgForm a), (j, ArgForm (Impl b c))] _ =
-    if a == b then Ok [] c
+    if cmp env a b then Ok [] c
     else Err [] env (createRuleArgError env j 
          ("Premise did not match argument "++ show i ++"."))
 ruleImplE env [b@(_, ArgForm (Impl _ _)), a@(_, ArgForm _)] r = 
@@ -679,11 +707,11 @@ ruleNotI env forms _ = Err [] env (createArgCountError env
 -- | Elimination of negation
 ruleNotE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleNotE env [(i, ArgForm (Not a)), (j, ArgForm (Not b))] _
-    | a == Not b = Ok [] Bot 
-    | Not a == b = Ok [] Bot 
+    | cmp env a (Not b) = Ok [] Bot 
+    | cmp env (Not a) b = Ok [] Bot 
     | otherwise = Err [] env (createTypeError env ("Argument " ++ show j ++ " is not the negation of argument " ++ show i ++ "."))
 ruleNotE env [(i, ArgForm a), (j, ArgForm (Not b))] _ = 
-    if a == b then Ok [] Bot 
+    if cmp env a b then Ok [] Bot 
     else Err [] env (createTypeError env 
          ("Argument " ++ show j ++ " is not the negation of argument " ++ show i ++ "."))
 ruleNotE env [b@(_, ArgForm (Not _)), a@(_, ArgForm _)] r = 
@@ -722,7 +750,7 @@ ruleNotNotE env forms _ = Err [] env (createArgCountError env
 -- | Modus tollens
 ruleMT :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleMT env [(i, ArgForm (Impl a b)), (j, ArgForm (Not c))] _ = 
-    if b == c then Ok [] (Not a) 
+    if cmp env b c then Ok [] (Not a) 
     else Err [] env (createRuleConcError env 
          ("Conclusion in argument " ++ show i ++ 
           " did not match argument " ++ show j ++ "."))
@@ -749,7 +777,7 @@ rulePBC env forms _ = Err [] env (createArgCountError env
 -- | Law of excluded middle
 ruleLEM :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleLEM env [] r@(Or a (Not b)) = 
-    if a == b then Ok [] r 
+    if cmp env a b then Ok [] r 
     else Err [] env (createRuleConcError env 
          "Right hand side is not the negation of the left hand side.")
 ruleLEM env [] _ = Err [] env (createRuleConcError env 
@@ -784,7 +812,7 @@ ruleEqE env [(i, ArgForm (Eq t1 t2)), (j, ArgForm a), (_, ArgFormWith u phi)] _ 
                                 " in " ++ show phi))
             Ok warns_t2 True -> case replaceInFormula env u t1 phi of
                 Err warns env_e err -> Err (warns ++ warns_t1 ++ warns_t2) env_e err
-                Ok warns1 b -> if a /= b 
+                Ok warns1 b -> if not (cmp env a b)
                     then Err (warns_t1 ++ warns_t2 ++ warns1) env 
                          (createRuleArgError env j ("Do not match " ++ 
                           show phi ++ "[" ++ show t1 ++ "/" ++ show u ++ "]."))
@@ -825,7 +853,7 @@ ruleAllI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) = 
     case replaceInFormula env x t b of
         Err warns env_e err -> Err warns env_e err
-        Ok warns c -> if a == c then Ok warns (All x b) 
+        Ok warns c -> if cmp env a c then Ok warns (All x b) 
                      else Err [] env (createRuleConcError env 
                           "The given formula did not match the conclusion.")
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = 
@@ -840,7 +868,7 @@ ruleSomeE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeE env [(_, ArgForm (Some x a)), (_, ArgProof (Proof [x_0] [b] c))] _ = 
     case replaceInFormula env x x_0 a of
         Err warns env_e err -> Err warns env_e err
-        Ok warns d -> if b == d then Ok [] c 
+        Ok warns d -> if cmp env b d then Ok [] c 
                      else Err warns env (createRuleConcError env 
                           (show a ++ "[" ++ show x_0 ++ "/" ++ show x ++ 
                            "] resulted in " ++ show d ++ " and not " ++ 
@@ -863,7 +891,7 @@ ruleSomeI env [(_, ArgForm a), (j, ArgTerm t@(Term _ _))] (Some x phi) =
                           show x ++ " in " ++ show phi))
         Ok warns1 True -> case replaceInFormula env x t phi of
             Err warns env_e err -> Err warns env_e err
-            Ok warns2 c -> if a == c then Ok (warns1 ++ warns2) (Some x phi) 
+            Ok warns2 c -> if cmp env a c then Ok (warns1 ++ warns2) (Some x phi) 
                           else Err [] env (createRuleConcError env 
                               (show phi ++ "[" ++ show x ++ "/" ++ 
                                show t ++ "] resulted in " ++ show c ++ 
@@ -1048,6 +1076,9 @@ instance Show Formula where
     show Bot = "⊥"
     show Nil = "Nil"
 
+
+-- | Deprecated: does not fit our implementation and only used by Eq Proof
+
 instance Eq Formula where
     Pred a == Pred b = a == b
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
@@ -1069,8 +1100,7 @@ instance Eq Formula where
         (case isFreeFor env y x b of
             Ok _ True -> case replaceInFormula env x y b of
                 Ok _ replaced -> a == replaced
-                _ -> False
-            _ -> False)
+                _ -> False)
       where env = newEnv
 
     Not a == Not b = a == b

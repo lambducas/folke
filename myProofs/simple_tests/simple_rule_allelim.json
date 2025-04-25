@@ -1,0 +1,31 @@
+{
+    "_sequent": {
+        "_conclusion": "Q(c)",
+        "_premises": [
+            "∀ x (P(x) → Q(x))",
+            "P(c)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1",
+                    "c"
+                ],
+                "_rule": "∀E",
+                "_statement": "P(c) → Q(c)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "2"
+                ],
+                "_rule": "→E",
+                "_statement": "Q(c)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}
