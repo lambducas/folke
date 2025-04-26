@@ -18,18 +18,19 @@ import Shared.Messages
 import Logic.Par (pSequent, myLexer)
 
 import Monomer
+import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
 import Control.Lens
 import Control.Exception (try, SomeException)
 import Control.Concurrent ( newChan, threadDelay )
 import Control.Concurrent.STM.TChan
-import Control.Monad (forever, when, filterM)
+import Control.Monad (forever, when, filterM, foldM)
+import Control.Monad.Extra (partitionM)
 import Data.Maybe (fromMaybe)
 import Data.Text (unpack, pack, Text)
+import Data.List (sort)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist )
-import System.FilePath ( takeExtension, dropExtension)
-
-import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
+import System.FilePath (takeExtension, dropExtension, (</>))
 import qualified System.FilePath.Posix as FPP
 
 import qualified SDL
@@ -129,6 +130,36 @@ handleEvent env wenv node model evt = case evt of
   FocusOnKey key -> [ SetFocusOnKey key ]
 
   NextFocus n -> replicate n (MoveFocusFromKey Nothing FocusFwd)
+
+  OpenFileSearcher
+    | model ^. fileSearcher . fsOpen -> []
+    | otherwise -> case model ^. persistentState . workingDir of
+        Nothing -> []
+        Just wd -> [
+            Event $ SetAllFilesInFileSearcher [],
+            Producer (\sendMsg -> do
+              allFiles <- traverseDir (const True) (\fs f -> pure (f : fs)) [] wd
+              sendMsg $ SetAllFilesInFileSearcher $ sort allFiles
+            ),
+            Model $ model
+              & fileSearcher . fsOpen .~ True
+              & fileSearcher . fsInput .~ ""
+              & fileSearcher . fsSelected .~ 0,
+            SetFocusOnKey $ WidgetKey "fileSearcher.item.0",
+            SetFocusOnKey $ WidgetKey "fileSearcher.input"
+          ]
+
+  CloseFileSearcher -> [ Model $ model & fileSearcher . fsOpen .~ False ]
+
+  ChangeFileSearcherIndex n nodeKey -> [
+      Model $ model & fileSearcher . fsSelected %~ (+n),
+      SetFocusOnKey nodeKey,
+      SetFocusOnKey $ WidgetKey "fileSearcher.input"
+    ]
+
+  ResetFileSearcherIndex -> [ Model $ model & fileSearcher . fsSelected .~ 0 ]
+
+  SetAllFilesInFileSearcher filePaths -> [ Model $ model & fileSearcher . fsAllFiles .~ filePaths ]
 
   AddPremise idx -> events
     where
@@ -689,3 +720,15 @@ simulateTextInput t = do
     SDL.Raw.pushEvent eventPtr
   
   return ()
+
+-- From https://stackoverflow.com/a/51713361
+-- | Recursivly search directory and filter
+traverseDir :: (FilePath -> Bool) -> (b -> FilePath -> IO b) -> b -> FilePath -> IO b
+traverseDir validDir transition =
+    let go state dirPath =
+            do names <- listDirectory dirPath
+               let paths = map (dirPath </>) names
+               (dirPaths, filePaths) <- partitionM doesDirectoryExist paths
+               state' <- foldM transition state filePaths -- process current dir
+               foldM go state' (filter validDir dirPaths) -- process subdirs
+     in go

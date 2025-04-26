@@ -26,6 +26,12 @@ maybeHead :: [a] -> Maybe a
 maybeHead [] = Nothing
 maybeHead (h:_) = Just h
 
+-- | Safely get element in list
+maybeIndex :: [a] -> Int -> Maybe a
+maybeIndex []     _ = Nothing
+maybeIndex (a:_)  0 = Just a
+maybeIndex (_:as) n = Just $ as !! (n-1)
+
 {-|
 Removes element at index from list.
 The original list is returned if the index doesn't exist

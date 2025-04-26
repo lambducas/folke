@@ -127,21 +127,28 @@ data LoadedFiles = LoadedFiles {
   _lDirectories :: [FilePath]
 } deriving (Show, Eq)
 
+data FileSearcher = FileSearcher {
+  _fsOpen :: Bool,
+  _fsInput :: Text,
+  _fsSelected :: Int,
+  _fsAllFiles :: [FilePath]
+} deriving (Show, Eq)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
   _contextMenu :: ContextMenu,
+  _confirmActionPopup :: Maybe ConfirmActionData,
+  _fileSearcher :: FileSearcher,
 
   _filesInDirectory :: Maybe LoadedFiles,
-  _confirmActionPopup :: Maybe ConfirmActionData,
 
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe FEResult,
+  _autoCheckProofTracker :: AutoCheckProofTracker,
 
   _preferences :: Preferences,
-  _persistentState :: PersistentState,
-
-  _autoCheckProofTracker :: AutoCheckProofTracker
+  _persistentState :: PersistentState
 } deriving (Eq, Show)
 
 instance Show (Chan a) where
@@ -159,6 +166,13 @@ data AppEvent
   | CopyToClipboard Text
   | SimulateTextInput Text
   | Print String
+
+  -- File searcher
+  | OpenFileSearcher
+  | CloseFileSearcher
+  | ChangeFileSearcherIndex Int WidgetKey
+  | ResetFileSearcherIndex
+  | SetAllFilesInFileSearcher [FilePath]
 
   -- Confirm action
   | OpenConfirmAction ConfirmActionData
@@ -258,6 +272,8 @@ makeLenses 'ConfirmActionData
 makeLenses 'ContextMenu
 makeLenses 'AppModel
 makeLenses 'AutoCheckProofTracker
+makeLenses 'FileSearcher
+makeLenses 'LoadedFiles
 
 newtype AppEnv = AppEnv {
   _envChannel :: TChan ()

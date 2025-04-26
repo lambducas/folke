@@ -120,6 +120,10 @@ fastScroll = scroll_ [wheelRate 50]
 -- | `vscroll` but with more reasonable scroll rate
 fastVScroll = vscroll_ [wheelRate 50]
 
+-- | `vscroll_` but with more reasonable scroll rate
+fastVScroll_ :: [ScrollCfg s e] -> WidgetNode s e -> WidgetNode s e
+fastVScroll_ cfg = vscroll_ (wheelRate 50 : cfg)
+
 -- | `hscroll` but with more reasonable scroll rate
 fastHScroll = hscroll_ [wheelRate 50]
 

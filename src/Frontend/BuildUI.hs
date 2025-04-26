@@ -17,12 +17,13 @@ import Frontend.Components.Details
 import Monomer
 import qualified Monomer.Lens as L
 import Control.Lens
-import Data.Text (Text, pack, intercalate, splitOn, toLower)
+import Data.Text (Text, pack, intercalate, splitOn, toLower, isInfixOf)
 import qualified Data.Text (length)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeFileName, takeBaseName)
 import Data.Maybe (fromMaybe, isJust)
+import TextShow (showt)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -49,7 +50,8 @@ menuBarCategories = [
     ("View", [
       ("Toggle File Explorer", "Ctrl+B", ToggleFileExplorer),
       ("Toggle Rules Dictionary", "", ToggleRulesSidebar),
-      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences)
+      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences),
+      ("Search for File", "Ctrl+P", OpenFileSearcher)
     ]),
     ("Help", [
       ("Open Welcome Page", "", OpenWelcome),
@@ -105,6 +107,7 @@ buildUI wenv model = widgetTree where
   fastTooltip = Frontend.Components.GeneralUIComponents.fastTooltip model
   -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
+  fastVScroll_ = Frontend.Components.GeneralUIComponents.fastVScroll_
   fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
   globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd menuBarCategories
@@ -122,6 +125,7 @@ buildUI wenv model = widgetTree where
             menuBar,
             mainContent
           ],
+          fileSearcherUI,
           contextMenuUI,
           confirmActionUI
         ]
@@ -135,8 +139,8 @@ buildUI wenv model = widgetTree where
               `styleBasic` [textSize $ u -2, radius 4, paddingV 5, paddingH 10]
               `styleHover` [bgColor selectedColor]
           ),
-          popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing)
-            (vstack (map dropdownButton actions)
+          popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing) $
+            boxShadow (vstack (map dropdownButton actions)
               `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
         ]
 
@@ -370,7 +374,7 @@ buildUI wenv model = widgetTree where
       symbolChunks = chunksOf 3 symbolsList
 
   contextMenuUI = popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
-    (vstack (map dropdownButton actions)
+    (boxShadow $ vstack (map dropdownButton actions)
       `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
     where
       actions = model ^. contextMenu . ctxActions
@@ -392,7 +396,8 @@ buildUI wenv model = widgetTree where
             spn t = span t `styleBasic` [textSize $ u -2]
             spnIna t = spn t `styleBasic` [textColor dividerColor]
 
-  confirmActionUI = popupV_ (isJust cad) (const NoEvent) [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle] (vstack_ [childSpacing] [
+  confirmActionUI = popupV_ (isJust cad) (const NoEvent) [popupAlignToWindow, popupDisableClose, alignCenter, alignMiddle]
+    (boxShadow $ vstack_ [childSpacing] [
       h1 title,
       paragraph body,
       spacer,
@@ -406,6 +411,45 @@ buildUI wenv model = widgetTree where
       body = fromMaybe "" (cad >>= Just . _cadBody)
       action = fromMaybe NoEvent (cad >>= Just . _cadAction)
       cad = model ^. confirmActionPopup
+
+  fileSearcherUI = popup_ (fileSearcher . fsOpen) [popupAlignToWindow, alignCenter, alignMiddle] $
+    boxShadow $ vstack_ [childSpacing] [
+      keystroke [
+        ("Enter", CloseFileSearcher),
+        ("Enter", openSelectedEvent),
+        ("Up", ChangeFileSearcherIndex (-1) (key (-1))),
+        ("Down", ChangeFileSearcherIndex 1 (key 1))
+      ] $
+        textField_ (fileSearcher . fsInput) [placeholder "Search for files by name or extension", onChange (const ResetFileSearcherIndex :: Text -> AppEvent)]
+          `styleBasic` [paddingH u, paddingV (0.75*u)]
+          `nodeKey` "fileSearcher.input",
+      widgetIf (not noResult) (fastVScroll_ [scrollFollowFocus] resultItems `nodeKey` "fileSearcher.resultScroll"),
+      widgetIf noResult (emptyItem "No files found")
+    ]
+      `styleBasic` [bgColor popupBackground, border 1 dividerColor, radius 4, padding 6, width 600, height 450]
+    where
+      key n = WidgetKey $ "fileSearcher.item." <> showt ((selected + n) `mod` length matchingFiles)
+
+      openSelectedEvent = fromMaybe NoEvent $ maybeIndex matchingFiles selected >>= Just . OpenFile
+      noResult = null matchingFiles
+      matchingFiles
+        | input == "" = take 100 allFiles
+        | otherwise = take 100 $ filter (\f -> input `isInfixOf` pack f) allFiles
+      input = model ^. fileSearcher . fsInput
+      selected = model ^. fileSearcher . fsSelected `mod` length matchingFiles
+      allFiles = model ^. fileSearcher . fsAllFiles
+      
+      resultItems = vstack (zipWith listItem matchingFiles [0..])
+
+      listItem filePath idx = box_ [onClick (OpenFile filePath), onClick CloseFileSearcher, alignLeft] (span (pack filePath))
+        `styleBasic` [paddingH u, paddingV (0.75 * u), radius 4, cursorHand, styleIf isSelected (bgColor selectedColor)]
+        `styleHover` [bgColor hoverColor]
+        `nodeKey` ("fileSearcher.item." <> showt idx)
+        where isSelected = idx == selected
+
+      emptyItem text = box_ [alignLeft] (span (pack text))
+        `styleBasic` [paddingH u, paddingV (0.75 * u), radius 4, cursorHand]
+        `styleHover` [bgColor hoverColor]
 
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text

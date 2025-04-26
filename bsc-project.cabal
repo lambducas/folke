@@ -85,6 +85,7 @@ library
                     , filepath
                     , stm
                     , utf8-string
+                    , extra
 
     default-extensions: OverloadedStrings
     hs-source-dirs:   src
@@ -118,6 +119,7 @@ executable bsc
                 , temporary
                 , stm
                 , utf8-string
+                , extra
     other-modules:
                   Backend.TypeChecker
                 , Backend.Environment

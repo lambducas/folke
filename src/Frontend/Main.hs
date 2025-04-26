@@ -85,6 +85,12 @@ main = do
         _ctxOpen = False,
         _ctxActions = []
       },
+      _fileSearcher = FileSearcher {
+        _fsOpen = False,
+        _fsInput = "",
+        _fsSelected = 0,
+        _fsAllFiles = []
+      },
 
       _filesInDirectory = Just $ LoadedFiles [] [],
       _confirmActionPopup = Nothing,
