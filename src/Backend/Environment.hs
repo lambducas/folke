@@ -82,6 +82,7 @@ module Backend.Environment (
     Refs,
     
     -- | Error creation
+    createNoRuleProvidedError,
     createRuleArgError,
     createArgCountError,
     createRuleConcError,
@@ -308,9 +309,6 @@ applyRule e name args res =
                          ("Wrong conclusion when using rule, expected " ++ 
                           show res ++ ", got " ++ show res_t))
             Nothing -> 
-                if null name then
-                    Err [] env (createNoRuleProvidedError env "No rule was provided.")
-                else
                 let
                     prefixMatches = filter (List.isPrefixOf name) availableRules
                     

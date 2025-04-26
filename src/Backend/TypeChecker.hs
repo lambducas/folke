@@ -33,7 +33,7 @@ import Control.Exception (SomeException, try)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
-import Data.Text (Text, unpack, pack, intercalate)
+import Data.Text (Text, unpack, pack, intercalate, strip)
 
 ----------------------------------------------------------------------
 -- Main API Functions
@@ -80,11 +80,10 @@ checkFE seq_t = do
     return ()
 
 -- | Check a frontend sequent against the environment
--- | Check a frontend sequent against the environment
 checkSequentFE :: Env -> FE.FESequent -> Result Proof
 checkSequentFE env sequent = do
 
-    let steps = stepsWithFilter sequent
+    let steps = sequentSteps sequent
 
     -- Check premises and conclusion
     prems_t <- checkPremsFE env (_premises sequent)
@@ -102,11 +101,8 @@ checkSequentFE env sequent = do
          then return seq_t
              else Err [] env (createMismatchedFormulaError env conc_t (getConclusion proof_t))
 
-stepsWithFilter :: FE.FESequent -> [FEStep]
-stepsWithFilter sequent = map premToStep (_premises sequent) ++
-                               filter (\s -> case s of
-                                  FE.Line stmt _ _ _ -> stmt /= pack ""
-                                  FE.SubProof _ -> True) (_steps sequent)
+sequentSteps :: FE.FESequent -> [FEStep]
+sequentSteps sequent = map premToStep (_premises sequent) ++ _steps sequent
 
 -- | Convert a premise to a proof step for verification
 premToStep :: FE.FEFormula -> FE.FEStep
@@ -143,12 +139,25 @@ parseFormula env t =
 -- Frontend Proof Checking
 ----------------------------------------------------------------------
 
--- | Check a proof represented as frontend steps
+findLastFormula :: Env -> Formula
+findLastFormula env =
+    case Map.foldrWithKey findForm Nil (refs env) of
+        Nil ->
+            if not (null (getPrems env))
+            then case List.last (getPrems env) of
+                Nil -> Nil
+                lastPrem -> lastPrem
+            else Nil
+        form -> form
+    where
+        findForm _ (_, ArgForm form) Nil = form
+        findForm _ (_, ArgProof proof) Nil = getConclusion proof
+        findForm _ _ acc = acc
+
 checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
 checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil)
 checkProofFE env [step] i
     | FE.SubProof steps <- step = do
-            -- Handle subproof: create reference for the entire subproof range
             let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
             _ <- checkProofFE (push (pushPos env refs_t)) steps i
             Err [] env (createTypeError env "Last step in proof was another proof.")
@@ -157,14 +166,25 @@ checkProofFE env [step] i
         case step_t of
             ArgTerm _ -> Err [] env (createTypeError env "Check step could not return a term.")
             ArgFormWith _ _ -> Err [] env (createTypeError env "Check step could not return a form with.")
+            ArgForm Nil ->
+                let lastForm = findLastFormula env
+                in if lastForm /= Nil
+                   then Ok [] (Proof (getFreshs new_env) (getPrems new_env) lastForm)
+                   else Ok [] (Proof (getFreshs new_env) (getPrems new_env) Nil)
             ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t)
 checkProofFE env (step : elems) i
     | FE.SubProof steps <- step = do
-        -- Handle subproof: create reference for the entire subproof range
         let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
         proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
         let step_result = ArgProof proof_t
-        -- Continue checking the remaining elements with updated position
+        seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1)
+                                elems (i + countSteps (FE.SubProof steps))
+        Ok [] seq_t
+checkProofFE env (step : elems) i
+    | FE.SubProof steps <- step = do
+        let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
+        proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
+        let step_result = ArgProof proof_t
         seq_t <- checkProofFE (popPos (addRefs (pushPos env refs_t) refs_t step_result) 1)
                                 elems (i + countSteps (FE.SubProof steps))
         Ok [] seq_t
@@ -191,8 +211,9 @@ checkStepFE env step = case step of
         proof_t <- checkProofFE (push env) steps 0
         Ok [] (env, ArgProof proof_t)
     Line form rule numofargs args -> do
-        if rule == pack "" && form == pack "" then Ok [createEmptyLineWarning env] (env, ArgForm Nil) else 
-            
+        if strip form == pack "" then Ok [createEmptyLineWarning env ] (env, ArgForm Nil)
+        else if strip rule == pack "" then Err [] env (createNoRuleProvidedError env "No rule provided") else
+
           case unpack rule of
             -- Handle premises
             "prem" -> if depth env == 0
@@ -224,7 +245,8 @@ checkStepFE env step = case step of
                 res_t <- applyRule env1 (unpack rule) args_t form_t
                 Ok [] (env1, ArgForm res_t)
 
-            where createEmptyLineWarning env = Warning {
+createEmptyLineWarning :: Env -> Warning
+createEmptyLineWarning env = Warning {
             warnLocation = listToMaybe (pos env),
             warnSeverity = Low,
             warnKind = StyleIssue "Empty line in proof",
@@ -338,7 +360,7 @@ checkForm env f = case f of
     -- Handle empty formulas
     Abs.FormNil ->
         return Nil
-        
+
 
 -- | Check a term
 checkTerm :: Env -> Abs.Term -> Result Term
