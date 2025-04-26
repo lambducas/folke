@@ -3,21 +3,16 @@
 ### General
 - [ ] Test frontend to improve UX
 - [x] Write help guide
-- [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
 - [ ] Fix crappy dependency management
 - [ ] Huge cleanup to prepare public repo
-- [ ] One single directory for storing proofs
 
 ### Backend
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [ ] Fix bug empty last line
+- [x] Fix bug empty last line
 - [x] Improve warning system
 - [ ] Warn on unused steps (reference counting)
-- [ ] Use throwError helpers to error in typechecker
-- [ ] Produce other error message than syntax error from pLexer
 - [ ] Custom rules
-- [ ] Better messages
-- [ ] JSON proofs
+- [ ] Better error messages
 - [ ] Add warning sensitivty using our Severity type
 - [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
@@ -93,6 +88,7 @@
 
 ## IDEAS
 - Support for subscript in front end, nice if x_0 renders fancy.
+- Package backend with arbitrary frontend (DSL library for proof editor backend)
 
 ## Build
 

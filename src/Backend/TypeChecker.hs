@@ -38,6 +38,20 @@ import Data.Text (Text, unpack, pack, intercalate, strip)
 ----------------------------------------------------------------------
 -- Main API Functions
 ----------------------------------------------------------------------
+
+-- | Handle a message from the frontend
+handleFrontendMessage :: FrontendMessage -> BackendMessage
+handleFrontendMessage (CheckStringSequent _) =
+    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
+handleFrontendMessage (CheckSequent _) =
+    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
+handleFrontendMessage (CheckStep _) =
+    StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
+handleFrontendMessage (OtherFrontendMessage text) =
+    OtherBackendMessage text
+handleFrontendMessage (CheckFESequent tree) =
+    StringSequentChecked (convertToFEError (checkFE tree))
+
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
 checkJson filePath =  do
@@ -55,63 +69,30 @@ checkJson filePath =  do
     -- Check the proof with the backend
     checkFE seq
 
--- | Handle a message from the frontend
-handleFrontendMessage :: FrontendMessage -> BackendMessage
-handleFrontendMessage (CheckStringSequent _) =
-    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
-handleFrontendMessage (CheckSequent _) =
-    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
-handleFrontendMessage (CheckStep _) =
-    StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
-handleFrontendMessage (OtherFrontendMessage text) =
-    OtherBackendMessage text
-handleFrontendMessage (CheckFESequent tree) =
-    StringSequentChecked (convertToFEError (checkFE tree))
-
 ----------------------------------------------------------------------
 -- Frontend Sequent Checking
 ----------------------------------------------------------------------
 
 -- | Check a FE (frontend) sequent
 checkFE :: FE.FESequent -> Result ()
-checkFE seq_t = do
-    let env = newEnv
-    _ <- checkSequentFE env seq_t
-    return ()
+checkFE seq_t = checkSequentFE newEnv seq_t >> return ()
 
 -- | Check a frontend sequent against the environment
 checkSequentFE :: Env -> FE.FESequent -> Result Proof
 checkSequentFE env sequent = do
 
-    let steps = sequentSteps sequent
-
-    -- Check premises and conclusion
+    -- Checking and validation
     prems_t <- checkPremsFE env (_premises sequent)
     conc_t <- checkFormFE env (_conclusion sequent)
+    proof_t <- checkProofFE env (sequentSteps sequent) 1
 
-    -- Check the proof steps
-    proof_t <- checkProofFE env steps 1
-
-    -- Validate references
     validateRefs env
 
+    -- Check expected vs actual
     let seq_t = Proof [] prems_t conc_t
-
     if proof_t == seq_t
          then return seq_t
              else Err [] env (createMismatchedFormulaError env conc_t (getConclusion proof_t))
-
-sequentSteps :: FE.FESequent -> [FEStep]
-sequentSteps sequent = map premToStep (_premises sequent) ++ _steps sequent
-
--- | Convert a premise to a proof step for verification
-premToStep :: FE.FEFormula -> FE.FEStep
-premToStep form = Line {
-    _statement = form,
-    _rule = pack "prem",
-    _usedArguments = 0,
-    _arguments = []
-}
 
 -- | Check frontend formulas in premises
 checkPremsFE :: Env -> [FE.FEFormula] -> Result [Formula]
@@ -127,32 +108,16 @@ checkFormFE env fef = do
     f <- parseFormula env fef
     checkForm env f
 
--- | Parse a frontend formula to an abstract syntax formula
-parseFormula :: Env -> FE.FEFormula -> Result Abs.Form
-parseFormula env t =
-    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-        Left err -> throwSyntaxError env $
-            "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
-        Right form -> Ok [] form
+      where	
+	parseFormula env t =
+	    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
+		Left err -> throwError createSyntaxError env $
+		    "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
+		Right form -> Ok [] form
 
 ----------------------------------------------------------------------
 -- Frontend Proof Checking
 ----------------------------------------------------------------------
-
-findLastFormula :: Env -> Formula
-findLastFormula env =
-    case Map.foldrWithKey findForm Nil (refs env) of
-        Nil ->
-            if not (null (getPrems env))
-            then case List.last (getPrems env) of
-                Nil -> Nil
-                lastPrem -> lastPrem
-            else Nil
-        form -> form
-    where
-        findForm _ (_, ArgForm form) Nil = form
-        findForm _ (_, ArgProof proof) Nil = getConclusion proof
-        findForm _ _ acc = acc
 
 checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
 checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil)
@@ -199,11 +164,6 @@ checkProofFE env (step : elems) i
                                 elems (i + 1)
         Ok [] seq_t
 
--- | Count the number of steps in a proof (for reference numbering)
-countSteps :: FEStep -> Integer
-countSteps (Line {}) = 1
-countSteps (SubProof steps) = sum (map countSteps steps)
-
 -- | Check a single frontend proof step
 checkStepFE :: Env -> FE.FEStep -> Result (Env, Arg)
 checkStepFE env step = case step of
@@ -245,15 +205,6 @@ checkStepFE env step = case step of
                 res_t <- applyRule env1 (unpack rule) args_t form_t
                 Ok [] (env1, ArgForm res_t)
 
-createEmptyLineWarning :: Env -> Warning
-createEmptyLineWarning env = Warning {
-            warnLocation = listToMaybe (pos env),
-            warnSeverity = Low,
-            warnKind = StyleIssue "Empty line in proof",
-            warnMessage = "Empty formula line detected in the proof",
-            warnSuggestion = Just "Consider removing empty lines to improve proof clarity"
-          }
-
 -- | Check frontend arguments against rules
 checkArgsFE :: Env -> [Text] -> Result (Env, [Arg])
 checkArgsFE env a = do
@@ -265,7 +216,7 @@ parseArgs :: Env -> [Text] -> Result [Abs.Arg]
 parseArgs env t =
     let argText = unpack (intercalate (pack ",") (map replaceSpecialSymbolsInverse t))
     in case pListArg (myLexer argText) of
-        Left err -> throwSyntaxError env $
+        Left err -> throwError createSyntaxError env $
             "Could not parse argument list: '" ++ argText ++ "'\nError: " ++ err
         Right arg -> Ok [] arg
 

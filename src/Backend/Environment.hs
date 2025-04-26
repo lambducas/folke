@@ -91,7 +91,10 @@ module Backend.Environment (
     createRuleNotFoundError,
     createUnknownError,
     createMismatchedFormulaError,
-    createSyntaxError
+    createSyntaxError,
+
+   -- | Warning creation
+   createEmptyLineWarning
 
 ) where
 
@@ -311,7 +314,6 @@ applyRule e name args res =
             Nothing -> 
                 let
                     prefixMatches = filter (List.isPrefixOf name) availableRules
-                    
                     caseInsensitiveMatches = 
                         if null prefixMatches then
                             filter (\r -> map toLower name `List.isPrefixOf` map toLower r) availableRules
@@ -1286,3 +1288,18 @@ createSyntaxError env message = Error {
         "Look for typos in predicate or variable names"
     ]
 }
+
+
+----------------------------------------------------------------------
+-- Warning creation functions
+----------------------------------------------------------------------
+
+createEmptyLineWarning :: Env -> Warning
+createEmptyLineWarning env = Warning {
+      warnLocation = listToMaybe $ pos env,
+      warnSeverity = Low,
+      warnKind = StyleIssue "Empty line in proof",
+      warnMessage = "Empty formula line detected in proof",
+      warnSuggestion = Just "Consider removing empty lines to improve proof clarity"
+}
+
