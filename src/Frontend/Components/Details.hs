@@ -146,6 +146,7 @@ buildUI2
   -> WidgetNode DetailsModel DetailsEvt
 buildUI2 cfg appModel parentDirPath headerText indent _wenv model = widgetTree where
   selTheme = getActualTheme $ appModel ^. preferences . selectedTheme
+  hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
 
   widgetTree = vstack [
@@ -156,7 +157,9 @@ buildUI2 cfg appModel parentDirPath headerText indent _wenv model = widgetTree w
   header = hstack [
       iconLabel appModel remixFolder5Line `styleBasic` [paddingR 8],
       label headerText
-    ] `styleBasic` [paddingL (16 * (indent - 1)), paddingV 8, cursorHand]
+    ]
+    `styleHover` [bgColor hoverColor]
+    `styleBasic` [paddingL (16 * (indent - 1)), paddingV 8, cursorHand]
 
   fileTreeUI = case model ^. loadedFiles of
     Nothing -> label "Loading files..." `styleBasic` [paddingL (16 * indent), paddingR 16, paddingV 8, textColor dividerColor]

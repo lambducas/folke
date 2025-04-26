@@ -53,10 +53,13 @@
 
 ### Frontend
 - [ ] Fix full Markdown support
+- [ ] Add file search with shortcut `Ctrl+P` like VSCode
+- [ ] Add support for up/down arrow on suggested input field
 - [ ] Fix nativefiledialog on mac
 - [ ] Fix menubar for better UX
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Auto-checker should only display critical errors and skip e.g empty line errors
+- [ ] Change button color in light theme
 - [x] ~~Add buttons for inserting special characters~~
 - [x] ~~When loading the files in the working directory, collapse all folders by default to prevent lag when opening large folders~~
 - [x] ~~Tabs should be draggable so they can be reordered~~

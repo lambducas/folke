@@ -59,7 +59,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
   -- iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
   -- iconButton = Frontend.Components.GeneralUIComponents.iconButton model
   trashButton = Frontend.Components.GeneralUIComponents.trashButton model
-  -- bold = Frontend.Components.GeneralUIComponents.bold model
+  bold = Frontend.Components.GeneralUIComponents.bold model
   -- normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
   symbolStyle = Frontend.Components.GeneralUIComponents.symbolStyle model
 
@@ -113,14 +113,21 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
-    Just (FEError _warns error) -> paragraph ("Proof is incorrect: " <> (pack . show) error) `styleBasic` [textColor red]
+    Just (FEError warns error) ->
+      vstack_ [childSpacing] [
+        bold $ span "Proof is incorrect" `styleBasic` [textColor red],
+        paragraph (pack $ show error) `styleBasic` [textColor red],
+        renderWarningList warns
+      ]
     Just (FEOk warns) ->
-        if null warns
-        then span "Proof is correct :)" `styleBasic` [textColor lime]
-        else vstack [
-            span "Proof is correct, but there are warnings:" `styleBasic` [textColor orange],
-            vstack (map (flip styleBasic [textColor orange] . span . pack . show) warns)
-        ]
+      if null warns
+      then bold $ span "Proof is correct" `styleBasic` [textColor lime]
+      else vstack_ [childSpacing] [
+          bold $ span "Proof is correct, but there are warnings" `styleBasic` [textColor orange],
+          renderWarningList warns
+      ]
+    where
+      renderWarningList warns = vstack_ [childSpacing] (map (flip styleBasic [textColor orange] . span . pack . show) warns)
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
