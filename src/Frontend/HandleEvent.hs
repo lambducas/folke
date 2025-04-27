@@ -54,6 +54,8 @@ handleEvent
 handleEvent env wenv node model evt = case evt of
   NoEvent -> []
 
+  AppRunProducer prod -> [ Producer prod ]
+
   Undo -> applyOnCurrentFile model applyUndo
 
   Redo -> applyOnCurrentFile model applyRedo
@@ -490,8 +492,9 @@ handleEvent env wenv node model evt = case evt of
     f@TemporaryProofFile {} -> case _parsedSequent f of
       Nothing -> []
       Just seq -> [
-          Producer (\sendMsg -> do
-            mNewPath <- openSaveDialog "json"
+        SyncTask $ do
+          mNewPath <- openSaveDialog "json"
+          return $ AppRunProducer (\sendMsg -> do
             case mNewPath of
               Nothing -> return ()
               Just newPath -> do
@@ -505,7 +508,7 @@ handleEvent env wenv node model evt = case evt of
                     sendMsg (CloseFileSuccess tmpPath)
                     sendMsg RefreshExplorer
                     sendMsg (OpenFile_ newPath "")
-          )
+            )
         ]
     f -> error $ "Cannot save file of type " ++ show f
 
@@ -582,63 +585,16 @@ handleEvent env wenv node model evt = case evt of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
-      Just file@ProofFile{} -> case _parsedSequent file of
-        Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
-        Just _ ->
-          [ Producer (\sendMsg -> do
-              -- Open a save dialog to let the user choose where to save the LaTeX file
-              mSavePath <- openSaveDialog "tex"
-              case mSavePath of
-                Nothing ->
-                  -- User cancelled the dialog
-                  sendMsg (ExportError "Export cancelled")
-                Just savePath -> do
-                  -- Generate proper LaTeX content using our export module
-                  let texPath = if takeExtension savePath == ".tex"
-                                then savePath
-                                else savePath <> ".tex"
-                      latexContent = convertToLatex model
-
-                  -- Write the full LaTeX content to the file
-                  writeFile texPath (unpack latexContent)
-                  putStrLn $ "Exported LaTeX file to: " ++ texPath
-                  sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
-            )
-          ]
+      Just file@ProofFile{} -> exportToLatex model file
+      Just file@TemporaryProofFile{} -> exportToLatex model file
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
   ExportToPDF -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
-      Just file@ProofFile{} -> case _parsedSequent file of
-        Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
-        Just _ ->
-          [ Producer (\sendMsg -> do
-              -- Open a save dialog to let the user choose where to save the file
-              mSavePath <- openSaveDialog "pdf"
-              case mSavePath of
-                Nothing -> return ()
-                Just savePath -> do
-                  -- Generate LaTeX content
-                  let basePath = if takeExtension savePath == ".pdf"
-                                 then dropExtension savePath
-                                 else savePath
-                      texPath = basePath <> ".tex"
-                      latexContent = convertToLatex model
-
-                  -- Write the LaTeX content to the file
-                  writeFile texPath (unpack latexContent)
-
-                  -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
-                  result <- compileLatexToPDF texPath
-                  case result of
-                    Right pdfPath -> do
-                      sendMsg (ExportSuccess (pack $ "Files created: " ++ texPath ++ " and " ++ pdfPath))
-                    Left err -> do
-                      sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
-            )
-          ]
+      Just file@ProofFile{} -> exportToPDF model file
+      Just file@TemporaryProofFile{} -> exportToPDF model file
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
   ExportSuccess msg -> [Message (WidgetKey "ExportSuccess") msg]
@@ -732,3 +688,60 @@ traverseDir validDir transition =
                state' <- foldM transition state filePaths -- process current dir
                foldM go state' (filter validDir dirPaths) -- process subdirs
      in go
+
+exportToLatex :: AppModel -> File -> [EventResponse s AppEvent sp ep]
+exportToLatex model file = case _parsedSequent file of
+  Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
+  Just _ ->
+    [ SyncTask $ do
+        -- Open a save dialog to let the user choose where to save the LaTeX file
+        mSavePath <- openSaveDialog "tex"
+        return $ AppRunProducer (\sendMsg -> do
+          case mSavePath of
+            Nothing ->
+              -- User cancelled the dialog
+              sendMsg (ExportError "Export cancelled")
+            Just savePath -> do
+              -- Generate proper LaTeX content using our export module
+              let texPath = if takeExtension savePath == ".tex"
+                            then savePath
+                            else savePath <> ".tex"
+                  latexContent = convertToLatex model
+
+              -- Write the full LaTeX content to the file
+              writeFile texPath (unpack latexContent)
+              putStrLn $ "Exported LaTeX file to: " ++ texPath
+              sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
+          )
+    ]
+
+exportToPDF :: AppModel -> File -> [EventResponse s AppEvent sp ep]
+exportToPDF model file = case _parsedSequent file of
+  Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
+  Just _ ->
+    [ SyncTask $ do
+        -- Open a save dialog to let the user choose where to save the file
+        mSavePath <- openSaveDialog "pdf"
+        return $ AppRunProducer (\sendMsg -> do
+          case mSavePath of
+            Nothing -> return ()
+            Just savePath -> do
+              -- Generate LaTeX content
+              let basePath = if takeExtension savePath == ".pdf"
+                            then dropExtension savePath
+                            else savePath
+                  texPath = basePath <> ".tex"
+                  latexContent = convertToLatex model
+
+              -- Write the LaTeX content to the file
+              writeFile texPath (unpack latexContent)
+
+              -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
+              result <- compileLatexToPDF texPath
+              case result of
+                Right pdfPath -> do
+                  sendMsg (ExportSuccess (pack $ "Files created: " ++ texPath ++ " and " ++ pdfPath))
+                Left err -> do
+                  sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
+          )
+    ]

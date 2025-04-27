@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Frontend.Types (
   module Frontend.Types,
@@ -155,10 +156,19 @@ instance Show (Chan a) where
   show :: Chan a -> String
   show _ = ""
 
+instance Eq (ProducerHandler AppEvent) where
+  (==) :: ProducerHandler AppEvent -> ProducerHandler AppEvent -> Bool
+  _ == _ = False
+
+instance Show (ProducerHandler AppEvent) where
+  show :: ProducerHandler AppEvent -> String
+  show _ = ""
+
 data AppEvent
   = NoEvent
+  | AppRunProducer (ProducerHandler AppEvent)
   | Undo
-  | Redo 
+  | Redo
   | AppInit
   | AppBeforeExit
   | ExitApp
