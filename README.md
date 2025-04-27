@@ -53,11 +53,11 @@
 
 ### Frontend
 - [ ] Fix full Markdown support
-- [ ] Add support for up/down arrow on suggested input field
-- [ ] Fix nativefiledialog on mac
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Auto-checker should only display critical errors and skip e.g empty line errors
 - [ ] Change button color in light theme
+- [x] ~~Add support for up/down arrow on suggested input field~~
+- [x] ~~Fix nativefiledialog on mac~~
 - [x] ~~Fix menubar for better UX~~
 - [x] ~~Add file search with shortcut `Ctrl+P` like VSCode~~
 - [x] ~~Add buttons for inserting special characters~~

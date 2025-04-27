@@ -96,6 +96,8 @@ data InputFieldCfg s e a = InputFieldCfg {
   _ifcValidV :: [Bool -> e],
   -- | Whether to put cursor at the end of input on init. Defaults to False.
   _ifcDefCursorEnd :: Bool,
+  -- | Whether to try to put cursor where it was before text was updated by other source
+  _ifcPutCursorAtFirstMissmatch :: Bool,
   -- | Default width of the input field.
   _ifcDefWidth :: Double,
   -- | Caret width.
@@ -317,9 +319,9 @@ makeInputField !config !state = widget where
     newTextL = T.length newText
     newPos
       | oldText == newText = oldPos
-      | otherwise = min oldPos (firstMissmatch oldText newText + 1) -- Try to match the old position
-      -- | _ifcDefCursorEnd config = newTextL
-      -- | otherwise = 0
+      | _ifcPutCursorAtFirstMissmatch config = min oldPos (firstMissmatch oldText newText + 1) -- Try to match the old position
+      | _ifcDefCursorEnd config = newTextL
+      | otherwise = 0
     newSelStart
       | isNothing oldSel || newTextL < fromJust oldSel = Nothing
       | otherwise = oldSel

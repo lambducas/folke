@@ -30,6 +30,7 @@ module Monomer.Widgets.Singles.TextField (
   -- * Configuration
   TextFieldCfg,
   textFieldDisplayChar,
+  textFieldPutCursorAtFirstMissmatch,
   -- * Constructors
   textField,
   textField_,
@@ -90,6 +91,7 @@ data TextFieldCfg s e = TextFieldCfg {
   _tfcOnBlurReq :: [Path -> WidgetRequest s e],
   _tfcOnChangeReq :: [Text -> WidgetRequest s e],
 
+  _tfcPutCursorAtFirstMissmatch :: Maybe Bool,
   _tfcOnKeyDownReq :: [(KeyMod, KeyCode, InputFieldState Text) -> WidgetRequest s e]
 }
 
@@ -109,6 +111,7 @@ instance Default (TextFieldCfg s e) where
     _tfcOnBlurReq = [],
     _tfcOnChangeReq = [],
 
+    _tfcPutCursorAtFirstMissmatch = Nothing,
     _tfcOnKeyDownReq = []
   }
 
@@ -128,6 +131,7 @@ instance Semigroup (TextFieldCfg s e) where
     _tfcOnBlurReq = _tfcOnBlurReq t1 <> _tfcOnBlurReq t2,
     _tfcOnChangeReq = _tfcOnChangeReq t1 <> _tfcOnChangeReq t2,
 
+    _tfcPutCursorAtFirstMissmatch = _tfcPutCursorAtFirstMissmatch t2 <|> _tfcPutCursorAtFirstMissmatch t1,
     _tfcOnKeyDownReq = _tfcOnKeyDownReq t1 <> _tfcOnKeyDownReq t2
   }
 
@@ -220,6 +224,11 @@ textFieldDisplayChar char = def {
     _tfcDisplayChar = Just char
   }
 
+textFieldPutCursorAtFirstMissmatch :: TextFieldCfg s e
+textFieldPutCursorAtFirstMissmatch = def {
+  _tfcPutCursorAtFirstMissmatch = Just True
+}
+
 -- | Creates a text field using the given lens.
 textField
   :: WidgetEvent e
@@ -275,6 +284,7 @@ textFieldD_ widgetData configs = inputField where
     _ifcAcceptInput = acceptInput (_tfcMaxLength config),
     _ifcIsValidInput = acceptInput (_tfcMaxLength config),
     _ifcDefCursorEnd = True,
+    _ifcPutCursorAtFirstMissmatch = fromMaybe False (_tfcPutCursorAtFirstMissmatch config),
     _ifcDefWidth = 100,
     _ifcCaretWidth = _tfcCaretWidth config,
     _ifcCaretMs = _tfcCaretMs config,

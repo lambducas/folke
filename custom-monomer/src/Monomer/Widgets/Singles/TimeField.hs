@@ -388,6 +388,7 @@ timeFieldD_ widgetData configs = newNode where
     _ifcAcceptInput = acceptInput,
     _ifcIsValidInput = validInput,
     _ifcDefCursorEnd = True,
+    _ifcPutCursorAtFirstMissmatch = False,
     _ifcDefWidth = 160,
     _ifcCaretWidth = _tfcCaretWidth config,
     _ifcCaretMs = _tfcCaretMs config,

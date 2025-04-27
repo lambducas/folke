@@ -135,3 +135,8 @@ Children will not receive the key-event
 firstKeystroke :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
 firstKeystroke ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [ignoreChildrenEvts | enabled] (firstKeystroke xs widget)
 firstKeystroke [] widget = widget
+
+-- | Like keystroke but shortcuts can be enabled/disabled
+someKeystrokes :: [(Text, AppEvent, Bool)] -> WidgetNode s AppEvent -> WidgetNode s AppEvent
+someKeystrokes ((key, event, enabled):xs) widget = keystroke_ [(key, if enabled then event else NoEvent)] [] (someKeystrokes xs widget)
+someKeystrokes [] widget = widget

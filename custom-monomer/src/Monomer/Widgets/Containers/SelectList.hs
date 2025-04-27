@@ -198,6 +198,9 @@ data SelectListState a = SelectListState {
 data SelectListMessage
   = SelectListClickItem Int
   | SelectListShowSelected
+  | SelectListPrev
+  | SelectListNext
+  | SelectListClickHighlighted
   deriving (Eq, Show)
 
 -- | Creates a select list using the given lens.
@@ -357,8 +360,8 @@ makeSelectList widgetData items makeRow config state = widget where
         | otherwise = Nothing
 
     KeyAction mode code status
-      | isKeyDown code && status == KeyPressed -> highlightNext wenv node
-      | isKeyUp code && status == KeyPressed -> highlightPrev wenv node
+      | isKeyDown code && status == KeyPressed -> Just $ highlightNext wenv node
+      | isKeyUp code && status == KeyPressed -> Just $ highlightPrev wenv node
       | isSelectKey code && status == KeyPressed -> resultSelected
       where
         resultSelected = Just $ selectItem wenv node (_hlIdx state)
@@ -384,19 +387,25 @@ makeSelectList widgetData items makeRow config state = widget where
   handleMessage wenv node target message = result where
     handleSelect (SelectListClickItem idx) = handleItemClick wenv node idx
     handleSelect SelectListShowSelected = handleItemShow wenv node
+    handleSelect SelectListPrev = highlightPrev wenv node
+    handleSelect SelectListNext = highlightNext wenv node
+    handleSelect SelectListClickHighlighted = handleItemClick wenv node (_hlIdx state)
     result = fmap handleSelect (cast message)
 
   handleItemClick wenv node idx = result where
     focusReq = SetFocus $ node ^. L.info . L.widgetId
     tempResult = selectItem wenv node idx
-    result
-      | isNodeFocused wenv node = tempResult
-      | otherwise = tempResult & L.requests %~ (|> focusReq)
+
+    result = tempResult
+
+    -- result
+    --   | isNodeFocused wenv node = tempResult
+    --   | otherwise = tempResult & L.requests %~ (|> focusReq)
 
   handleItemShow wenv node = resultReqs node reqs where
     reqs = itemScrollTo wenv node (_slIdx state)
 
-  highlightItem wenv node nextIdx = Just result where
+  highlightItem wenv node nextIdx = result where
     newState = state {
       _hlIdx = nextIdx
     }
@@ -458,7 +467,8 @@ updateStyles wenv config state node newSlIdx newHlIdx = (newNode, newReqs) where
   (newChildren, resizeReq) = (items, False)
     & updateItemStyle wenv (_slIdx state) (Just normalStyle)
     & updateItemStyle wenv (_hlIdx state) (Just normalStyle)
-    & updateItemStyle wenv newHlIdx (Just hlStyle)
+    & updateItemStyle wenv newHlIdx (Just slStyle)
+    -- & updateItemStyle wenv newHlIdx (Just hlStyle)
     & updateItemStyle wenv newSlIdx (Just slStyle)
 
   newNode = node

@@ -149,7 +149,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         h2 "Conclusion",
         spacer,
         box_ [alignLeft] (
-          firstKeystroke [
+          someKeystrokes [
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
             ("Down", NextFocus 1, True),
             ("Enter", NextFocus 1, True)
@@ -175,7 +175,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
       isConclusionError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
       nrPremises = length (_premises sequent)
       premiseLine premise idx = box_ [alignLeft] (hstack [
-          firstKeystroke [
+          someKeystrokes [
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
             ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
             ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
@@ -252,7 +252,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
                   -- textFieldV "" (\_ -> NoEvent),
 
-                  firstKeystroke [
+                  someKeystrokes [
                     ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
                     ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                     ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
@@ -266,7 +266,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ statement (EditFormula path) 
-                      [onKeyDown handleFormulaKey, placeholder "Empty statement"]
+                      [onKeyDown handleFormulaKey, placeholder "Empty statement", textFieldPutCursorAtFirstMissmatch]
                     `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
                     `nodeKey` (showt index <> ".statement"))
@@ -296,10 +296,11 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ]
               `nodeKey` showt index
 
-          ruleKeystrokes w = firstKeystroke [
-              ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
-              ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
-              ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+          ruleKeystrokes w = someKeystrokes [
+              -- ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
+              -- ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
+              -- ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
+
               -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
               ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
@@ -310,7 +311,6 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
               ("Enter", NextFocus 1, usedArguments > 0),
               ("Enter", InsertLineAfter False path, usedArguments == 0)
-              -- ("Enter", InsertLineAfter path, True)
             ] w
               `nodeKey` (showt index <> ".rule.keystroke")
 
@@ -323,7 +323,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = hstack [
               symbolSpan (labels !! idx),
-              firstKeystroke [
+              someKeystrokes [
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
@@ -381,7 +381,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ] `styleBasic` [width 250]
 
           -- allRules = map fst visualRuleNames
-          allRules = (toList . fromList) $ filter (\f -> toLower rule `isInfixOf` toLower f) (map fst visualRuleNames ++ map snd visualRuleNames)
+          allRules = (toList . fromList) $ filter (\f -> toLower rule `isInfixOf` toLower f) (map snd visualRuleNames)
           -- allRules = (toList . fromList) $ replaceSpecialSymbols rule : filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
           --   where rules (Env _ _ r _ _ _ _ _) = r

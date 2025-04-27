@@ -367,12 +367,16 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
           -- & L.requests <>~ Seq.fromList ([ResetCursorIcon widgetId | not inVp] ++ [MoveFocus Nothing FocusFwd])
 
     KeyAction mode code KeyPressed
-      | isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
+      | isKeyUp code -> Just $ resultReqs node [SendMessage listNodeId SelectListPrev]
+      | isKeyDown code -> Just $ resultReqs node [SendMessage listNodeId SelectListNext]
+      | isKeyReturn code && isOpen -> Just $ resultReqs node [IgnoreParentEvents, SendMessage listNodeId SelectListClickHighlighted]
+      | not (isKeyReturn code) && isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
       | isKeyEscape code && isOpen -> Just $ closeDropdown wenv node
       where
-        activationKeys = [isKeyDown, isKeyUp, isKeySpace, isKeyReturn]
-        isKeyOpenDropdown = True
-        -- isKeyOpenDropdown = or (fmap ($ code) activationKeys)
+        activationKeys = [isKeyReturn, isKeyTab]
+        isKeyOpenDropdown = not $ or (fmap ($ code) activationKeys)
+
+        listNodeId = node ^?! L.children . ix listIdx . L.children . ix 0 . L.info . L.widgetId
 
     _
       -- | not isOpen -> Just $ resultReqs node [IgnoreChildrenEvents]

@@ -365,6 +365,7 @@ numericFieldD_ widgetData configs = newNode where
     _ifcAcceptInput = acceptInput,
     _ifcIsValidInput = validInput,
     _ifcDefCursorEnd = False,
+    _ifcPutCursorAtFirstMissmatch = False,
     _ifcDefWidth = defWidth,
     _ifcCaretWidth = _nfcCaretWidth config,
     _ifcCaretMs = _nfcCaretMs config,
