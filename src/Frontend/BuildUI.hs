@@ -22,7 +22,7 @@ import qualified Data.Text (length)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeFileName, takeBaseName)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import TextShow (showt)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
@@ -38,8 +38,8 @@ menuBarCategories = [
       ("Exit", "", ExitApp)
     ]),
     ("Edit", [
-      ("Undo", "Ctrl+Z", Undo),         
-      ("Redo", "Ctrl+Y", Redo),      
+      ("Undo", "Ctrl+Z", Undo),
+      ("Redo", "Ctrl+Y", Redo),
       -- ("Make Subproof", "Ctrl+Tab", NoEvent),
       -- ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
       -- ("Goto Next Input", "Return", NoEvent),
@@ -78,6 +78,7 @@ buildUI
   -> WidgetNode AppModel AppEvent
 buildUI wenv model = widgetTree where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
+  clearColor = selTheme ^. L.clearColor
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   popupBackground = selTheme ^. L.userColorMap . at "popupBackground" . non def
   backgroundColor = selTheme ^. L.userColorMap . at "backgroundColor" . non def
@@ -130,18 +131,46 @@ buildUI wenv model = widgetTree where
           confirmActionUI
         ]
 
-  menuBar = hstack (zipWith menuBarButton menuBarCategories [0..])
-    `styleBasic` [borderB 1 dividerColor, padding 5, textSize $ u -2]
+  menuBar = hstack [
+      menuBarPopup,
+      categoryUI
+    ] `styleBasic` [borderB 1 dividerColor]
     where
-      menuBarButton (name, actions) idx = vstack [
-          box_ [onClick (SetOpenMenuBarItem (Just idx))] (
-            span name
-              `styleBasic` [textSize $ u -2, radius 4, paddingV 5, paddingH 10]
+      catButtonWidth = 60
+      categoryUI = hstack (zipWith menuBarButton menuBarCategories [0..])
+        `styleBasic` [padding 5, textSize $ u -2]
+
+      menuBarPopup :: WidgetNode AppModel AppEvent
+      menuBarPopup = popupV_ (isJust $ model ^. openMenuBarItem) (\s -> if s then NoEvent else SetOpenMenuBarItem Nothing) [] $
+        vstack [
+          categoryUI `styleBasic` [bgColor clearColor],
+          box (
+            box (
+              boxShadow $ vstack (map dropdownButton actions)
+                `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2]
+            )
+              `styleBasic` [paddingL offset]
+          )
+            `styleBasic` [paddingT (-17), paddingL (-5)]
+        ]
+        where
+          actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ menuBarCategories !! fromInteger idx
+          offset = catButtonWidth * fromIntegral (fromMaybe 0 (model ^. openMenuBarItem))
+
+      menuBarButton (name, _actions) idx = vstack [
+          box_ (
+            [onClick (SetOpenMenuBarItem (Just idx)) | isNothing (model ^. openMenuBarItem)] ++
+            [onEnter (SetOpenMenuBarItem (Just idx)) | isJust $ model ^. openMenuBarItem] ++
+            [onClick (SetOpenMenuBarItem Nothing) | isJust $ model ^. openMenuBarItem]
+          ) (
+            box (
+              span name
+                `styleBasic` [textSize $ u -2]
+            )
+              `styleBasic` [radius 4, paddingV 5, paddingH 10]
+              `styleBasic` [width catButtonWidth]
               `styleHover` [bgColor selectedColor]
-          ),
-          popupV (Just idx == model ^. openMenuBarItem) (\s -> if s then SetOpenMenuBarItem (Just idx) else SetOpenMenuBarItem Nothing) $
-            boxShadow (vstack (map dropdownButton actions)
-              `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2])
+          )
         ]
 
       dropdownButton (name, keybind, action) = box_ [onClick action, onClick (SetOpenMenuBarItem Nothing), expandContent] $ hstack [
@@ -370,7 +399,7 @@ buildUI wenv model = widgetTree where
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
-      
+
       symbolChunks = chunksOf 3 symbolsList
 
   contextMenuUI = popupV_ (model ^. contextMenu . ctxOpen) (\s -> if s then NoEvent else CloseContextMenu) [popupOpenAtCursor]
@@ -438,7 +467,7 @@ buildUI wenv model = widgetTree where
       input = model ^. fileSearcher . fsInput
       selected = model ^. fileSearcher . fsSelected `mod` length matchingFiles
       allFiles = model ^. fileSearcher . fsAllFiles
-      
+
       resultItems = vstack (zipWith listItem matchingFiles [0..])
 
       listItem filePath idx = box_ [onClick (OpenFile filePath), onClick CloseFileSearcher, alignLeft] (span (pack filePath))
