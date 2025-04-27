@@ -23,13 +23,22 @@ import Control.Lens
 customLightTheme :: Theme
 customLightTheme = baseTheme lightThemeColors {
   clearColor = rgb 255 255 255,
-  btnMainBgBasic = rgbHex "#EE9000",
-  btnMainBgHover = rgbHex "#FFB522",
-  btnMainBgFocus = rgbHex "#FFA500",
-  btnMainBgActive = rgbHex "#DD8000",
-  btnMainBgDisabled = rgbHex "#BB8800",
-  btnMainText = rgbHex "#FF0000",
+
+  btnBgBasic = rgb 235 235 235,
+  btnBgHover = rgb 210 210 210,
+  btnBgFocus = rgb 220 220 220,
+  btnBgActive = rgb 190 190 190,
+  btnBgDisabled = rgb 150 150 150,
+  btnTextDisabled = rgb 70 70 70,
+  btnText = rgbHex "000000",
   labelText = rgbHex "000000"
+
+  -- btnMainBgBasic = rgbHex "#EE9000",
+  -- btnMainBgHover = rgbHex "#FFB522",
+  -- btnMainBgFocus = rgbHex "#FFA500",
+  -- btnMainBgActive = rgbHex "#DD8000",
+  -- btnMainBgDisabled = rgbHex "#BB8800",
+  -- btnMainText = rgbHex "#FF0000"
 }
   & L.userColorMap . at "accent" ?~ rgb 255 65 43
   & L.userColorMap . at "popupBackground" ?~ rgb 230 230 230
