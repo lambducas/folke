@@ -1190,17 +1190,15 @@ createNoRuleProvidedError env message = Error {
   errContext = Just message,
   errSuggestions = ["Check that the rule is defined and accessible"]
 }
-
 -- | Create an error for an invalid rule argument
 createRuleArgError :: Env -> Integer -> String -> Error
 createRuleArgError env argNum message = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleArgError argNum message,
-  errMessage = "Invalid argument to rule",
+  errMessage = "Invalid argument to rule: " ++ message,  -- Include message here
   errContext = Just $ "Problem with argument #" ++ show argNum,
   errSuggestions = ["Check that you're using the correct formula type"]
 }
-
 -- | Create an error for incorrect number of arguments to a rule
 createArgCountError :: Env -> Integer -> Integer -> Error
 createArgCountError env actual expected = Error {
