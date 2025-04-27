@@ -86,7 +86,8 @@ checkSequentFE env sequent = do
     conc_t <- checkFormFE env (_conclusion sequent)
     proof_t <- checkProofFE env (sequentSteps sequent) 1
 
-    validateRefs env
+    -- validateRefs env
+
 
     -- Check expected vs actual
     let seq_t = Proof [] prems_t conc_t
@@ -169,18 +170,27 @@ checkStepFE :: Env -> FE.FEStep -> Result (Env, Arg)
 checkStepFE env step = case step of
     SubProof steps -> do
         proof_t <- checkProofFE (push env) steps 0
-        Ok [] (env, ArgProof proof_t)
+        let currentRef = head (pos env)
+        let env_with_ref = addRefs env [currentRef] (ArgProof proof_t)
+        Ok [] (env_with_ref, ArgProof proof_t)
+        
     Line form rule numofargs args -> do
-        if strip form == pack "" then Ok [createEmptyLineWarning env ] (env, ArgForm Nil)
-        else if strip rule == pack "" then Err [] env (createNoRuleProvidedError env "No rule provided") else
-
-          case unpack rule of
-            -- Handle premises
+        let currentRef = head (pos env)
+        
+        if strip form == pack "" then 
+            let env_with_ref = addRefs env [currentRef] (ArgForm Nil)
+            in Ok [createEmptyLineWarning env_with_ref] (env_with_ref, ArgForm Nil)
+            
+        else if strip rule == pack "" then 
+            Err [] env (createNoRuleProvidedError env "No rule provided.")
+            
+        else case unpack rule of
             "prem" -> if depth env == 0
                 then do
                     form_t <- checkFormFE env form
                     new_env <- addPrem env form_t
-                    Ok [] (new_env, ArgForm form_t)
+                    let env_with_ref = addRefs new_env [currentRef] (ArgForm form_t)
+                    Ok [] (env_with_ref, ArgForm form_t)
                 else Err [] env (createTypeError env "A premise is not allowed in a subproof.")
 
             -- Handle fresh variables
@@ -188,14 +198,18 @@ checkStepFE env step = case step of
                 let t = Term (unpack $ replaceSpecialSymbolsInverse form) []
                 env1 <- regTerm env t
                 env2 <- addFresh env1 t
-                Ok [] (env2, ArgTerm t)
+                -- Register the reference for this line
+                let env_with_ref = addRefs env2 [currentRef] (ArgTerm t)
+                Ok [] (env_with_ref, ArgTerm t)
 
             -- Handle assumptions (for subproofs)
             "assume" -> if depth env /= 0
                 then do
                     form_t <- checkFormFE env form
                     new_env <- addPrem env form_t
-                    Ok [] (new_env, ArgForm form_t)
+                    -- Register the reference for this line
+                    let env_with_ref = addRefs new_env [currentRef] (ArgForm form_t)
+                    Ok [] (env_with_ref, ArgForm form_t)
                 else Err [] env (createTypeError env "An assumption is not allowed in a proof.")
 
             -- Handle general rule applications
@@ -203,7 +217,8 @@ checkStepFE env step = case step of
                 form_t <- checkFormFE env form
                 (env1, args_t) <- checkArgsFE env (take numofargs args)
                 res_t <- applyRule env1 (unpack rule) args_t form_t
-                Ok [] (env1, ArgForm res_t)
+                let env_with_ref = addRefs env1 [currentRef] (ArgForm res_t)
+                Ok [] (env_with_ref, ArgForm res_t)
 
 -- | Check frontend arguments against rules
 checkArgsFE :: Env -> [Text] -> Result (Env, [Arg])

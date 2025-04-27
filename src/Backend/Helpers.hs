@@ -43,6 +43,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
+import Debug.Trace (trace)
 
 import Backend.Environment
 import Shared.Messages
@@ -73,16 +74,25 @@ clearWarnings (Err _ env err) = Err [] env err
 -- | TODO: Fix
 validateRefs :: Env -> Result ()
 validateRefs env =
-    -- Don't count references to entire proofs, which aren't meant to be cited
-    let unusedRefs =
-          [(ref, arg) |
-           (ref, (count, arg)) <- Map.toList (refs env),
-           count == 0,
-           not (isProofReference arg)]
-    in if null unusedRefs
-       then Ok [] ()
-       else
-           let unusedRefsStr = List.intercalate ", " [show ref | (ref, _) <- unusedRefs]
+    let allRefs = Map.toList (refs env)
+        unusedRefs = [(ref, arg) |
+                     (ref, (count, arg)) <- allRefs,
+                     count == 0]
+        unusedRefsStr = List.intercalate ", " [show ref ++ "(" ++ show count ++ ")" | 
+                                              (ref, (count, _)) <- allRefs]
+    in trace ("All refs: " ++ unusedRefsStr) $
+       if not (null unusedRefs)
+       then Ok [Warning {
+                warnLocation = Nothing,
+                warnSeverity = Low,
+                warnKind = StyleIssue "Unused references",
+                warnMessage = "Some references were defined but never used: " ++ 
+                              List.intercalate ", " [show r | (r, _) <- unusedRefs],
+                warnSuggestion = Just "Consider removing unused references for cleaner proofs"
+            }] ()
+       else return ()
+         
+{-          let unusedRefsStr = List.intercalate ", " [show ref | (ref, _) <- unusedRefs]
            in if null unusedRefsStr
               then Ok [] ()
               else Ok [Warning {
@@ -95,6 +105,7 @@ validateRefs env =
   where
     isProofReference (ArgProof _) = True  -- Don't count ArgProofs
     isProofReference _ = False
+-}
 
 -- | Count steps for a sequent
 sequentSteps :: FE.FESequent -> [FEStep]

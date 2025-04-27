@@ -1214,7 +1214,7 @@ createRuleConcError :: Env -> String -> Error
 createRuleConcError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleConcError message,
-  errMessage = "Invalid conclusion for rule application",
+  errMessage = "Invalid conclusion for rule application: " ++ message,
   errContext = Just message,
   errSuggestions = ["Check that your conclusion matches what the rule is expected to produce"]
 }
@@ -1224,7 +1224,7 @@ createTypeError :: Env -> String -> Error
 createTypeError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = TypeError message,
-  errMessage = "Type mismatch in proof",
+  errMessage = "Type mismatch in proof: " ++ message,
   errContext = Just message,
   errSuggestions = ["Ensure you're using the correct type of expressions"]
 }
@@ -1234,7 +1234,7 @@ createReferenceError :: Env -> Ref -> String -> Error
 createReferenceError env ref message = Error {
   errLocation = Just ref,  -- Use the reference itself as the location
   errKind = ReferenceError ref message,
-  errMessage = "Invalid reference in proof",
+  errMessage = "Invalid reference in proof: " ++ message,
   errContext = Just $ "Problem with reference " ++ show ref,
   errSuggestions = ["Check that the reference exists and is accessible"]
 }
@@ -1258,7 +1258,7 @@ createUnknownError :: Env -> String -> Error
 createUnknownError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = UnknownError message,
-  errMessage = "Unexpected error occurred",
+  errMessage = "Unexpected error occurred" ++ message,
   errContext = Just message,
   errSuggestions = []
 }
