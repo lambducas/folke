@@ -15,7 +15,7 @@ import Frontend.Preferences
 import Frontend.Export (convertToLatex, compileLatexToPDF)
 import Frontend.History ( applyRedo, applyUndo )
 import Shared.Messages
-import Logic.Par (pSequent, myLexer)
+import Logic.Par (myLexer)
 
 import Monomer
 import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
@@ -402,16 +402,6 @@ handleEvent env wenv node model evt = case evt of
           do
             let seq = parseProofFromJSON pContentText
             sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
-        else if takeExtension fullPath == ".logic" then
-          do
-            case pSequent (myLexer pContent) of
-              Left _err -> do
-                case parseProofFromSimpleFileFormat pContentText of
-                  seq@(Just _) -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
-                  Nothing -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText (parseProofFromJSON pContentText) pIsEdited pHistory)
-
-              Right seq_t -> sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText pParsedContent pIsEdited pHistory)
-                where pParsedContent = Just (convertBESequentToFESequent seq_t)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )

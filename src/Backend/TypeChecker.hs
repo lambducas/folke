@@ -37,10 +37,6 @@ minWarningSeverity = Low
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent _) =
     StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
-handleFrontendMessage (CheckSequent _) =
-    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
-handleFrontendMessage (CheckStep _) =
-    StepChecked (Left "handleFrontendMessage: CheckStep not implemented")
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
 handleFrontendMessage (CheckFESequent tree) =

@@ -4,15 +4,12 @@
 
 module Shared.Messages where
 
-import Logic.Abs (Sequent, Step)
 import Backend.Environment
 import Shared.FESequent (FESequent)
 
 data FrontendMessage
-    = CheckSequent Sequent
-    | CheckStringSequent String
+    = CheckStringSequent String
     | CheckFESequent FESequent
-    | CheckStep Step
     | OtherFrontendMessage String
     deriving (Show, Eq)
 

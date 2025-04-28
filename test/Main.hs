@@ -23,6 +23,19 @@ testProof proofPath = TestCase $ do
                            List.intercalate "\n" (map show warns)
             assertBool ("Proof is valid: " ++ proofPath) True
 
+testBadProofs :: FilePath -> Test
+testBadProofs proofPath = TestCase $ do
+    case checkJson proofPath of
+        Err warns env err -> 
+            assertFailure $ "Proof validation failed:\n" ++ 
+                           List.intercalate "\n" [show warn | warn <- warns] ++ 
+                           "\n" ++ showPos env ++ "\n" ++ show err
+        Ok warns _ -> do
+            unless (null warns) $ 
+                putStrLn $ "Warnings for " ++ proofPath ++ ":\n" ++ 
+                           List.intercalate "\n" (map show warns)
+            assertBool ("Proof is valid: " ++ proofPath) True
+
 collectJsonFiles :: FilePath -> IO [FilePath]
 collectJsonFiles dir = do
     contents <- listDirectory dir
