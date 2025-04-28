@@ -1,7 +1,0 @@
-|-(p&q)->p{
-    1: {
-        2: assume p&q;
-        AndEL[2] p;
-    }
-    IfI [1] (p&q)->p;
-}

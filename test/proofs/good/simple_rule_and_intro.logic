@@ -1,5 +1,0 @@
-A, B|-A & B{
-    1: prem A;
-    2: prem B;
-    AndI [1, 2] A & B;
-}

@@ -9,6 +9,7 @@ import System.Environment (getArgs)
 import Backend.TypeChecker
 import Backend.Environment
 import qualified Data.List as List
+import Data.Text (Text, unpack, pack, intercalate, strip)
 
 testProof :: FilePath -> Test
 testProof proofPath = TestCase $ do
@@ -132,7 +133,24 @@ testUDefRules = do
                 (Not (And (Pred (Predicate "B" [])) ( Pred (Predicate "C" []))))
             ))
         ]
+testParseForm :: Text -> Test
+testParseForm t = TestLabel (unpack t) (TestCase (case parseForm newEnv t of
+    Err _ _ err -> assertBool (show err) False
+    Ok _ _ -> assertBool "Dummy message" True
+    ))
 
+testParser :: Test
+testParser = TestList [
+            testParseForm "A",
+            testParseForm "!A",
+            testParseForm "A&B",
+            testParseForm "A|B",
+            testParseForm "A->B",
+            testParseForm "some x A",
+            testParseForm "all x A",
+            testParseForm "x=y",
+            testParseForm "bot"
+        ]
 main :: IO ()
 main = do
     -- Collect files
@@ -146,6 +164,7 @@ main = do
     let tests = TestList [
             TestLabel "Proofs" allProofTests,
             TestLabel "Replace" testReplace,
-            TestLabel "User Defined rules" testUDefRules
+            TestLabel "User Defined rules" testUDefRules,            
+            TestLabel "Test parser" testParser
           ]
     runTestTTAndExit tests

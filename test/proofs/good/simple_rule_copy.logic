@@ -1,5 +1,0 @@
-A, B|-A{
-    1: prem A;
-    2: prem B;
-    copy [1] A;
-}

@@ -15,7 +15,7 @@ module Backend.Helpers
     ---------------------------------------
     -- Utility functions
     ---------------------------------------
-    identToString,
+    idToString,
     getConclusion,
     convertToFEError,
     convertWarning,
@@ -25,7 +25,6 @@ module Backend.Helpers
     countSteps,
     findLastFormula,
     premToStep,
-    identToString,
     filterWarningsBySeverity,
     filterResultWarnings 
     
@@ -145,9 +144,9 @@ premToStep form = Line {
     _arguments = []
 }
 
--- | Convert an identifier to a string
-identToString :: Abs.Ident -> String
-identToString (Abs.Ident str) = str
+-- | Convert an ID to a string
+idToString :: Abs.Ident -> String
+idToString (Abs.Ident str) = str
 
 -- | Extract the conclusion from a proof
 getConclusion :: Proof -> Formula

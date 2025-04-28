@@ -4,21 +4,21 @@ ArgTerm.  Arg   ::= Term;
 ArgForm.  Arg   ::= Term ":=" Form;
 separator Arg   ",";
 
-FormPar.  Form5 ::= "(" Form ")";
-FormBot.  Form4 ::= "bot";
-FormEq.   Form4 ::= Term "=" Term;
-FormPred. Form4 ::= Pred;
+FormPar.    Form5 ::= "(" Form ")";
+FormBot.    Form4 ::= "bot";
+FormEq.     Form4 ::= Term "=" Term;
+FormPred.   Form4 ::= Pred;
 
-FormAll.  Form3 ::= "all" Ident Form3;
-FormSome. Form3 ::= "some" Ident Form3;
-FormNot.  Form3 ::= "!" Form3;
+FormAll.    Form3 ::= "all" Ident Form3;
+FormSome.   Form3 ::= "some" Ident Form3;
+FormNot.    Form3 ::= "!" Form3;
 
-FormAnd.  Form2 ::= Form2 "&" Form3; --left-associative(c convention)
-FormOr.   Form2 ::= Form2 "|" Form3; --left-associative(c convention)
+FormAnd.    Form2 ::= Form2 "&" Form3; --left-associative(c convention)
+FormOr.     Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
-FormImpl. Form1 ::= Form2 "->" Form1; --right-associative(book)
+FormImpl.   Form1 ::= Form2 "->" Form1; --right-associative(book)
 
-FormNil.  Form ::= "";
+FormNil.    Form ::= "";
 
 _. Form4 ::= Form5;
 _. Form3 ::= Form4;
@@ -28,22 +28,15 @@ _. Form ::= Form1;
 
 separator nonempty Form ",";
 
-Pred. Pred ::= Ident Params;
-Term. Term ::= Ident Params;
-
-Params. Params ::= "(" [Term] ")";
-params. Params ::= Nil;
-
-define params n = Params [];
+Pred0. Pred ::= Ident;
+PredN. Pred ::= Ident "(" [Term] ")";
+Term0. Term ::= Ident;
+TermN. Term ::= Ident "(" [Term] ")";
 
 LabelLine.  Label ::= Integer ":";
 LabelRange. Label ::= Integer "-" Integer ":";
 separator   Label "";
 
---Ugly but works?
-Nil. Nil ::= "";
-
 separator nonempty Term ",";
 separator nonempty Ident ",";
-
 comment "#";

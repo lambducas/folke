@@ -31,23 +31,14 @@ data Form
     | FormNil
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Pred = Pred Ident Params
+data Pred = Pred0 Ident | PredN Ident [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Term = Term Ident Params
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data Params = Params [Term]
+data Term = Term0 Ident | TermN Ident [Term]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Label = LabelLine Integer | LabelRange Integer Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data Nil = Nil
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-params :: Nil -> Params
-params = \ n -> Params []
 
 newtype Ident = Ident String
   deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)

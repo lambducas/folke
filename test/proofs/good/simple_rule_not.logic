@@ -1,8 +1,0 @@
-!A|-!A{
-    1: prem !A;
-    2: {
-        3:assume A;
-        NotE[3,1] bot;
-    }
-    NotI [2] !A;
-}

@@ -5,6 +5,8 @@ module Backend.TypeChecker (
     -- * Main API functions
     checkJson,
     handleFrontendMessage,
+    parseForm,
+    parseArgs
 ) where
 
 import qualified Logic.Abs as Abs
@@ -24,7 +26,6 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Data.Text (Text, unpack, pack, intercalate, strip)
-
 ----------------------------------------------------------------------
 -- Main API Functions
 ----------------------------------------------------------------------
@@ -104,15 +105,15 @@ checkPremsFE env (form:forms) = do
 -- | Check a frontend formula
 checkFormFE :: Env -> FE.FEFormula -> Result Formula
 checkFormFE env fef = do
-    f <- parseFormula env fef
+    f <- parseForm env fef
     checkForm env f
 
-      where	
-	parseFormula env t =
-	    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
-		Left err -> throwError createSyntaxError env $
-		    "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
-		Right form -> Ok [] form
+parseForm :: Env -> Text -> Result Abs.Form
+parseForm env t =
+    case pForm $ myLexer $ unpack $ replaceSpecialSymbolsInverse t of
+    Left err -> throwError createSyntaxError env $
+        "Failed to parse formula: '" ++ unpack t ++ "'\nError: " ++ err
+    Right form -> Ok [] form
 
 ----------------------------------------------------------------------
 -- Frontend Proof Checking
@@ -252,8 +253,8 @@ checkArg env (Abs.ArgLine i) = getRef env (RefLine i)
 checkArg env (Abs.ArgTerm term) = do
     term_t <- checkTerm env term
     Ok [] (env, ArgTerm term_t)
-checkArg env (Abs.ArgForm (Abs.Term x (Abs.Params [])) form) = do
-    let term_t = Term (identToString x) []
+checkArg env (Abs.ArgForm (Abs.Term0 x ) form) = do
+    let term_t = Term (idToString x) []
     new_env <- regTerm env term_t
     form_t <- checkForm new_env form
     Ok [] (new_env, ArgFormWith term_t form_t)
@@ -284,7 +285,7 @@ checkForm env f = case f of
 
     -- Handle universal quantification
     Abs.FormAll ident form -> do
-        let x = Term (identToString ident) []
+        let x = Term (idToString ident) []
         env1 <- regTerm env x
         env2 <- bindVar env1 x
         a_t <- checkForm env2 form
@@ -292,7 +293,7 @@ checkForm env f = case f of
 
     -- Handle existential quantification
     Abs.FormSome ident form -> do
-        let x = Term (identToString ident) []
+        let x = Term (idToString ident) []
         env1 <- regTerm env x
         env2 <- bindVar env1 x
         a_t <- checkForm env2 form
@@ -328,8 +329,8 @@ checkForm env f = case f of
 
 -- | Check a term
 checkTerm :: Env -> Abs.Term -> Result Term
-checkTerm env (Abs.Term ident (Abs.Params terms)) = do
-    let name = identToString ident
+checkTerm env (Abs.TermN ident terms) = do
+    let name = idToString ident
     case Map.lookup name (ids env) of
         Nothing -> do
             terms_t <- checkTerms env terms
@@ -344,6 +345,17 @@ checkTerm env (Abs.Term ident (Abs.Params terms)) = do
                 else do
                     terms_t <- checkTerms env terms
                     Ok [] (Term name terms_t)
+checkTerm env (Abs.Term0 ident) = do
+    let name = idToString ident
+    case Map.lookup name (ids env) of
+        Nothing -> Ok [] (Term name [])
+        Just (IDTypePred _) ->
+            Err [] env (createTypeError env (name ++ " is a predicate."))
+        Just (IDTypeTerm n) -> do
+            if n /= 0
+                then Err [] env (createTypeError env (name ++
+                      " is arity " ++ show n ++ " not 0."))
+                else Ok [] (Term name [])
 
 -- | Check a list of terms
 checkTerms :: Env -> [Abs.Term] -> Result [Term]
@@ -355,8 +367,8 @@ checkTerms env (x:xs) = do
 
 -- | Check a predicate
 checkPred :: Env -> Abs.Pred -> Result (Env, Predicate)
-checkPred env (Abs.Pred ident (Abs.Params terms)) = do
-    let name = identToString ident
+checkPred env (Abs.PredN ident terms) = do
+    let name = idToString ident
     case Map.lookup name (ids env) of
         Nothing -> do
             terms_t <- checkTerms env terms
@@ -373,4 +385,16 @@ checkPred env (Abs.Pred ident (Abs.Params terms)) = do
                 else do
                     terms_t <- checkTerms env terms
                     Ok [] (env, Predicate name terms_t)
+checkPred env (Abs.Pred0 ident) = do
+    let name = idToString ident
+    case Map.lookup name (ids env) of
+        Nothing -> Ok [] (env, Predicate name [])
 
+        Just (IDTypeTerm _) ->
+            Err [] env (createTypeError env (name ++ " is a term."))
+
+        Just (IDTypePred n) -> do
+            if n /= 0
+                then Err [] env (createTypeError env (name ++
+                      " is arity " ++ show n ++ " not 0."))
+                else Ok [] (env, Predicate name [])

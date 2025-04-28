@@ -1,8 +1,0 @@
-p|-(p->q)->q{
-    1: prem p;
-    2: {
-        2: assume p->q;
-        IfE[1, 2] q;
-    }
-    IfI[2] (p->q)->q;
-}

@@ -1,5 +1,0 @@
-A, A->B |- B{
-    1: prem A;
-    2: prem A->B;
-    IfE [1,2] B;
-}

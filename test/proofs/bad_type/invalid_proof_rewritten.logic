@@ -1,4 +1,0 @@
-p|-q{
-    1: prem p;
-    2: AndEL [1] p;
-}

@@ -1,5 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
-
+{-# LANGUAGE OverloadedStrings #-}
 module Backend.Environment (
     -- * Environment creation and manipulation
     Env,
