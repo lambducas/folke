@@ -29,6 +29,10 @@ import Data.Text (Text, unpack, pack, intercalate, strip)
 -- Main API Functions
 ----------------------------------------------------------------------
 
+-- | Warning severity filter configuration
+minWarningSeverity :: Severity
+minWarningSeverity = Low
+
 -- | Handle a message from the frontend
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (CheckStringSequent _) =
@@ -40,7 +44,10 @@ handleFrontendMessage (CheckStep _) =
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
 handleFrontendMessage (CheckFESequent tree) =
-    StringSequentChecked (convertToFEError (checkFE tree))
+    StringSequentChecked backendMessage
+
+       where backendMessage = convertToFEError $
+              filterResultWarnings (checkFE tree) onlySomeSeverityWarnings
 
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
@@ -58,6 +65,11 @@ checkJson filePath =  do
 
     -- Check the proof with the backend
     checkFE seq
+
+-- | Filter to only keep a specified severity warnings
+onlySomeSeverityWarnings :: [Warning] -> [Warning]
+onlySomeSeverityWarnings warnings = filterWarningsBySeverity warnings minWarningSeverity
+
 
 ----------------------------------------------------------------------
 -- Frontend Sequent Checking

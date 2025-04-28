@@ -957,7 +957,7 @@ data UDefRule = UDefRule [Formula] Formula
 ----------------------------------------------------------------------
 
 -- | Severity levels for warnings
-data Severity = Hint | Low | Medium | High deriving (Eq, Ord, Show)
+data Severity = Low | Medium | High deriving (Eq, Ord, Show)
 
 -- | Types of warnings that can be generated
 data WarningKind =

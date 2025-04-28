@@ -25,7 +25,9 @@ module Backend.Helpers
     countSteps,
     findLastFormula,
     premToStep,
-    identToString 
+    identToString,
+    filterWarningsBySeverity,
+    filterResultWarnings 
     
   ) where
 
@@ -97,6 +99,17 @@ validateRefs env =
     isProofReference (ArgProof _) = True  -- Don't count ArgProofs
     isProofReference _ = False
 -}
+
+
+-- | Filter warnings by minimum severity level
+filterWarningsBySeverity :: [Warning] -> Severity -> [Warning]
+filterWarningsBySeverity warnings minSeverity =
+    List.filter (\w -> warnSeverity w >= minSeverity) warnings
+
+-- | Filter warnings in a Result to only include high severity ones
+filterResultWarnings :: Result a -> ([Warning] -> [Warning]) -> Result a
+filterResultWarnings (Ok warnings value) f = Ok (f warnings) value
+filterResultWarnings (Err warnings env err) f = Err (f warnings) env err
 
 -- | Count steps for a sequent
 sequentSteps :: FE.FESequent -> [FEStep]
