@@ -5,12 +5,17 @@ module Frontend.Export (
   compileLatexToPDF
 ) where
 
+import Data.Char (isAlphaNum, isDigit)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.List (isPrefixOf, isSuffixOf)
 import Frontend.Types
 import Frontend.SpecialCharacters (replaceSpecialSymbols)
 import Frontend.Helper.General (getProofFileByPath)
 import Control.Lens ((^.))
+import qualified Data.Text.IO as T
+import System.Directory (listDirectory, doesFileExist)
+import Control.Monad (unless)
 
 import System.Exit (ExitCode(..))
 import System.FilePath (takeDirectory, dropExtension, (</>), takeFileName)
@@ -18,55 +23,75 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
 
+-- | Should we add pdflatex --version proc to check if pdflatex is installed?
+
+-- | Compile a LaTeX file to PDF format
 compileLatexToPDF :: FilePath -> IO (Either String FilePath)
 compileLatexToPDF texPath = do
-  -- Define output paths
-  let texDir = takeDirectory texPath
-      texName = takeFileName texPath
+  putStrLn $ "Starting LaTeX compilation for: " ++ texPath
+  
+  let texPathWithExt = ensureFileExtension ".tex" texPath
+  putStrLn $ "Path with .tex extension: " ++ texPathWithExt
+  
+  let texDir = takeDirectory texPathWithExt
+      texName = takeFileName texPathWithExt
       baseName = dropExtension texName
       finalPdfPath = texDir </> baseName <> ".pdf"
   
-  -- Use a temporary directory for the compilation process
+  
   withSystemTempDirectory "latex-temp" $ \tmpDir -> do
-    -- Copy the LaTeX file to the temp directory
     let tmpTexPath = tmpDir </> texName
-    copyFile texPath tmpTexPath
+    copyFile texPathWithExt tmpTexPath
     
-    -- Save the current directory
     originalDir <- getCurrentDirectory
     
-    -- Change to the temporary directory before running pdflatex
     setCurrentDirectory tmpDir
     
-    -- Run pdflatex in the temporary directory (using just the filename, not the path)
-    (exitCode, _, stderr) <- readCreateProcessWithExitCode (proc "pdflatex" 
-        ["-interaction=nonstopmode", texName]) ""
+    (exitCode, stdout, stderr) <- readCreateProcessWithExitCode (proc "pdflatex" 
+        ["-interaction=nonstopmode", "-file-line-error", texName]) ""
     
-    -- Change back to the original directory
+    unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
+    
     setCurrentDirectory originalDir
     
-    -- Check if compilation succeeded
-    case exitCode of
-      ExitSuccess -> do
-        -- Verify the PDF was created in the temp directory
-        let tmpPdfPath = tmpDir </> baseName <> ".pdf"
-        pdfExists <- doesFileExist tmpPdfPath
-        if pdfExists
-            then do
-              -- Copy only the PDF file back to the original location
-              copyFile tmpPdfPath finalPdfPath
-              return $ Right finalPdfPath
-            else
-              return $ Left "PDF file was not created despite successful compilation"
-      ExitFailure _ -> 
-          return $ Left $ "LaTeX compilation failed: " ++ stderr
+    let tmpPdfPath = tmpDir </> baseName <> ".pdf"
+    putStrLn $ "Looking for PDF at: " ++ tmpPdfPath
+    
+    tempFiles <- listDirectory tmpDir
+    
+    pdfExists <- doesFileExist tmpPdfPath
+    
+    if pdfExists
+      then do
+        putStrLn $ "Copying PDF from: " ++ tmpPdfPath ++ " to: " ++ finalPdfPath
+        copyFile tmpPdfPath finalPdfPath
+        finalExists <- doesFileExist finalPdfPath
+        if finalExists
+          then return $ Right finalPdfPath
+          else return $ Left "Failed to copy PDF to final destination"
+      else 
+        return $ Left $ "PDF was not generated: " ++ stderr
+
+ensureFileExtension :: String -> FilePath -> FilePath
+ensureFileExtension ext path =
+  if ext `isSuffixOf` path then path else path ++ ext
+
+saveLatexFile :: AppModel -> FilePath -> IO ()
+saveLatexFile model path = do
+  let texPath = ensureFileExtension ".tex" path
+  let latexContent = convertToLatex model
+  T.writeFile texPath latexContent
+  compileResult <- compileLatexToPDF texPath
+  case compileResult of
+    Right pdfPath -> putStrLn $ "PDF generated successfully: " ++ pdfPath
+    Left err -> putStrLn $ "PDF generation failed: " ++ err
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: AppModel -> Text
 convertToLatex model = T.unlines
   [ "\\documentclass{article}"
   , "\\usepackage{amsmath}"
-  , "\\usepackage{amssymb}" -- For \ulcorner symbol
+  , "\\usepackage{amssymb}"
   , "\\usepackage{logicproof}"
   , ""
   , "\\begin{document}"
@@ -75,18 +100,16 @@ convertToLatex model = T.unlines
   , "\\section*{" <> sectionTitle <> "}"
   , "\\end{center}"
   , ""
-  -- Extract the proof from the model and format it
   , formatProof model
   , ""
   , "\\end{document}"
   ]
   where
-    -- Get the filename from the current file path for the section title
     sectionTitle = case model ^. persistentState . currentFile of
       Nothing -> "Formal Proof"
-      Just _filePath -> "Some submission" -- T.pack $ takeBaseName filePath
+      Just _filePath -> "Some submission"
 
--- Format the proof as LaTeX
+-- | Format the proof as LaTeX
 formatProof :: AppModel -> Text
 formatProof model = maybe "% No proof available" formatSequent currentSeq
   where
@@ -119,39 +142,51 @@ formatSequent seq = T.unlines
         else T.intercalate ", " (map formatFormula (_premises seq)) <>
              " \\vdash " <> formatFormula (_conclusion seq)
 
-    -- Add the premises as initial lines in the proof
     premiseLines = if null (_premises seq)
                    then ""
                    else T.intercalate "\n" (map premiseLine (_premises seq))
 
     premiseLine premise = formatFormula premise <> " & premise \\\\"
 
-    formatFormula = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
+    formatFormula :: Text -> Text
+    formatFormula = T.pack . fixSpaces . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
+       where
+          fixSpaces = unwords . words
 
--- Format steps with proper enumeration
 formatSteps :: [FEStep] -> Text
 formatSteps steps = T.intercalate "\n" (zipWith (\s i -> formatStep s (i == length steps)) steps [1..])
 
--- Format a single step
 formatStep :: FEStep -> Bool -> Text
 formatStep (Line statement rule usedArguments arguments) isLast = fStatement <> " & " <> fRule <> fNewLine
   where
     fNewLine = if isLast then "" else " \\\\"
     fStatement = formatText statement
-    fRule = "$" <> formatText rule <> "$ " <> T.intercalate ", " (take usedArguments arguments)
+    fRule = "$" <> formatText rule <> "$ " <> T.intercalate ", " (map formatArgument (take usedArguments arguments))
     formatText = T.pack . replaceLatexSymbols . T.unpack . replaceSpecialSymbols
+    formatArgument arg = T.pack . fixSubscriptsOnly . T.unpack $ arg
+    
+    fixSubscriptsOnly [] = []
+    fixSubscriptsOnly ('x':'₀':rest) = "x_{0}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('x':'₁':rest) = "x_{1}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('x':'₂':rest) = "x_{2}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('x':'₃':rest) = "x_{3}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('x':'₄':rest) = "x_{4}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('x':'₅':rest) = "x_{5}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('y':'₀':rest) = "y_{0}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly ('y':'₁':rest) = "y_{1}" ++ fixSubscriptsOnly rest
+    fixSubscriptsOnly (c:rest) = c : fixSubscriptsOnly rest
 
--- Modified subproof formatting without bullets
 formatStep (SubProof steps) _ = "\\begin{subproof}\n" <> formatSteps steps <> "\n\\end{subproof}"
 
--- Replace special symbols with LaTeX equivalents
+-- | Replace special symbols with LaTeX equivalents
 replaceLatexSymbols :: String -> String
 replaceLatexSymbols input =
-  fixRuleNames $ fixArrows $ concatMap replaceSymbol input
+  fixSubscripts $ fixRuleNames $ fixArrows $ concatMap replaceSymbol input
   where
     replaceSymbol '&' = "\\land "
     replaceSymbol '|' = "\\lor "
     replaceSymbol '!' = "\\neg "
+    replaceSymbol '∨' = "\\lor "
     replaceSymbol '¬' = "\\neg "
     replaceSymbol '→' = "\\rightarrow "
     replaceSymbol '⊥' = "\\bot "
@@ -169,77 +204,73 @@ replaceLatexSymbols input =
     replaceSymbol '₇' = "_7"
     replaceSymbol '₈' = "_8"
     replaceSymbol '₉' = "_9"
+    replaceSymbol ' ' = " "
     replaceSymbol c = [c]
 
-    -- Handle arrows separately
     fixArrows ('-':'>':rest) = "\\rightarrow " ++ fixArrows rest
     fixArrows (c:rest) = c : fixArrows rest
     fixArrows [] = []
 
-    -- Fix rule names with proper LaTeX notation
+    fixSubscripts [] = []
+    fixSubscripts (c:'_':d:rest) 
+      | isAlphaNum c && isDigit d = 
+          c : "_{" ++ d : digits ++ "}" ++ fixSubscripts rest'
+      where
+        (digits, rest') = span isDigit rest
+    fixSubscripts ('_':d:rest)
+      | isDigit d = 
+          "_{" ++ d : digits ++ "}" ++ fixSubscripts rest'
+      where
+        (digits, rest') = span isDigit rest
+    fixSubscripts (c:rest) = c : fixSubscripts rest
+
     fixRuleNames = fixAndI . fixAndE . fixOrI . fixOrE . fixNotI . fixNotE . fixImplI . fixImplE . fixBotE . fixPBC . fixCopy . fixAllE . fixAllI . fixSomeE . fixSomeI . fixEqE . fixEqI . fixFresh . fixAssume
 
-    -- Standard inference rules
-    fixAndI = replace "AndI" "\\land \\mathrm{I}"                                            -- Conjunction Introduction
-    fixAndE = replace "AndER" "\\land \\mathrm{ER}" . replace "AndEL" "\\land \\mathrm{EL}"  -- Conjunction Elimination
-    fixOrI = replace "OrIR" "\\lor \\mathrm{IR}" . replace "OrIL" "\\lor \\mathrm{IL}"       -- Disjunction Introduction
-    fixOrE = replace "OrE" "\\lor \\mathrm{E}"                                               -- Disjunction Elimination
-    fixNotI = replace "NotI" "\\neg \\mathrm{I}"                                             -- Negation Introduction
-
-    -- Fix various forms of negation elimination
+    fixAndI = replace "AndI" "\\land \\mathrm{I}"
+    fixAndE = replace "AndER" "\\land \\mathrm{ER}" . replace "AndEL" "\\land \\mathrm{EL}"
+    fixOrI = replace "OrIR" "\\lor \\mathrm{IR}" . replace "OrIL" "\\lor \\mathrm{IL}"
+    fixOrE = replace "OrE" "\\lor \\mathrm{E}"
+    fixNotI = replace "NotI" "\\neg \\mathrm{I}"
     fixNotE = replaceAll [
-        ("N otE", "\\neg \\mathrm{E}"),       -- Fix space issue
-        ("NotE", "\\neg \\mathrm{E}"),        -- Standard format
-        ("Not¬E", "\\neg \\mathrm{E}"),       -- Mixed format
-        ("N ot¬E", "\\neg \\mathrm{E}"),      -- Mixed format with space
-        ("¬E", "\\neg \\mathrm{E}")           -- Unicode symbol format
+        ("N otE", "\\neg \\mathrm{E}"),
+        ("NotE", "\\neg \\mathrm{E}"),
+        ("Not¬E", "\\neg \\mathrm{E}"),
+        ("N ot¬E", "\\neg \\mathrm{E}"),
+        ("¬E", "\\neg \\mathrm{E}")
       ]
-
-    -- Fix various forms of implication introduction
     fixImplI = replaceAll [
         ("IfI", "\\rightarrow \\mathrm{I}"),
         ("ImplI", "\\rightarrow \\mathrm{I}"),
         ("->I", "\\rightarrow \\mathrm{I}")
       ]
-
-    -- Fix various forms of implication elimination
     fixImplE = replaceAll [
         ("IfE", "\\rightarrow \\mathrm{E}"),
         ("ImplE", "\\rightarrow \\mathrm{E}"),
         ("->E", "\\rightarrow \\mathrm{E}")
       ]
-
-    fixBotE = replace "BotE" "\\bot \\mathrm{E}"   -- Bottom Elimination
-    fixPBC = replace "PBC" "\\mathrm{PBC}"         -- Proof by Contradiction
-    fixCopy = replace "copy" "\\mathrm{Copy}"      -- Copy rule
-
+    fixBotE = replace "BotE" "\\bot \\mathrm{E}"
+    fixPBC = replace "PBC" "\\mathrm{PBC}"
+    fixCopy = replace "copy" "\\mathrm{Copy}"
     fixAllE = replace "AllE" "\\forall \\mathrm{E}"
     fixAllI = replace "AllI" "\\forall \\mathrm{I}"
-
     fixSomeE = replace "SomeE" "\\exists \\mathrm{E}"
     fixSomeI = replace "SomeI" "\\exists \\mathrm{I}"
-
     fixEqE = replace "EqE" "= \\mathrm{E}"
     fixEqI = replace "EqI" "= \\mathrm{I}"
-    
     fixFresh = replace "fresh" "\\mathrm{fresh}"
     fixAssume = replace "assume" "\\mathrm{assumption}"
 
-    -- Helper to apply multiple replacements
-    replaceAll :: [(String, String)] -> String -> String
-    replaceAll [] str = str
-    replaceAll ((old, new):rest) str = replaceAll rest (replace old new str)
-
--- Helper function to replace strings
 replace :: String -> String -> String -> String
 replace old new = go
   where
-    go str@(c:cs)
-      | take (length old) str == old = new ++ go (drop (length old) str)
-      | otherwise = c : go cs
     go [] = []
+    go str@(c:cs)
+      | old `isPrefixOf` str = new ++ go (drop (length old) str)
+      | otherwise = c : go cs
 
--- Calculates maximum depth of subproofs
+replaceAll :: [(String, String)] -> String -> String
+replaceAll replacements text = foldl (\t (old, new) -> replace old new t) text replacements
+
 subProofDepth :: FESequent -> Integer
 subProofDepth seq = maximum $ map (md 0) (_steps seq)
   where

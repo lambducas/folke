@@ -1,13 +1,3 @@
-{- |
-Module      : Backend.Environment
-Description : Environment handling for the proof checker
-Copyright   : (c) Your Organization, 2023
-License     : GPL-3
-
-This module provides environment manipulation functions for the proof checker,
-including rule implementations, variable binding, and formula manipulation.
--}
-
 {-# LANGUAGE InstanceSigs #-}
 
 module Backend.Environment (

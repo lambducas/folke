@@ -1,12 +1,3 @@
-{- |
-Module      : Backend.Helpers
-Description : Helper functions for the proof checker
-Copyright   : (c) Your Organization, 2023
-License     : GPL-3
-
-This module provides utility functions for the proof checker, including
-error handling, result manipulation, and proof verification helpers.
--}
 module Backend.Helpers
   (
     ---------------------------------------

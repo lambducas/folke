@@ -1,13 +1,3 @@
-{- |
-Module      : Backend.TypeChecker
-Description : Type checking and verification for logical proofs
-Copyright   : (c) Your Organization, 2023
-License     : GPL-3
-
-This module provides functions to verify the correctness of logical proofs.
-It handles both the syntactic correctness (type checking) and semantic correctness
-(proof verification).
--}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use lambda-case" #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
