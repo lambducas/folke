@@ -368,7 +368,8 @@ buildUI wenv model = widgetTree where
         spacer, spacer,
 
         h3 "Extra character shortcuts",
-        paragraph "Replace A and E in formula fields",
+        paragraph "Replace the following alphabetic characters with mathematical symbols in proofs:",
+        paragraph " A -> ∀\n E -> ∃\n v -> ∨\n a -> ∧" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
         labeledCheckbox "Enabled" (preferences . replaceAEInFormula),
         spacer, spacer
 

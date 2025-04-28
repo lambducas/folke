@@ -29,7 +29,7 @@ symbolLookup = [
 
   -- Or
   ("|", "∨"),
-  ("v", "∨"),
+  --("v", "∨"),
   ("+", "∨"),
   ("f∨", "for"), -- Disable `or` replacement when writing forall
   ("or", "∨"),

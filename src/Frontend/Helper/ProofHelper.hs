@@ -102,7 +102,7 @@ removePremiseFromProof idx sequent = FESequent premises conclusion (steps' seque
 
 -- | Updates the n:th premise in proof
 editPremisesInProof :: Int -> Text -> FESequent -> FESequent
-editPremisesInProof idx newText sequent = FESequent premises conclusion steps
+editPremisesInProof idx newText sequent = FESequent { _premises = premises, _conclusion = conclusion, _steps = steps }
   where
     premises = _premises sequent & element idx .~ replaceSpecialSymbols newText
     conclusion = _conclusion sequent
@@ -110,7 +110,7 @@ editPremisesInProof idx newText sequent = FESequent premises conclusion steps
 
 -- | Updates the conclusion in proof
 editConclusionInProof :: Text -> FESequent -> FESequent
-editConclusionInProof newText sequent = FESequent premises conclusion steps
+editConclusionInProof newText sequent = FESequent { _premises = premises, _conclusion = conclusion, _steps = steps }
   where
     premises = _premises sequent
     conclusion = replaceSpecialSymbols newText
@@ -126,7 +126,7 @@ editFormulaInProof model path newText seq = replaceSteps f seq
     f steps = zipWith (\p idx -> el path newText [idx] p) steps [0..]
     el editPath newText currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath newText (currentPath ++ [idx]) p) p [0..]
     el editPath newText currentPath f@(Line _statement rule usedArguments arguments)
-      | editPath == currentPath = Line (parseFormulaInput model oldText newText) rule usedArguments arguments
+      | editPath == currentPath = Line { _statement = parseFormulaInput model oldText newText, _rule = rule, _usedArguments = usedArguments, _arguments = arguments }
       | otherwise = f
 
 -- | Replace special characters and also A, E if setting is enabled (always right now...)
@@ -146,6 +146,8 @@ parseFormulaInput model oldText newText
 
     replaceSingleChar 'A' = '∀'
     replaceSingleChar 'E' = '∃'
+    replaceSingleChar 'v' = '∨'
+    replaceSingleChar 'a' = '∧'
     replaceSingleChar t = t
 
 firstMissmatch :: (Num t) => Text -> Text -> t
