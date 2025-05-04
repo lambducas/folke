@@ -329,7 +329,7 @@ ruleMetaDataMap = Map.fromList [
     ("AllE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
     ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
     ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("SomeI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]})
+    ("SomeI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]})
   ]
 
 symbolsList :: [Text]

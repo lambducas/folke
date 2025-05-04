@@ -52,6 +52,7 @@
 | SomeI     | existsI, ∃I              |
 
 ### Frontend
+- [ ] Support user defined rules (derived rule from proof)
 - [ ] Fix full Markdown support
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Auto-checker should only display critical errors and skip e.g empty line errors
