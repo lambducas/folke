@@ -104,7 +104,7 @@
                     {
                         "_arguments": [
                             "12",
-                            "y₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ z (S(z) ∧ ¬M(z))",

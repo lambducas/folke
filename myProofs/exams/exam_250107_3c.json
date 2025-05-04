@@ -136,7 +136,7 @@
                             {
                                 "_arguments": [
                                     "15",
-                                    "x₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x Q(x)",

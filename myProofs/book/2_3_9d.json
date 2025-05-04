@@ -75,7 +75,7 @@
                                     {
                                         "_arguments": [
                                             "8",
-                                            "x₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x (P(x) → S)",
@@ -168,7 +168,7 @@
                     {
                         "_arguments": [
                             "17",
-                            "t"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) → S)",

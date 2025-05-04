@@ -45,7 +45,7 @@
                     {
                         "_arguments": [
                             "5",
-                            "f(x₀)"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y (x₀ = f(y))",

@@ -62,7 +62,7 @@
                             {
                                 "_arguments": [
                                     "7",
-                                    "y₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
@@ -110,7 +110,7 @@
                             {
                                 "_arguments": [
                                     "12",
-                                    "y₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",

@@ -62,7 +62,7 @@
                             {
                                 "_arguments": [
                                     "8",
-                                    "x₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x (Q(x) ∧ R(x))",
@@ -104,7 +104,7 @@
                     {
                         "_arguments": [
                             "12",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) ∧ ¬R(x))",

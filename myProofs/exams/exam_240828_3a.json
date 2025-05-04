@@ -70,7 +70,7 @@
                     {
                         "_arguments": [
                             "9",
-                            "b"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x S(x)",

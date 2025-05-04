@@ -53,7 +53,7 @@
                                     {
                                         "_arguments": [
                                             "7",
-                                            "w₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ y R(x₀, y)",
@@ -94,7 +94,7 @@
                                     {
                                         "_arguments": [
                                             "11",
-                                            "z₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x R(x, x)",

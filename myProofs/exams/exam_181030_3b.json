@@ -104,7 +104,7 @@
                     {
                         "_arguments": [
                             "12",
-                            "w"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ z (S(z) ∧ ¬P(z))",

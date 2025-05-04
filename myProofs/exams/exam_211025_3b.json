@@ -46,7 +46,7 @@
                     {
                         "_arguments": [
                             "6",
-                            "b"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) ∧ Q(x))",
@@ -77,7 +77,7 @@
                     {
                         "_arguments": [
                             "9",
-                            "b"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y ¬(a = y)",
@@ -87,7 +87,7 @@
                     {
                         "_arguments": [
                             "10",
-                            "a"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x ∃ y ¬(x = y)",

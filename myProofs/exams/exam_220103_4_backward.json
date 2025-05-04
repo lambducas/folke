@@ -54,7 +54,7 @@
                                             {
                                                 "_arguments": [
                                                     "6",
-                                                    "y₀"
+                                                    ""
                                                 ],
                                                 "_rule": "∃I",
                                                 "_statement": "∃ y (P(x₀) ∧ T(y, x₀))",
@@ -64,7 +64,7 @@
                                             {
                                                 "_arguments": [
                                                     "7",
-                                                    "x₀"
+                                                    ""
                                                 ],
                                                 "_rule": "∃I",
                                                 "_statement": "∃ x ∃ y (P(x) ∧ T(y, x))",

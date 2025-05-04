@@ -22,7 +22,7 @@
                     {
                         "_arguments": [
                             "2",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y x₀ = y",

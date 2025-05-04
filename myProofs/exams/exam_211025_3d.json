@@ -43,7 +43,7 @@
                     {
                         "_arguments": [
                             "4",
-                            "t"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ z (f(x₀, t) = f(x₀, z) → t = z)",

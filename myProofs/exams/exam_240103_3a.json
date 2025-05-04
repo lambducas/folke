@@ -83,7 +83,7 @@
                             {
                                 "_arguments": [
                                     "11",
-                                    "x₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x (R(x) ∧ S(x))",
@@ -125,7 +125,7 @@
                     {
                         "_arguments": [
                             "15",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) ∧ ¬S(x))",

@@ -33,7 +33,7 @@
                     {
                         "_arguments": [
                             "4",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y P(x₀, y)",
@@ -72,7 +72,7 @@
                     {
                         "_arguments": [
                             "8",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (∃ y P(x, y) ∧ Q(x, x))",

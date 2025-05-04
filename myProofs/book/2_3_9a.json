@@ -43,7 +43,7 @@
                             {
                                 "_arguments": [
                                     "5",
-                                    "x₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x Q(x)",

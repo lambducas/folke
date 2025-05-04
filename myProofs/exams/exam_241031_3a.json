@@ -17,7 +17,7 @@
                     {
                         "_arguments": [
                             "2",
-                            "t"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x P(x)",
@@ -59,7 +59,7 @@
             {
                 "_arguments": [
                     "6",
-                    "t"
+                    ""
                 ],
                 "_rule": "∃I",
                 "_statement": "∃ x (P(x) → Q(x))",

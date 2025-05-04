@@ -44,7 +44,7 @@
                             {
                                 "_arguments": [
                                     "6",
-                                    "z₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y R(x₀, y)",
@@ -94,7 +94,7 @@
                                     {
                                         "_arguments": [
                                             "11",
-                                            "x₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x R(x, x)",

@@ -96,7 +96,7 @@
                                     {
                                         "_arguments": [
                                             "11",
-                                            "y₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x P(x, x)",
@@ -128,7 +128,7 @@
                             {
                                 "_arguments": [
                                     "14",
-                                    "y₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y ¬(x₀ = y)",
@@ -138,7 +138,7 @@
                             {
                                 "_arguments": [
                                     "15",
-                                    "x₀"
+                                    ""
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x ∃ y ¬(x = y)",

@@ -89,7 +89,7 @@
                                             {
                                                 "_arguments": [
                                                     "9",
-                                                    "x₀"
+                                                    ""
                                                 ],
                                                 "_rule": "∃I",
                                                 "_statement": "∃ x (P(x) → ∀ y P(y))",
@@ -145,7 +145,7 @@
                     {
                         "_arguments": [
                             "14",
-                            "t"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) → ∀ y P(y))",

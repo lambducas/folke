@@ -876,6 +876,26 @@ ruleSomeE env forms _ =
 
 -- | Introduction of existential quantifier
 ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
+ruleSomeI env [(i, ArgForm a)] (Some x phi) = case Set.toList (freeVarForm a) of
+    [] -> Err [] env ( createRuleArgError env i " did not contain any variabels.")
+    vars -> forVarsruleSomeI env i a phi x vars
+ruleSomeI env [(_, ArgForm _)] r = 
+    Err [] env (createRuleConcError env 
+         ("The conclusion must be an exist formula not " ++ show r ++ "."))
+ruleSomeI env [(i, _)] _ = 
+    Err [] env (createRuleArgError env i "Must be a formula.")
+ruleSomeI env forms _ = 
+    Err [] env (createArgCountError env (toInteger $ List.length forms) 1)
+
+
+forVarsruleSomeI :: Env -> Integer -> Formula -> Formula -> Term -> [Term] -> Result Formula
+forVarsruleSomeI env i _ _ _ [] = Err [] env ( createRuleArgError env i " found no possable matches")
+forVarsruleSomeI env i a phi x (t: vars) = do
+    b <- replaceInFormula env t x a
+    if b == phi then Ok [] (Some x b)
+    else forVarsruleSomeI env i a phi x vars
+{-
+ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeI env [(_, ArgForm a), (j, ArgTerm t@(Term _ _))] (Some x phi) = 
     case isFreeFor env t x phi of
         Err warns env_e err -> Err warns env_e err
@@ -898,7 +918,7 @@ ruleSomeI env [(i, _), (_, _)] _ =
     Err [] env (createRuleArgError env i "Must be a formula.")
 ruleSomeI env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
-
+-}
 
 ----------------------------------------------------------------------
 -- Type aliases

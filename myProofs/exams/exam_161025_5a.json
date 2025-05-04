@@ -78,7 +78,7 @@
                                     {
                                         "_arguments": [
                                             "9",
-                                            "x₀"
+                                            ""
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x (P(x) ∧ R(x))",

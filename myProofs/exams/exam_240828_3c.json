@@ -86,7 +86,7 @@
                     {
                         "_arguments": [
                             "11",
-                            "z₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ u u = f(u)",

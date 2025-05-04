@@ -93,7 +93,7 @@
                     {
                         "_arguments": [
                             "10",
-                            "x₀"
+                            ""
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x ¬P(x)",
