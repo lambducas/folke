@@ -472,6 +472,23 @@ freeVarForm (Some x f) = Set.difference (freeVarForm f) (Set.singleton x)
 freeVarForm (Not f) = freeVarForm f
 freeVarForm Nil = Set.empty
 
+termsInTerm :: Term -> Set.Set Term
+termsInTerm (Term s []) = Set.singleton (Term s [])
+termsInTerm f@(Term _ terms) = Set.union (Set.singleton f) (Set.unions [termsInTerm term | term <- terms])
+
+termsInForm :: Formula -> Set.Set Term
+termsInForm Bot = Set.empty
+termsInForm (Pred (Predicate _ terms)) = Set.unions [termsInTerm term | term <- terms]
+termsInForm (Eq l r) = Set.union (termsInTerm l) (termsInTerm r)
+termsInForm (And l r) = Set.union (termsInForm l) (termsInForm r)
+termsInForm (Or l r) = Set.union (termsInForm l) (termsInForm r)
+termsInForm (Impl l r) = Set.union (termsInForm l) (termsInForm r)
+termsInForm (All x f) = Set.union (termsInForm f) (Set.singleton x)
+termsInForm (Some x f) = Set.union (termsInForm f) (Set.singleton x)
+termsInForm (Not f) = termsInForm f
+termsInForm Nil = Set.empty
+
+
 -- | Replace a term in another term
 replaceInTerm :: Env -> Term -> Term -> Term -> Result Term
 replaceInTerm env var@(Term x []) t a@(Term y []) = case isFreeVar env var of
@@ -543,8 +560,8 @@ replaceInFormula env x@(Term _ []) t (Not a) = do
     Ok [] (Not a_new)
 replaceInFormula env (Term _ []) _ Nil = Err [] env 
     (createUnknownError env "Trying to do a replace on nil formula.")
-replaceInFormula env x _ _ = Err [] env 
-    (createUnknownError env (show x ++ " needs to be a variable."))
+replaceInFormula env x t phi = Err [] env 
+    (createUnknownError env (show x ++ " must be an function and not a function."))
 
 -- | Compare two formulas with environment
 cmp :: Env -> Formula -> Formula -> Bool
@@ -891,34 +908,9 @@ ruleSomeI env forms _ =
 forVarsruleSomeI :: Env -> Integer -> Formula -> Formula -> Term -> [Term] -> Result Formula
 forVarsruleSomeI env i _ _ _ [] = Err [] env ( createRuleArgError env i " found no possable matches")
 forVarsruleSomeI env i a phi x (t: vars) = do
-    b <- replaceInFormula env t x a
-    if b == phi then Ok [] (Some x b)
+    b <- replaceInFormula env x t phi
+    if cmp env a b then Ok [] (Some x phi)
     else forVarsruleSomeI env i a phi x vars
-{-
-ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeI env [(_, ArgForm a), (j, ArgTerm t@(Term _ _))] (Some x phi) = 
-    case isFreeFor env t x phi of
-        Err warns env_e err -> Err warns env_e err
-        Ok warns False -> Err warns env (createRuleArgError env j 
-                         (show t ++ " needs to be free for " ++ 
-                          show x ++ " in " ++ show phi))
-        Ok warns1 True -> case replaceInFormula env x t phi of
-            Err warns env_e err -> Err warns env_e err
-            Ok warns2 c -> if cmp env a c then Ok (warns1 ++ warns2) (Some x phi) 
-                          else Err [] env (createRuleConcError env 
-                              (show phi ++ "[" ++ show x ++ "/" ++ 
-                               show t ++ "] resulted in " ++ show c ++ 
-                               " and not " ++ show a ++ " as expected."))
-ruleSomeI env [(_, ArgForm _), (_, ArgTerm (Term _ []))] r = 
-    Err [] env (createRuleConcError env 
-         ("The conclusion must be an exist formula not " ++ show r ++ "."))
-ruleSomeI env [(_, ArgForm _), (j, _)] _ = 
-    Err [] env (createRuleArgError env j "Must be a term.")
-ruleSomeI env [(i, _), (_, _)] _ = 
-    Err [] env (createRuleArgError env i "Must be a formula.")
-ruleSomeI env forms _ = 
-    Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
--}
 
 ----------------------------------------------------------------------
 -- Type aliases
@@ -1064,14 +1056,14 @@ data Env = Env {
 
 instance Show Term where
     show (Term name []) = name
-    show (Term name terms) = name ++ "(" ++ show terms ++ ")"
+    show (Term name terms) = name ++ "(" ++ (List.intercalate ", " [show term| term <- terms]) ++ ")"
 
 instance Eq Term where
     Term a as == Term b bs = a == b && as == bs
 
 instance Show Predicate where
     show (Predicate name []) = name
-    show (Predicate name terms) = name ++ "(" ++ show terms ++ ")"
+    show (Predicate name terms) = name ++ "(" ++ (List.intercalate ", " [show term| term <- terms]) ++ ")"
 
 instance Eq Predicate where
     (==) :: Predicate -> Predicate -> Bool

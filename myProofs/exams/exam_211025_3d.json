@@ -42,22 +42,20 @@
                     },
                     {
                         "_arguments": [
-                            "4",
-                            ""
+                            "4"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ z (f(x₀, t) = f(x₀, z) → t = z)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
-                            "5",
-                            "t"
+                            "5"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y ∃ z (f(x₀, y) = f(x₀, z) → y = z)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     }
                 ],
