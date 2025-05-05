@@ -42,12 +42,11 @@
                             },
                             {
                                 "_arguments": [
-                                    "5",
-                                    ""
+                                    "5"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x P(x, y₀)",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             }
                         ],

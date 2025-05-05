@@ -878,7 +878,7 @@ ruleSomeE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeE env [(_, ArgForm (Some x a)), (_, ArgProof (Proof [x_0] [b] c))] _ = 
     case replaceInFormula env x x_0 a of
         Err warns env_e err -> Err warns env_e err
-        Ok warns d -> if cmp env b d then Ok [] c 
+        Ok warns d -> if cmp env b d then Ok warns c 
                      else Err warns env (createRuleConcError env 
                           (show a ++ "[" ++ show x_0 ++ "/" ++ show x ++ 
                            "] resulted in " ++ show d ++ " and not " ++ 
@@ -893,7 +893,7 @@ ruleSomeE env forms _ =
 
 -- | Introduction of existential quantifier
 ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleSomeI env [(i, ArgForm a)] (Some x phi) = case Set.toList (freeVarForm a) of
+ruleSomeI env [(i, ArgForm a)] (Some x phi) = case Set.toList (termsInForm a) of
     [] -> Err [] env ( createRuleArgError env i " did not contain any variabels.")
     vars -> forVarsruleSomeI env i a phi x vars
 ruleSomeI env [(_, ArgForm _)] r = 
@@ -907,10 +907,9 @@ ruleSomeI env forms _ =
 
 forVarsruleSomeI :: Env -> Integer -> Formula -> Formula -> Term -> [Term] -> Result Formula
 forVarsruleSomeI env i _ _ _ [] = Err [] env ( createRuleArgError env i " found no possable matches")
-forVarsruleSomeI env i a phi x (t: vars) = do
-    b <- replaceInFormula env x t phi
-    if cmp env a b then Ok [] (Some x phi)
-    else forVarsruleSomeI env i a phi x vars
+forVarsruleSomeI env i a phi x (t: vars) = case replaceInFormula env x t phi of
+    Ok warns b | cmp env a b -> Ok warns (Some x phi)
+    _ -> forVarsruleSomeI env i a phi x vars
 
 ----------------------------------------------------------------------
 -- Type aliases
