@@ -85,7 +85,9 @@ module Backend.Environment (
     createSyntaxError,
 
    -- | Warning creation
-   createEmptyLineWarning
+   createEmptyLineWarning,
+   createUnusedRefsWarning
+
 
 ) where
 
@@ -1037,3 +1039,17 @@ createEmptyLineWarning env = Warning {
       warnSuggestion = Just "Consider removing empty lines to improve proof clarity"
 }
 
+
+-- | Create a warning for unused references
+createUnusedRefsWarning :: [(Ref, Arg)] -> Warning
+createUnusedRefsWarning unusedRefs = Warning {
+    warnLocation = Nothing,
+    warnSeverity = Medium,
+    warnKind = StyleIssue "Unused references",
+    warnMessage = "Some references were defined but never used: " ++
+                  List.intercalate ", " [showRef r | (r, _) <- unusedRefs],
+    warnSuggestion = Just "Consider removing unused references for cleaner proofs"
+}
+
+showRef :: Ref -> String
+showRef = show

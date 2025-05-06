@@ -30,12 +30,11 @@ module Backend.Helpers
     
   ) where
 
-import Data.Text hiding (map, null)
+import Data.Text hiding (length, map, null)
 import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
-import Debug.Trace (trace)
 
 import Backend.Environment
 import Shared.Messages
@@ -63,41 +62,23 @@ clearWarnings (Err _ env err) = Err [] env err
 -- Utility Functions
 ----------------------------------------------------------------------
 
--- | TODO: Fix
 validateRefs :: Env -> Result ()
 validateRefs env =
     let allRefs = Map.toList (refs env)
-        unusedRefs = [(ref, arg) |
-                     (ref, (count, arg)) <- allRefs,
-                     count == 0]
-        unusedRefsStr = List.intercalate ", " [show ref ++ "(" ++ show count ++ ")" | 
-                                              (ref, (count, _)) <- allRefs]
-    in trace ("All refs: " ++ unusedRefsStr) $
-       if not (null unusedRefs)
-       then Ok [Warning {
-                warnLocation = Nothing,
-                warnSeverity = Low,
-                warnKind = StyleIssue "Unused references",
-                warnMessage = "Some references were defined but never used: " ++ 
-                              List.intercalate ", " [show r | (r, _) <- unusedRefs],
-                warnSuggestion = Just "Consider removing unused references for cleaner proofs"
-            }] ()
-       else return ()
-         
-{-          let unusedRefsStr = List.intercalate ", " [show ref | (ref, _) <- unusedRefs]
-           in if null unusedRefsStr
-              then Ok [] ()
-              else Ok [Warning {
-                  warnLocation = Nothing,
-                  warnSeverity = Low,
-                  warnKind = StyleIssue "Unused references",
-                  warnMessage = "Some references were defined but never used: " ++ unusedRefsStr,
-                  warnSuggestion = Just "Consider removing unused references for cleaner proofs"
-              }] ()
-  where
-    isProofReference (ArgProof _) = True  -- Don't count ArgProofs
-    isProofReference _ = False
--}
+        premises = getPrems env
+
+        isSkippable ref arg = case arg of
+                ArgProof _ -> True
+                ArgForm form -> form == findLastFormula env || isPremiseRef ref premises
+                _ -> False
+
+        unusedRefs = [(ref, arg) | (ref, (count, arg)) <- allRefs,
+                     count == 0 && not (isSkippable ref arg)]
+    in
+    if not (null unusedRefs)
+    then Ok [createUnusedRefsWarning unusedRefs] ()
+    else return ()
+
 
 
 -- | Filter warnings by minimum severity level
@@ -118,6 +99,16 @@ sequentSteps sequent = map premToStep (_premises sequent) ++ _steps sequent
 countSteps :: FEStep -> Integer
 countSteps (Line {}) = 1
 countSteps (SubProof steps) = sum $ map countSteps steps
+
+-- | Check if a reference points to a premise
+isPremiseRef :: Ref -> [Formula] -> Bool
+isPremiseRef (RefLine n) premises =
+            n <= toInteger (length premises) && n > 0
+isPremiseRef _ _ = False
+
+-- | Show this show that
+showRef :: Ref -> String
+showRef = show
 
 -- | Find the last formula in the environment
 findLastFormula :: Env -> Formula
