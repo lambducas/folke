@@ -320,7 +320,7 @@ buildUI wenv model = widgetTree where
   renderMarkdownTab content = fastVScroll (renderMarkdown wenv model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
 
   renderPreferenceTab :: WidgetNode AppModel AppEvent
-  renderPreferenceTab = hstack [
+  renderPreferenceTab = fastVScroll $ hstack [
       vstack [
         h3 "App scale",
         paragraph "The application needs to be restarted before changes take effect",
@@ -388,7 +388,7 @@ buildUI wenv model = widgetTree where
 
       subsection "First Order Logic",
       vstack $ map (ruleItem . snd) visualRuleNames1
-    ]) `styleBasic` [borderL 1 dividerColor, rangeWidth 100 500]
+    ]) `styleBasic` [borderL 1 dividerColor, rangeWidth 150 500]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
       ruleItem r = box_ [onClick NoEvent] (symbolSpan r)

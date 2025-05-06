@@ -11,7 +11,7 @@ import Monomer.Main.Platform (getPlatform)
 import qualified Monomer.Lens as L
 import Control.Lens
 import Control.Exception (SomeException, catch)
-import Control.Monad (filterM, when, unless)
+import Control.Monad (filterM)
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, isInfixOf)
@@ -264,6 +264,7 @@ listDirectoryRecursive directory = do
       appendTop = ((directory ++ "/") ++)
 
 -- | Find directory where assets are placed
+getAssetBasePath :: IO FilePath
 getAssetBasePath = do
   os <- getPlatform
   let isMac = os == "Mac OS X"

@@ -14,8 +14,7 @@ import Monomer.Main.Platform (getPlatform)
 import Control.Concurrent (newChan)
 import Data.Maybe (fromMaybe)
 import Control.Concurrent.STM (newTChanIO)
-import System.Directory (makeAbsolute, getCurrentDirectory)
-import System.FilePath.Posix ((</>), takeDirectory)
+import System.FilePath.Posix ((</>))
 import Data.Text (pack)
 
 main :: IO ()
@@ -24,7 +23,6 @@ main = do
   let isMac = os == "Mac OS X"
 
   assetBasePath <- getAssetBasePath
-  print assetBasePath
 
   -- Read preferences from file or use default on error/first time opening app
   readPrefs <- readPreferences

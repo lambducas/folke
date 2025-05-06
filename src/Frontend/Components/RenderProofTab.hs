@@ -13,7 +13,7 @@ import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
 import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
-import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Logic.Par (myLexer, pForm)
@@ -31,6 +31,7 @@ import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
 import Data.Set (fromList, toList)
+import Data.Maybe (fromMaybe)
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -96,6 +97,8 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         hstack [
           proofStatusLabel,
           filler,
+          labeledCheckbox "Auto-check proof" (autoCheckProofTracker . acpEnabled),
+          spacer,
           box $ button "Save proof" (SaveFile file),
           spacer,
           box $ button "Check proof" (CheckProof file)
@@ -131,34 +134,28 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
   proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
   proofTreeUI sequent = vstack [
-      vstack_ [childSpacing] [
-        hstack_ [childSpacing] [
+      hgrid_ [childSpacing] [
+        vstack_ [childSpacing] [
           h2 "Premises",
-          filler,
-          labeledCheckbox "Auto-check proof" (autoCheckProofTracker . acpEnabled),
-          spacer
+          vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
+          widgetIf (null $ _premises sequent) (span "No premises"),
+          hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
         ],
-        vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-        widgetIf (null $ _premises sequent) (span "No premises")
-      ],
-      spacer,
-      hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"],
-      spacer, spacer,
-
-      vstack_ [childSpacing] [
-        h2 "Conclusion",
-        spacer,
-        box_ [alignLeft] (
-          someKeystrokes [
-            ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
-            ("Down", NextFocus 1, True),
-            ("Enter", NextFocus 1, True)
-          ] (symbolStyle $ textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"]
-            `styleBasic` [maxWidth 600]
-            `styleBasic` [styleIf isConclusionError (border 1 red)]
-            `nodeKey` "conclusion.input")
-        )
-      ],
+        vstack_ [childSpacing] [
+          h2 "Conclusion",
+          box_ [alignLeft] (
+            someKeystrokes [
+              ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
+              ("Down", NextFocus 1, True),
+              ("Enter", NextFocus 1, True)
+            ] (symbolStyle $ textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"]
+              -- `styleBasic` [maxWidth 600]
+              `styleBasic` [styleIf isConclusionError (border 1 red)]
+              `nodeKey` "conclusion.input")
+          )
+        ]
+      ]
+        `styleBasic` [paddingR 20],
       spacer, spacer,
 
       h2 "Proof",
@@ -174,7 +171,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
     where
       isConclusionError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
       nrPremises = length (_premises sequent)
-      premiseLine premise idx = box_ [alignLeft] (hstack [
+      premiseLine premise idx = box_ [alignLeft] $ hstack [
           someKeystrokes [
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
             ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
@@ -187,7 +184,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           spacer,
           fastTooltip "Remove line" $ trashButton (RemovePremise idx),
           spacer
-        ] `styleBasic` [maxWidth 400]) `nodeKey` ("premise.line." <> showt idx)
+        ]
+          `nodeKey` ("premise.line." <> showt idx)
+          -- `styleBasic` [maxWidth 400]
         where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
 
       -- pfDropTarget idx w = dropTarget_ ((\msg -> Print (show msg <> " to " <> show idx)) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
@@ -322,7 +321,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = hstack [
-              symbolSpan (labels !! idx),
+              symbolSpan currentLabel,
               someKeystrokes [
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
@@ -347,6 +346,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               isFirstArg = idx == 0
               isLastArg = idx + 1 == usedArguments
               isRuleArgError = isError || not (validateRuleArgument argument)
+              currentLabel = fromMaybe "" $ maybeIndex labels idx
               labels = case Data.Map.lookup (parseRule rule) ruleMetaDataMap of
                 Nothing -> repeat ""
                 Just (RuleMetaData _ l) -> l
