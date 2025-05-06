@@ -154,7 +154,7 @@ testParser = TestList [
 main :: IO ()
 main = do
     -- Collect files
-    jsonFiles <- collectJsonFiles "myProofs"
+    jsonFiles <- collectJsonFiles "proofs"
     
     -- Create tests for all proof files
     let allProofTests = TestList (testProofs testProof jsonFiles)

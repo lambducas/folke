@@ -1,5 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Backend.Types (
     -- Core data types
     Term(..),
@@ -202,16 +203,15 @@ instance Show Formula where
     show Bot = "⊥"
     show Nil = "Nil"
 
--- | Temporary placeholder implementation for Formula equality 
--- Note: In a real implementation, this should be updated to avoid circular dependencies
+-- | Deprecated
 instance Eq Formula where
     Pred a == Pred b = a == b
     And a1 a2 == And b1 b2 = a1 == b1 && a2 == b2
     Or a1 a2 == Or b1 b2 = a1 == b1 && a2 == b2
     Impl a1 a2 == Impl b1 b2 = a1 == b1 && a2 == b2
     Eq a1 a2 == Eq b1 b2 = a1 == b1 && a2 == b2
-    All x a == All y b = x == y && a == b  -- Simplified version
-    Some x a == Some y b = x == y && a == b  -- Simplified version
+    All x a == All y b = x == y && a == b 
+    Some x a == Some y b = x == y && a == b
     Not a == Not b = a == b
     Bot == Bot = True
     Nil == Nil = True
@@ -254,9 +254,6 @@ instance Show Error where
            (if null (errSuggestions e)
              then ""
              else "\nSuggestions:\n" ++ unlines (map ("- " ++) (errSuggestions e)))
-
--- Functor, Applicative, and Monad instances for Result
--- Note: These require a functioning Env type, so we need to implement them carefully
 
 instance Functor Result where
     fmap f (Ok warns x) = Ok warns (f x)

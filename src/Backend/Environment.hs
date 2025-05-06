@@ -1,5 +1,6 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Backend.Environment (
     -- * Environment creation and manipulation
     Env,
@@ -930,7 +931,7 @@ createRuleArgError :: Env -> Integer -> String -> Error
 createRuleArgError env argNum message = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleArgError argNum message,
-  errMessage = "Invalid argument to rule: " ++ message,  -- Include message here
+  errMessage = message,
   errContext = Just $ "Problem with argument #" ++ show argNum,
   errSuggestions = ["Check that you're using the correct formula type"]
 }
@@ -939,7 +940,7 @@ createArgCountError :: Env -> Integer -> Integer -> Error
 createArgCountError env actual expected = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleArgCountError actual expected,
-  errMessage = "Incorrect number of arguments",
+  errMessage = "Incorrect number of arguments: ",
   errContext = Just $ "Expected " ++ show expected ++ " arguments, got " ++ show actual,
   errSuggestions = ["Check that you're using the correct rule for your situation"]
 }
@@ -959,7 +960,7 @@ createTypeError :: Env -> String -> Error
 createTypeError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = TypeError message,
-  errMessage = "Type mismatch in proof: " ++ message,
+  errMessage = "Type mismatch in proof: ",
   errContext = Just message,
   errSuggestions = ["Ensure you're using the correct type of expressions"]
 }
@@ -979,7 +980,7 @@ createRuleNotFoundError :: Env -> String -> Error
 createRuleNotFoundError env ruleName = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleNotFoundError ruleName,
-  errMessage = "Rule not found: " ++ ruleName,
+  errMessage = "Rule not found: ",
   errContext = Just $ "The rule '" ++ ruleName ++ "' is not defined",
   errSuggestions = [
     "Check for typos in the rule name",
@@ -993,7 +994,7 @@ createUnknownError :: Env -> String -> Error
 createUnknownError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = UnknownError message,
-  errMessage = "Unexpected error occurred" ++ message,
+  errMessage = "Unexpected error occurred",
   errContext = Just message,
   errSuggestions = []
 }
