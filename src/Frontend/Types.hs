@@ -291,8 +291,9 @@ newtype AppEnv = AppEnv {
 
 makeLenses 'AppEnv
 
-feFileExt :: String
-feFileExt = "json"
+-- | File extension used for proofs
+feFileExts :: [String]
+feFileExts = ["folke", "ndp", "json"]
 
 $(deriveJSON defaultOptions ''SelectableTheme)
 $(deriveJSON defaultOptions ''HistoryEvent)

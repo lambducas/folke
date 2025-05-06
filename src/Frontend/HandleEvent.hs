@@ -15,7 +15,6 @@ import Frontend.Preferences
 import Frontend.Export (convertToLatex, compileLatexToPDF)
 import Frontend.History ( applyRedo, applyUndo )
 import Shared.Messages
-import Logic.Par (myLexer)
 
 import Monomer
 import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
@@ -407,7 +406,7 @@ handleEvent env wenv node model evt = case evt of
           sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
         else if fullPath == preferencePath && folderPath == "" then
           sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
-        else if takeExtension fullPath == "." <> feFileExt then
+        else if takeExtension fullPath `elem` map ("." <>) feFileExts then
           do
             let seq = parseProofFromJSON pContentText
             sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
@@ -492,7 +491,7 @@ handleEvent env wenv node model evt = case evt of
       Nothing -> []
       Just seq -> [
         SyncTask $ do
-          mNewPath <- openSaveDialog "json"
+          mNewPath <- openSaveDialog (head feFileExts)
           return $ AppRunProducer (\sendMsg -> do
             case mNewPath of
               Nothing -> return ()

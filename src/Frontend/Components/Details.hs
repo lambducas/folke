@@ -224,13 +224,14 @@ fileItem appModel indent filePath = box_ [expandContent, onBtnReleased handleBtn
       Nothing -> filePath
       Just wd -> makeRelative wd filePath
     ext = takeExtension filePath
+    isProofExt = ext `elem` map ("." <>) feFileExts
     iconIdent
       | ext == ".md" = remixMarkdownFill
-      | ext == "." <> feFileExt = remixBracesFill --remixSurveyFill
+      | isProofExt = remixBallPenFill --remixSurveyFill
       | otherwise = remixMenu2Line
     iconColor
       | ext == ".md" = Just $ rgb 94 156 255
-      | ext == "." <> feFileExt = Just $ rgb 255 130 0 --Just $ rgb 255 130 0
+      | isProofExt = Just accentColor
       | otherwise = Nothing
     displayLabel = pack (takeFileName filePath)
 
@@ -238,6 +239,7 @@ fileItem appModel indent filePath = box_ [expandContent, onBtnReleased handleBtn
     dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
     hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
     selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
+    accentColor = selTheme ^. L.userColorMap . at "accent" . non def
 
 loadedFilesAreEmpty :: LoadedFiles -> Bool
 loadedFilesAreEmpty loadedFiles = null (loadedFiles ^. files) && null (loadedFiles ^. directories)

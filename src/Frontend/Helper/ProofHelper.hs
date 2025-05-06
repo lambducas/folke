@@ -148,6 +148,7 @@ parseFormulaInput model oldText newText
     replaceSingleChar 'E' = '∃'
     replaceSingleChar 'v' = '∨'
     replaceSingleChar 'a' = '∧'
+    replaceSingleChar '-' = '¬'
     replaceSingleChar t = t
 
 firstMissmatch :: (Num t) => Text -> Text -> t

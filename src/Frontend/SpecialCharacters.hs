@@ -15,11 +15,11 @@ symbolLookup = [
   -- Negate
   ("!", "¬"),
   ("~", "¬"),
-  ("-", "¬"),
 
   -- Implies
   (">", "→"),
   ("->", "→"),
+  ("¬>", "→"), -- Fix for when "-" becomes negation
 
   -- And
   ("&", "∧"),
