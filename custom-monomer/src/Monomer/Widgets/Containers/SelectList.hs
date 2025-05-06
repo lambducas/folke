@@ -317,10 +317,13 @@ makeSelectList widgetData items makeRow config state = widget where
     mergeRequiredFn = fromMaybe (const (/=)) (_slcMergeRequired config)
     result = isReload || mergeRequiredFn wenv oldItems items
 
-  merge wenv node oldNode oldState = resultNode newNode where
+  -- merge wenv node oldNode oldState = resultNode newNode where
+  merge wenv node oldNode oldState = resultReqs newNode reqs where
     selected = currentValue wenv
     newSl = fromMaybe (-1) (Seq.elemIndexL selected items)
+    itemsChanged = _prevItems oldState /= items
     newHl
+      | itemsChanged = 0 -- Reset highlighted item when items change
       | newSl /= _slIdx oldState = newSl
       | otherwise = _hlIdx oldState
     newState = oldState {
@@ -331,6 +334,7 @@ makeSelectList widgetData items makeRow config state = widget where
     newNode = node
       & L.widget .~ makeSelectList widgetData items makeRow config newState
       & L.children .~ createSelectListChildren wenv node
+    reqs = itemScrollTo wenv newNode newHl
 
   mergePost wenv node oldNode oldState newState result = newResult where
     newResult = updateResultStyle wenv config result oldState newState
