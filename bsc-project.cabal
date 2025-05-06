@@ -35,7 +35,7 @@ license:            BSD-3-Clause
 license-file:       LICENSE
 
 -- The package author(s).
-author:             lambducas
+author:             lambducas, TheCoder5550, antonnordbeck, Jiep-man, Jagger002
 
 -- An email address to which users can send suggestions, bug reports, and patches.
 maintainer:         lucasmol@student.chalmers.se
@@ -61,6 +61,7 @@ library
                     , Frontend.SpecialCharacters
                     , Frontend.Types
                     , Backend.Helpers
+                    , Backend.Types
                     , Frontend.Parse
                     , Logic.Abs
                     , Logic.Par
@@ -124,6 +125,7 @@ executable bsc
                   Backend.TypeChecker
                 , Backend.Environment
                 , Backend.Helpers
+                , Backend.Types
                 , Shared.Messages
                 , Logic.Abs
                 , Logic.Par
