@@ -1,56 +1,66 @@
 # Proof Editor User Guide
-A quick guide to get you started
+A quick guide to get you started.
 
-## Create your first proof
-Begin by [creating a proof-file](runinternalevent://CreateEmptyProof):
-1. Press `Ctrl+N` to create an empty proof
+## Create new proof
+Press `Ctrl+N` or go to `File > New Proof` to [create an empty proof](runinternalevent://CreateEmptyProof)
 
-## Write your proof
-### Premises
-Enter each premise on a new line by pressing "+ Premise".
+## Open proof
+Press `Ctrl+O` or go to `File > Open File`. Then select the proof you want to open.
 
-### Conclusion
-Enter the conclusion in the conclusion-field
+## Save proof
+When a proof is edited a dot appears next to the name in its tab. Press `Ctrl+S` or go to `File > Save File` to save the current file. The dot will disappear indicating that the file has been saved.
 
-### Proof
-0. You do not need to write the premises again as they are automatically added to your proof.
-1. Enter the formula in the first input on line `1.` and the rule in the second input.
-2. Press `Enter` or on "↓+" to insert a new line.
+## Write a proof
+1. Open or create a new proof
+2. **Premises:** Enter each premise on a seperate line by pressing `+ Premise`.
+3. **Conclusion:** Enter the conclusion in the conclusion-field
+4. **Proof:** Enter each statement and rule on seperate lines. Below is a list of helpful actions.
+5. **Validate proof:** Enable `Auto-check proof` using the checkbox or press `Check proof` or `Ctrl+R` to check if your proof is correct.
 
-#### Create subproof
-If you need to create a subproof below the current line, first insert a line and then convert it to a subproof
-1. Press `Enter` or "↓+" to insert a new line.
-2. Press `Ctrl+Tab` or "→☐" to convert the newly created line into a subproof.
+## Helpful actions and shortcuts
+* **Insert new line below:** Press `↓+` or `Enter` when the last argument-field is selected to insert a line below the current line.
+* **Insert new line above:** Press `↑+` to insert a line above the current line.
+* **Create subproof:** Press `→☐` or `Ctrl+Tab` to convert the current line to a subproof.
+* **Undo subproof:** Press `☒` or `Ctrl+Shift+Tab` to remove the box around a subproof containing a single line.
+* **Close subproof:** Press `⏎` or `Ctrl+Enter` to insert a line below the current subproof.
+* **Other actions:** Right-click a line to see all available actions.
 
-#### Symbol table
-<!-- | Name | Accepted Symbols |
-|---|---|
-| And | & |
-| Or | \| |
-| Implies | -> | -->
+## Quick-type characters
+Open the rule sidebar from `View > Toggle Rules Dictionary` to get a keypad with a special characters. It is also possible to use a keyboard to write the characters for:
+* **Negate**: ¬, !  ~
+* **Implies**: → -> >
+* **Conjunction**: ∧ & ^ * and con
+* **Disjunction**: ∨ | + or dis
+* **Contradiction**: ⊥ bot # XX
+* **Universal quantifier**: ∀ all forall
+* **Existential quantifier**: ∃ some exists
+* **Subscript**: ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ _0 _1 _2 _3 _4 _5 _6 _7 _8 _9
 
-#### Rules
+Extra shortcuts can be enabled in preferences.
 
-##### Keyboard Shortcuts
+## Export proof to Latex
+Navigate to `File` in the menu bar and press `Export to LaTeX` or `Export to LaTeX and PDF` to export your proof as LaTeX code or as a ready-to-use PDF.
 
-#### Exporting your proofs
-You can either export your proof as LaTeX code or as a ready-to-use PDF
+### Export to LaTeX with PDF compilation
+Automatically compiles the LaTeX source code into a PDF document. Creates both .tex source file and .pdf file at your chosen location.
 
-##### Export to LaTeX
-- Converts your proof into tex-typed source code with good formatting using ams and logicproof libraries
-- In the save dialog you choose the save location
-
-##### Export to LaTeX with PDF compilation
-- Same as Export to LaTeX
-- Automatically compiles the LaTeX source code into a PDF document
-- Creates both .tex source file and .pdf file at your chosen location
-- Make sure you have pdflatex installed on your system:
+Make sure you have pdflatex installed on your system:
   - On Ubuntu/Debian: `sudo apt-get install texlive-latex-base`
   - On macOS with Homebrew: `brew install basictex`
   - On Windows: Install MiKTeX or TeX Live
 
-##### Benefits of PDF Export
-- Get an immediately viewable document
-- Easy to share with others
-- Professional typesetting of mathematical formulas
-- Ready for printing or submission
+## Open File Explorer
+Press `Ctrl+B` or `View > Toggle File Explorer` to toggle the file explorer sidebar.
+
+## Open rules dictionary
+Press `View > Toggle Rules Dictionary` to toggle the rules dictionary.
+
+## Set working directory
+Press `Open folder` in the File Explorer or `File > Set Working Directory` and select a folder.
+
+## Find file
+Press `Ctrl+P` or `View > Search for File` and enter a search query to find a file in the current working directory. Note that nothing will happen if no working directory is set.
+
+## Open settings/preferences
+Press `Ctrl+Shift+P`, `View > Open preferences` or press the cog icon in the left sidebar.
+
