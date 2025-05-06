@@ -17,10 +17,15 @@ getPreferencePath = do
   basePath <- getXdgDirectory XdgConfig ("./" <> appName)
   return $ basePath </> "preferences.json"
 
-getpersistentStatePath :: IO FilePath
-getpersistentStatePath = do
+getPersistentStatePath :: IO FilePath
+getPersistentStatePath = do
   basePath <- getXdgDirectory XdgState ("./" <> appName)
   return $ basePath </> "persistent_state.json"
+
+getTmpBasePath :: IO FilePath
+getTmpBasePath = do
+  basePath <- getXdgDirectory XdgState ("./" <> appName)
+  return $ basePath </> "_tmp"
 
 -- Preferences are config data and should be stored
 -- at the right place on the users system (location: ~/.config or %APPDATA%)
@@ -59,7 +64,7 @@ savePreferences model messageOnSuccess sendMsg = do
 -- stored with preferences (location: ~/.local/state or %LOCALAPPDATA%)
 readPersistentState :: IO (Maybe PersistentState)
 readPersistentState = do
-  persistentStatePath <- getpersistentStatePath
+  persistentStatePath <- getPersistentStatePath
   exists <- doesFileExist persistentStatePath
   if exists then
     do
@@ -74,7 +79,7 @@ readPersistentState = do
 savePersistentState :: AppModel -> t -> (t -> IO ()) -> IO ()
 savePersistentState model messageOnSuccess sendMsg = do
   let json = (BL.unpack . encodePretty) (model ^. persistentState)
-  persistentStatePath <- getpersistentStatePath
+  persistentStatePath <- getPersistentStatePath
   result <- try (writeFile persistentStatePath json) :: IO (Either SomeException ())
   case result of
     Left e -> print e

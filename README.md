@@ -54,8 +54,13 @@
 ### Frontend
 - [ ] Support user defined rules (derived rule from proof)
 - [ ] Fix full Markdown support
+- [ ] Line numbers become missaligned when there are errors/warnings taking up 2 or more lines
 - [ ] When inserting a line after last line in subproof (using update ref mode), references to subproof don't update
 - [ ] Auto-checker should only display critical errors and skip e.g empty line errors
+- [ ] Fix suggestion dropdown (does not scroll to top + selected item needs to reset when outside range)
+- [ ] Toolbar instead of sidebar for symbol keypad??
+- [ ] Check proof on open
+- [ ] Send flags to backend when checking proof manually vs automatically
 - [x] ~~Change button color in light theme~~
 - [x] ~~Add support for up/down arrow on suggested input field~~
 - [x] ~~Fix nativefiledialog on mac~~

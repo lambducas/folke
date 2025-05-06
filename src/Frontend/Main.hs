@@ -7,15 +7,25 @@ import Frontend.HandleEvent ( handleEvent )
 import Frontend.Themes ( customLightTheme )
 import Frontend.Communication (startCommunication)
 import Frontend.Preferences (readPreferences, readPersistentState)
+import Frontend.Helper.General (getAssetBasePath)
 
 import Monomer
 import Monomer.Main.Platform (getPlatform)
 import Control.Concurrent (newChan)
 import Data.Maybe (fromMaybe)
 import Control.Concurrent.STM (newTChanIO)
+import System.Directory (makeAbsolute, getCurrentDirectory)
+import System.FilePath.Posix ((</>), takeDirectory)
+import Data.Text (pack)
 
 main :: IO ()
 main = do
+  os <- getPlatform
+  let isMac = os == "Mac OS X"
+
+  assetBasePath <- getAssetBasePath
+  print assetBasePath
+
   -- Read preferences from file or use default on error/first time opening app
   readPrefs <- readPreferences
   let prefs = fromMaybe defaultPrefs readPrefs
@@ -32,21 +42,18 @@ main = do
   channel <- newTChanIO
   let env = AppEnv channel
 
-  os <- getPlatform
-  let isMac = os == "Mac OS X"
-
   let createModel = model prefs state currentFrontendChan currentBackendChan
   let createHandleEvent = handleEvent env
-  let createConfig = config isMac prefs state
+  let createConfig = config assetBasePath isMac prefs state
 
   -- Start Monomer application
   startApp createModel createHandleEvent buildUI createConfig
 
   where
     -- Application configuration
-    config isMac prefs state = [
+    config assetBasePath isMac prefs state = [
       appWindowTitle "Proof Editor",
-      appWindowIcon "./assets/images/icon.png",
+      appWindowIcon (pack (assetBasePath </> "assets/images/icon.png")),
       appScaleFactor (_appScale prefs),
       appWindowState (_windowMode state),
       appTheme customLightTheme,
@@ -56,26 +63,26 @@ main = do
       appResizeEvent AppResize,
       appModelFingerprint show,
 
-      appFontDef "Regular" "./assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf",
-      appFontDef "Medium" "./assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf",
-      appFontDef "Bold" "./assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf",
+      appFontDef "Regular" (pack (assetBasePath </> "assets/fonts/MPLUS1p/MPLUS1p-Regular.ttf")),
+      appFontDef "Medium" (pack (assetBasePath </> "assets/fonts/MPLUS1p/MPLUS1p-Medium.ttf")),
+      appFontDef "Bold" (pack (assetBasePath </> "assets/fonts/MPLUS1p/MPLUS1p-Bold.ttf")),
 
-      appFontDef "Dyslexic" "assets/fonts/Dyslexic/open-dyslexic.ttf",
+      appFontDef "Dyslexic" (pack (assetBasePath </> "assets/fonts/Dyslexic/open-dyslexic.ttf")),
 
-      appFontDef "Roboto_Regular" "./assets/fonts/Roboto/Roboto-Regular.ttf",
-      appFontDef "Roboto_Medium" "./assets/fonts/Roboto/Roboto-Medium.ttf",
-      appFontDef "Roboto_Bold" "./assets/fonts/Roboto/Roboto-Bold.ttf",
+      appFontDef "Roboto_Regular" (pack (assetBasePath </> "assets/fonts/Roboto/Roboto-Regular.ttf")),
+      appFontDef "Roboto_Medium" (pack (assetBasePath </> "assets/fonts/Roboto/Roboto-Medium.ttf")),
+      appFontDef "Roboto_Bold" (pack (assetBasePath </> "assets/fonts/Roboto/Roboto-Bold.ttf")),
 
-      appFontDef "Comic_Sans_Thin" "assets/fonts/ldfcomicsans-font/Ldfcomicsanshairline-5PmL.ttf",
-      appFontDef "Comic_Sans_Regular" "assets/fonts/ldfcomicsans-font/Ldfcomicsanslight-6dZo.ttf",
-      appFontDef "Comic_Sans_Medium" "assets/fonts/ldfcomicsans-font/Ldfcomicsans-jj7l.ttf",
-      appFontDef "Comic_Sans_Bold" "assets/fonts/ldfcomicsans-font/Ldfcomicsansbold-zgma.ttf",
+      appFontDef "Comic_Sans_Thin" (pack (assetBasePath </> "assets/fonts/ldfcomicsans-font/Ldfcomicsanshairline-5PmL.ttf")),
+      appFontDef "Comic_Sans_Regular" (pack (assetBasePath </> "assets/fonts/ldfcomicsans-font/Ldfcomicsanslight-6dZo.ttf")),
+      appFontDef "Comic_Sans_Medium" (pack (assetBasePath </> "assets/fonts/ldfcomicsans-font/Ldfcomicsans-jj7l.ttf")),
+      appFontDef "Comic_Sans_Bold" (pack (assetBasePath </> "assets/fonts/ldfcomicsans-font/Ldfcomicsansbold-zgma.ttf")),
 
-      appFontDef "Symbol_Regular" "./assets/fonts/JuliaMono/JuliaMono-Regular.ttf",
-      appFontDef "Symbol_Medium" "./assets/fonts/JuliaMono/JuliaMono-Medium.ttf",
-      appFontDef "Symbol_Bold" "./assets/fonts/JuliaMono/JuliaMono-Bold.ttf",
+      appFontDef "Symbol_Regular" (pack (assetBasePath </> "assets/fonts/JuliaMono/JuliaMono-Regular.ttf")),
+      appFontDef "Symbol_Medium" (pack (assetBasePath </> "assets/fonts/JuliaMono/JuliaMono-Medium.ttf")),
+      appFontDef "Symbol_Bold" (pack (assetBasePath </> "assets/fonts/JuliaMono/JuliaMono-Bold.ttf")),
 
-      appFontDef "Remix" "./assets/fonts/remixicon.ttf"
+      appFontDef "Remix" (pack (assetBasePath </> "assets/fonts/remixicon.ttf"))
       ] ++ [appRenderOnMainThread | isMac]
       
     -- Initial states

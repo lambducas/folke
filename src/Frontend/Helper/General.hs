@@ -7,18 +7,20 @@ import Shared.Messages
 import Backend.Environment
 
 import Monomer
+import Monomer.Main.Platform (getPlatform)
 import qualified Monomer.Lens as L
 import Control.Lens
 import Control.Exception (SomeException, catch)
-import Control.Monad (filterM)
+import Control.Monad (filterM, when, unless)
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, isInfixOf)
 import Text.Printf
 import System.Random
-import System.FilePath.Posix (equalFilePath, takeDirectory)
+import System.FilePath.Posix (equalFilePath, takeDirectory, (</>))
 import System.Process (callCommand)
 import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
+import System.Environment (getExecutablePath)
 
 -- https://www.youtube.com/watch?v=aS8O-F0ICxw
 -- | Safely gets head of list
@@ -260,3 +262,15 @@ listDirectoryRecursive directory = do
     where
       appendTop :: FilePath -> FilePath
       appendTop = ((directory ++ "/") ++)
+
+-- | Find directory where assets are placed
+getAssetBasePath = do
+  os <- getPlatform
+  let isMac = os == "Mac OS X"
+
+  if isMac
+    then do
+      exePath <- getExecutablePath
+      return $ takeDirectory exePath </> "../Resources/"
+    else do
+      return "./"

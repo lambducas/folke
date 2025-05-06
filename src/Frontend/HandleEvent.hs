@@ -334,8 +334,9 @@ handleEvent env wenv node model evt = case evt of
   CreateEmptyProof -> [
       Producer (\sendMsg -> do
         randomFileName <- getTmpFileName
-        createDirectoryIfMissing False "./_tmp"
-        let randomPath = ("./_tmp/" <> randomFileName) FPP.<.> "tmp"
+        tmpBasePath <- getTmpBasePath
+        createDirectoryIfMissing False tmpBasePath
+        let randomPath = (tmpBasePath </> randomFileName) FPP.<.> "tmp"
 
         result <- try (writeFile randomPath "") :: IO (Either SomeException ())
         case result of
@@ -370,9 +371,17 @@ handleEvent env wenv node model evt = case evt of
       sendMsg (OpenFile_ preferencePath "")
     )]
 
-  OpenGuide -> handleEvent env wenv node model (OpenFile_ "user_guide_en.md" "./docs")
+  OpenGuide -> [ Producer (\sendMsg -> do
+      basePath <- getAssetBasePath
+      let docsPath = basePath </> "docs"
+      sendMsg $ OpenFile_ "user_guide_en.md" docsPath
+    ) ]
 
-  OpenWelcome -> handleEvent env wenv node model (OpenFile_ "welcome.md" "./docs")
+  OpenWelcome -> [ Producer (\sendMsg -> do
+      basePath <- getAssetBasePath
+      let docsPath = basePath </> "docs"
+      sendMsg $ OpenFile_ "welcome.md" docsPath
+    ) ]
 
   OpenFileFromFileSystem -> [ SyncTask openDiag ]
     where
