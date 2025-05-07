@@ -250,7 +250,7 @@ handleEvent env wenv node model evt = case evt of
   RemoveLine updateRef path -> applyOnCurrentProofAndRecordSequentHistory model removeLine ++ focusAction
     where
       removeLine = removeFromProof path True . offsetFunc
-      offsetFunc seq = if updateRef then offsetAllRefs (-1) lineNumber True seq else seq
+      offsetFunc seq = if updateRef then offsetAllRefs path (-1) lineNumber True seq else seq
         where lineNumber = pathToLineNumberOffsetPremises seq path
 
       focusAction = fromMaybe [] (getCurrentSequent model >>= Just . getFocusAction)
@@ -557,7 +557,7 @@ handleEvent env wenv node model evt = case evt of
     ]
 
   AutoCheckProof
-    | model ^. autoCheckProofTracker . acpEnabled -> [ Task $ sendProofDidChange env ]
+    | model ^. preferences . autoCheckProofTracker . acpEnabled -> [ Task $ sendProofDidChange env ]
     | otherwise -> []
 
   BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]

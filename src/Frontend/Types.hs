@@ -89,7 +89,8 @@ data Preferences = Preferences {
   _logicFont :: String,
   _fontSize :: Double,
   _appScale :: Double,
-  _replaceAEInFormula :: Bool
+  _replaceAEInFormula :: Bool,
+  _autoCheckProofTracker :: AutoCheckProofTracker
 } deriving (Eq, Show)
 
 data PersistentState = PersistentState {
@@ -146,7 +147,6 @@ data AppModel = AppModel {
   _frontendChan :: Chan FrontendMessage,
   _backendChan :: Chan BackendMessage,
   _proofStatus :: Maybe FEResult,
-  _autoCheckProofTracker :: AutoCheckProofTracker,
 
   _preferences :: Preferences,
   _persistentState :: PersistentState
@@ -300,6 +300,7 @@ $(deriveJSON defaultOptions ''HistoryEvent)
 $(deriveJSON defaultOptions ''History)
 $(deriveJSON defaultOptions ''File)
 $(deriveJSON defaultOptions ''MainWindowState)
+$(deriveJSON defaultOptions ''AutoCheckProofTracker)
 $(deriveJSON defaultOptions ''Preferences)
 $(deriveJSON defaultOptions ''PersistentState)
 

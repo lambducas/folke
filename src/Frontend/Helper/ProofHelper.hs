@@ -90,7 +90,7 @@ addPremiseToProof idx premise sequent = FESequent premises conclusion (steps' se
   where
     premises = insertAt premise idx (_premises sequent)
     conclusion = _conclusion sequent
-    steps' seq = _steps (offsetAllRefs 1 (toInteger idx+1) False seq)
+    steps' seq = _steps (offsetAllRefs [] 1 (toInteger idx+1) False seq)
 
 -- | Removes the n:th premise in proof and updates all line references
 removePremiseFromProof :: Int -> FESequent -> FESequent
@@ -98,7 +98,7 @@ removePremiseFromProof idx sequent = FESequent premises conclusion (steps' seque
   where
     premises = _premises sequent ^.. folded . ifiltered (\i _ -> i /= idx)
     conclusion = _conclusion sequent
-    steps' seq = _steps (offsetAllRefs (-1) (toInteger idx+1) True seq)
+    steps' seq = _steps (offsetAllRefs [] (-1) (toInteger idx+1) True seq)
 
 -- | Updates the n:th premise in proof
 editPremisesInProof :: Int -> Text -> FESequent -> FESequent
@@ -233,7 +233,7 @@ insertInProof path insertThis seq = replaceInProof parentPath g fixedSeq
 insertAfterAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
 insertAfterAndMaybeUpdateRefs path insertThis updateRef = insertAfterProof path insertThis . offsetFunc
   where
-    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber False seq else seq
+    offsetFunc seq = if updateRef then offsetAllRefs path 1 lineNumber False seq else seq
       where
         d = evalPath path seq
         isSubProof (SubProof {}) = True
@@ -246,7 +246,7 @@ insertAfterAndMaybeUpdateRefs path insertThis updateRef = insertAfterProof path 
 insertBeforeAndMaybeUpdateRefs :: FormulaPath -> FEStep -> Bool -> FESequent -> FESequent
 insertBeforeAndMaybeUpdateRefs path insertThis updateRef = insertBeforeProof path insertThis . offsetFunc
   where
-    offsetFunc seq = if updateRef then offsetAllRefs 1 lineNumber False seq else seq
+    offsetFunc seq = if updateRef then offsetAllRefs path 1 lineNumber False seq else seq
       where lineNumber = pathToLineNumberOffsetPremises seq path
 
 -- | Inserts a line/subproof below a given path
@@ -398,9 +398,9 @@ to lines with linenumbers greater than or equal to a given value.
 Optionally invalidate line numbers equal to threshold (Used when
 removing line)
 -}
-offsetAllRefs :: Integer -> Integer -> Bool -> FESequent -> FESequent
-offsetAllRefs by after invalidateEqual = applyOnAllRefs f
-  where f = offsetLineRefBy by after invalidateEqual
+offsetAllRefs :: FormulaPath -> Integer -> Integer -> Bool -> FESequent -> FESequent
+offsetAllRefs path by after invalidateEqual seq = applyOnAllRefs f seq
+  where f = offsetLineRefBy path by after invalidateEqual seq
 
 {-|
 Adds an offset to a ***single*** rule argument which is referencing a
@@ -409,12 +409,21 @@ to lines with linenumbers greater than or equal to a given value.
 Optionally invalidate line numbers equal to threshold (Used when
 removing line)
 -}
-offsetLineRefBy :: Integer -> Integer -> Bool -> Text -> Text
-offsetLineRefBy by after invalidateEqual = applyOnLineNumberRef f
-  where f l
-          | l == after && invalidateEqual = "_"
-          | l >= after = showt $ l + by
-          | otherwise = showt l
+offsetLineRefBy :: FormulaPath -> Integer -> Integer -> Bool -> FESequent -> Text -> Text
+offsetLineRefBy path by after invalidateEqual seq = applyOnLineNumberRef f
+  where
+    f arg whichArg l
+      | isMatchingRangeRef r arg && fst r == snd r && invalidateEqual = "_"
+      | whichArg == 0 && isMatchingRangeRef r arg = showt l
+      | whichArg == 1 && isMatchingRangeRef r arg = showt $ l + by
+      | l == after && invalidateEqual = "_"
+      | l >= after = showt $ l + by
+      | otherwise = showt l
+
+    r = if null path then (-1, -1) else lineNumberRange (init path) seq
+
+    isMatchingRangeRef (pa, pb) (Abs.ArgRange ra rb) = pa == ra && pb == rb
+    isMatchingRangeRef _ _ = False
 
 -- | Applies function to every rule argument in sequent
 applyOnAllRefs :: (Text -> Text) -> FESequent -> FESequent
@@ -424,9 +433,9 @@ applyOnAllRefs func = replaceSteps (map f)
     f (Line s r u a) = Line s r u (map func a)
 
 -- | Parse rule argument and apply function if it's a line/subproof reference
-applyOnLineNumberRef :: (Integer -> Text) -> Text -> Text
+applyOnLineNumberRef :: (Abs.Arg -> Integer -> Integer -> Text) -> Text -> Text
 applyOnLineNumberRef f refText = case pArg (myLexer (unpack refText)) of
   Left {} -> refText
-  Right (Abs.ArgRange a b) -> f a <> "-" <> f b
-  Right (Abs.ArgLine l) -> f l
+  Right arg@(Abs.ArgRange a b) -> f arg 0 a <> "-" <> f arg 1 b
+  Right arg@(Abs.ArgLine l) -> f arg 0 l
   Right _ -> refText

@@ -163,6 +163,14 @@ proofStepLength :: Num a => FEStep -> a
 proofStepLength (SubProof p) = sum $ map proofStepLength p
 proofStepLength (Line {}) = 1
 
+-- | Get start and end line of path
+lineNumberRange :: FormulaPath -> FESequent -> (Integer, Integer)
+lineNumberRange path seq = (start, start + offset - 1)
+  where
+    start = pathToLineNumberOffsetPremises seq path
+    offset = proofStepLength e
+    e = evalPath path seq
+
 -- | Get the path to the last line in a proof. Will always return the path to a line and not a subproof
 pathToLastLine :: FESequent -> FormulaPath
 pathToLastLine sequent = ep (SubProof $ _steps sequent) []

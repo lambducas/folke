@@ -97,7 +97,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         hstack [
           proofStatusLabel,
           filler,
-          labeledCheckbox "Auto-check proof" (autoCheckProofTracker . acpEnabled),
+          labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled),
           spacer,
           box $ button "Save proof" (SaveFile file),
           spacer,

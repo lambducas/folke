@@ -105,9 +105,7 @@ main = do
       _proofStatus = Nothing,
 
       _preferences = prefs,
-      _persistentState = state,
-
-      _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True }
+      _persistentState = state
     }
 
     -- Default preferences for new users
@@ -118,7 +116,8 @@ main = do
       _logicFont = "Symbol_Regular",
       _fontSize = 16,
       _appScale = 1,
-      _replaceAEInFormula = False
+      _replaceAEInFormula = False,
+      _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True }
     }
 
     -- Default application state for new users
