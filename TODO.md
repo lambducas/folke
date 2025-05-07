@@ -2,25 +2,23 @@
 
 ## General
 - [ ] Test frontend to improve UX
-- [x] Write help guide
 - [ ] Fix crappy dependency management
 - [ ] Huge cleanup to prepare public repo
 
+- [x] Write help guide
+
 ## Backend
-- [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [x] Fix bug empty last line
-- [x] Improve warning system
-- [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
 - [ ] Better error messages
 - [ ] Add warning sensitivty using our Severity type
+- [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
+
+- [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
+- [x] Fix bug empty last line
+- [x] Improve warning system
 - [x] Alpha-equivalence formulas
 - [x] Update test system for JSON
 - [x] Add checks for side conditions for rules.
-### If we are ambitious:
-- [ ] Suggest next step of proof
-- [ ] JSON node for error
-- [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
 
 ## Frontend
 - [ ] Support user defined rules (derived rule from proof)
@@ -31,6 +29,7 @@
 - [ ] Toolbar instead of sidebar for symbol keypad??
 - [ ] Check proof on open
 - [ ] Send flags to backend when checking proof manually vs automatically
+
 - [x] ~~Fix suggestion dropdown (does not scroll to top + selected item needs to reset when outside range)~~
 - [x] ~~Change button color in light theme~~
 - [x] ~~Add support for up/down arrow on suggested input field~~
