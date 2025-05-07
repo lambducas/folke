@@ -12,14 +12,17 @@ module Frontend.Parse (
   validateRule,
   validateRuleArgument,
   parseRule,
-  FEDocument(..)
+  FEUserDefinedRule(..),
+  FEDocument(..),
+
+  getTempFEDocument
 ) where
 
 import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
 import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
 import Frontend.Helper.General ( slice, trimText, pathToLineNumber )
 import Logic.Par (myLexer, pForm, pArg)
-import qualified Logic.Abs as Abs
+import Shared.FESequent (FEFormula)
 
 import Data.Aeson ( decode, defaultOptions )
 import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
@@ -34,11 +37,37 @@ import qualified Data.Text as T
 import qualified Data.Map
 import TextShow (showt)
 
-newtype FEDocument = FEDocument {
-  _sequent :: FESequent
+data FEUserDefinedRule = FEUserDefinedRule {
+  _udrName :: T.Text,
+  _udrInput :: [FEFormula],
+  _udrOutput :: FEFormula
 } deriving (Show, Eq)
 
+data FEDocument = FEDocument {
+  _fedUserDefinedRules :: [FEUserDefinedRule],
+  _fedSequent :: FESequent
+} deriving (Show, Eq)
+
+$(deriveJSON defaultOptions ''FEUserDefinedRule)
 $(deriveJSON defaultOptions ''FEDocument)
+
+getTempFEDocument :: FESequent -> FEDocument
+getTempFEDocument seq = doc
+  where
+    doc = FEDocument {
+      _fedUserDefinedRules = [ deMorgan1, deMorgan2 ],
+      _fedSequent = seq
+    }
+    deMorgan1 = FEUserDefinedRule {
+      _udrName = "deMo1",
+      _udrInput = ["¬(P ∧ Q)"],
+      _udrOutput = "¬P ∨ ¬Q"
+    }
+    deMorgan2 = FEUserDefinedRule {
+      _udrName = "deMo2",
+      _udrInput = ["¬(P ∨ Q)"],
+      _udrOutput = "¬P ∧ ¬Q"
+    }
 
 -- | Check if the provided string is a valid way to write a formula
 validateStatement :: T.Text -> Bool
@@ -65,12 +94,12 @@ parseRule inp = replaceFromInverseLookup withSpec visualRuleNames
   where withSpec = replaceSpecialSymbols inp
 
 -- | Converts frontend sequent to a json string
-parseProofToJSON :: FESequent -> T.Text
-parseProofToJSON = toStrict . toLazyText . encodePrettyToTextBuilder . FEDocument
+parseProofToJSON :: FEDocument -> T.Text
+parseProofToJSON = toStrict . toLazyText . encodePrettyToTextBuilder
 
 -- | Converts a json string to a frontend sequent
-parseProofFromJSON :: T.Text -> Maybe FESequent
-parseProofFromJSON t = (decode . toLazyByteString . encodeUtf8Builder) t >>= Just . _sequent
+parseProofFromJSON :: T.Text -> Maybe FEDocument
+parseProofFromJSON = decode . toLazyByteString . encodeUtf8Builder
 
 -- | Deprecated: Converts frontend sequent to a simple file format which is easy to parse by hand
 parseProofToSimpleFileFormat :: FESequent -> T.Text

@@ -1,0 +1,35 @@
+{
+    "_fedSequent": {
+        "_conclusion": "¬A ∨ ¬B",
+        "_premises": [
+            "¬(((A ∧ B)))"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "deMo1",
+                "_statement": "¬A ∨ ¬B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    },
+    "_fedUserDefinedRules": [
+        {
+            "_udrInput": [
+                "¬(P ∧ Q)"
+            ],
+            "_udrName": "deMo1",
+            "_udrOutout": "¬P ∨ ¬Q"
+        },
+        {
+            "_udrInput": [
+                "¬(P ∨ Q)"
+            ],
+            "_udrName": "deMo2",
+            "_udrOutout": "¬P ∧ ¬Q"
+        }
+    ]
+}

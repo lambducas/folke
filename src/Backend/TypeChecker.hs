@@ -16,7 +16,7 @@ import Shared.FESequent as FE
 import Backend.Environment
 import Backend.Helpers
 
-import Frontend.Parse (parseProofFromJSON)
+import Frontend.Parse (parseProofFromJSON, FEDocument (_fedSequent, _fedUserDefinedRules))
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -56,9 +56,15 @@ checkJson filePath =  do
 
     -- Process the JSON content
     jsonText <- Ok [] (pack fileContent)
-    seq <- case parseProofFromJSON jsonText of
+    doc <- case parseProofFromJSON jsonText of
         Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to parse JSON proof")
         Just s -> Ok [] s
+
+    -- Extract sequent from document
+    let seq = _fedSequent doc
+
+    -- TODO: Do something with the unparsed user defined rules
+    let userDefinedRules = _fedUserDefinedRules doc
 
     -- Check the proof with the backend
     checkFE seq

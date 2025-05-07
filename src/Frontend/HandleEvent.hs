@@ -408,7 +408,8 @@ handleEvent env wenv node model evt = case evt of
           sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
         else if takeExtension fullPath `elem` map ("." <>) feFileExts then
           do
-            let seq = parseProofFromJSON pContentText
+            let document = parseProofFromJSON pContentText
+            let seq = document >>= Just . _fedSequent
             sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
@@ -478,7 +479,8 @@ handleEvent env wenv node model evt = case evt of
       Nothing -> []
       Just seq -> [
           Producer (\sendMsg -> do
-            let content = (unpack . parseProofToJSON) seq
+            let document = getTempFEDocument seq
+            let content = (unpack . parseProofToJSON) document
                 fileName = _path f
 
             result <- try (writeFile fileName content) :: IO (Either SomeException ())
@@ -496,7 +498,8 @@ handleEvent env wenv node model evt = case evt of
             case mNewPath of
               Nothing -> return ()
               Just newPath -> do
-                let content = (unpack . parseProofToJSON) seq
+                let document = getTempFEDocument seq
+                let content = (unpack . parseProofToJSON) document
                 result <- try (writeFile newPath content) :: IO (Either SomeException ())
                 case result of
                   Left e -> print e
