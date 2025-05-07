@@ -7,19 +7,10 @@
 - [ ] Huge cleanup to prepare public repo
 
 ### Backend
-- [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
-- [x] Fix bug empty last line
-- [x] Improve warning system
-- [ ] Warn on unused steps (reference counting)
 - [ ] Custom rules
 - [ ] Better error messages
 - [ ] Add warning sensitivty using our Severity type
-- [x] Alpha-equivalence formulas
-- [x] Update test system for JSON
-- [x] Add checks for side conditions for rules.
-#### If we are ambitious:
-- [ ] Suggest next step of proof
-- [ ] JSON node for error
+
 #### Suggestions for new rule names
 | Old name  | New/secondary names      |
 |-----------|--------------------------|
@@ -139,22 +130,6 @@ sudo apt-get install libgtk-3-dev
 # Should not be needed:
 # cd nativefiledialog-hs/nativefiledialog/build/gmake_linux
 # make config=release_x64
-```
-
-## Running the Project
-
-To run the backend (standard output) and frontend GUI, use the following command to run the executable:
-
-```bash
-$ cabal run bsc
-```
-
-## Run tests
-
-To run tests, use the following command:
-
-```bash
-$ cabal test
 ```
 
 ## License?
