@@ -17,7 +17,7 @@ import Data.List (findIndex)
 import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
 import System.FilePath.Posix (equalFilePath)
-import Frontend.SpecialCharacters (replaceSpecialSymbols)
+import Shared.SpecialCharacters (replaceSpecialSymbols)
 
 {-|
 Applies a function on the currently opened file-tab

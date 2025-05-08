@@ -16,15 +16,15 @@ import Shared.FESequent as FE
 import Backend.Environment
 import Backend.Helpers
 
-import Frontend.Parse (parseProofFromJSON, FEDocument (_fedSequent, _fedUserDefinedRules))
+import Frontend.Parse (parseProofFromJSON, FEDocument (_sequent, _fedUserDefinedRules))
 import qualified Data.List as List
 import qualified Data.Map as Map
 
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, fromMaybe)
 import Control.Exception (SomeException, try)
 import System.IO.Unsafe (unsafePerformIO)
 
-import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
+import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Data.Text (Text, unpack, pack, intercalate, strip)
 ----------------------------------------------------------------------
 -- Main API Functions
@@ -61,10 +61,10 @@ checkJson filePath =  do
         Just s -> Ok [] s
 
     -- Extract sequent from document
-    let seq = _fedSequent doc
+    let seq = _sequent doc
 
     -- TODO: Do something with the unparsed user defined rules
-    let userDefinedRules = _fedUserDefinedRules doc
+    let userDefinedRules = fromMaybe [] $ _fedUserDefinedRules doc
 
     -- Check the proof with the backend
     checkFE seq

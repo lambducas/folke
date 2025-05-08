@@ -1,5 +1,21 @@
 {
-    "_fedSequent": {
+    "_fedUserDefinedRules": [
+        {
+            "_udrInput": [
+                "¬(P ∧ Q)"
+            ],
+            "_udrName": "deMo1",
+            "_udrOutput": "¬P ∨ ¬Q"
+        },
+        {
+            "_udrInput": [
+                "¬(P ∨ Q)"
+            ],
+            "_udrName": "deMo2",
+            "_udrOutput": "¬P ∧ ¬Q"
+        }
+    ],
+    "_sequent": {
         "_conclusion": "¬A ∨ ¬B",
         "_premises": [
             "¬(((A ∧ B)))"
@@ -15,21 +31,5 @@
                 "tag": "Line"
             }
         ]
-    },
-    "_fedUserDefinedRules": [
-        {
-            "_udrInput": [
-                "¬(P ∧ Q)"
-            ],
-            "_udrName": "deMo1",
-            "_udrOutout": "¬P ∨ ¬Q"
-        },
-        {
-            "_udrInput": [
-                "¬(P ∨ Q)"
-            ],
-            "_udrName": "deMo2",
-            "_udrOutout": "¬P ∧ ¬Q"
-        }
-    ]
+    }
 }

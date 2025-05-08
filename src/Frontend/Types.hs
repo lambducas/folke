@@ -21,8 +21,6 @@ import Data.Aeson
 import Data.Aeson.TH
 import qualified Data.Map as Map
 
-type SymbolDict = [(Text, Text)]
-
 data RuleMetaData = RuleMetaData {
   _nrArguments :: Integer,
   _argumentLabels :: [Text]

@@ -10,7 +10,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.List (isPrefixOf, isSuffixOf)
 import Frontend.Types
-import Frontend.SpecialCharacters (replaceSpecialSymbols)
+import Shared.SpecialCharacters (replaceSpecialSymbols)
 import Frontend.Helper.General (getProofFileByPath)
 import Control.Lens ((^.))
 import qualified Data.Text.IO as T

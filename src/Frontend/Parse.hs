@@ -19,9 +19,9 @@ module Frontend.Parse (
 ) where
 
 import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
-import Frontend.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
 import Frontend.Helper.General ( slice, trimText, pathToLineNumber )
 import Logic.Par (myLexer, pForm, pArg)
+import Shared.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
 import Shared.FESequent (FEFormula)
 
 import Data.Aeson ( decode, defaultOptions )
@@ -44,8 +44,8 @@ data FEUserDefinedRule = FEUserDefinedRule {
 } deriving (Show, Eq)
 
 data FEDocument = FEDocument {
-  _fedUserDefinedRules :: [FEUserDefinedRule],
-  _fedSequent :: FESequent
+  _fedUserDefinedRules :: Maybe [FEUserDefinedRule],
+  _sequent :: FESequent
 } deriving (Show, Eq)
 
 $(deriveJSON defaultOptions ''FEUserDefinedRule)
@@ -55,8 +55,8 @@ getTempFEDocument :: FESequent -> FEDocument
 getTempFEDocument seq = doc
   where
     doc = FEDocument {
-      _fedUserDefinedRules = [ deMorgan1, deMorgan2 ],
-      _fedSequent = seq
+      _fedUserDefinedRules = Just [ deMorgan1, deMorgan2 ],
+      _sequent = seq
     }
     deMorgan1 = FEUserDefinedRule {
       _udrName = "deMo1",

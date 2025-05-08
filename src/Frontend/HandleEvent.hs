@@ -409,7 +409,7 @@ handleEvent env wenv node model evt = case evt of
         else if takeExtension fullPath `elem` map ("." <>) feFileExts then
           do
             let document = parseProofFromJSON pContentText
-            let seq = document >>= Just . _fedSequent
+            let seq = document >>= Just . _sequent
             sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)

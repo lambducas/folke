@@ -24,7 +24,6 @@ library
     import:           warnings
     exposed-modules:  Backend.TypeChecker
                     , Backend.Environment
-                    , Frontend.SpecialCharacters
                     , Frontend.Types
                     , Backend.Helpers
                     , Backend.Types
@@ -35,6 +34,7 @@ library
                     , Shared.Messages
                     , Frontend.Helper.General
                     , Shared.FESequent
+                    , Shared.SpecialCharacters
     build-depends:    base ^>=4.17.2.1
                     , mtl
                     , containers
@@ -102,7 +102,7 @@ executable folke
                 , Frontend.BuildUI
                 , Frontend.History
                 , Frontend.HandleEvent
-                , Frontend.SpecialCharacters
+                , Shared.SpecialCharacters
                 , Frontend.Helper.General
                 , Frontend.Helper.ProofHelper
                 , Frontend.Themes

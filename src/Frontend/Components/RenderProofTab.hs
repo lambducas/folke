@@ -12,10 +12,10 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
+import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Logic.Par (myLexer, pForm)
 
 import Monomer

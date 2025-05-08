@@ -1,14 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Frontend.SpecialCharacters (
+module Shared.SpecialCharacters (
   replaceFromLookup,
   replaceFromInverseLookup,
   replaceSpecialSymbols,
   replaceSpecialSymbolsInverse
 ) where
 
-import Frontend.Types ( SymbolDict )
 import Data.Text (Text, replace)
+
+type SymbolDict = [(Text, Text)]
 
 symbolLookup :: SymbolDict
 symbolLookup = [
