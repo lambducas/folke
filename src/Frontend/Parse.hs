@@ -11,22 +11,17 @@ module Frontend.Parse (
   validateStatement,
   validateRule,
   validateRuleArgument,
-  parseRule,
-  FEUserDefinedRule(..),
-  FEDocument(..),
-
-  getTempFEDocument
+  parseRule
 ) where
 
 import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
 import Frontend.Helper.General ( slice, trimText, pathToLineNumber )
 import Logic.Par (myLexer, pForm, pArg)
 import Shared.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
-import Shared.FESequent (FEFormula)
+import Shared.FESequent (FEDocument)
 
-import Data.Aeson ( decode, defaultOptions )
+import Data.Aeson ( decode )
 import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
-import Data.Aeson.TH (deriveJSON)
 import Data.Either (isRight)
 import Data.Maybe (isJust)
 import Data.Text.Internal.Builder (toLazyText)
@@ -36,38 +31,6 @@ import Data.ByteString.Builder(toLazyByteString)
 import qualified Data.Text as T
 import qualified Data.Map
 import TextShow (showt)
-
-data FEUserDefinedRule = FEUserDefinedRule {
-  _udrName :: T.Text,
-  _udrInput :: [FEFormula],
-  _udrOutput :: FEFormula
-} deriving (Show, Eq)
-
-data FEDocument = FEDocument {
-  _fedUserDefinedRules :: Maybe [FEUserDefinedRule],
-  _sequent :: FESequent
-} deriving (Show, Eq)
-
-$(deriveJSON defaultOptions ''FEUserDefinedRule)
-$(deriveJSON defaultOptions ''FEDocument)
-
-getTempFEDocument :: FESequent -> FEDocument
-getTempFEDocument seq = doc
-  where
-    doc = FEDocument {
-      _fedUserDefinedRules = Just [ deMorgan1, deMorgan2 ],
-      _sequent = seq
-    }
-    deMorgan1 = FEUserDefinedRule {
-      _udrName = "deMo1",
-      _udrInput = ["¬(P ∧ Q)"],
-      _udrOutput = "¬P ∨ ¬Q"
-    }
-    deMorgan2 = FEUserDefinedRule {
-      _udrName = "deMo2",
-      _udrInput = ["¬(P ∨ Q)"],
-      _udrOutput = "¬P ∧ ¬Q"
-    }
 
 -- | Check if the provided string is a valid way to write a formula
 validateStatement :: T.Text -> Bool

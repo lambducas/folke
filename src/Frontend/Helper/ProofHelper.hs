@@ -47,9 +47,9 @@ applyOnCurrentProof model f = actions
     actions = applyOnCurrentFile model updateSequent
     updateSequent file =
       file
-        & parsedSequent %~ maybeF
+        & parsedDocument %~ maybeF
         & isEdited .~ True
-    maybeF (Just s) = Just (f s)
+    maybeF (Just d) = Just $ d & sequent %~ f
     maybeF Nothing = Nothing
 
 {-|
@@ -61,16 +61,16 @@ fail otherwise.
 applyOnCurrentProofAndRecordHistory :: AppModel -> (FESequent -> (FESequent, HistoryEvent)) -> [EventResponse AppModel AppEvent sp ep]
 applyOnCurrentProofAndRecordHistory model f = applyOnCurrentFile model updateFile
   where
-    updateFile file = case _parsedSequent file of
+    updateFile file = case _parsedDocument file of
       Nothing -> file
-      Just sequent -> file
+      Just doc -> file
         & isEdited .~ True
-        & parsedSequent ?~ fst fApplied
+        & parsedDocument  . _Just . sequent .~ fst fApplied
         & history . hIndex %~ (+1)
         & history . hState %~ forkHistory (_hIndex (_history file))
         where
           forkHistory index state = take (index + 1) state ++ [snd fApplied]
-          fApplied = f sequent
+          fApplied = f $ _sequent doc
 
 {-|
 Applies a function on the proof of the currently opened file-tab and
@@ -357,13 +357,13 @@ opened filed isn't a proof
 getCurrentSequent :: AppModel -> Maybe FESequent
 getCurrentSequent model = sequent
   where
-    sequent = fileIndex >>= getSequent
+    sequent = (fileIndex >>= getDocument) >>= Just . _sequent
     fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
     cf = model ^. persistentState . currentFile
 
-    getSequent fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
-      f@ProofFile {} -> _parsedSequent f
-      f@TemporaryProofFile {} -> _parsedSequent f
+    getDocument fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
+      f@ProofFile {} -> _parsedDocument f
+      f@TemporaryProofFile {} -> _parsedDocument f
       _ -> Nothing
 
 -- | Generates a list of events based on the current sequent
@@ -383,12 +383,13 @@ sent as a `BackendResponse` event back to the frontend
 -}
 evaluateCurrentProof :: AppModel -> File -> (AppEvent -> IO ()) -> IO ()
 evaluateCurrentProof model file sendMsg = do
-  case _parsedSequent file of
+  case _parsedDocument file of
     Nothing -> return ()
-    Just seq -> do
+    Just doc -> do
       -- let text = unpack $ parseProofForBackend seq
       -- putStrLn text
-      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) seq
+
+      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) doc
       sendMsg (BackendResponse answer)
 
 {-|

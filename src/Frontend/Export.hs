@@ -117,8 +117,8 @@ formatProof model = maybe "% No proof available" formatSequent currentSeq
       filePath <- model ^. persistentState . currentFile
       file <- getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
       case file of
-        ProofFile {_parsedSequent = Just s} -> Just s
-        TemporaryProofFile {_parsedSequent = Just s} -> Just s
+        ProofFile {_parsedDocument = Just s} -> Just $ _sequent s
+        TemporaryProofFile {_parsedDocument = Just s} -> Just $ _sequent s
         _ -> Nothing
 
 formatSequent :: FESequent -> Text

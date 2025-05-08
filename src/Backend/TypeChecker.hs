@@ -16,7 +16,7 @@ import Shared.FESequent as FE
 import Backend.Environment
 import Backend.Helpers
 
-import Frontend.Parse (parseProofFromJSON, FEDocument (_sequent, _fedUserDefinedRules), FEUserDefinedRule)
+import Frontend.Parse (parseProofFromJSON)
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -26,7 +26,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Data.Text (Text, unpack, pack, intercalate, strip)
-import qualified Frontend.Parse as FE
+
 ----------------------------------------------------------------------
 -- Main API Functions
 ----------------------------------------------------------------------
@@ -37,15 +37,13 @@ minWarningSeverity = Low
 
 -- | Handle a message from the frontend
 handleFrontendMessage :: FrontendMessage -> BackendMessage
-handleFrontendMessage (CheckStringSequent _) =
-    StepChecked (Left "handleFrontendMessage: No longer supports non JSON proofs")
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFESequent tree) =
-    StringSequentChecked backendMessage
+handleFrontendMessage (CheckFEDocument doc) =
+    FEDocumentChecked backendMessage
 
        where backendMessage = convertToFEError $
-              filterResultWarnings (checkFE (FE.FEDocument Nothing tree)) onlySomeSeverityWarnings
+              filterResultWarnings (checkFE doc) onlySomeSeverityWarnings
 
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()

@@ -341,12 +341,27 @@ handleEvent env wenv node model evt = case evt of
         case result of
           Left e -> print e
           Right _ -> do
-            let emptySeq = Just $ FESequent [] "" [Line "" "" 0 []]
+            let emptySeq = FESequent [] "" [Line "" "" 0 []]
+            let deMorgan1 = FEUserDefinedRule {
+              _udrName = "deMo1",
+              _udrInput = ["¬(P ∧ Q)"],
+              _udrOutput = "¬P ∨ ¬Q"
+            }
+            let deMorgan2 = FEUserDefinedRule {
+              _udrName = "deMo2",
+              _udrInput = ["¬(P ∨ Q)"],
+              _udrOutput = "¬P ∧ ¬Q"
+            }
+            let emptyDoc = Just $ FEDocument {
+              -- Temporarily use hardcoded user def rules
+              _fedUserDefinedRules = Just [ deMorgan1, deMorgan2 ],
+              _sequent = emptySeq
+            }
             let emptyHistory = History {
               _hState = [],
               _hIndex = -1
             }
-            let file = TemporaryProofFile randomPath emptySeq False emptyHistory
+            let file = TemporaryProofFile randomPath emptyDoc False emptyHistory
             sendMsg (OpenFileSuccess file)
             sendMsg (FocusOnKey "addPremiseButton")
       )
@@ -408,9 +423,8 @@ handleEvent env wenv node model evt = case evt of
           sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
         else if takeExtension fullPath `elem` map ("." <>) feFileExts then
           do
-            let document = parseProofFromJSON pContentText
-            let seq = document >>= Just . _sequent
-            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText seq pIsEdited pHistory)
+            let doc = parseProofFromJSON pContentText
+            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText doc pIsEdited pHistory)
         else
           sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
@@ -475,12 +489,11 @@ handleEvent env wenv node model evt = case evt of
 
   SaveFile f -> case f of
     PreferenceFile {} -> handleEvent env wenv node model SavePreferences
-    f@ProofFile {} -> case _parsedSequent f of
+    f@ProofFile {} -> case _parsedDocument f of
       Nothing -> []
-      Just seq -> [
+      Just doc -> [
           Producer (\sendMsg -> do
-            let document = getTempFEDocument seq
-            let content = (unpack . parseProofToJSON) document
+            let content = (unpack . parseProofToJSON) doc
                 fileName = _path f
 
             result <- try (writeFile fileName content) :: IO (Either SomeException ())
@@ -489,17 +502,16 @@ handleEvent env wenv node model evt = case evt of
               Right _ -> sendMsg (SaveFileSuccess f)
           )
         ]
-    f@TemporaryProofFile {} -> case _parsedSequent f of
+    f@TemporaryProofFile {} -> case _parsedDocument f of
       Nothing -> []
-      Just seq -> [
+      Just doc -> [
         SyncTask $ do
           mNewPath <- openSaveDialog (head feFileExts)
           return $ AppRunProducer (\sendMsg -> do
             case mNewPath of
               Nothing -> return ()
               Just newPath -> do
-                let document = getTempFEDocument seq
-                let content = (unpack . parseProofToJSON) document
+                let content = (unpack . parseProofToJSON) doc
                 result <- try (writeFile newPath content) :: IO (Either SomeException ())
                 case result of
                   Left e -> print e
@@ -563,9 +575,7 @@ handleEvent env wenv node model evt = case evt of
     | model ^. preferences . autoCheckProofTracker . acpEnabled -> [ Task $ sendProofDidChange env ]
     | otherwise -> []
 
-  BackendResponse (StringSequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
-  BackendResponse (SequentChecked result) -> [ Model $ model & proofStatus ?~ result ]
-
+  BackendResponse (FEDocumentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
 
   OpenSetWorkingDir -> [ SyncTask openDiag ]
@@ -602,7 +612,7 @@ handleEvent env wenv node model evt = case evt of
   ExportError msg -> [Message (WidgetKey "ExportError") msg]
 
   Print s -> [ Producer (\_ -> print s) ]
-  f -> [ Producer (\_ -> print f) ]
+  -- f -> [ Producer (\_ -> print f) ]
 
 {-|
 Recursively gets all files in working directory and
@@ -691,7 +701,7 @@ traverseDir validDir transition =
      in go
 
 exportToLatex :: AppModel -> File -> [EventResponse s AppEvent sp ep]
-exportToLatex model file = case _parsedSequent file of
+exportToLatex model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
     [ SyncTask $ do
@@ -717,7 +727,7 @@ exportToLatex model file = case _parsedSequent file of
     ]
 
 exportToPDF :: AppModel -> File -> [EventResponse s AppEvent sp ep]
-exportToPDF model file = case _parsedSequent file of
+exportToPDF model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
     [ SyncTask $ do

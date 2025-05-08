@@ -5,18 +5,15 @@
 module Shared.Messages where
 
 import Backend.Environment
-import Shared.FESequent (FESequent)
+import Shared.FESequent (FEDocument)
 
 data FrontendMessage
-    = CheckStringSequent String
-    | CheckFESequent FESequent
+    = CheckFEDocument FEDocument
     | OtherFrontendMessage String
     deriving (Show, Eq)
 
 data BackendMessage
-    = SequentChecked FEResult
-    | StringSequentChecked FEResult
-    | StepChecked (Either String ())
+    = FEDocumentChecked FEResult
     | OtherBackendMessage String
     deriving (Show, Eq)
 

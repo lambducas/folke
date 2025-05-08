@@ -28,7 +28,7 @@ undo f
   | otherwise = newFile
   where
     newFile = f
-      & parsedSequent %~ (>>= Just . applyInverseHistory historyStep)
+      & parsedDocument . _Just . sequent %~ applyInverseHistory historyStep
       & history . hIndex %~ \f -> f - 1
 
     historyStep = hSte !! hIdx
@@ -42,7 +42,7 @@ redo f
   | otherwise = newFile
   where
     newFile = f
-      & parsedSequent %~ (>>= Just . applyHistory historyStep)
+      & parsedDocument . _Just . sequent %~ applyHistory historyStep
       & history . hIndex %~ (+1)
 
     historyStep = hSte !! (hIdx + 1)

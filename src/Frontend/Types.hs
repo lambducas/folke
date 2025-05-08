@@ -65,13 +65,13 @@ data File
   | ProofFile {
     _path :: FilePath,
     _content :: Text,
-    _parsedSequent :: Maybe FESequent,
+    _parsedDocument :: Maybe FEDocument,
     _isEdited :: Bool,
     _history :: History
   }
   | TemporaryProofFile {
     _path :: FilePath,
-    _parsedSequent :: Maybe FESequent,
+    _parsedDocument :: Maybe FEDocument,
     _isEdited :: Bool,
     _history :: History
   }

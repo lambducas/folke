@@ -1,13 +1,12 @@
 module Frontend.Communication (
     startCommunication,
-    evaluateProofString,
     evaluateProofFE
 ) where
 
 import Control.Concurrent (Chan, forkIO, writeChan, readChan)
 import Shared.Messages
 import Backend.TypeChecker (handleFrontendMessage)  -- Import the function
-import Shared.FESequent (FESequent)
+import Shared.FESequent (FEDocument)
 
 -- Function to start the communication between frontend and backend
 startCommunication :: Chan FrontendMessage -> Chan BackendMessage -> IO BackendMessage
@@ -23,17 +22,9 @@ communicationLoop frontendChan backendChan = do
     writeChan backendChan response
     communicationLoop frontendChan backendChan
 
--- Function to evaluate a proof in text-format by communicating with the backend
-evaluateProofString :: Chan FrontendMessage -> Chan BackendMessage -> String -> IO BackendMessage
-evaluateProofString frontendChan backendChan text = do
+evaluateProofFE :: Chan FrontendMessage -> Chan BackendMessage -> FEDocument -> IO BackendMessage
+evaluateProofFE frontendChan backendChan doc = do
     -- Send the sequent to the backend for evaluation
-    writeChan frontendChan (CheckStringSequent text)
-    -- Wait for the backend to respond with the result
-    readChan backendChan
-
-evaluateProofFE :: Chan FrontendMessage -> Chan BackendMessage -> FESequent -> IO BackendMessage
-evaluateProofFE frontendChan backendChan tree = do
-    -- Send the sequent to the backend for evaluation
-    writeChan frontendChan (CheckFESequent tree)
+    writeChan frontendChan (CheckFEDocument doc)
     -- Wait for the backend to respond with the result
     readChan backendChan

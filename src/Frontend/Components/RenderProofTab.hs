@@ -71,7 +71,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
   -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
   renderProofTab' :: File -> Text -> WidgetNode AppModel AppEvent
-  renderProofTab' file heading = case parsedSequent of
+  renderProofTab' file heading = case _parsedDocument file of
     Nothing -> vstack [
         vstack [
           h1 $ pack $ _path file,
@@ -85,7 +85,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           symbolSpan_ (_content file) [multiline]
         ]) `styleBasic` [padding 10]
       ]
-    Just parsedSequent -> vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
+    Just parsedDocument -> vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
         vstack [
           vstack [
             h1 heading,
@@ -111,8 +111,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
         conclusion = _conclusion parsedSequent
         premises = _premises parsedSequent
-    where
-      parsedSequent = _parsedSequent file
+        parsedSequent = _sequent parsedDocument
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Checking proof..." `styleBasic` [textColor orange]

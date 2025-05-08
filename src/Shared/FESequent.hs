@@ -7,6 +7,17 @@ import Data.Aeson ( defaultOptions )
 import Data.Aeson.TH ( deriveJSON )
 import Control.Lens ( makeLenses )
 
+data FEDocument = FEDocument {
+  _fedUserDefinedRules :: Maybe [FEUserDefinedRule],
+  _sequent :: FESequent
+} deriving (Show, Eq)
+
+data FEUserDefinedRule = FEUserDefinedRule {
+  _udrName :: Text,
+  _udrInput :: [FEFormula],
+  _udrOutput :: FEFormula
+} deriving (Show, Eq)
+
 data FESequent = FESequent {
   _premises :: [FEFormula],
   _conclusion :: FEFormula,
@@ -26,6 +37,9 @@ data FEStep
   deriving (Eq, Show)
 
 makeLenses 'FESequent
+makeLenses 'FEDocument
 
 $(deriveJSON defaultOptions ''FEStep)
 $(deriveJSON defaultOptions ''FESequent)
+$(deriveJSON defaultOptions ''FEUserDefinedRule)
+$(deriveJSON defaultOptions ''FEDocument)
