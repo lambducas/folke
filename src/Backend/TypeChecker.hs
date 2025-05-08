@@ -16,7 +16,7 @@ import Shared.FESequent as FE
 import Backend.Environment
 import Backend.Helpers
 
-import Frontend.Parse (parseProofFromJSON, FEDocument (_sequent, _fedUserDefinedRules))
+import Frontend.Parse (parseProofFromJSON, FEDocument (_sequent, _fedUserDefinedRules), FEUserDefinedRule)
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -26,6 +26,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
 import Data.Text (Text, unpack, pack, intercalate, strip)
+import qualified Frontend.Parse as FE
 ----------------------------------------------------------------------
 -- Main API Functions
 ----------------------------------------------------------------------
@@ -44,7 +45,7 @@ handleFrontendMessage (CheckFESequent tree) =
     StringSequentChecked backendMessage
 
        where backendMessage = convertToFEError $
-              filterResultWarnings (checkFE tree) onlySomeSeverityWarnings
+              filterResultWarnings (checkFE (FE.FEDocument Nothing tree)) onlySomeSeverityWarnings
 
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
@@ -60,14 +61,9 @@ checkJson filePath =  do
         Nothing -> Err [] newEnv (createSyntaxError newEnv "Failed to parse JSON proof")
         Just s -> Ok [] s
 
-    -- Extract sequent from document
-    let seq = _sequent doc
-
-    -- TODO: Do something with the unparsed user defined rules
-    let userDefinedRules = fromMaybe [] $ _fedUserDefinedRules doc
 
     -- Check the proof with the backend
-    checkFE seq
+    checkFE doc
 
 -- | Filter to only keep a specified severity warnings
 onlySomeSeverityWarnings :: [Warning] -> [Warning]
@@ -79,11 +75,32 @@ onlySomeSeverityWarnings warnings = filterWarningsBySeverity warnings minWarning
 ----------------------------------------------------------------------
 
 -- | Check a FE (frontend) sequent
-checkFE :: FE.FESequent -> Result ()
-checkFE seq_t = do
-    (proof_t, finalEnv) <- checkSequentFE newEnv seq_t
+checkFE :: FE.FEDocument -> Result ()
+checkFE doc = do
+    -- Extract sequent from document
+    let seq = _sequent doc
+
+    rules <- checkFEUserDefinedRules (fromMaybe [] $ _fedUserDefinedRules doc)
+
+    let env = newEnv { user_rules = rules}
+
+    (_, finalEnv) <- checkSequentFE env seq
     validateRefs finalEnv
     return ()
+
+checkFEUserDefinedRules :: [FE.FEUserDefinedRule] -> Result (Map.Map String UDefRule)
+checkFEUserDefinedRules [] = Ok [] Map.empty
+checkFEUserDefinedRules [x] = checkFEUserDefinedRule x
+checkFEUserDefinedRules (x:xs) = do
+    rs <- checkFEUserDefinedRules xs
+    r  <- checkFEUserDefinedRule  x
+    Ok [] (Map.union r rs)
+
+checkFEUserDefinedRule :: FE.FEUserDefinedRule -> Result (Map.Map String UDefRule)
+checkFEUserDefinedRule (FE.FEUserDefinedRule name ins out) = do
+    ins_t <- checkPremsFE newEnv ins
+    out_t <- checkFormFE newEnv out
+    Ok [] (Map.singleton (unpack name) (UDefRule ins_t out_t))
 
 -- | Check a FE (frontend) sequent
 checkSequentFE :: Env -> FE.FESequent -> Result (Proof, Env)
@@ -171,13 +188,13 @@ checkProofFEWithEnv env (step : elems) i
 -- | Check a single frontend proof step
 checkStepFE :: Env -> FE.FEStep -> Result (Env, Arg)
 checkStepFE env step = case step of
-    SubProof steps -> do
+    FE.SubProof steps -> do
         proof_t <- checkProofFE (push env) steps 0
         let currentRef = head (pos env)
         let env_with_ref = addRefs env [currentRef] (ArgProof proof_t)
         Ok [] (env_with_ref, ArgProof proof_t)
         
-    Line form rule numofargs args -> do
+    FE.Line form rule numofargs args -> do
         let currentRef = head (pos env)
         
         if strip form == pack "" then 
