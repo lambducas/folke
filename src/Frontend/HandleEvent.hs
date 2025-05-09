@@ -435,9 +435,11 @@ handleEvent env wenv node model evt = case evt of
 
   OpenFileSuccess file -> [ Producer (\sendMsg -> do
       sendMsg $ OpenFileSuccess_ file
-      case file of 
-        file@ProofFile {} -> sendMsg $ CheckProof file
-        _ -> return ()
+      when (model ^. preferences . autoCheckProofTracker . acpEnabled) (
+        case file of
+          file@ProofFile {} -> sendMsg $ CheckProof file
+          _ -> return ()
+        )
     ) ]
 
   OpenFileSuccess_ file -> Model newModel : handleEvent env wenv node newModel (SetCurrentFile filePath)
@@ -543,9 +545,11 @@ handleEvent env wenv node model evt = case evt of
         & persistentState . currentFile ?~ filePath
         & proofStatus .~ Nothing,
         Producer (\sendMsg -> do
-          case file of
-            Just file@ProofFile {} -> sendMsg $ CheckProof file
-            _ -> return ()
+          when (model ^. preferences . autoCheckProofTracker . acpEnabled) (
+            case file of
+              Just file@ProofFile {} -> sendMsg $ CheckProof file
+              _ -> return ()
+            )
           )
     ]
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
