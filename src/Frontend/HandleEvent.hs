@@ -433,7 +433,14 @@ handleEvent env wenv node model evt = case evt of
   OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd)
     where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
-  OpenFileSuccess file -> Model newModel : handleEvent env wenv node newModel (SetCurrentFile filePath)
+  OpenFileSuccess file -> [ Producer (\sendMsg -> do
+      sendMsg $ OpenFileSuccess_ file
+      case file of 
+        file@ProofFile {} -> sendMsg $ CheckProof file
+        _ -> return ()
+    ) ]
+
+  OpenFileSuccess_ file -> Model newModel : handleEvent env wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
         & persistentState . openFiles %~ doOpenFile
@@ -534,8 +541,14 @@ handleEvent env wenv node model evt = case evt of
   SetCurrentFile filePath -> [
       Model $ model
         & persistentState . currentFile ?~ filePath
-        & proofStatus .~ Nothing
+        & proofStatus .~ Nothing,
+        Producer (\sendMsg -> do
+          case file of
+            Just file@ProofFile {} -> sendMsg $ CheckProof file
+            _ -> return ()
+          )
     ]
+    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   MoveTab fromIdx toIdx
     | fromIdx < toIdx -> [ Model $ model & persistentState . openFiles %~ removeIdx fromIdx . insertAt (model ^. persistentState . openFiles . element fromIdx) (toIdx + 1) ]

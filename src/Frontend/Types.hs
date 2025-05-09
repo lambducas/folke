@@ -236,6 +236,7 @@ data AppEvent
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath
   | OpenFileSuccess File
+  | OpenFileSuccess_ File
   | CloseFile FilePath
   | CloseFileSuccess FilePath
   | CloseCurrentFile
