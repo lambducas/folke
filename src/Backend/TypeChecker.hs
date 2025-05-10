@@ -39,7 +39,7 @@ minWarningSeverity = Low
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFEDocument doc) =
+handleFrontendMessage (CheckFEDocument (doc, ifTrueThenAutoCheckProofModeIsActive)) =
     FEDocumentChecked backendMessage
 
        where backendMessage = convertToFEError $

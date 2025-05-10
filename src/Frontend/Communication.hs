@@ -22,9 +22,9 @@ communicationLoop frontendChan backendChan = do
     writeChan backendChan response
     communicationLoop frontendChan backendChan
 
-evaluateProofFE :: Chan FrontendMessage -> Chan BackendMessage -> FEDocument -> IO BackendMessage
-evaluateProofFE frontendChan backendChan doc = do
+evaluateProofFE :: Chan FrontendMessage -> Chan BackendMessage -> FEDocument -> Bool -> IO BackendMessage
+evaluateProofFE frontendChan backendChan doc acpFlag = do
     -- Send the sequent to the backend for evaluation
-    writeChan frontendChan (CheckFEDocument doc)
+    writeChan frontendChan (CheckFEDocument (doc, acpFlag))
     -- Wait for the backend to respond with the result
     readChan backendChan
