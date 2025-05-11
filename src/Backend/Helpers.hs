@@ -171,3 +171,8 @@ getErrorLine env = fromMaybe (RefLine (-1)) (maybeHead (pos env))
 maybeHead :: [a] -> Maybe a
 maybeHead [] = Nothing
 maybeHead (h:_) = Just h
+
+severity :: Int -> Severity
+severity i | i>=3=High
+           | i<=1=Low
+           | otherwise=Medium
