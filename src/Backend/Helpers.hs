@@ -26,7 +26,8 @@ module Backend.Helpers
     findLastFormula,
     premToStep,
     filterWarningsBySeverity,
-    filterResultWarnings
+    filterResultWarnings,
+    severity
 
   ) where
 
