@@ -384,15 +384,18 @@ buildUI wenv model = widgetTree where
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",
-      vstack $ map (ruleItem . snd) visualRuleNames0,
+      vstack $ zipWith ruleItem visualRuleNames0 ruleUseWidgetList0,
 
       subsection "First Order Logic",
-      vstack $ map (ruleItem . snd) visualRuleNames1
+      vstack $ zipWith ruleItem visualRuleNames1 ruleUseWidgetList1
     ]) `styleBasic` [borderL 1 dividerColor, rangeWidth 150 500]
     where
       subsection t = box (bold (span t)) `styleBasic` [padding u]
-      ruleItem r = box_ [onClick NoEvent] (symbolSpan r)
-        `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
+      ruleItem (a,s) r = dropdownV_ (-1::Int) (\x y -> NoEvent) (ruleWidgetToInt r) 
+        (const $ box (symbolSpan s)) 
+        (intToRuleRow r) 
+        [itemBasicStyle (ruleDdStyle (bgColor popupBackground) (border 0 popupBackground)), itemSelectedStyle (ruleDdStyle (bgColor popupBackground) (border 0 popupBackground))]--box_ [onClick NoEvent] (symbolSpan r)
+        `styleBasic` [cursorHand, padding u, borderT 1 dividerColor, bgColor clearColor]
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
 
@@ -480,6 +483,50 @@ buildUI wenv model = widgetTree where
       emptyItem text = box_ [alignLeft] (span (pack text))
         `styleBasic` [paddingH u, paddingV (0.75 * u), radius 4, cursorHand]
         `styleHover` [bgColor hoverColor]
+  
+  ruleWidgetToInt :: [WidgetNode AppModel AppEvent] -> [Int]
+  ruleWidgetToInt rw = [0..length rw - 1]
+  intToRuleRow :: [WidgetNode AppModel AppEvent] -> Int -> WidgetNode AppModel AppEvent
+  intToRuleRow rw i = rw!!i
+
+  ruleUseWidgetList0 :: [[WidgetNode AppModel AppEvent]]
+  ruleUseWidgetList0 = [
+    [box (aR "1.p" "assume")],-- ("assume", "assume"),
+    [s "1. p", aR "2.p" "copy p"],-- ("copy", "copy"),
+    [s "1. p", s "2. q", aR "3.p∧q" "∧I 1,2"],-- ("AndI", "∧I"),
+    [s "1. p∧q", aR "2.p" "∧EL 1"],-- ("AndEL", "∧EL"),
+    [s "1. p∧q", aR "2.q" "∧EL 1"],-- ("AndER", "∧ER"),
+    [s "1. p", aR "2.q∨p" "∨IL 1"],-- ("OrIL", "∨IL"),
+    [s "1. p", aR "2.p∨q" "∨IL 1"],-- ("OrIR", "∨IR"),
+    [],-- ("OrE", "∨E"),
+    [],-- ("ImplI", "→I"),
+    [],-- ("ImplE", "→E"),
+    [],-- ("NotI", "¬I"),
+    [],-- ("NotE", "¬E"),
+    [],-- ("BotE", "⊥E"),
+    [],-- ("NotNotI", "¬¬I"),
+    [],-- ("NotNotE", "¬¬E"),
+    [],-- ("MT", "MT"),
+    [],-- ("PBC", "PBC"),
+    []-- ("LEM", "LEM")
+    ]
+    where 
+      s = symbolSpan
+      aR o i = hstack [symbolSpan o, filler, symbolSpan i]
+  
+  ruleUseWidgetList1 :: [[WidgetNode AppModel AppEvent]]
+  ruleUseWidgetList1 = [
+    [],-- ("fresh", "fresh"),
+    [],-- ("EqI", "=I"),
+    [],-- ("EqE", "=E"),
+    [],-- ("AllE", "∀E"),
+    [],-- ("AllI", "∀I"),
+    [],-- ("SomeE", "∃E"),
+    []-- ("SomeI", "∃I")
+    ]
+    where 
+      s = symbolSpan
+      aR o i = hstack [symbolSpan o, filler, symbolSpan i]
 
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text
@@ -488,3 +535,13 @@ fontListToText fontList | head fontList == "Regular" = "Default"
                         | head fontList == "Comic_Sans_Thin" = "Comic Sans"
                         | head fontList == "Dyslexic" = "Dyslexic"
                         | otherwise = "forgor_to_label"
+
+ruleDdStyle :: StyleState -> StyleState -> Style
+ruleDdStyle s0 s1 = Style {
+                    _styleBasic = Just $ s0 <> s1,
+                    _styleHover = Just $ s0 <> s1,
+                    _styleFocus = Just $ s0 <> s1,
+                    _styleFocusHover = Just $ s0 <> s1,
+                    _styleActive = Just $ s0 <> s1,
+                    _styleDisabled = Just $ s0 <> s1
+                  }
