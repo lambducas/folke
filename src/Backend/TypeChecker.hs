@@ -31,20 +31,16 @@ import Data.Text (Text, unpack, pack, intercalate, strip)
 -- Main API Functions
 ----------------------------------------------------------------------
 
--- | Warning severity filter configuration
-minWarningSeverity :: Severity
-minWarningSeverity = High
-
 -- | Handle a message from the frontend
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFEDocument (doc, (userPickedWarningSensetivityLevel, acpActive))) =
+handleFrontendMessage (CheckFEDocument (doc, (userSensitivity, acpActive))) =
     FEDocumentChecked backendMessage
        where backendMessage = 
-              if acpActive
+              if acpActive -- if autocheck proof is enabled
               then convertToFEError $
-              filterResultWarnings (checkFE doc) onlySomeSeverityWarnings
+              filterResultWarnings (checkFE doc) (filterWarningsBySeverity (severity userSensitivity)) -- filter logic
               else convertToFEError $ checkFE doc
 
 -- | Check a proof from a JSON file
@@ -64,11 +60,6 @@ checkJson filePath =  do
 
     -- Check the proof with the backend
     checkFE doc
-
--- | Filter to only keep a specified severity warnings
-onlySomeSeverityWarnings :: [Warning] -> [Warning]
-onlySomeSeverityWarnings = filterWarningsBySeverity minWarningSeverity
-
 
 ----------------------------------------------------------------------
 -- Frontend Sequent Checking
