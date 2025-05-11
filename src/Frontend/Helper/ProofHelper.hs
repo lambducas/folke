@@ -381,15 +381,15 @@ getProofFileIndexByPath allFiles filePath = findIndex (\f -> _path f `equalFileP
 Sends file to proof checker to be validated. The response from the backend is
 sent as a `BackendResponse` event back to the frontend
 -}
-evaluateCurrentProof :: AppModel -> File -> Bool -> (AppEvent -> IO ()) -> IO ()
-evaluateCurrentProof model file acpFlag sendMsg = do
+evaluateCurrentProof :: AppModel -> File -> Bool -> Int -> (AppEvent -> IO ()) -> IO ()
+evaluateCurrentProof model file acpFlag wrngSensetivity sendMsg = do
   case _parsedDocument file of
     Nothing -> return ()
     Just doc -> do
       -- let text = unpack $ parseProofForBackend seq
       -- putStrLn text
 
-      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) doc acpFlag
+      answer <- evaluateProofFE (model ^. frontendChan) (model ^. backendChan) doc acpFlag wrngSensetivity
       sendMsg (BackendResponse answer)
 
 {-|

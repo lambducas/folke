@@ -88,7 +88,8 @@ data Preferences = Preferences {
   _fontSize :: Double,
   _appScale :: Double,
   _replaceAEInFormula :: Bool,
-  _autoCheckProofTracker :: AutoCheckProofTracker
+  _autoCheckProofTracker :: AutoCheckProofTracker,
+  _warningMessageSeverity :: Int
 } deriving (Eq, Show)
 
 data PersistentState = PersistentState {

@@ -585,9 +585,10 @@ handleEvent env wenv node model evt = case evt of
 
   CheckProof file -> [
       Model $ model & proofStatus .~ Nothing,
-      Producer (evaluateCurrentProof model file acpFlag)
+      Producer (evaluateCurrentProof model file acpFlag wrngSensetivity)
     ]
     where acpFlag = model ^. preferences . autoCheckProofTracker . acpEnabled
+          wrngSensetivity = model ^. preferences . warningMessageSeverity
 
   AutoCheckProof
     | model ^. preferences . autoCheckProofTracker . acpEnabled -> [ Task $ sendProofDidChange env ]

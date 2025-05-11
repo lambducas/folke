@@ -8,7 +8,7 @@ import Backend.Environment
 import Shared.FESequent (FEDocument)
 
 data FrontendMessage
-    = CheckFEDocument (FEDocument, Bool)
+    = CheckFEDocument (FEDocument, (Int, Bool))
     | OtherFrontendMessage String
     deriving (Show, Eq)
 

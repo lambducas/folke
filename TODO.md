@@ -24,10 +24,11 @@
 - [ ] Support user defined rules (derived rule from proof)
 - [ ] Fix full Markdown support
 - [ ] Line numbers become missaligned when there are errors/warnings taking up 2 or more lines
-- [ ] Auto-checker should only display critical errors and skip e.g empty line errors
-- [ ] Toolbar instead of sidebar for symbol keypad??
-- [ ] Send flags to backend when checking proof manually vs automatically
 
+- [?] ~Toolbar instead of sidebar for symbol keypad??~
+
+- [x] ~~Auto-checker should only display critical errors and skip e.g empty line errors~~
+- [x] ~~Send flags to backend when checking proof manually vs automatically~~
 - [x] ~~Check proof on open~~
 - [x] ~~When inserting a line after last line in subproof (using update ref mode), references to subproof don't update~~
 - [x] ~~Fix suggestion dropdown (does not scroll to top + selected item needs to reset when outside range)~~

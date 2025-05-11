@@ -39,7 +39,7 @@ minWarningSeverity = High
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFEDocument (doc, acpActive)) =
+handleFrontendMessage (CheckFEDocument (doc, (userPickedWarningSensetivityLevel, acpActive))) =
     FEDocumentChecked backendMessage
        where backendMessage = 
               if acpActive

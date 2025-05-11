@@ -287,3 +287,9 @@ getAssetBasePath = do
       return $ takeDirectory exePath </> "../Resources/"
     else do
       return "./"
+
+intToWarningSeverity :: Int -> Text
+intToWarningSeverity i | i==1="Low"
+                       | i==2="Medium"
+                       | i==3="High"
+                       | otherwise = "Medium"

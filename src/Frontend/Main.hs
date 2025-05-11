@@ -117,7 +117,8 @@ main = do
       _fontSize = 16,
       _appScale = 1,
       _replaceAEInFormula = False,
-      _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True }
+      _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True },
+      _warningMessageSeverity = 3
     }
 
     -- Default application state for new users

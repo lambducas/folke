@@ -12,7 +12,7 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex, intToWarningSeverity)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
@@ -88,7 +88,18 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
     Just parsedDocument -> vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
         vstack [
           vstack [
-            h1 heading,
+            hstack [
+              h1 heading,
+              filler,
+              vstack [
+                span "Warning sensetivity:",
+                textDropdown_ (preferences . warningMessageSeverity) [3,2,1] intToWarningSeverity [] 
+                  `styleBasic` [width 50, textSize u, normalTextFont model]
+              ],
+              spacer,
+              labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) 
+                `styleBasic` [textSize u, normalTextFont model]
+              ],
             spacer,
             subheading
           ] `styleBasic` [padding 10, borderB 1 dividerColor],
@@ -97,8 +108,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         hstack [
           proofStatusLabel,
           filler,
-          labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled),
-          spacer,
+          --labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled), spacer,
           box $ button "Save proof" (SaveFile file),
           spacer,
           box $ button "Check proof" (CheckProof file)
