@@ -33,17 +33,19 @@ import Data.Text (Text, unpack, pack, intercalate, strip)
 
 -- | Warning severity filter configuration
 minWarningSeverity :: Severity
-minWarningSeverity = Low
+minWarningSeverity = High
 
 -- | Handle a message from the frontend
 handleFrontendMessage :: FrontendMessage -> BackendMessage
 handleFrontendMessage (OtherFrontendMessage text) =
     OtherBackendMessage text
-handleFrontendMessage (CheckFEDocument (doc, ifTrueThenAutoCheckProofModeIsActive)) =
+handleFrontendMessage (CheckFEDocument (doc, acpActive)) =
     FEDocumentChecked backendMessage
-
-       where backendMessage = convertToFEError $
+       where backendMessage = 
+              if acpActive
+              then convertToFEError $
               filterResultWarnings (checkFE doc) onlySomeSeverityWarnings
+              else convertToFEError $ checkFE doc
 
 -- | Check a proof from a JSON file
 checkJson :: FilePath -> Result ()
@@ -65,7 +67,7 @@ checkJson filePath =  do
 
 -- | Filter to only keep a specified severity warnings
 onlySomeSeverityWarnings :: [Warning] -> [Warning]
-onlySomeSeverityWarnings warnings = filterWarningsBySeverity warnings minWarningSeverity
+onlySomeSeverityWarnings = filterWarningsBySeverity minWarningSeverity
 
 
 ----------------------------------------------------------------------
@@ -106,7 +108,7 @@ checkSequentFE env sequent = do
     -- Checking and validation
     prems_t <- checkPremsFE env (_premises sequent)
     conc_t <- checkFormFE env (_conclusion sequent)
-    (proof_t, finalEnv) <- checkProofFEWithEnv env (sequentSteps sequent) 1
+    (proof_t, finalEnv) <- checkProofFE env (sequentSteps sequent) 1
 
     -- Check expected vs actual
     let seq_t = Proof [] prems_t conc_t
@@ -139,17 +141,11 @@ parseForm env t =
 -- Frontend Proof Checking
 ----------------------------------------------------------------------
 
--- | Check a proof and return the proof object
-checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result Proof
-checkProofFE env steps i = do
-    (proof, _) <- checkProofFEWithEnv env steps i
-    return proof
-
 -- | Check a proof and return both the proof and the final environment
-checkProofFEWithEnv :: Env -> [FE.FEStep] -> Integer -> Result (Proof, Env)
-checkProofFEWithEnv env [] _ = Ok [] (Proof [] (getPrems env) Nil, env)
+checkProofFE :: Env -> [FE.FEStep] -> Integer -> Result (Proof, Env)
+checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil, env)
 
-checkProofFEWithEnv env [step] i
+checkProofFE env [step] i
     | FE.SubProof steps <- step = do
             let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
             _ <- checkProofFE (push (pushPos env refs_t)) steps i
@@ -166,13 +162,13 @@ checkProofFEWithEnv env [step] i
                    else Ok [] (Proof (getFreshs new_env) (getPrems new_env) Nil, new_env)
             ArgForm step_t -> Ok [] (Proof (getFreshs new_env) (getPrems new_env) step_t, new_env)
 
-checkProofFEWithEnv env (step : elems) i
+checkProofFE env (step : elems) i
     | FE.SubProof steps <- step = do
         let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
-        proof_t <- checkProofFE (push (pushPos env refs_t)) steps i
+        (proof_t, _) <- checkProofFE (push (pushPos env refs_t)) steps i
         let step_result = ArgProof proof_t
         let env' = popPos (addRefs (pushPos env refs_t) refs_t step_result) 1
-        (seq_t, finalEnv) <- checkProofFEWithEnv env' elems (i + countSteps (FE.SubProof steps))
+        (seq_t, finalEnv) <- checkProofFE env' elems (i + countSteps (FE.SubProof steps))
         Ok [] (seq_t, finalEnv)
     | FE.Line {} <- step = do
 
@@ -180,14 +176,14 @@ checkProofFEWithEnv env (step : elems) i
         (new_env, step_t) <- checkStepFE (pushPos env refs_t) step
 
         let env' = popPos (addRefs new_env refs_t step_t) (toInteger $ List.length refs_t)
-        (seq_t, finalEnv) <- checkProofFEWithEnv env' elems (i + 1)
+        (seq_t, finalEnv) <- checkProofFE env' elems (i + 1)
         Ok [] (seq_t, finalEnv)
 
 -- | Check a single frontend proof step
 checkStepFE :: Env -> FE.FEStep -> Result (Env, Arg)
 checkStepFE env step = case step of
     FE.SubProof steps -> do
-        proof_t <- checkProofFE (push env) steps 0
+        (proof_t, _) <- checkProofFE (push env) steps 0
         let currentRef = head (pos env)
         let env_with_ref = addRefs env [currentRef] (ArgProof proof_t)
         Ok [] (env_with_ref, ArgProof proof_t)

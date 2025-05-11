@@ -26,8 +26,8 @@ module Backend.Helpers
     findLastFormula,
     premToStep,
     filterWarningsBySeverity,
-    filterResultWarnings 
-    
+    filterResultWarnings
+
   ) where
 
 import Data.Text hiding (length, map, null)
@@ -82,9 +82,8 @@ validateRefs env =
 
 
 -- | Filter warnings by minimum severity level
-filterWarningsBySeverity :: [Warning] -> Severity -> [Warning]
-filterWarningsBySeverity warnings minSeverity =
-    List.filter (\w -> warnSeverity w >= minSeverity) warnings
+filterWarningsBySeverity :: Severity -> [Warning] -> [Warning]
+filterWarningsBySeverity minSeverity = List.filter (\w -> warnSeverity w >= minSeverity)
 
 -- | Filter warnings in a Result to only include high severity ones
 filterResultWarnings :: Result a -> ([Warning] -> [Warning]) -> Result a
@@ -147,15 +146,15 @@ getConclusion (Proof _ _ conc) = conc
 convertToFEError :: Result t -> FEResult
 convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
 convertToFEError (Err warns env err) =
-  let 
-    baseMsg = errMessage err ++ 
+  let
+    baseMsg = errMessage err ++
               maybe "" (\ctx -> ": " ++ ctx) (errContext err)
-    
+
     suggestionText = case errSuggestions err of
       [] -> ""
       [s] -> " Suggestion: " ++ s
       ss -> " Suggestions: " ++ List.intercalate "; " ss
-      
+
     errorText = baseMsg ++ suggestionText
   in
     FEError (map convertWarning warns) (FELocal (getErrorLine env) errorText)
