@@ -86,7 +86,8 @@ module Backend.Environment (
 
    -- | Warning creation
    createEmptyLineWarning,
-   createUnusedRefsWarning
+   createUnusedRefsWarning,
+   createDupWarning
 
 
 ) where
@@ -101,6 +102,7 @@ import Data.Char (toLower)
 
 import Data.Map as Map (Map)
 import Data.Maybe (listToMaybe)
+import System.Process (CreateProcess(env))
 
 ----------------------------------------------------------------------
 -- Environment Creation and Manipulation
@@ -1049,6 +1051,15 @@ createUnusedRefsWarning unusedRefs = Warning {
     warnMessage = "Some references were defined but never used: " ++
                   List.intercalate ", " [showRef r | (r, _) <- unusedRefs],
     warnSuggestion = Just "Consider removing unused references for cleaner proofs"
+}
+
+createDupWarning :: Env -> Warning
+createDupWarning env = Warning {
+    warnLocation = Nothing,
+    warnSeverity = Medium,
+    warnKind = StyleIssue "Duplicate variable",
+    warnMessage = "Duplicate line detected in proof",
+    warnSuggestion = Just "Please remove duplicate lines to avoid confusion"
 }
 
 showRef :: Ref -> String

@@ -10,7 +10,7 @@ module Backend.Helpers
     ---------------------------------------
     -- Proof verification helpers
     ---------------------------------------
-    validateRefs,
+    sendWarns,
 
     ---------------------------------------
     -- Utility functions
@@ -36,6 +36,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
+import Control.Monad (unless)
 
 import Backend.Environment
 import Shared.Messages
@@ -76,11 +77,15 @@ validateRefs env =
         unusedRefs = [(ref, arg) | (ref, (count, arg)) <- allRefs,
                      count == 0 && not (isSkippable ref arg)]
     in
-    if not (null unusedRefs)
-    then Ok [createUnusedRefsWarning unusedRefs] ()
-    else return ()
+    (unless (null unusedRefs) $ Ok [createUnusedRefsWarning unusedRefs] ())
 
+-- | Create warning for duplicate lines
+validateDups :: Env -> Result ()
+validateDups env = unless (dups (getPrems env)) $ Ok [createDupWarning env] ()
 
+-- | Top-level warning creator
+sendWarns :: Env -> Result ()
+sendWarns env = validateRefs env >> validateDups env
 
 -- | Filter warnings by minimum severity level
 filterWarningsBySeverity :: Severity -> [Warning] -> [Warning]
@@ -105,6 +110,10 @@ isPremiseRef :: Ref -> [Formula] -> Bool
 isPremiseRef (RefLine n) premises =
             n <= toInteger (length premises) && n > 0
 isPremiseRef _ _ = False
+
+-- | Check if there are duplicate formulas
+dups :: [Formula] -> Bool
+dups xs = List.length (List.nub xs) /= length xs
 
 -- | Show this show that
 showRef :: Ref -> String

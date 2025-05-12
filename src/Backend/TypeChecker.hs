@@ -76,7 +76,7 @@ checkFE doc = do
     let env = newEnv { user_rules = rules}
 
     (_, finalEnv) <- checkSequentFE env seq
-    validateRefs finalEnv
+    sendWarns finalEnv
     return ()
 
 checkFEUserDefinedRules :: [FE.FEUserDefinedRule] -> Result (Map.Map String UDefRule)
