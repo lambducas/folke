@@ -51,7 +51,7 @@ renderMarkdown wenv model markdown = widgetTree
 
     -- Blocks
     convert (Node _ BLOCK_QUOTE children) = vstack_ [childSpacing] (map convert children) `styleBasic` [paddingH (u model), paddingV (0.5*u model), bgColor hoverColor, border 1 dividerColor, radius 8]
-    convert (Node _ (CODE_BLOCK _language content) _) = paragraph model content `styleBasic` [bgColor hoverColor, radius 8, padding (u model)]
+    convert (Node _ (CODE_BLOCK _language content) _) = paragraph model content `styleBasic` [bgColor hoverColor, radius 8, padding (u model), logicTextFont model]
     
     -- Lists
     convert (Node _ (LIST attr) children) = vstack_ [childSpacing_ (0.5 * u model)] (zipWith (\f i -> hstack [span model (getBullet i), convert f]) children [startNumber..]) `styleBasic` [paddingL (2 * u model)]
