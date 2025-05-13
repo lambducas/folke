@@ -46,7 +46,8 @@ customLightTheme = baseTheme lightThemeColors {
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 0 0 0 0.1
-  & L.userColorMap . at "proofBoxColor" ?~ rgba 0 0 0 0.3
+  & L.userColorMap . at "proofBoxColor" ?~ rgba 0 0 0 0.4
+  & L.userColorMap . at "rSCproofBoxColor" ?~ rgba 0 0 0 0.6
 
 customDarkTheme :: Theme
 customDarkTheme = baseTheme darkThemeColors {
@@ -76,7 +77,9 @@ customDarkTheme = baseTheme darkThemeColors {
   & L.userColorMap . at "hoverColor" ?~ rgba 255 255 255 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 255 255 255 0.1
   & L.userColorMap . at "dividerColor" ?~ rgba 255 255 255 0.1
-  & L.userColorMap . at "proofBoxColor" ?~ rgba 255 255 255 0.3
+  & L.userColorMap . at "proofBoxColor" ?~ rgba 255 255 255 0.4
+  & L.userColorMap . at "rSCproofBoxColor" ?~ rgba 255 255 255 0.6
+
 
 getActualTheme :: SelectableTheme -> Theme
 getActualTheme Light = customLightTheme

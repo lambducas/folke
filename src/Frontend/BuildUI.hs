@@ -85,7 +85,7 @@ buildUI wenv model = widgetTree where
   selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
   hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
-  -- proofBoxColor = selTheme ^. L.userColorMap . at "proofBoxColor" . non def
+  proofBoxColor = selTheme ^. L.userColorMap . at "rSCproofBoxColor" . non def
 
   h1 = Frontend.Components.GeneralUIComponents.h1 model
   h2 = Frontend.Components.GeneralUIComponents.h2 model
@@ -492,7 +492,7 @@ buildUI wenv model = widgetTree where
 
   ruleUseWidgetList0 :: [[WidgetNode AppModel AppEvent]]
   ruleUseWidgetList0 = [
-    [box (box (aR "1.p" "assume") `styleBasic` [padding 10, border 2 dividerColor])],-- ("assume", "assume"),
+    [box (box (aR "1.p" "assume") `styleBasic` [padding 10, border 2 proofBoxColor])],-- ("assume", "assume"),
     [s "1.p", aR "2.p" "copy 1"],-- ("copy", "copy"),
     [s "1.p", s "2.q", aR "3.p∧q" "∧I (1,2)"],-- ("AndI", "∧I"),
     [s "1.p∧q", aR "2.p" "∧EL 1"],-- ("AndEL", "∧EL"),
