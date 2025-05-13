@@ -514,11 +514,11 @@ buildUI wenv model = widgetTree where
     where 
       s f = hstack [symbolSpan f]
       aR o r = hstack [symbolSpan o, filler, symbolSpan r]
-      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, b 2 popupBackground])]
+      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, b 2 popupBackground])]
   
   ruleUseWidgetList1 :: [[WidgetNode AppModel AppEvent]]
   ruleUseWidgetList1 = [
-    [box (box (aR "1.x₀" "fresh") `styleBasic` [padding 10, border 2 dividerColor])],-- ("fresh", "fresh"),
+    [box (box (aR "1.x₀" "fresh") `styleBasic` [padding 10, border 2 proofBoxColor])],-- ("fresh", "fresh"),
     [aR "1.t = t" "=I"],-- ("EqI", "=I"),
     [s "1.t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"],-- ("EqE", "=E"),
     [s "1.∀x.P(x)", aR "2.P[t/x]" "∀E 1 w.t"],-- ("AllE", "∀E"),
@@ -529,8 +529,8 @@ buildUI wenv model = widgetTree where
     where 
       s f = hstack [symbolSpan f]
       aR o r = hstack [symbolSpan o, filler, symbolSpan r]
-      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, b 2 popupBackground])]
-      sPM i f = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, borderT 2 popupBackground, borderB 2 popupBackground])]
+      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, b 2 popupBackground])]
+      sPM i f = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, borderT 2 popupBackground, borderB 2 popupBackground])]
 
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text
