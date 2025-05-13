@@ -394,10 +394,11 @@ buildUI wenv model = widgetTree where
       ruleItem (a,s) r = dropdownV_ (-1::Int) (\x y -> NoEvent) (ruleWidgetToInt r) 
         (const $ box (symbolSpan s)) 
         (intToRuleRow r) 
-        [itemBasicStyle (ruleDdStyle (bgColor popupBackground) (border 0 popupBackground)), itemSelectedStyle (ruleDdStyle (bgColor popupBackground) (border 0 popupBackground))]--box_ [onClick NoEvent] (symbolSpan r)
+        [itemBasicStyle (ruleDdStyle (bgColor popupBackground) (border 2 popupBackground)), 
+          itemSelectedStyle (ruleDdStyle (bgColor popupBackground) (border 2 popupBackground))]
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor, bgColor clearColor]
         `styleHover` [bgColor hoverColor]
-        `styleActive` [bgColor selectedColor]
+        `styleActive` [bgColor selectedColor] 
 
       symbolItem s = box_ [onClick (SimulateTextInput s), onClickEmpty (SimulateTextInput s)] (symbolSpan s)
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
@@ -491,42 +492,45 @@ buildUI wenv model = widgetTree where
 
   ruleUseWidgetList0 :: [[WidgetNode AppModel AppEvent]]
   ruleUseWidgetList0 = [
-    [box (aR "1.p" "assume")],-- ("assume", "assume"),
-    [s "1. p", aR "2.p" "copy p"],-- ("copy", "copy"),
-    [s "1. p", s "2. q", aR "3.p∧q" "∧I 1,2"],-- ("AndI", "∧I"),
-    [s "1. p∧q", aR "2.p" "∧EL 1"],-- ("AndEL", "∧EL"),
-    [s "1. p∧q", aR "2.q" "∧EL 1"],-- ("AndER", "∧ER"),
-    [s "1. p", aR "2.q∨p" "∨IL 1"],-- ("OrIL", "∨IL"),
-    [s "1. p", aR "2.p∨q" "∨IL 1"],-- ("OrIR", "∨IR"),
-    [],-- ("OrE", "∨E"),
-    [],-- ("ImplI", "→I"),
-    [],-- ("ImplE", "→E"),
-    [],-- ("NotI", "¬I"),
-    [],-- ("NotE", "¬E"),
-    [],-- ("BotE", "⊥E"),
-    [],-- ("NotNotI", "¬¬I"),
-    [],-- ("NotNotE", "¬¬E"),
-    [],-- ("MT", "MT"),
-    [],-- ("PBC", "PBC"),
-    []-- ("LEM", "LEM")
+    [box (box (aR "1.p" "assume") `styleBasic` [padding 10, border 2 dividerColor])],-- ("assume", "assume"),
+    [s "1.p", aR "2.p" "copy 1"],-- ("copy", "copy"),
+    [s "1.p", s "2.q", aR "3.p∧q" "∧I (1,2)"],-- ("AndI", "∧I"),
+    [s "1.p∧q", aR "2.p" "∧EL 1"],-- ("AndEL", "∧EL"),
+    [s "1.p∧q", aR "2.q" "∧EL 1"],-- ("AndER", "∧ER"),
+    [s "1.p", aR "2.q∨p" "∨IL 1"],-- ("OrIL", "∨IL"),
+    [s "1.p", aR "2.p∨q" "∨IL 1"],-- ("OrIR", "∨IR"),
+    [s "1.p∨q",sP "2." "p" borderB, sP "3." "r" borderT, sP "4." "q" borderB, sP "5." "r" borderT, aR "6.r" "∨E (1,2-3,4-5)"],-- ("OrE", "∨E"),
+    [sP "1." "p" borderB, sP "2." "q" borderT, aR "3.p → q" "→I (1-i)"],-- ("ImplI", "→I"),
+    [s "1.p", s "2.p → q", aR "3.q" "→E (1,2)"],-- ("ImplE", "→E"),
+    [sP "1." "p" borderB, sP "2." "⊥" borderT, aR "3.¬p" "¬I (1-2)"],-- ("NotI", "¬I"),
+    [s "1.p", s "2.¬p", aR "3.⊥" "¬E (1,2)"],-- ("NotE", "¬E"),
+    [s "1.⊥", aR "2.p" "⊥E 1"],-- ("BotE", "⊥E"),
+    [s "1.p", aR "2.¬¬p" "¬¬I 1"],-- ("NotNotI", "¬¬I"),
+    [s "1.¬¬p", aR "2.p" "¬¬E 1"],-- ("NotNotE", "¬¬E"),
+    [s "1.p → q", s "2.¬q", aR "3.¬p" "MT (1,2)"],-- ("MT", "MT"),
+    [sP "1." "¬p" borderB, sP "2." "⊥" borderT, aR "3.p" "PBC (1-2)"],-- ("PBC", "PBC"),
+    [aR "1.p∨¬p" "LEM"]-- ("LEM", "LEM")
     ]
     where 
-      s = symbolSpan
-      aR o i = hstack [symbolSpan o, filler, symbolSpan i]
+      s f = hstack [symbolSpan f]
+      aR o r = hstack [symbolSpan o, filler, symbolSpan r]
+      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, b 2 popupBackground])]
   
   ruleUseWidgetList1 :: [[WidgetNode AppModel AppEvent]]
   ruleUseWidgetList1 = [
-    [],-- ("fresh", "fresh"),
-    [],-- ("EqI", "=I"),
-    [],-- ("EqE", "=E"),
-    [],-- ("AllE", "∀E"),
-    [],-- ("AllI", "∀I"),
-    [],-- ("SomeE", "∃E"),
-    []-- ("SomeI", "∃I")
+    [box (box (aR "1.x₀" "fresh") `styleBasic` [padding 10, border 2 dividerColor])],-- ("fresh", "fresh"),
+    [aR "1.t = t" "=I"],-- ("EqI", "=I"),
+    [s "1.t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"],-- ("EqE", "=E"),
+    [s "1.∀x.P(x)", aR "2.P[t/x]" "∀E 1 w.t"],-- ("AllE", "∀E"),
+    [sP "1." "x₀" borderB, sP "2." "P[x₀/x]" borderT, aR "2.∀x.P(x)" "∀I (1-2)"],-- ("AllI", "∀I"),
+    [s "1.∃x.P(x)", sP "2." "x₀" borderB, sPM "3." "P[x₀/x]", sP "4." "q" borderT, aR "5.q" "∃E (1,2-4)"],-- ("SomeE", "∃E"),
+    [s "1.P[t/x]", aR "2.∃x.P(x)" "∃I 1"]-- ("SomeI", "∃I")
     ]
     where 
-      s = symbolSpan
-      aR o i = hstack [symbolSpan o, filler, symbolSpan i]
+      s f = hstack [symbolSpan f]
+      aR o r = hstack [symbolSpan o, filler, symbolSpan r]
+      sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, b 2 popupBackground])]
+      sPM i f = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 dividerColor, borderT 2 popupBackground, borderB 2 popupBackground])]
 
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text
