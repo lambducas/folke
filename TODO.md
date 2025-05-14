@@ -10,7 +10,7 @@
 ## Backend
 - [ ] Custom rules
 - [ ] Better error messages
-- [ ] Add warning sensitivty using our Severity type
+- [x] Add warning sensitivty using our Severity type
 - [ ] Package backend with arbitrary frontend (DSL library for proof editor backend)
 
 - [x] Empty lines should not be an error if it's the last line of the proof (if the proof is unfinished the error should be "unfinished proof" and not "empty step")
