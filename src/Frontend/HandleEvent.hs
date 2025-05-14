@@ -70,7 +70,7 @@ handleEvent env wenv node model evt = case evt of
   -- else []
 
   AppInit -> [
-      Producer (startDebouncer env),
+      Producer (startDebouncer initialWait env),
       Producer $ directoryFilesProducer (model ^. persistentState . workingDir),
       Task $ do
         frontendChan <- newChan
@@ -79,6 +79,7 @@ handleEvent env wenv node model evt = case evt of
         return $ BackendResponse answer
     ] ++ firstTimeEvent
     where
+      initialWait = not $ model ^. preferences . autoCheckProofTracker . acpEnabled
       firstTimeEvent = if model ^. persistentState . firstTime
         then [
           Model $ model & persistentState . firstTime .~ False,
@@ -674,21 +675,24 @@ directoryFilesProducer workingDir sendMsg = do
 "Debounce" changes in current proof and only check the proof
 if no changes has been made for some time
 -}
-startDebouncer :: AppEnv -> (AppEvent -> IO ()) -> IO ()
-startDebouncer env sendMsg = forever $ do
-  -- Get number of changes since last update
-  inputs <- collectJustM . atomically $ tryReadTChan channel
-
-  -- No new changes, check proof
-  when (null inputs) $ do
-    sendMsg CheckCurrentProof
-    -- Wait here for next change
+startDebouncer :: Bool -> AppEnv -> (AppEvent -> IO ()) -> IO ()
+startDebouncer initialWait env sendMsg = do
+  when initialWait $ do
     atomically $ readTChan channel
+  forever $ do
+    -- Get number of changes since last update
+    inputs <- collectJustM . atomically $ tryReadTChan channel
 
-  threadDelay _250ms
-  where
-    _250ms = 250 * 1000
-    channel = env ^. envChannel
+    -- No new changes, check proof
+    when (null inputs) $ do
+      sendMsg CheckCurrentProof
+      -- Wait here for next change
+      atomically $ readTChan channel
+
+    threadDelay _250ms
+    where
+      _250ms = 250 * 1000
+      channel = env ^. envChannel
 
 -- | Notify debouncer that changes have been made to proof
 sendProofDidChange :: AppEnv -> IO AppEvent
