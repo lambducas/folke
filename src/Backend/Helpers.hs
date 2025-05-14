@@ -36,7 +36,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 
 import Backend.Environment
 import Shared.Messages
@@ -81,15 +81,21 @@ validateRefs env =
 
 -- | Create warning for duplicate lines
 validateDups :: Env -> Result ()
-validateDups env = unless (dups (getPrems env)) $ Ok [createDupWarning env] ()
+validateDups env =
+  Control.Monad.when (dups (getPrems env)) $ Ok [createDupWarning env] ()
 
 -- | Top-level warning creator
 sendWarns :: Env -> Result ()
 sendWarns env = validateRefs env >> validateDups env
 
--- | Filter warnings by minimum severity level
 filterWarningsBySeverity :: Severity -> [Warning] -> [Warning]
-filterWarningsBySeverity minSeverity = List.filter (\w -> warnSeverity w >= minSeverity)
+filterWarningsBySeverity minSeverity = List.filter (\w -> severityValue (warnSeverity w) >= severityValue minSeverity)
+
+-- | Get numeric value of severity
+severityValue :: Severity -> Int
+severityValue Low = 1
+severityValue Medium = 2
+severityValue High = 3
 
 -- | Filter warnings in a Result to only include high severity ones
 filterResultWarnings :: Result a -> ([Warning] -> [Warning]) -> Result a
