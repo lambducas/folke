@@ -32,8 +32,8 @@ menuBarCategories = [
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Open File", "Ctrl+O", OpenFileFromFileSystem),
       ("Close File", "Ctrl+W", CloseCurrentFile),
-      ("Export To LaTeX", "", ExportToLaTeX),
-      ("Export to LaTeX and PDF", "", ExportToPDF),
+      ("Export to LaTeX", "", ExportToLaTeX),
+      ("Export to PDF", "", ExportToPDF),
       ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
@@ -499,22 +499,23 @@ buildUI wenv model = widgetTree where
     [s "1.p∧q", aR "2.q" "∧EL 1"],-- ("AndER", "∧ER"),
     [s "1.p", aR "2.q∨p" "∨IL 1"],-- ("OrIL", "∨IL"),
     [s "1.p", aR "2.p∨q" "∨IL 1"],-- ("OrIR", "∨IR"),
-    [s "1.p∨q",sP "2." "p" borderB, sP "3." "r" borderT, sP "4." "q" borderB, sP "5." "r" borderT, aR "6.r" "∨E (1,2-3,4-5)"],-- ("OrE", "∨E"),
-    [sP "1." "p" borderB, sP "2." "q" borderT, aR "3.p → q" "→I (1-i)"],-- ("ImplI", "→I"),
+    [s "1.p∨q",sP "2." "p" borderB, dot, sP "h." "r" borderT, sP "i." "q" borderB, dot, sP "j." "r" borderT, aR "k.r" "∨E (1,2-h,i-j)"],-- ("OrE", "∨E"),
+    [sP "1." "p" borderB, dot, sP "i." "q" borderT, aR "j.p → q" "→I (1-i)"],-- ("ImplI", "→I"),
     [s "1.p", s "2.p → q", aR "3.q" "→E (1,2)"],-- ("ImplE", "→E"),
-    [sP "1." "p" borderB, sP "2." "⊥" borderT, aR "3.¬p" "¬I (1-2)"],-- ("NotI", "¬I"),
+    [sP "1." "p" borderB, dot, sP "i." "⊥" borderT, aR "j.¬p" "¬I (1-i)"],-- ("NotI", "¬I"),
     [s "1.p", s "2.¬p", aR "3.⊥" "¬E (1,2)"],-- ("NotE", "¬E"),
     [s "1.⊥", aR "2.p" "⊥E 1"],-- ("BotE", "⊥E"),
     [s "1.p", aR "2.¬¬p" "¬¬I 1"],-- ("NotNotI", "¬¬I"),
     [s "1.¬¬p", aR "2.p" "¬¬E 1"],-- ("NotNotE", "¬¬E"),
     [s "1.p → q", s "2.¬q", aR "3.¬p" "MT (1,2)"],-- ("MT", "MT"),
-    [sP "1." "¬p" borderB, sP "2." "⊥" borderT, aR "3.p" "PBC (1-2)"],-- ("PBC", "PBC"),
+    [sP "1." "¬p" borderB, dot, sP "i." "⊥" borderT, aR "j.p" "PBC (1-i)"],-- ("PBC", "PBC"),
     [aR "1.p∨¬p" "LEM"]-- ("LEM", "LEM")
     ]
     where 
       s f = hstack [symbolSpan f]
       aR o r = hstack [symbolSpan o, filler, symbolSpan r]
       sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, b 2 popupBackground])]
+      dot = s "  ..."
   
   ruleUseWidgetList1 :: [[WidgetNode AppModel AppEvent]]
   ruleUseWidgetList1 = [
@@ -522,8 +523,8 @@ buildUI wenv model = widgetTree where
     [aR "1.t = t" "=I"],-- ("EqI", "=I"),
     [s "1.t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"],-- ("EqE", "=E"),
     [s "1.∀x.P(x)", aR "2.P[t/x]" "∀E 1 w.t"],-- ("AllE", "∀E"),
-    [sP "1." "x₀" borderB, sP "2." "P[x₀/x]" borderT, aR "2.∀x.P(x)" "∀I (1-2)"],-- ("AllI", "∀I"),
-    [s "1.∃x.P(x)", sP "2." "x₀" borderB, sPM "3." "P[x₀/x]", sP "4." "q" borderT, aR "5.q" "∃E (1,2-4)"],-- ("SomeE", "∃E"),
+    [sP "1." "x₀" borderB, dot, sP "i." "P[x₀/x]" borderT, aR "j.∀x.P(x)" "∀I (1-i)"],-- ("AllI", "∀I"),
+    [s "1.∃x.P(x)", sP "2." "x₀" borderB, sPM "3." "P[x₀/x]", dot, sP "i." "q" borderT, aR "j.q" "∃E (1,2-i)"],-- ("SomeE", "∃E"),
     [s "1.P[t/x]", aR "2.∃x.P(x)" "∃I 1"]-- ("SomeI", "∃I")
     ]
     where 
@@ -531,6 +532,7 @@ buildUI wenv model = widgetTree where
       aR o r = hstack [symbolSpan o, filler, symbolSpan r]
       sP i f b = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, b 2 popupBackground])]
       sPM i f = hstack [s i, box (box (hstack[s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, borderT 2 popupBackground, borderB 2 popupBackground])]
+      dot = s "  ..."
 
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text
