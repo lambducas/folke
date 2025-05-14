@@ -103,7 +103,7 @@ themeSwitch_
   -> WidgetNode s e    -- ^ The created themeSwitch container.
 themeSwitch_ theme configs managed = makeNode widget managed where
   config = mconcat configs
-  state = ThemeSwitchState Nothing False
+  state = ThemeSwitchState (Just theme) False
   widget = makeThemeSwitch theme config state
 
 makeNode :: Widget s e -> WidgetNode s e -> WidgetNode s e

@@ -36,13 +36,15 @@ import Control.Monad (filterM)
 
 data DetailsModel = DetailsModel {
   _dOpen :: Bool,
-  _dLoadedFiles :: Maybe LoadedFiles
+  _dLoadedFiles :: Maybe LoadedFiles,
+  _dSelectedFile :: Maybe FilePath
 } deriving (Show, Eq)
 
 instance Default DetailsModel where
   def = DetailsModel {
     _dOpen = False,
-    _dLoadedFiles = Nothing
+    _dLoadedFiles = Nothing,
+    _dSelectedFile = Nothing
   }
 
 makeLensesWith abbreviatedFields 'LoadedFiles
@@ -91,7 +93,8 @@ details configs appModel loadedFiles = newNode where
   uiBuilder = buildUI appModel "" 1
   eventHandler =  handleEvent "" config
   mergeModel _wenv _parentModel oldModel _newModel = oldModel {
-      _dLoadedFiles = Just loadedFiles
+      _dLoadedFiles = Just loadedFiles,
+      _dSelectedFile = _parentModel ^. persistentState . currentFile
     }
   compCfg = [compositeMergeModel mergeModel]
   newNode = compositeD_ "details" model uiBuilder eventHandler compCfg
@@ -108,7 +111,9 @@ details2 configs appModel parentDirPath header indent = newNode where
   model = WidgetValue def
   uiBuilder = buildUI2 configs appModel parentDirPath header indent
   eventHandler = handleEvent parentDirPath config
-  mergeModel _wenv _parentModel oldModel _newModel = oldModel
+  mergeModel _wenv parentModel oldModel _newModel = oldModel {
+      _dSelectedFile = _dSelectedFile parentModel
+    }
   compCfg = [compositeMergeModel mergeModel]
   newNode = compositeD_ "details2" model uiBuilder eventHandler compCfg
 
@@ -214,7 +219,7 @@ fileItem appModel indent filePath = box_ [expandContent, onBtnReleased handleBtn
     span_ appModel displayLabel [ellipsis]
   ]
     `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
-    `styleBasic` [borderB 1 dividerColor, paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
+    `styleBasic` [styleIf (not isCurrent) (borderB 1 dividerColor), paddingL (16 * indent), paddingR 16, paddingV 8, cursorHand, styleIf isCurrent (bgColor selectedColor)]
   where
     handleBtn BtnLeft _ = DOpenFile relativePath
     handleBtn BtnRight _ = DOpenContextMenu filePath relativePath

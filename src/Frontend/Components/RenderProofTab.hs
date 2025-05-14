@@ -25,13 +25,15 @@ import Data.Text (Text, pack, intercalate, unpack, toLower, isInfixOf)
 import qualified Data.Text (length)
 import Data.Default (Default(def))
 import Data.Either (isLeft)
+import Data.Maybe (fromMaybe)
+import Data.Set (fromList, toList)
 import qualified Data.Map
 import Control.Lens
 import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
-import Data.Set (fromList, toList)
-import Data.Maybe (fromMaybe)
+import Frontend.Helper.ProofHelper (getCurrentSequent)
+-- import Frontend.Components.ProofRow
 
 renderProofTab
   :: WidgetEnv AppModel AppEvent
@@ -39,7 +41,7 @@ renderProofTab
   -> File
   -> Text
   -> WidgetNode AppModel AppEvent
-renderProofTab _wenv model file heading = renderProofTab' file heading where
+renderProofTab _wenv model file heading = cached where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
@@ -70,61 +72,91 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
   -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
-  renderProofTab' :: File -> Text -> WidgetNode AppModel AppEvent
-  renderProofTab' file heading = case _parsedDocument file of
-    Nothing -> vstack [
+  cached = box_ [mergeRequired hasChanged] updated
+  updated = renderProofTab'
+  hasChanged _wenv old new =
+      oldProofStatus /= newProofStatus ||
+      -- oldHovered /= newHovered ||
+      oldSeq /= newSeq ||
+      old ^. persistentState . currentFile /= new ^. persistentState . currentFile ||
+      old ^. preferences . warningMessageSeverity /= new ^. preferences . warningMessageSeverity
+    where
+      oldProofStatus = old ^. proofStatus
+      -- oldHovered = old ^. hoveredProofLine
+      oldSeq = getCurrentSequent old
+
+      newProofStatus = new ^. proofStatus
+      -- newHovered = new ^. hoveredProofLine
+      newSeq = getCurrentSequent new
+
+  renderProofTab' :: WidgetNode AppModel AppEvent
+  renderProofTab' = maybe invalidProofTab validProofTab (_parsedDocument file)
+
+  invalidProofTab = vstack [
+      vstack [
+        h1 $ pack $ _path file,
+        spacer
+      ] `styleBasic` [padding 10, borderB 1 dividerColor],
+      fastVScroll (vstack [
+        paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
+        spacer,
+        paragraph "File preview:",
+        spacer,
+        symbolSpan_ (getContent file) [multiline]
+      ]) `styleBasic` [padding 10]
+    ]
+    where
+      getContent (OtherFile {}) = _content file
+      getContent (MarkdownFile {}) = _content file
+      getContent (ProofFile {}) = _content file
+      getContent _ = "Could not get content!";
+
+  validProofTab parsedDocument = vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
+      vstack [
+        proofHeader parsedDocument,
+        proofBody parsedDocument
+      ],
+      proofFooter
+    )
+
+  proofHeader parsedDocument = vstack [
+      hstack [
+        h1 heading,
+        filler,
         vstack [
-          h1 $ pack $ _path file,
-          spacer
-        ] `styleBasic` [padding 10, borderB 1 dividerColor],
-        fastVScroll (vstack [
-          paragraph "Corrupt proof! Try editing the proof-file in a text editor to fix it. Close this tab and reopen the proof-file after corrupted data is removed",
-          spacer,
-          paragraph "File preview:",
-          spacer,
-          symbolSpan_ (_content file) [multiline]
-        ]) `styleBasic` [padding 10]
-      ]
-    Just parsedDocument -> vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
-        vstack [
-          vstack [
-            hstack [
-              h1 heading,
-              filler,
-              vstack [
-                span "Warning sensetivity:",
-                textDropdown_ (preferences . warningMessageSeverity) [3,2,1] intToWarningSeverity [] 
-                  `styleBasic` [width 50, textSize u, normalTextFont model]
-              ],
-              spacer,
-              labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) 
-                `styleBasic` [textSize u, normalTextFont model]
-              ],
-            spacer,
-            subheading
-          ] `styleBasic` [padding 10, borderB 1 dividerColor],
-          fastVScroll (proofTreeUI parsedSequent) `styleBasic` [paddingT 10, paddingL 10]
+          span "Warning sensitivity:",
+          textDropdown_ (preferences . warningMessageSeverity) [3,2,1] intToWarningSeverity []
+            `styleBasic` [width 50, textSize u, normalTextFont model]
         ],
-        hstack [
-          proofStatusLabel,
-          filler,
-          --labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled), spacer,
-          box $ button "Save proof" (SaveFile file),
-          spacer,
-          box $ button "Check proof" (CheckProof file)
-        ] `styleBasic` [padding 10, borderT 1 dividerColor, rangeHeight 50 300]
-      )
-      where
-        subheading
-          | null premises && conclusion == "" = span "Empty proof"
-          | otherwise = symbolSpan prettySequent
-        prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
-        conclusion = _conclusion parsedSequent
-        premises = _premises parsedSequent
-        parsedSequent = _sequent parsedDocument
+        spacer,
+        labeledCheckbox_  "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
+          `styleBasic` [textSize u, normalTextFont model]
+        ],
+      spacer,
+      subheading
+    ] `styleBasic` [padding 10, borderB 1 dividerColor]
+    where
+      subheading
+        | null premises && conclusion == "" = span "Empty proof"
+        | otherwise = symbolSpan_ prettySequent [ellipsis] `styleBasic` [height (1.25*u)]
+      prettySequent = intercalate ", " premises <> " ⊢ " <> conclusion
+      conclusion = _conclusion parsedSequent
+      premises = _premises parsedSequent
+      parsedSequent = _sequent parsedDocument
+
+  proofBody document = fastVScroll (proofBodyContent document) `styleBasic` [paddingT 10, paddingL 10]
+
+  proofFooter = hstack [
+      proofStatusLabel,
+      filler,
+      --labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled), spacer,
+      box $ button "Save proof" (SaveFile file),
+      spacer,
+      box $ button "Check proof" (CheckProof file)
+    ] `styleBasic` [padding 10, borderT 1 dividerColor, rangeHeight 50 300]
 
   proofStatusLabel = case model ^. proofStatus of
-    Nothing -> span "Checking proof..." `styleBasic` [textColor orange]
+    Nothing -> span "Ready to check proof" `styleBasic` [textColor gray]
     Just (FEError warns error) ->
       vstack_ [childSpacing] [
         bold $ span "Proof is incorrect" `styleBasic` [textColor red],
@@ -141,45 +173,38 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
     where
       renderWarningList warns = vstack_ [childSpacing] (map (flip styleBasic [textColor orange] . span . pack . show) warns)
 
-  proofTreeUI :: FESequent -> WidgetNode AppModel AppEvent
-  proofTreeUI sequent = vstack [
+  proofBodyContent :: FEDocument -> WidgetNode AppModel AppEvent
+  proofBodyContent document = vstack [
       hgrid_ [childSpacing] [
-        vstack_ [childSpacing] [
-          h2 "Premises",
-          vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
-          widgetIf (null $ _premises sequent) (span "No premises"),
-          hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
-        ],
-        vstack_ [childSpacing] [
-          h2 "Conclusion",
-          box_ [alignLeft] (
-            someKeystrokes [
-              ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
-              ("Down", NextFocus 1, True),
-              ("Enter", NextFocus 1, True)
-            ] (symbolStyle $ textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"]
-              -- `styleBasic` [maxWidth 600]
-              `styleBasic` [styleIf isConclusionError (border 1 red)]
-              `nodeKey` "conclusion.input")
-          )
-        ]
+        premiseWidget,
+        conclusionWidget
       ]
         `styleBasic` [paddingR 20],
       spacer, spacer,
 
-      h2 "Proof",
-      spacer,
-      hstack [
-        lineNumbers,
-        tree
-      ],
+      proofWidget,
 
       -- Hack so last proof line can scroll all the way to the top
       box (label "") `styleBasic` [height 1000]
     ]
     where
-      isConclusionError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
-      nrPremises = length (_premises sequent)
+      sequent = _sequent document
+
+      premiseWidget = box_ [mergeRequired hasChanged, alignTop, alignLeft] $
+        vstack_ [childSpacing] [
+          h2 "Premises",
+          vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
+          widgetIf (null $ _premises sequent) (span "No premises"),
+          hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
+        ]
+        where
+          hasChanged _wenv old new = oldPremises /= newPremises
+            where
+              oldSeq = getCurrentSequent old
+              oldPremises = oldSeq >>= Just . _premises
+              newSeq = getCurrentSequent new
+              newPremises = newSeq >>= Just . _premises
+
       premiseLine premise idx = box_ [alignLeft] $ hstack [
           someKeystrokes [
             ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx - 1)), True),
@@ -198,9 +223,42 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           -- `styleBasic` [maxWidth 400]
         where isPremiseError = trimText premise == "" || isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse premise))))
 
-      -- pfDropTarget idx w = dropTarget_ ((\msg -> Print (show msg <> " to " <> show idx)) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle] w
-      pfDropTarget idx = dropTarget_ ((\p -> MovePathToPath p idx) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle]
-        where hoverStyle = [borderB 3 accentColor, bgColor hoverColor]
+      conclusionWidget = box_ [mergeRequired hasChanged, alignTop, alignLeft] $
+        vstack_ [childSpacing] [
+          h2 "Conclusion",
+          box_ [alignLeft] (
+            someKeystrokes [
+              ("Up", FocusOnKey $ WidgetKey ("premise.input." <> showt (nrPremises - 1)), nrPremises >= 1),
+              ("Down", NextFocus 1, True),
+              ("Enter", NextFocus 1, True)
+            ] (symbolStyle $ textFieldV_ (_conclusion sequent) EditConclusion [placeholder "Enter conclusion here"]
+              -- `styleBasic` [maxWidth 600]
+              `styleBasic` [styleIf isError (border 1 red)]
+              `nodeKey` "conclusion.input")
+          )
+        ]
+        where
+          isError = isLeft (pForm (myLexer (unpack (replaceSpecialSymbolsInverse (_conclusion sequent)))))
+
+          hasChanged _wenv old new = oldNrPremises /= newNrPremises || oldConclusion /= newConclusion
+            where
+              oldSeq = getCurrentSequent old
+              oldPremises = oldSeq >>= Just . _premises
+              oldConclusion = oldSeq >>= Just . _conclusion
+              oldNrPremises = fromMaybe (-1) (oldPremises >>= Just . length)
+
+              newSeq = getCurrentSequent new
+              newPremises = newSeq >>= Just . _premises
+              newConclusion = newSeq >>= Just . _conclusion
+              newNrPremises = fromMaybe (-1) (newPremises >>= Just . length)
+
+      proofWidget = vstack_ [childSpacing] [
+          h2 "Proof",
+          hstack [
+            lineNumbers,
+            tree
+          ]
+        ]
 
       tree = vstack [
           ui,
@@ -222,6 +280,9 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               spacer,
               vstack [] `styleBasic` [width 250]
             ] `styleBasic` [height 34]
+
+      pfDropTarget idx = dropTarget_ ((\p -> MovePathToPath p idx) :: FormulaPath -> AppEvent) [dropTargetStyle hoverStyle]
+        where hoverStyle = [borderB 3 accentColor, bgColor hoverColor]
 
       pf :: FEStep -> Integer -> FormulaPath -> (WidgetNode AppModel AppEvent, Integer)
       pf (SubProof p) index path = (ui, lastIndex)
@@ -249,17 +310,36 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
 
       pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
         where
+          -- hasChanged _wenv old new = True
+          --     -- oldHovered == l || newHovered == l ||
+          --     -- oldProofStatus /= newProofStatus ||
+          --     -- old ^. persistentState . currentFile /= new ^. persistentState . currentFile ||
+          --     -- oldNrPremises /= newNrPremises ||
+          --     -- oldStep /= newStep
+          --   where
+          --     l = fromIntegral lineNumber
+
+          --     oldProofStatus = old ^. proofStatus
+          --     -- oldHovered = old ^. hoveredProofLine
+          --     oldSeq = getCurrentSequent old
+          --     oldPremises = oldSeq >>= Just . _premises
+          --     oldNrPremises = fromMaybe (-1) (oldPremises >>= Just . length)
+          --     oldStep = oldSeq >>= evalPathSafe path
+
+          --     newProofStatus = new ^. proofStatus
+          --     -- newHovered = new ^. hoveredProofLine
+          --     newSeq = getCurrentSequent new
+          --     newPremises = newSeq >>= Just . _premises
+          --     newNrPremises = fromMaybe (-1) (newPremises >>= Just . length)
+          --     newStep = newSeq >>= evalPathSafe path
+
           ui = pfDropTarget path $ draggable_ path [transparency 0.3] $ box_ [onBtnReleased handleBtn, expandContent] $ vstack [
-              hstack [
+              -- box_ [
+              --       onEnter (SetHoveredProofLine (fromIntegral lineNumber))
+              --       -- onLeave (SetHoveredProofLine (-1))
+              --     ] $
+                  hstack [
                 hstack [
-                  -- span (pack (show (pForm (myLexer (unpack (replaceSpecialSymbolsInverse statement)))))),
-                  -- span (replaceSpecialSymbolsInverse statement),
-
-                  -- symbolSpan (showt index <> ".") `styleBasic` [textFont $ fromString $ model ^. logicFont],
-                  -- spacer,
-
-                  -- textFieldV "" (\_ -> NoEvent),
-
                   someKeystrokes [
                     ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
                     ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
@@ -273,7 +353,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
                     ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
-                  ] (symbolStyle $ textFieldV_ statement (EditFormula path) 
+                  ] (symbolStyle $ textFieldV_ statement (EditFormula path)
                       [onKeyDown handleFormulaKey, placeholder "Empty statement", textFieldPutCursorAtFirstMissmatch]
                     `styleBasic` [styleIf isWarning (border 1 orange)]
                     `styleBasic` [styleIf isStatementError (border 1 red)]
@@ -285,7 +365,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                   hstack_ [childSpacing] [
                     -- ruleKeystrokes ruleField
 
-                    ruleKeystrokes $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) allRules (const ruleField) label
+                    ruleKeystrokes $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const ruleField) label
                       `styleBasic` [styleIf isWarning (border 1 orange)]
                       `styleBasic` [styleIf isRuleError (border 1 red)],
 
@@ -294,7 +374,11 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                     `styleBasic` [width 300]
                 ],
                 spacer,
-                b
+                b -- `nodeVisible` (model ^. hoveredProofLine == fromIntegral lineNumber),
+                -- Keep spacing when buttons are hidden
+                -- label ""
+                --   `styleBasic` [width 250]
+                --   `nodeVisible` (model ^. hoveredProofLine /= fromIntegral lineNumber)
               ],
 
               widgetIf isError ((paragraph . pack . extractErrorMsg) (model ^. proofStatus))
@@ -322,7 +406,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
             ] w
               `nodeKey` (showt index <> ".rule.keystroke")
 
-          ruleField = symbolStyle $ textFieldV_ rule (EditRuleName path) 
+          ruleField = symbolStyle $ textFieldV_ rule (EditRuleName path)
             [onKeyDown handleRuleNameKey, placeholder "No rule", selectOnFocus]
               `styleBasic` [styleIf isWarning (border 1 orange)]
               `styleBasic` [styleIf isRuleError (border 1 red)]
@@ -344,7 +428,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
                 ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
-              ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx) 
+              ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx)
                 [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
                   `nodeKey` (showt index <> ".ruleArg." <> showt idx)
                   `styleBasic` [width 70]
@@ -390,7 +474,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               ] `styleBasic` [width 250]
 
           -- allRules = map fst visualRuleNames
-          allRules = (toList . fromList) $ filter (\f -> toLower rule `isInfixOf` toLower f) (map snd visualRuleNames)
+          allRules rule = (toList . fromList) $ filter (\f -> toLower rule `isInfixOf` toLower f) (map snd visualRuleNames) ++ ["" | rule == ""]
           -- allRules = (toList . fromList) $ replaceSpecialSymbols rule : filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) ((map fst visualRuleNames) ++ (map snd visualRuleNames))
           -- allRules = [replaceSpecialSymbols rule] ++ (filter (\f -> (replaceSpecialSymbols . toLower) rule `isInfixOf` toLower f) $ map (pack . fst) (Data.Map.toList $ rules newEnv))--[model ^. userLens, "Thecoder", "another", "bruh", "tesdt", "dsjhnsifhbsgfsghffgusgfufgssf", "1", "2"]
           --   where rules (Env _ _ r _ _ _ _ _) = r
@@ -456,7 +540,7 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
               cursorPos = _ifsCursorPos state
 
           isStatementError = isError || not (validateStatement statement)
-          isRuleError = isError || not (validateRule rule)
+          isRuleError = isError || not (validateRule document rule)
           isError = isErrorLine lineNumber (model ^. proofStatus)
           isWarning = not (null warnings)
           warnings = getWarningsOnLine lineNumber (model ^. proofStatus)
@@ -464,13 +548,14 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
           canBackspaceToDelete = rule == "" && statement == "" && trashActive
           trashActive = not (index == 1 && not nextIndexExists && statement == "" && rule == "")
           pathToParentSubProof = init path
+          parentSubProof = evalPath pathToParentSubProof sequent
           lastIndex = index + 1
           prevIndexExists = index > 1
           nextIndexExists = not (isLastLine && length path == 1)
-          isSubProofSingleton = length path /= 1 && isSingleton (evalPath pathToParentSubProof sequent)
+          isSubProofSingleton = length path /= 1 && isSingleton parentSubProof
           isSingleton (SubProof p) = length p == 1
           isSingleton _ = False
-          isLastLine = case evalPath pathToParentSubProof sequent of
+          isLastLine = case parentSubProof of
             SubProof p -> length p == last path + 1
             _ -> False
 
@@ -480,19 +565,6 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         | arrayIndex < length p = u : getSubProof p path (arrayIndex + 1) (snd u)
         | otherwise = []
           where u = pf (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
-
-      -- autoCheckingProof :: IO AppEvent
-      -- autoCheckingProof = do
-      --   threadDelay 1048576
-      --   yn <- return (model ^. autoCheckProofTracker . autoCheckProofIf)
-      --   case yn of
-      --     False -> do 
-      --       _ <- return NoEvent
-      --       autoCheckingProof
-      --     True -> do
-      --       _ <- return (CheckProof file)
-      --       _ <- return (SetAutoCheckProofIf False)
-      --       autoCheckingProof
 
       lineNumbers = ui
         where
@@ -542,3 +614,5 @@ renderProofTab _wenv model file heading = renderProofTab' file heading where
         | arrayIndex < length p = u : getSubProof2 p path (arrayIndex + 1) (snd u)
         | otherwise = []
           where u = ln (p !! arrayIndex) visualIndex (path ++ [arrayIndex])
+
+      nrPremises = length (_premises sequent)

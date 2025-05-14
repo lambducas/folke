@@ -14,11 +14,11 @@ module Frontend.Parse (
   parseRule
 ) where
 
-import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames )
+import Frontend.Types ( FEStep(SubProof, Line), FESequent(..), FormulaPath, ruleMetaDataMap, visualRuleNames, FEUserDefinedRule (_udrName) )
 import Frontend.Helper.General ( slice, trimText, pathToLineNumber )
 import Logic.Par (myLexer, pForm, pArg)
 import Shared.SpecialCharacters ( replaceSpecialSymbolsInverse, replaceSpecialSymbols, replaceFromInverseLookup )
-import Shared.FESequent (FEDocument)
+import Shared.FESequent (FEDocument(..))
 
 import Data.Aeson ( decode )
 import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
@@ -30,6 +30,7 @@ import Data.Text.Encoding (encodeUtf8Builder)
 import Data.ByteString.Builder(toLazyByteString)
 import qualified Data.Text as T
 import qualified Data.Map
+import qualified Data.List
 import TextShow (showt)
 
 -- | Check if the provided string is a valid way to write a formula
@@ -40,9 +41,14 @@ validateStatement statement = isRight res
     s = T.unpack (replaceSpecialSymbolsInverse statement)
 
 -- | Check if the provided string is a valid way to write a rule
-validateRule :: T.Text -> Bool
-validateRule rule = parsedRule == "" || isJust (Data.Map.lookup parsedRule ruleMetaDataMap)
-  where parsedRule = parseRule rule
+validateRule :: FEDocument -> T.Text -> Bool
+validateRule document rule = parsedRule == "" || isJust (Data.Map.lookup parsedRule ruleMetaDataMap) || isCustomRule
+  where
+    parsedRule = parseRule rule
+
+    isCustomRule = case _fedUserDefinedRules document of
+      Nothing -> False
+      Just rules -> isJust $ Data.List.find (\r -> _udrName r == parsedRule) rules
 
 -- | Check if the provided string is a valid way to write a rule argument
 validateRuleArgument :: T.Text -> Bool
@@ -145,7 +151,7 @@ parseProofFromSimpleFileFormat p = case proof of
       _ -> findClosingBracket text nestedLevel (idx + 1) cnl
       where char = text !! (idx + 1)
 
--- | Convert frontend sequent to string-representation used by backend (.logic format)
+-- | Deprecated: Convert frontend sequent to string-representation used by backend (.logic format)
 parseProofForBackend :: FESequent -> T.Text
 parseProofForBackend sequent = premises <> " |- " <> conclusion <> " " <> exportProofHelper 0 [] proof
   where

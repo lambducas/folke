@@ -206,9 +206,11 @@ handleEvent env wenv node model evt = case evt of
       -- f seq = (insertAfterAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef nextPath insertThis)
       insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> nextPath >>= Just . pathToLineNumber f) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
-      nextPath = init path ++ [last path + 1]
+      nextPath = if null path
+        then Nothing
+        else Just $ init path ++ [last path + 1]
 
   InsertLineBefore updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f ++ focusAction
     where
@@ -216,9 +218,11 @@ handleEvent env wenv node model evt = case evt of
       -- f seq = (insertBeforeAndMaybeUpdateRefs path insertThis updateRef seq, HInsertStep updateRef nextPath insertThis)
       insertThis = Line "" "" 0 []
       focusAction = fromMaybe [] maybeFocusAction
-      maybeFocusAction = (getCurrentSequent model >>= \f -> Just $ pathToLineNumber f nextPath) >>= getFocusAction
+      maybeFocusAction = (getCurrentSequent model >>= \f -> nextPath >>= Just . pathToLineNumber f) >>= getFocusAction
       getFocusAction l = Just [ SetFocusOnKey (WidgetKey $ showt l <> ".statement") ]
-      nextPath = init path ++ [last path + 0]
+      nextPath = if null path
+        then Nothing
+        else Just $ init path ++ [last path + 0]
 
   InsertSubProofAfter updateRef path -> applyOnCurrentProofAndRecordSequentHistory model f
     where
@@ -411,41 +415,41 @@ handleEvent env wenv node model evt = case evt of
           Nothing -> return NoEvent
           Just path -> return $ OpenFile_ path ""
 
+  OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd)
+    where wd = fromMaybe "" (model ^. persistentState . workingDir)
+
   OpenFile_ filePath folderPath -> [
       Producer (\sendMsg -> do
         preferencePath <- getPreferencePath
         let fullPath = folderPath FPP.</> filePath
-        pContent <- readFile fullPath
-        let pContentText = pack pContent
-        let pIsEdited = False
-        let pHistory = History {
-          _hState = [],
-          _hIndex = -1
-        }
+        pContent <- try (readFile fullPath) :: IO (Either SomeException String)
+        case pContent of
+          Left e -> print e
+          Right pContent -> do
+            let pContentText = pack pContent
+            let pIsEdited = False
+            let pHistory = History {
+              _hState = [],
+              _hIndex = -1
+            }
 
-        if takeExtension fullPath == ".md" then
-          sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
-        else if fullPath == preferencePath && folderPath == "" then
-          sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
-        else if takeExtension fullPath `elem` map ("." <>) feFileExts then
-          do
-            let doc = parseProofFromJSON pContentText
-            sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText doc pIsEdited pHistory)
-        else
-          sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
+            if takeExtension fullPath == ".md" then
+              sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
+            else if fullPath == preferencePath && folderPath == "" then
+              sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
+            else if takeExtension fullPath `elem` map ("." <>) feFileExts then
+              do
+                let doc = parseProofFromJSON pContentText
+                sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText doc pIsEdited pHistory)
+            else
+              sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
       )
     ]
 
-  OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd)
-    where wd = fromMaybe "" (model ^. persistentState . workingDir)
-
   OpenFileSuccess file -> [ Producer (\sendMsg -> do
       sendMsg $ OpenFileSuccess_ file
-      when (model ^. preferences . autoCheckProofTracker . acpEnabled) (
-        case file of
-          file@ProofFile {} -> sendMsg $ CheckProof file
-          _ -> return ()
-        )
+      when (model ^. preferences . autoCheckProofTracker . acpEnabled) $
+        sendMsg CheckCurrentProof
     ) ]
 
   OpenFileSuccess_ file -> Model newModel : handleEvent env wenv node newModel (SetCurrentFile filePath)
@@ -613,7 +617,7 @@ handleEvent env wenv node model evt = case evt of
 
   SetWorkingDir path -> [
       Model $ model & persistentState . workingDir .~ newWd,
-      Producer (directoryFilesProducer newWd)
+      Event RefreshExplorer
     ]
     where newWd = Just path
 
