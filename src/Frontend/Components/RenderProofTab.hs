@@ -59,7 +59,7 @@ renderProofTab _wenv model file heading = cached where
   symbolSpan_ = Frontend.Components.GeneralUIComponents.symbolSpan_ model
   paragraph = Frontend.Components.GeneralUIComponents.paragraph model
   -- paragraph_ = Frontend.Components.GeneralUIComponents.paragraph_ model
-  -- iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
+  iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
   -- iconButton = Frontend.Components.GeneralUIComponents.iconButton model
   trashButton = Frontend.Components.GeneralUIComponents.trashButton model
   bold = Frontend.Components.GeneralUIComponents.bold model
@@ -111,25 +111,24 @@ renderProofTab _wenv model file heading = cached where
       getContent (ProofFile {}) = _content file
       getContent _ = "Could not get content!";
 
-  validProofTab parsedDocument = vsplit_ [secondIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . proofStatusBarHeight)] (
-      vstack [
-        proofHeader parsedDocument,
-        proofBody parsedDocument
-      ],
+  validProofTab parsedDocument = vstack [
+      proofHeader parsedDocument,
+      proofBody parsedDocument,
       proofFooter
-    )
+    ]
 
   proofHeader parsedDocument = vstack [
       hstack [
         h1 heading,
         filler,
         vstack [
-          span "Warning sensitivity:",
-          textDropdown_ (preferences . warningMessageSeverity) [3,2,1] intToWarningSeverity []
+          span "Warnings",
+          textDropdown_ (preferences . warningMessageSeverity) [3, 2, 1] intToWarningSeverity []
             `styleBasic` [width 50, textSize u, normalTextFont model]
-        ],
+        ]
+          `styleBasic` [width 100],
         spacer,
-        labeledCheckbox_  "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
+        labeledCheckbox_ "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
           `styleBasic` [textSize u, normalTextFont model]
         ],
       spacer,
@@ -149,29 +148,35 @@ renderProofTab _wenv model file heading = cached where
   proofFooter = hstack [
       proofStatusLabel,
       filler,
-      --labeledCheckbox "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled), spacer,
       box $ button "Save proof" (SaveFile file),
       spacer,
       box $ button "Check proof" (CheckProof file)
-    ] `styleBasic` [padding 10, borderT 1 dividerColor, rangeHeight 50 300]
+    ] `styleBasic` [padding 10, borderT 1 dividerColor]
 
   proofStatusLabel = case model ^. proofStatus of
     Nothing -> span "Ready to check proof" `styleBasic` [textColor gray]
-    Just (FEError warns error) ->
-      vstack_ [childSpacing] [
+    Just (FEError warns _error) ->
+      hstack_ [childSpacing_ 20] [
         bold $ span "Proof is incorrect" `styleBasic` [textColor red],
-        paragraph (pack $ show error) `styleBasic` [textColor red],
-        renderWarningList warns
+        nrWarningsNotice warns
       ]
     Just (FEOk warns) ->
-      if null warns
-      then bold $ span "Proof is correct" `styleBasic` [textColor lime]
-      else vstack_ [childSpacing] [
-          bold $ span "Proof is correct, but there are warnings" `styleBasic` [textColor orange],
-          renderWarningList warns
+      hstack_ [childSpacing_ 20] [
+        bold $ span "Proof is correct" `styleBasic` [textColor lime],
+        nrWarningsNotice warns
       ]
     where
-      renderWarningList warns = vstack_ [childSpacing] (map (flip styleBasic [textColor orange] . span . pack . show) warns)
+      nrWarningsNotice warns = widgetIf (not (null warns)) $
+        hstack_ [childSpacing_ 5] [
+          iconLabel remixErrorWarningLine
+            `styleBasic` [textMiddle, textColor orange],
+          span (showt (length warns) <> " warning" <> plural)
+            `styleBasic` [textColor orange]
+        ]
+        where
+          plural = if length warns == 1
+            then ""
+            else "s"
 
   proofBodyContent :: FEDocument -> WidgetNode AppModel AppEvent
   proofBodyContent document = vstack [
@@ -257,8 +262,28 @@ renderProofTab _wenv model file heading = cached where
           hstack [
             lineNumbers,
             tree
-          ]
+          ],
+
+          h2 "Summary"
+            `styleBasic` [paddingT 20],
+          errorWidget
         ]
+
+      errorWidget = case model ^. proofStatus of
+        Nothing -> span "Run Check Proof to get a summary"
+        Just (FEError warns error) ->
+          vstack_ [childSpacing] [
+            bold $ span "Proof is incorrect" `styleBasic` [textColor red],
+            paragraph (pack $ show error) `styleBasic` [textColor red],
+            renderWarningList warns
+          ]
+        Just (FEOk warns) ->
+          vstack_ [childSpacing] [
+            bold $ span "Proof is correct" `styleBasic` [textColor lime],
+            renderWarningList warns
+          ]
+        where
+          renderWarningList warns = vstack_ [childSpacing] (map (flip styleBasic [textColor orange] . span . pack . show) warns)
 
       tree = vstack [
           ui,

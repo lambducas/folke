@@ -102,8 +102,7 @@ data PersistentState = PersistentState {
   _fileExplorerOpen :: Bool,
   _fileExplorerWidth :: Double,
   _rulesSidebarOpen :: Bool,
-  _rulesSidebarWidth :: Double,
-  _proofStatusBarHeight :: Double
+  _rulesSidebarWidth :: Double
 } deriving (Eq, Show)
 
 type ContextMenuActions = [(Text, Text, AppEvent, Bool)]

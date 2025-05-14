@@ -171,7 +171,9 @@ convertToFEError (Err warns env err) =
 
 -- | Convert a warning to a frontend-friendly format
 convertWarning :: Warning -> FEErrorWhere
-convertWarning w = FELocal (fromMaybe (RefLine (-1)) (warnLocation w)) (show w)
+convertWarning w = case warnLocation w of
+  Nothing -> FEGlobal (show w)
+  Just l -> FELocal l (show w)
 
 -- | Get the current line number from the environment
 getErrorLine :: Env -> Ref

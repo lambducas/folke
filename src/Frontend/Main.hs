@@ -132,6 +132,5 @@ main = do
       _fileExplorerOpen = True,
       _fileExplorerWidth = 0.27,
       _rulesSidebarOpen = True,
-      _rulesSidebarWidth = 0.82,
-      _proofStatusBarHeight = 0.91
+      _rulesSidebarWidth = 0.82
     }

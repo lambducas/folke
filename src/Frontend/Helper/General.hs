@@ -289,7 +289,7 @@ getAssetBasePath = do
       return "./"
 
 intToWarningSeverity :: Int -> Text
-intToWarningSeverity i | i==1="Low"
-                       | i==2="Medium"
-                       | i==3="High"
-                       | otherwise = "Medium"
+intToWarningSeverity i | i==1="All"
+                       | i==2="Some"
+                       | i==3="Severe"
+                       | otherwise = intToWarningSeverity 1
