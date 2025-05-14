@@ -55,7 +55,8 @@ menuBarCategories = [
     ]),
     ("Help", [
       ("Open Welcome Page", "", OpenWelcome),
-      ("Open Guide", "", OpenGuide)
+      ("Open Guide", "", OpenGuide),
+      ("About Folke", "", OpenAbout)
     ])
   ]
 

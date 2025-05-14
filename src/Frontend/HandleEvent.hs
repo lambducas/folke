@@ -397,6 +397,12 @@ handleEvent env wenv node model evt = case evt of
       sendMsg $ OpenFile_ "welcome.md" docsPath
     ) ]
 
+  OpenAbout -> [ Producer (\sendMsg -> do
+      basePath <- getAssetBasePath
+      let docsPath = basePath </> "docs"
+      sendMsg $ OpenFile_ "about.md" docsPath
+    ) ]
+
   OpenFileFromFileSystem -> [ SyncTask openDiag ]
     where
       openDiag = do

@@ -227,6 +227,7 @@ data AppEvent
   | OpenPreferences
   | OpenGuide
   | OpenWelcome
+  | OpenAbout
   | ToggleFileExplorer
   | ToggleRulesSidebar
   | RefreshExplorer
