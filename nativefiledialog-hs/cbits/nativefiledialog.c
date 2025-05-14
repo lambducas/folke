@@ -6,6 +6,7 @@
 
 /* this test should compile on all supported platforms */
 
+// For debugging
 int openDialogAndLogResult( void )
 {
     nfdchar_t *outPath = NULL;
@@ -29,10 +30,11 @@ int openDialogAndLogResult( void )
     return 0;
 }
 
-nfdchar_t* openDialog( void )
+// Select file
+nfdchar_t* openDialog(nfdchar_t* filterList, nfdchar_t* defaultPath)
 {
     nfdchar_t *outPath = NULL;
-    nfdresult_t result = NFD_OpenDialog( "*", NULL, &outPath );
+    nfdresult_t result = NFD_OpenDialog(filterList, defaultPath, &outPath);
     if ( result == NFD_OKAY )
     {
         return outPath;
@@ -49,6 +51,7 @@ nfdchar_t* openDialog( void )
     return "";
 }
 
+// Select folder
 nfdchar_t* pickFolder( void )
 {
     nfdchar_t *outPath = NULL;
@@ -70,6 +73,7 @@ nfdchar_t* pickFolder( void )
     return "";
 }
 
+// Save file
 nfdchar_t* saveDialog(nfdchar_t* filterList)
 {
     nfdchar_t *savePath = NULL;

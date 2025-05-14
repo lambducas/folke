@@ -411,7 +411,17 @@ handleEvent env wenv node model evt = case evt of
   OpenFileFromFileSystem -> [ SyncTask openDiag ]
     where
       openDiag = do
-        path <- openDialog
+        path <- openDialog (head feFileExts) Nothing
+        case path of
+          Nothing -> return NoEvent
+          Just path -> return $ OpenFile_ path ""
+
+  OpenFileExample -> [ SyncTask openDiag ]
+    where
+      openDiag = do
+        basePath <- getAssetBasePath
+        let defaultPath = basePath </> "docs/examples"
+        path <- openDialog (head feFileExts) (Just defaultPath)
         case path of
           Nothing -> return NoEvent
           Just path -> return $ OpenFile_ path ""

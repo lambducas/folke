@@ -234,6 +234,7 @@ data AppEvent
   | SetWorkingDir FilePath
   | SetFilesInDirectory (Maybe LoadedFiles)
   | OpenFileFromFileSystem
+  | OpenFileExample
   | OpenFile FilePath
   | OpenFile_ FilePath FilePath
   | OpenFileSuccess File

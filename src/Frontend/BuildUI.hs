@@ -31,6 +31,7 @@ menuBarCategories = [
       ("New Proof", "Ctrl+N", CreateEmptyProof),
       ("Save File", "Ctrl+S", SaveCurrentFile),
       ("Open File", "Ctrl+O", OpenFileFromFileSystem),
+      ("Open Example", "", OpenFileExample),
       ("Close File", "Ctrl+W", CloseCurrentFile),
       ("Export to LaTeX", "", ExportToLaTeX),
       ("Export to PDF", "", ExportToPDF),
