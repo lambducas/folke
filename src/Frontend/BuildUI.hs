@@ -231,7 +231,7 @@ buildUI wenv model = widgetTree where
       explorerAndEdit = if model ^. persistentState . fileExplorerOpen
         then hsplit_ [firstIsMain, splitIgnoreChildResize True, splitHandlePos (persistentState . fileExplorerWidth)] (
           fileExplorerSidebar,
-          editWindow
+          editWindow `styleBasic` [borderL 1 dividerColor]
         )
         else editWindow
 
@@ -272,7 +272,7 @@ buildUI wenv model = widgetTree where
               paragraph "No folder has been opened. Open a folder where you have your proofs stored.",
               box (button "Open Folder" OpenSetWorkingDir)
             ] `styleBasic` [padding u]
-          ] `styleBasic` [ borderR 1 dividerColor, rangeWidth 200 1000 ]
+          ] `styleBasic` [ rangeWidth 200 1000 ]
 
         Just _ -> case model ^. filesInDirectory of
           Nothing -> vstack [
@@ -288,7 +288,7 @@ buildUI wenv model = widgetTree where
                 paragraph "Error loading working directory. It might not exist.",
                 box (button "Open Other Folder" OpenSetWorkingDir)
               ] `styleBasic` [padding u]
-            ] `styleBasic` [ borderR 1 dividerColor, rangeWidth 200 1000 ]
+            ] `styleBasic` [ rangeWidth 200 1000 ]
           Just fid -> vstack [
               box_ [expandContent] (hstack [
                   bold (span "File Explorer"),
@@ -308,7 +308,7 @@ buildUI wenv model = widgetTree where
                     _dcOnOpenFile = [RaiseEvent . OpenFile],
                     _dcOnOpenContextMenu = [\g l -> RaiseEvent $ OpenContextMenu (ctxFileExplorer g l)]
                   }] model fid
-            ] `styleBasic` [ borderR 1 dividerColor, rangeWidth 200 1000 ]
+            ] `styleBasic` [ rangeWidth 200 1000 ]
     where
       hasChanged _wenv old new =
         old ^. filesInDirectory /= new ^. filesInDirectory ||
@@ -338,7 +338,7 @@ buildUI wenv model = widgetTree where
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand, paddingH 4]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
-            displayName = if isTmpFile filePath then "Untitled proof" else pack $ takeFileName filePath
+            displayName = if isTmpFile filePath then "New proof" else pack $ takeFileName filePath
             closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
             isCurrent = (model ^. persistentState . currentFile) == Just filePath
@@ -355,7 +355,7 @@ buildUI wenv model = widgetTree where
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> renderPreferenceTab
     Just file@(ProofFile {}) -> renderProofTab wenv model file ((pack . takeBaseName . _path) file)
-    Just file@(TemporaryProofFile {}) -> renderProofTab wenv model file "[Untitled proof]"
+    Just file@(TemporaryProofFile {}) -> renderProofTab wenv model file "New proof"
     Just (MarkdownFile _p content) -> renderMarkdownTab content
     Just (OtherFile p content) -> renderOtherTab p content
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName

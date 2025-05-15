@@ -129,7 +129,7 @@ renderProofTab _wenv model file _heading = cached where
       premises = _premises parsedSequent
       parsedSequent = _sequent parsedDocument
 
-  proofBody document = fastVScroll (proofBodyContent document `styleBasic` [paddingT 10, paddingL 10])
+  proofBody document = fastVScroll (proofBodyContent document `styleBasic` [paddingT 20, paddingL 20])
 
   proofFooter = hstack [
       proofStatusLabel
