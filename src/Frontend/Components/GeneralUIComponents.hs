@@ -79,12 +79,30 @@ iconLabel_ model iconIdent cfg = label_ iconIdent cfg `styleBasic` [textFont "Re
 -- | For rendering icons inside buttons
 iconButton :: AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
 iconButton model iconIdent action = Frontend.Components.GeneralUIComponents.button model iconIdent action
-  `styleBasic` [textFont "Remix", textMiddle, bgColor transparent, border 1 transparent, textSize (u model)]
+  `styleBasic` [textFont "Remix", textMiddle, textSize (u model), bgColor transparent, border 1 transparent]
+  `styleHover` [bgColor hoverColor]
+  where
+    hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+    selTheme = getActualTheme $ model ^. preferences . selectedTheme
+
+-- | For rendering icons inside toggle buttons
+iconToggleButton :: AppModel -> Text -> ALens' AppModel Bool -> WidgetNode AppModel AppEvent
+iconToggleButton model iconIdent l = iconToggleButton_ model iconIdent l []
+
+iconToggleButton_ :: AppModel -> Text -> ALens' AppModel Bool -> [ToggleButtonCfg AppModel AppEvent] -> WidgetNode AppModel AppEvent
+iconToggleButton_ model iconIdent l cfg = toggleButton_ iconIdent l (toggleButtonOffStyle offStyle : cfg)
+  `styleBasic` [textFont "Remix", textMiddle, textSize (u model)]
+  where
+    offStyle = def
+      `styleBasic` [bgColor transparent, border 1 transparent]
+      `styleHover` [bgColor hoverColor]
+    hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+    selTheme = getActualTheme $ model ^. preferences . selectedTheme
 
 -- | Button with trashcan icon
 trashButton :: AppModel -> AppEvent -> WidgetNode AppModel AppEvent
-trashButton model action = iconButton model remixDeleteBinFill action
-  `styleBasic` [textColor orangeRed, textSize (u model)]
+trashButton model action = Monomer.button remixDeleteBinFill action
+  `styleBasic` [textFont "Remix", textMiddle, textSize (u model), textColor orangeRed, bgColor transparent, border 0 transparent]
   `styleFocus` [border 1 (rgba 255 20 0 0.75)]
   `styleHover` [bgColor hoverColor]
   `styleDisabled` [textColor (rgba 255 220 200 0.3)]

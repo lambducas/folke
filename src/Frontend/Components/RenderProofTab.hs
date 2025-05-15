@@ -12,7 +12,7 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex, intToWarningSeverity)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
@@ -41,7 +41,7 @@ renderProofTab
   -> File
   -> Text
   -> WidgetNode AppModel AppEvent
-renderProofTab _wenv model file heading = cached where
+renderProofTab _wenv model file _heading = cached where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
@@ -118,20 +118,6 @@ renderProofTab _wenv model file heading = cached where
     ]
 
   proofHeader parsedDocument = vstack [
-      hstack [
-        h1 heading,
-        filler,
-        vstack [
-          span "Warnings",
-          textDropdown_ (preferences . warningMessageSeverity) [3, 2, 1] intToWarningSeverity []
-            `styleBasic` [width 50, textSize u, normalTextFont model]
-        ]
-          `styleBasic` [width 100],
-        spacer,
-        labeledCheckbox_ "Auto-check proof" (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
-          `styleBasic` [textSize u, normalTextFont model]
-        ],
-      spacer,
       subheading
     ] `styleBasic` [padding 10, borderB 1 dividerColor]
     where
@@ -143,14 +129,10 @@ renderProofTab _wenv model file heading = cached where
       premises = _premises parsedSequent
       parsedSequent = _sequent parsedDocument
 
-  proofBody document = fastVScroll (proofBodyContent document) `styleBasic` [paddingT 10, paddingL 10]
+  proofBody document = fastVScroll (proofBodyContent document `styleBasic` [paddingT 10, paddingL 10])
 
   proofFooter = hstack [
-      proofStatusLabel,
-      filler,
-      box $ button "Save proof" (SaveFile file),
-      spacer,
-      box $ button "Check proof" (CheckProof file)
+      proofStatusLabel
     ] `styleBasic` [padding 10, borderT 1 dividerColor]
 
   proofStatusLabel = case model ^. proofStatus of

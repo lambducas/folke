@@ -103,7 +103,8 @@ themeSwitch_
   -> WidgetNode s e    -- ^ The created themeSwitch container.
 themeSwitch_ theme configs managed = makeNode widget managed where
   config = mconcat configs
-  state = ThemeSwitchState (Just theme) False
+  state = ThemeSwitchState Nothing False
+  -- state = ThemeSwitchState (Just theme) False
   widget = makeThemeSwitch theme config state
 
 makeNode :: Widget s e -> WidgetNode s e -> WidgetNode s e
@@ -120,10 +121,14 @@ makeThemeSwitch theme config state = widget where
     containerMerge = merge
   }
 
-  updateCWenv wenv cidx cnode node = newWenv where
+  updateCWenv wenv node cnode cidx = newWenv where
     oldTheme = _tssPrevTheme state
     -- When called during merge, the state has not yet been updated
-    themeChanged = _tssChanged state || Just theme /= oldTheme
+    -- themeChanged = _tssChanged state || Just theme /= oldTheme
+
+    -- themeSwitch does not work so we disable the change-detection
+    themeChanged = False
+
     parentChanged = wenv ^. L.themeChanged
     newWenv = wenv
       & L.theme .~ theme

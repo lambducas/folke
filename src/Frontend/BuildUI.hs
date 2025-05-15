@@ -29,10 +29,10 @@ menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
     ("File", [
       ("New Proof", "Ctrl+N", CreateEmptyProof),
-      ("Save File", "Ctrl+S", SaveCurrentFile),
-      ("Open File", "Ctrl+O", OpenFileFromFileSystem),
+      ("Save Proof", "Ctrl+S", SaveCurrentFile),
+      ("Open Proof", "Ctrl+O", OpenFileFromFileSystem),
       ("Open Example", "", OpenFileExample),
-      ("Close File", "Ctrl+W", CloseCurrentFile),
+      ("Close Tab", "Ctrl+W", CloseCurrentFile),
       ("Export to LaTeX", "", ExportToLaTeX),
       ("Export to PDF", "", ExportToPDF),
       ("Set Working Directory", "", OpenSetWorkingDir),
@@ -100,6 +100,8 @@ buildUI wenv model = widgetTree where
   -- paragraph_ = Frontend.Components.GeneralUIComponents.paragraph_ model
   -- iconLabel = Frontend.Components.GeneralUIComponents.iconLabel model
   iconButton = Frontend.Components.GeneralUIComponents.iconButton model
+  -- iconToggleButton = Frontend.Components.GeneralUIComponents.iconToggleButton model
+  iconToggleButton_ = Frontend.Components.GeneralUIComponents.iconToggleButton_ model
   -- trashButton = Frontend.Components.GeneralUIComponents.trashButton model
   bold = Frontend.Components.GeneralUIComponents.bold model
   normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
@@ -122,16 +124,21 @@ buildUI wenv model = widgetTree where
 
   widgetTree =
     firstKeystroke globalKeybinds $
-      themeSwitch_ selTheme [themeClearBg] $
-        vstack [
+      vstack [
+        -- Hack to force-merge widgets so theme updates correctly
+        widgetIf (selTheme == customLightTheme) (label "" `styleBasic` [height 0]),
+        themeSwitch_ selTheme [themeClearBg] $
           vstack [
-            menuBar,
-            mainContent
-          ],
-          fileSearcherUI,
-          contextMenuUI,
-          confirmActionUI
-        ]
+            vstack [
+              menuBar,
+              toolbar,
+              mainContent
+            ],
+            fileSearcherUI,
+            contextMenuUI,
+            confirmActionUI
+          ]
+      ]
 
   menuBar = hstack [
       menuBarPopup,
@@ -182,6 +189,32 @@ buildUI wenv model = widgetTree where
         ]
           `styleBasic` [radius 4, paddingV 10, paddingH 20, cursorHand, textSize $ u -2]
           `styleHover` [bgColor hoverColor]
+
+  toolbar = hstack_ [childSpacing] [
+      fastTooltip "New proof" $ iconButton remixFileAddFill CreateEmptyProof,
+      fastTooltip "Open proof" $ iconButton remixFolderOpenFill OpenFileFromFileSystem,
+      fastTooltip "Save proof" $ iconButton remixSave3Fill SaveCurrentFile,
+
+      separatorLine,
+
+      fastTooltip "Undo" $ iconButton remixArrowGoBackFill Undo,
+      fastTooltip "Redo" $ iconButton remixArrowGoForwardFill Redo,
+
+      separatorLine,
+
+      fastTooltip "Warning severity" warningSeverity,
+      fastTooltip "Validate proof" $ iconButton remixListCheck2 CheckCurrentProof,
+      fastTooltip "Auto-validate proof" autoCheckCheck
+    ]
+      `styleBasic` [padding 10, borderB 1 dividerColor]
+    where
+      warningSeverity = hstack_ [childSpacing] [
+          span "Warnings",
+          textDropdown_ (preferences . warningMessageSeverity) [3, 2, 1] intToWarningSeverity []
+            `styleBasic` [width 120]
+        ]
+
+      autoCheckCheck = iconToggleButton_ remixRefreshFill (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
 
   mainContent = hstack [
       actionSidebar,
