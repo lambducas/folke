@@ -23,6 +23,7 @@ import Data.Default ( Default(def) )
 import Data.String (fromString)
 import System.FilePath (takeFileName, takeBaseName)
 import Data.Maybe (fromMaybe, isJust, isNothing)
+import qualified Data.Map
 import TextShow (showt)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
@@ -134,6 +135,7 @@ buildUI wenv model = widgetTree where
               toolbar,
               mainContent
             ],
+            ruleGuideUI,
             fileSearcherUI,
             contextMenuUI,
             confirmActionUI
@@ -435,10 +437,10 @@ buildUI wenv model = widgetTree where
       h2 "Rules" `styleBasic` [padding u],
 
       subsection "Propositional Logic",
-      vstack $ zipWith ruleItem visualRuleNames0 ruleUseWidgetList0,
+      vstack $ map ruleItem visualRuleNames0,
 
       subsection "First Order Logic",
-      vstack $ zipWith ruleItem visualRuleNames1 ruleUseWidgetList1
+      vstack $ map ruleItem visualRuleNames1
     ]) `styleBasic` [borderL 1 dividerColor, rangeWidth 150 500]
     where
       hasChanged _wenv old new =
@@ -446,19 +448,22 @@ buildUI wenv model = widgetTree where
         old ^. persistentState . rulesSidebarOpen /= new ^. persistentState . rulesSidebarOpen
 
       subsection t = box (bold (span t)) `styleBasic` [padding u]
-      ruleItem (_, s) r = dropdownV_ (-1::Int) (\_ _ -> NoEvent) (ruleWidgetToInt r)
-        (const $ box (symbolSpan s))
-        (intToRuleRow r)
-        [itemBasicStyle (ruleDdStyle (bgColor popupBackground) (border 2 popupBackground)),
-          itemSelectedStyle (ruleDdStyle (bgColor popupBackground) (border 2 popupBackground))]
-        `styleBasic` [cursorHand, padding u, borderT 1 dividerColor, bgColor clearColor]
-        `styleHover` [bgColor hoverColor]
-        `styleActive` [bgColor selectedColor]
 
-      symbolItem s = box_ [onClick (SimulateTextInput s), onClickEmpty (SimulateTextInput s)] (symbolSpan s)
+      ruleItem (key, label) = box_ [
+          onClick clickEvent,
+          onClickEmpty clickEvent
+        ] (symbolSpan label)
         `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
         `styleHover` [bgColor hoverColor]
         `styleActive` [bgColor selectedColor]
+        where clickEvent = OpenRuleGuide (Just key)
+
+      symbolItem s =
+        fastTooltip ("Insert character: " <> s) $
+          box_ [onClick (SimulateTextInput s), onClickEmpty (SimulateTextInput s)] (symbolSpan s)
+            `styleBasic` [cursorHand, padding u, borderT 1 dividerColor]
+            `styleHover` [bgColor hoverColor]
+            `styleActive` [bgColor selectedColor]
 
       symbolChunks = chunksOf 3 symbolsList
 
@@ -540,47 +545,46 @@ buildUI wenv model = widgetTree where
         `styleBasic` [paddingH u, paddingV (0.75 * u), radius 4, cursorHand]
         `styleHover` [bgColor hoverColor]
 
-  ruleWidgetToInt :: [WidgetNode AppModel AppEvent] -> [Int]
-  ruleWidgetToInt rw = [0..length rw - 1]
-  intToRuleRow :: [WidgetNode AppModel AppEvent] -> Int -> WidgetNode AppModel AppEvent
-  intToRuleRow rw i = rw!!i
-
-  ruleUseWidgetList0 :: [[WidgetNode AppModel AppEvent]]
-  ruleUseWidgetList0 = [
-    [box (box (aR "1.p" "assume") `styleBasic` [padding 10, border 2 proofBoxColor])],-- ("assume", "assume"),
-    [s "1.p", aR "2.p" "copy 1"],-- ("copy", "copy"),
-    [s "1.p", s "2.q", aR "3.p∧q" "∧I (1,2)"],-- ("AndI", "∧I"),
-    [s "1.p∧q", aR "2.p" "∧EL 1"],-- ("AndEL", "∧EL"),
-    [s "1.p∧q", aR "2.q" "∧EL 1"],-- ("AndER", "∧ER"),
-    [s "1.p", aR "2.q∨p" "∨IL 1"],-- ("OrIL", "∨IL"),
-    [s "1.p", aR "2.p∨q" "∨IL 1"],-- ("OrIR", "∨IR"),
-    [s "1.p∨q",sP "2." "p" borderB, dot, sP "h." "r" borderT, sP "i." "q" borderB, dot, sP "j." "r" borderT, aR "k.r" "∨E (1,2-h,i-j)"],-- ("OrE", "∨E"),
-    [sP "1." "p" borderB, dot, sP "i." "q" borderT, aR "j.p → q" "→I (1-i)"],-- ("ImplI", "→I"),
-    [s "1.p", s "2.p → q", aR "3.q" "→E (1,2)"],-- ("ImplE", "→E"),
-    [sP "1." "p" borderB, dot, sP "i." "⊥" borderT, aR "j.¬p" "¬I (1-i)"],-- ("NotI", "¬I"),
-    [s "1.p", s "2.¬p", aR "3.⊥" "¬E (1,2)"],-- ("NotE", "¬E"),
-    [s "1.⊥", aR "2.p" "⊥E 1"],-- ("BotE", "⊥E"),
-    [s "1.p", aR "2.¬¬p" "¬¬I 1"],-- ("NotNotI", "¬¬I"),
-    [s "1.¬¬p", aR "2.p" "¬¬E 1"],-- ("NotNotE", "¬¬E"),
-    [s "1.p → q", s "2.¬q", aR "3.¬p" "MT (1,2)"],-- ("MT", "MT"),
-    [sP "1." "¬p" borderB, dot, sP "i." "⊥" borderT, aR "j.p" "PBC (1-i)"],-- ("PBC", "PBC"),
-    [aR "1.p∨¬p" "LEM"]-- ("LEM", "LEM")
-    ]
+  ruleGuideUI = popupV_ (isJust rg) (\s -> if s then NoEvent else OpenRuleGuide Nothing) [popupAlignToWindow, alignCenter, alignMiddle]
+    (boxShadow $ vstack_ [childSpacing] [
+      h1 name,
+      paragraph description,
+      widgetMaybe widget id
+    ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, radius 4, width 600, height 450])
     where
-      s f = hstack [symbolSpan f]
-      aR o r = hstack [symbolSpan o, filler, symbolSpan r]
-      sP i f b = hstack [s i, box (box (hstack [s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, b 2 popupBackground])]
-      dot = s "  ..."
+      name = fromMaybe "" (info >>= Just . _riName)
+      description = fromMaybe "" (info >>= Just . _riDescription)
+      widget = (rg >>= flip Data.Map.lookup ruleUseWidgetList) >>= \w -> Just $ vstack_ [childSpacing] w
+      info = rg >>= flip Data.Map.lookup ruleDescriptions
+      rg = model ^. ruleGuidePopup
 
-  ruleUseWidgetList1 :: [[WidgetNode AppModel AppEvent]]
-  ruleUseWidgetList1 = [
-    [box (box (aR "1.x₀" "fresh") `styleBasic` [padding 10, border 2 proofBoxColor])],-- ("fresh", "fresh"),
-    [aR "1.t = t" "=I"],-- ("EqI", "=I"),
-    [s "1.t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"],-- ("EqE", "=E"),
-    [s "1.∀x.P(x)", aR "2.P[t/x]" "∀E 1 w.t"],-- ("AllE", "∀E"),
-    [sP "1." "x₀" borderB, dot, sP "i." "P[x₀/x]" borderT, aR "j.∀x.P(x)" "∀I (1-i)"],-- ("AllI", "∀I"),
-    [s "1.∃x.P(x)", sP "2." "x₀" borderB, sPM "3." "P[x₀/x]", dot, sP "i." "q" borderT, aR "j.q" "∃E (1,2-i)"],-- ("SomeE", "∃E"),
-    [s "1.P[t/x]", aR "2.∃x.P(x)" "∃I 1"]-- ("SomeI", "∃I")
+  ruleUseWidgetList = Data.Map.fromList [
+      ("assume",  [box (box (aR "1. p" "assume") `styleBasic` [padding 10, border 2 proofBoxColor])]),
+      ("copy",    [s "1. p", aR "2. p" "copy 1"]),
+      ("AndI",    [s "1. p", s "2. q", aR "3. p ∧ q" "∧I (1,2)"]),
+      ("AndEL",   [s "1. p ∧ q", aR "2. p" "∧EL 1"]),
+      ("AndER",   [s "1. p ∧ q", aR "2. q" "∧EL 1"]),
+      ("OrIL",    [s "1. p", aR "2. q ∨ p" "∨IL 1"]),
+      ("OrIR",    [s "1. p", aR "2. p ∨ q" "∨IL 1"]),
+      ("OrE",     [s "1. p ∨ q", sP "2. " "p" borderB, dot, sP "h. " "r" borderT, sP "i. " "q" borderB, dot, sP "j. " "r" borderT, aR "k. r" "∨E (1,2-h,i-j)"]),
+      ("ImplI",   [sP "1. " "p" borderB, dot, sP "i. " "q" borderT, aR "j. p → q" "→I (1-i)"]),
+      ("ImplE",   [s "1. p", s "2. p → q", aR "3. q" "→E (1,2)"]),
+      ("NotI",    [sP "1. " "p" borderB, dot, sP "i. " "⊥" borderT, aR "j. ¬p" "¬I (1-i)"]),
+      ("NotE",    [s "1. p", s "2. ¬p", aR "3. ⊥" "¬E (1,2)"]),
+      ("BotE",    [s "1. ⊥", aR "2. p" "⊥E 1"]),
+      ("NotNotI", [s "1. p", aR "2. ¬¬p" "¬¬I 1"]),
+      ("NotNotE", [s "1. ¬¬p", aR "2. p" "¬¬E 1"]),
+      ("MT",      [s "1. p → q", s "2. ¬q", aR "3. ¬p" "MT (1,2)"]),
+      ("PBC",     [sP "1. " "¬p" borderB, dot, sP "i. " "⊥" borderT, aR "j. p" "PBC (1-i)"]),
+      ("LEM",     [aR "1. p ∨ ¬p" "LEM"]),
+
+      ("fresh", [box (box (aR "1. x₀" "fresh") `styleBasic` [padding 10, border 2 proofBoxColor])]),
+      ("EqI", [aR "1. t = t" "=I"]),
+      ("EqE", [s "1. t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"]),
+      ("AllE", [s "1. ∀x.P(x)", aR "2. P[t/x]" "∀E 1 w.t"]),
+      ("AllI", [sP "1. " "x₀" borderB, dot, sP "i. " "P[x₀/x]" borderT, aR "j. ∀x.P(x)" "∀I (1-i)"]),
+      ("SomeE", [s "1. ∃x.P(x)", sP "2. " "x₀" borderB, sPM "3. " "P[x₀/x]", dot, sP "i. " "q" borderT, aR "j. q" "∃E (1,2-i)"]),
+      ("SomeI", [s "1. P[t/x]", aR "2. ∃x.P(x)" "∃I 1"])
     ]
     where
       s f = hstack [symbolSpan f]

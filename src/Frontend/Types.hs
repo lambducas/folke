@@ -26,6 +26,11 @@ data RuleMetaData = RuleMetaData {
   _argumentLabels :: [Text]
 }
 
+data RuleInfo = RuleInfo {
+  _riName :: Text,
+  _riDescription :: Text
+} deriving (Show, Eq)
+
 type FormulaPath = [Int]
 
 data HistoryEvent
@@ -139,6 +144,7 @@ data AppModel = AppModel {
   _contextMenu :: ContextMenu,
   _confirmActionPopup :: Maybe ConfirmActionData,
   _fileSearcher :: FileSearcher,
+  _ruleGuidePopup :: Maybe Text,
 
   _filesInDirectory :: Maybe LoadedFiles,
 
@@ -174,6 +180,9 @@ data AppEvent
   | CopyToClipboard Text
   | SimulateTextInput Text
   | Print String
+
+  -- Rule guide
+  | OpenRuleGuide (Maybe Text)
 
   -- File searcher
   | OpenFileSearcher
@@ -333,6 +342,35 @@ ruleMetaDataMap = Map.fromList [
     ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
     ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
     ("SomeI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]})
+  ]
+
+ruleDescriptions :: Map.Map Text RuleInfo
+ruleDescriptions = Map.fromList [
+    ("assume", RuleInfo { _riName = "Assumption", _riDescription = "" }),
+    ("fresh", RuleInfo { _riName = "Fresh", _riDescription = "" }),
+    ("copy", RuleInfo { _riName = "Copy", _riDescription = "" }),
+    ("AndI", RuleInfo { _riName = "Conjunction introduction", _riDescription = "" }),
+    ("AndEL", RuleInfo { _riName = "Left conjunction elimination", _riDescription = "" }),
+    ("AndER", RuleInfo { _riName = "Right conjunction elimination", _riDescription = "" }),
+    ("OrIL", RuleInfo { _riName = "Left disjunction introduction", _riDescription = "" }),
+    ("OrIR", RuleInfo { _riName = "Right disjunction introduction", _riDescription = "" }),
+    ("OrE", RuleInfo { _riName = "Disjunction elimination", _riDescription = "" }),
+    ("ImplI", RuleInfo { _riName = "Implication introduction", _riDescription = "" }),
+    ("ImplE", RuleInfo { _riName = "Implication elimination", _riDescription = "" }),
+    ("NotI", RuleInfo { _riName = "Negation introduction", _riDescription = "" }),
+    ("NotE", RuleInfo { _riName = "Negation elimination", _riDescription = "" }),
+    ("BotE", RuleInfo { _riName = "Contradiction elimination", _riDescription = "" }),
+    ("NotNotI", RuleInfo { _riName = "Double negation introduction", _riDescription = "" }),
+    ("NotNotE", RuleInfo { _riName = "Double negation elimination", _riDescription = "" }),
+    ("MT", RuleInfo { _riName = "Modus tollens", _riDescription = "" }),
+    ("PBC", RuleInfo { _riName = "Proof by contradiction", _riDescription = "" }),
+    ("LEM", RuleInfo { _riName = "Law of excluded middle", _riDescription = "" }),
+    ("EqI", RuleInfo { _riName = "Equality introduction", _riDescription = "" }),
+    ("EqE", RuleInfo { _riName = "Equality elimination", _riDescription = "" }),
+    ("AllE", RuleInfo { _riName = "Universal elimination", _riDescription = "" }),
+    ("AllI", RuleInfo { _riName = "Universal introduction", _riDescription = "" }),
+    ("SomeE", RuleInfo { _riName = "Existential elimination", _riDescription = "" }),
+    ("SomeI", RuleInfo { _riName = "Existential introduction", _riDescription = "" })
   ]
 
 symbolsList :: [Text]

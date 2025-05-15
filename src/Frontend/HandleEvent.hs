@@ -100,6 +100,8 @@ handleEvent env wenv node model evt = case evt of
 
   SimulateTextInput t -> [ Producer (const (simulateTextInput t)) ]
 
+  OpenRuleGuide i -> [ Model $ model & ruleGuidePopup .~ i ]
+
   OpenConfirmAction a -> [ Model $ model & confirmActionPopup %~ openPopup ]
     where
       openPopup Nothing = Just a
