@@ -42,10 +42,11 @@ main = do
 
   let createModel = model prefs state currentFrontendChan currentBackendChan
   let createHandleEvent = handleEvent env
+  let createBuildUI = buildUI isMac
   let createConfig = config assetBasePath isMac prefs state
 
   -- Start Monomer application
-  startApp createModel createHandleEvent buildUI createConfig
+  startApp createModel createHandleEvent createBuildUI createConfig
 
   where
     -- Application configuration

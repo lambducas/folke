@@ -25,37 +25,37 @@ import System.FilePath (takeFileName, takeBaseName)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import qualified Data.Map
 import TextShow (showt)
-import Frontend.Helper.ProofHelper (getCurrentFEDocument, editNameInUDR, editPathInUDR)
+import Frontend.Helper.ProofHelper (getCurrentFEDocument, editNameInUDR)
 import System.FilePath.Posix (makeRelative)
 
-menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
-menuBarCategories = [
+menuBarCategories :: Bool -> [(Text, [(Text, Text, AppEvent)])]
+menuBarCategories isMac = [
     ("File", [
-      ("New Proof", "Ctrl+N", CreateEmptyProof),
-      ("Save Proof", "Ctrl+S", SaveCurrentFile),
-      ("Open Proof", "Ctrl+O", OpenFileFromFileSystem),
+      ("New Proof", ctrl <> "+N", CreateEmptyProof),
+      ("Save Proof", ctrl <> "+S", SaveCurrentFile),
+      ("Open Proof", ctrl <> "+O", OpenFileFromFileSystem),
       ("Open Example", "", OpenFileExample),
-      ("Close Tab", "Ctrl+W", CloseCurrentFile),
+      ("Close Tab", ctrl <> "+W", CloseCurrentFile),
       ("Export to LaTeX", "", ExportToLaTeX),
       ("Export to PDF", "", ExportToPDF),
       ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
     ("Edit", [
-      ("Undo", "Ctrl+Z", Undo),
-      ("Redo", "Ctrl+Y", Redo),
-      -- ("Make Subproof", "Ctrl+Tab", NoEvent),
-      -- ("Undo Subproof", "Ctrl+Shift+Tab", NoEvent),
+      ("Undo", ctrl <> "+Z", Undo),
+      ("Redo", ctrl <> "+Y", Redo),
+      -- ("Make Subproof", ctrl <> "+Tab", NoEvent),
+      -- ("Undo Subproof", ctrl <> "+Shift+Tab", NoEvent),
       -- ("Goto Next Input", "Return", NoEvent),
-      -- ("Insert Line Below", "Ctrl+Enter", NoEvent),
-      -- ("Close Subproof", "Ctrl+Enter", NoEvent),
-      ("Validate Proof", "Ctrl+R", CheckCurrentProof)
+      -- ("Insert Line Below", ctrl <> "+Enter", NoEvent),
+      -- ("Close Subproof", ctrl <> "+Enter", NoEvent),
+      ("Validate Proof", ctrl <> "+R", CheckCurrentProof)
     ]),
     ("View", [
-      ("Toggle File Explorer", "Ctrl+B", ToggleFileExplorer),
+      ("Toggle File Explorer", ctrl <> "+B", ToggleFileExplorer),
       ("Toggle Rules Dictionary", "", ToggleRulesSidebar),
-      ("Open Preferences", "Ctrl+Shift+P", OpenPreferences),
-      ("Search for File", "Ctrl+P", OpenFileSearcher)
+      ("Open Preferences", ctrl <> "+Shift+P", OpenPreferences),
+      ("Search for File", ctrl <> "+P", OpenFileSearcher)
     ]),
     ("Help", [
       ("Open Welcome Page", "", OpenWelcome),
@@ -63,6 +63,7 @@ menuBarCategories = [
       ("About Folke", "", OpenAbout)
     ])
   ]
+  where ctrl = if isMac then "Cmd" else "Ctrl"
 
 ctxFileExplorer :: FilePath -> FilePath -> ContextMenuActions
 ctxFileExplorer filePath relativePath = [
@@ -78,10 +79,11 @@ ctxFileExplorer filePath relativePath = [
   ]
 
 buildUI
-  :: WidgetEnv AppModel AppEvent
+  :: Bool
+  -> WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI wenv model = widgetTree where
+buildUI isMac wenv model = widgetTree where
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   clearColor = selTheme ^. L.clearColor
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
@@ -118,7 +120,7 @@ buildUI wenv model = widgetTree where
   fastVScroll_ = Frontend.Components.GeneralUIComponents.fastVScroll_
   fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
-  globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd menuBarCategories
+  globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd (menuBarCategories isMac)
     where
       convertBind b = intercalate "-" (map fixKey (splitOn "+" b))
       fixKey k
@@ -151,7 +153,7 @@ buildUI wenv model = widgetTree where
     ] `styleBasic` [borderB 1 dividerColor]
     where
       catButtonWidth = 60
-      categoryUI = hstack (zipWith menuBarButton menuBarCategories [0..])
+      categoryUI = hstack (zipWith menuBarButton (menuBarCategories isMac) [0..])
         `styleBasic` [padding 5, textSize $ u -2]
 
       menuBarPopup :: WidgetNode AppModel AppEvent
@@ -168,7 +170,7 @@ buildUI wenv model = widgetTree where
             `styleBasic` [paddingT (-17), paddingL (-5)]
         ]
         where
-          actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ menuBarCategories !! fromInteger idx
+          actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ (menuBarCategories isMac) !! fromInteger idx
           offset = catButtonWidth * fromIntegral (fromMaybe 0 (model ^. openMenuBarItem))
 
       menuBarButton (name, _actions) idx = vstack [
@@ -614,11 +616,14 @@ buildUI wenv model = widgetTree where
       ui doc = boxShadow $
         vstack_ [childSpacing] [
           h2 "User defined rules for this proof",
-          udrHeader,
+          maybeHeader,
+          noUDRNote,
           vstack_ [childSpacing] (zipWith udrItem rules [0..]),
           button "+ Rule" AddUDR
         ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, radius 4, width 800, height 550]
         where
+          maybeHeader = widgetIf (not $ null rules) udrHeader
+          noUDRNote = widgetIf (null rules) (span "No rules have been defined yet.")
           rules = fromMaybe [] (_fedUserDefinedRules doc)
 
       udrHeader = hstack_ [childSpacing] [

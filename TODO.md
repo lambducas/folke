@@ -21,12 +21,11 @@
 - [x] Add checks for side conditions for rules.
 
 ## Frontend
-- [ ] Support user defined rules (derived rule from proof)
 - [ ] Fix full Markdown support
 - [ ] Line numbers become missaligned when there are errors/warnings taking up 2 or more lines
 
-- [?] ~Toolbar instead of sidebar for symbol keypad??~
-
+- [x] ~~Support user defined rules (derived rule from proof)~~
+- [ ] ~~Toolbar instead of sidebar for symbol keypad??~~
 - [x] ~~Auto-checker should only display critical errors and skip e.g empty line errors~~
 - [x] ~~Send flags to backend when checking proof manually vs automatically~~
 - [x] ~~Check proof on open~~

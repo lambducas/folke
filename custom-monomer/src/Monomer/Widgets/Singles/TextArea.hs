@@ -411,10 +411,10 @@ makeTextArea !wdata !config !state = widget where
         | isMacOS wenv = _kmLeftAlt mod
         | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
       isLineMod
-        | isMacOS wenv = _kmLeftCtrl mod || _kmRightCtrl mod || _kmLeftGUI mod
+        | isMacOS wenv = _kmLeftCtrl mod || _kmRightCtrl mod || _kmLeftGUI mod || _kmRightGUI mod
         | otherwise = _kmLeftAlt mod
       isAllMod
-        | isMacOS wenv = _kmLeftGUI mod
+        | isMacOS wenv = _kmLeftGUI mod || _kmRightGUI mod
         | otherwise = _kmLeftCtrl mod || _kmRightCtrl mod
 
       isBackspace = isKeyBackspace code
