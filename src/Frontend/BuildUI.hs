@@ -387,61 +387,69 @@ buildUI isMac wenv model = widgetTree where
 
   renderPreferenceTab :: WidgetNode AppModel AppEvent
   renderPreferenceTab = fastVScroll $ hstack [
-      vstack [
-        h3 "App scale",
-        paragraph "The application needs to be restarted before changes take effect",
-        spacer,
-        hstack [
+      vstack_ [childSpacing] [
+        h2 "App scale",
+        paragraph "Change the app scale if the window content is too small or big",
+        box_ [alignLeft] $ hstack [
           symbolSpan (showDecimals 2 $ model ^. preferences . appScale),
-          hslider_ (preferences . appScale) 0.25 3 [thumbVisible]
-        ],
-        spacer,
-        button "Reset scale" ResetAppScale,
+          box $ hslider_ (preferences . appScale) 0.25 3 [thumbVisible, thumbFactor 2],
+          button "Reset scale" ResetAppScale
+        ]
+          `styleBasic` [width 500],
+        paragraph "The application needs to be restarted before changes take effect",
         spacer, spacer,
 
-        h3 "Font size",
-        spacer,
-        hstack [
+        h2 "Font",
+        paragraph "Global font settings",
+        h3 "Size",
+        box_ [alignLeft] $ hstack [
           symbolSpan (showDecimals 0 $ model ^. preferences . fontSize),
-          hslider_ (preferences . fontSize) 8 32 [thumbVisible]
-        ],
+          box $ hslider_ (preferences . fontSize) 8 32 [thumbVisible, thumbFactor 2],
+          button "Reset font size" ResetFontSize
+        ]
+          `styleBasic` [width 500],
+
+        h3 "Family",
+        box_ [alignLeft] $ textDropdown_ (preferences . selectNormalFont) [
+            ["Regular","Medium","Bold"],
+            ["Dyslexic"],
+            ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
+            ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
+          ] fontListToText [onChange UpdateFont]
+          `styleBasic` [textSize u, width 200],
+
+        h3 "Weight",
+        box_ [alignLeft] $ textDropdown_ (preferences . normalFont) (model ^. preferences . selectNormalFont) pack []
+          `styleBasic` [textSize u, width 200],
         spacer,
-        button "Reset font size" ResetFontSize,
+        span "Preview: This is what text will look like",
         spacer, spacer,
 
-        h3 "Choose font:",
-        textDropdown_ (preferences . selectNormalFont) [
-          ["Regular","Medium","Bold"],
-          ["Dyslexic"],
-          ["Roboto_Regular","Roboto_Medium","Roboto_Bold"],
-          ["Comic_Sans_Thin", "Comic_Sans_Regular", "Comic_Sans_Medium", "Comic_Sans_Bold"]
-          ] fontListToText [onChange UpdateFont] `styleBasic` [textSize u],
-        spacer,
-
-        h3 "Set font thickness:",
-        textDropdown_ (preferences . normalFont) (model ^. preferences . selectNormalFont) pack [] `styleBasic` [textSize u],
-        vstack $ map illustThickness (model ^. preferences . selectNormalFont),
-        spacer, spacer,
-
-        h3 "Set symbolic font thickness:",
+        h3 "Symbol font",
         paragraph "The symbolic font is the font used in logic proofs",
-        textDropdown_ (preferences . logicFont) ["Symbol_Regular","Symbol_Medium","Symbol_Bold"] pack [] `styleBasic` [textSize u],
-        label "I think ⊢ I am" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
+        box_ [alignLeft] $ textDropdown_ (preferences . logicFont) ["Symbol_Regular", "Symbol_Medium", "Symbol_Bold"] pack []
+          `styleBasic` [textSize u, width 200],
+        spacer,
+        symbolSpan "Preview: I think ⊢ I am",
         spacer, spacer,
 
         h3 "Theme",
-        normalStyle $ button "Switch light/dark mode" SwitchTheme,
+        paragraph "Toggle between light and dark theme",
+        box_ [alignLeft] $ normalStyle $ button toggleThemeText SwitchTheme,
         spacer, spacer,
 
         h3 "Extra character shortcuts",
-        paragraph "Replace the following alphabetic characters with mathematical symbols in proofs:",
+        labeledCheckbox_ "Enable additional character shortcuts" (preferences . replaceAEInFormula) [textRight],
+        paragraph "The following characters will be replaced by mathematical symbols in proofs:",
         paragraph " A -> ∀\n E -> ∃\n v -> ∨\n a -> ∧\n - -> ¬" `styleBasic` [textFont $ fromString $ model ^. preferences . logicFont],
-        labeledCheckbox "Enabled" (preferences . replaceAEInFormula),
         spacer, spacer
 
       ] `styleBasic` [maxWidth 1024]
     ] `styleBasic` [padding 30]
-    where illustThickness fontThicknessess = vstack [label "This is how thick I am" `styleBasic` [textFont $ fromString fontThicknessess, textSize u]]
+    where
+      toggleThemeText = if model ^. preferences . selectedTheme == Light
+        then "Light theme"
+        else "Dark theme"
 
   rulesSidebar = box_ [mergeRequired hasChanged] $
     fastVScroll (vstack [
