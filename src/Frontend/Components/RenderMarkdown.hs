@@ -86,9 +86,3 @@ renderMarkdown wenv model markdown = widgetTree
     convert (Node _ (LINK _ _) _) = label ""
     
     -- convert f = error ("Missed: " ++ show f)
-
-internalLink :: WidgetEnv AppModel AppEvent -> AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
-internalLink wenv model t event = box_ [onClick event] textWidget
-  where
-    textWidget = span model t & L.info . L.style .~ style
-    style = collectTheme wenv L.externalLinkStyle

@@ -31,10 +31,10 @@ customLightTheme = baseTheme lightThemeColors {
   btnBgDisabled = rgb 150 150 150,
   btnTextDisabled = rgb 70 70 70,
   btnText = rgbHex "000000",
-  labelText = rgbHex "000000",
+  labelText = rgbHex "000000"
 
-  inputFgBasic = rgbHex "#CFCFCF",
-  inputSndBasic = rgb 235 235 235
+  -- inputFgBasic = rgbHex "#CFCFCF",
+  -- inputSndBasic = rgb 235 235 235
 
   -- btnMainBgBasic = rgbHex "#EE9000",
   -- btnMainBgHover = rgbHex "#FFB522",
@@ -43,7 +43,7 @@ customLightTheme = baseTheme lightThemeColors {
   -- btnMainBgDisabled = rgbHex "#BB8800",
   -- btnMainText = rgbHex "#FF0000"
 }
-  & L.userColorMap . at "accent" ?~ rgb 255 65 43
+  & L.userColorMap . at "accent" ?~ rgbHex "#0F6BD7" -- rgb 255 65 43
   & L.userColorMap . at "popupBackground" ?~ rgb 255 255 255
   & L.userColorMap . at "backgroundColor" ?~ rgb 255 255 255
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
@@ -74,7 +74,7 @@ customDarkTheme = baseTheme darkThemeColors {
   -- btnMainBgDisabled = rgbHex "#BB8800",
   -- btnMainText = rgbHex "#FF0000"
 }
-  & L.userColorMap . at "accent" ?~ rgb 224 76 58
+  & L.userColorMap . at "accent" ?~ rgbHex "#0F6BD7" -- rgb 224 76 58
   & L.userColorMap . at "popupBackground" ?~ rgb 40 40 40
   & L.userColorMap . at "backgroundColor" ?~ rgb 30 30 30
   & L.userColorMap . at "hoverColor" ?~ rgba 255 255 255 0.05

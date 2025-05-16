@@ -28,6 +28,15 @@ Enable `Auto-validate proof` using the checkbox or press `Validate proof` or
 
 `Ctrl+R` to check if your proof is correct.
 
+## Warnings
+A proof can be correct even with warnings. Warnings highlight unused lines,
+
+duplicate lines, empty lines, etc. Toggle between showing all warnings,
+
+some warnings and only severe warnings in the right must dropdown in the
+
+toolbar.
+
 ## Helpful actions and shortcuts
 * **Insert new line below:** Press `↓+` or `Enter` when the last argument-field is selected to insert a line below the current line.
 * **Insert new line above:** Press `↑+` to insert a line above the current line.

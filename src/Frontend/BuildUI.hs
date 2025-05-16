@@ -132,7 +132,7 @@ buildUI isMac wenv model = widgetTree where
     firstKeystroke globalKeybinds $
       vstack [
         -- Hack to force-merge widgets so theme updates correctly
-        widgetIf (selTheme == customLightTheme) (label "" `styleBasic` [height 0]),
+        widgetIf (selTheme == customLightTheme) (label "" `nodeVisible` False),
         themeSwitch_ selTheme [themeClearBg] $
           vstack [
             vstack [
@@ -168,10 +168,10 @@ buildUI isMac wenv model = widgetTree where
             )
               `styleBasic` [paddingL offset]
           )
-            `styleBasic` [paddingT (-17), paddingL (-5)]
+            `styleBasic` [paddingT (-36), paddingL (-35)]
         ]
         where
-          actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ (menuBarCategories isMac) !! fromInteger idx
+          actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ menuBarCategories isMac !! fromInteger idx
           offset = catButtonWidth * fromIntegral (fromMaybe 0 (model ^. openMenuBarItem))
 
       menuBarButton (name, _actions) idx = vstack [
@@ -228,6 +228,7 @@ buildUI isMac wenv model = widgetTree where
         ]
 
       autoCheckCheck = iconToggleButton_ remixRefreshFill (preferences . autoCheckProofTracker . acpEnabled) [onChange $ \c -> if c then CheckCurrentProof else NoEvent]
+        `styleBasic` [radius 8]
 
   mainContent = hstack [
       actionSidebar,
@@ -260,7 +261,7 @@ buildUI isMac wenv model = widgetTree where
         where
           btn = fastTooltip tt $ iconButton icon event
             `styleHover` [bgColor hoverColor]
-            `styleBasic` [radius (0.5*u), styleIf selected (textColor accentColor), styleIf selected (bgColor selectedColor)]
+            `styleBasic` [radius 8, styleIf selected (textColor accentColor), styleIf selected (bgColor selectedColor)]
 
   -- dts :: DragSide -> ALens' AppModel Double -> WidgetNode AppModel AppEvent -> WidgetNode AppModel AppEvent
   -- dts DragSideRight lens w = boxDragToResize_ DragSideRight lens [] $ hstack [w, spc]
@@ -330,11 +331,12 @@ buildUI isMac wenv model = widgetTree where
   editWindow :: WidgetNode AppModel AppEvent
   editWindow = vstack [
       fileNavBar (model ^. persistentState . openFiles),
-      tabWindow (model ^. persistentState . currentFile)
+      tabWindow
     ]
 
-  fileNavBar filePaths = fastHScroll (hstack (zipWith renderTabHandle filePaths [0..]))
-    `styleBasic` [bgColor selectedColor, maxHeight 40, minHeight 40, height 40]
+  fileNavBar filePaths = widgetIf (not $ null filePaths) $
+    fastHScroll (hstack (zipWith renderTabHandle filePaths [0..]))
+      `styleBasic` [bgColor selectedColor, maxHeight 40, minHeight 40, height 40]
     where
       renderTabHandle filePath idx = dt $ dg $ box_ [expandContent, onClick (SetCurrentFile filePath), onBtnReleased handleBtn] $ hstack [
           spacer,
@@ -367,16 +369,28 @@ buildUI isMac wenv model = widgetTree where
             handleBtn BtnRight _ = OpenContextMenu (ctxFileExplorer filePath relativePath)
             handleBtn _ _ = NoEvent
 
-  tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
-  tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
-  tabWindow (Just fileName) = case file of
-    Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
-    Just (PreferenceFile {}) -> renderPreferenceTab
-    Just file@(ProofFile {}) -> renderProofTab isMac wenv model file ((pack . takeBaseName . _path) file)
-    Just file@(TemporaryProofFile {}) -> renderProofTab isMac wenv model file "New proof"
-    Just (MarkdownFile _p _ content) -> renderMarkdownTab content
-    Just (OtherFile p _ content) -> renderOtherTab p content
-    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName
+  tabWindow = widget
+    where
+      widget = if null (model ^. persistentState . openFiles)
+        then noTabs
+        else aTab
+      noTabs = vstack_ [childSpacing] [
+          h2 "Folke",
+          box_ [alignLeft] $ internalLink wenv model "Create a proof" CreateEmptyProof,
+          box_ [alignLeft] $ internalLink wenv model "Open an example" OpenFileExample,
+          box_ [alignLeft] $ internalLink wenv model "View guide" OpenGuide
+        ]
+        `styleBasic` [expandWidth 1000, padding 30]
+      aTab = case model ^. persistentState . currentFile of
+        Nothing -> vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
+        (Just fileName) -> case file of
+          Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
+          Just (PreferenceFile {}) -> renderPreferenceTab
+          Just file@(ProofFile {}) -> renderProofTab isMac wenv model file ((pack . takeBaseName . _path) file)
+          Just file@(TemporaryProofFile {}) -> renderProofTab isMac wenv model file "New proof"
+          Just (MarkdownFile _p _ content) -> renderMarkdownTab content
+          Just (OtherFile p _ content) -> renderOtherTab p content
+          where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName
 
   renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent
   renderOtherTab path content = fastVScroll $ vstack_ [childSpacing] [

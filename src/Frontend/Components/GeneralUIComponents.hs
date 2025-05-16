@@ -91,12 +91,14 @@ iconToggleButton model iconIdent l = iconToggleButton_ model iconIdent l []
 
 iconToggleButton_ :: AppModel -> Text -> ALens' AppModel Bool -> [ToggleButtonCfg AppModel AppEvent] -> WidgetNode AppModel AppEvent
 iconToggleButton_ model iconIdent l cfg = toggleButton_ iconIdent l (toggleButtonOffStyle offStyle : cfg)
-  `styleBasic` [textFont "Remix", textMiddle, textSize (u model)]
+  `styleBasic` [textFont "Remix", textMiddle, textSize (u model), textColor accentColor, bgColor selectedColor, border 0 transparent]
   where
     offStyle = def
-      `styleBasic` [bgColor transparent, border 1 transparent]
+      `styleBasic` [bgColor transparent, border 0 transparent]
       `styleHover` [bgColor hoverColor]
     hoverColor = selTheme ^. L.userColorMap . at "hoverColor" . non def
+    selectedColor = selTheme ^. L.userColorMap . at "selectedFileBg" . non def
+    accentColor = selTheme ^. L.userColorMap . at "accent" . non def
     selTheme = getActualTheme $ model ^. preferences . selectedTheme
 
 -- | Button with trashcan icon
@@ -147,6 +149,12 @@ fastHScroll = hscroll_ [wheelRate 50]
 
 boxShadow :: WidgetNode s e -> WidgetNode s e
 boxShadow = boxShadow_ [radius 24]
+
+internalLink :: WidgetEnv AppModel AppEvent -> AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
+internalLink wenv model t event = box_ [onClick event] textWidget
+  where
+    textWidget = span model t & L.info . L.style .~ style
+    style = collectTheme wenv L.externalLinkStyle
 
 {-|
 Will handle keystrokes from start to end of list and stop when a
