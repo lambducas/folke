@@ -53,7 +53,7 @@ menuBarCategories isMac = [
     ]),
     ("View", [
       ("Toggle File Explorer", ctrl <> "+B", ToggleFileExplorer),
-      ("Toggle Rules Dictionary", "", ToggleRulesSidebar),
+      ("Toggle Rules Dictionary", ctrl <> "+Alt+B", ToggleRulesSidebar),
       ("Open Preferences", ctrl <> "+Shift+P", OpenPreferences),
       ("Search for File", ctrl <> "+P", OpenFileSearcher)
     ]),
@@ -249,7 +249,7 @@ buildUI isMac wenv model = widgetTree where
 
   actionSidebar :: WidgetNode AppModel AppEvent
   actionSidebar = vstack (map actionButton [
-      ("Toggle File Explorer (Ctrl+B)", remixFileSearchLine, ToggleFileExplorer, model ^. persistentState . fileExplorerOpen),
+      ("Toggle File Explorer", remixFileSearchLine, ToggleFileExplorer, model ^. persistentState . fileExplorerOpen),
       ("Toggle Rule Explorer", remixRuler2Line, ToggleRulesSidebar, model ^. persistentState . rulesSidebarOpen),
       ("Open Preferences", remixSettings4Line, OpenPreferences, False),
       ("Open Guide", remixQuestionLine, OpenGuide, False)
@@ -372,8 +372,8 @@ buildUI isMac wenv model = widgetTree where
   tabWindow (Just fileName) = case file of
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
     Just (PreferenceFile _ _) -> renderPreferenceTab
-    Just file@(ProofFile {}) -> renderProofTab wenv model file ((pack . takeBaseName . _path) file)
-    Just file@(TemporaryProofFile {}) -> renderProofTab wenv model file "New proof"
+    Just file@(ProofFile {}) -> renderProofTab isMac wenv model file ((pack . takeBaseName . _path) file)
+    Just file@(TemporaryProofFile {}) -> renderProofTab isMac wenv model file "New proof"
     Just (MarkdownFile _p content) -> renderMarkdownTab content
     Just (OtherFile p content) -> renderOtherTab p content
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName

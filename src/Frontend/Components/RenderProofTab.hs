@@ -36,12 +36,15 @@ import Frontend.Helper.ProofHelper (getCurrentSequent)
 -- import Frontend.Components.ProofRow
 
 renderProofTab
-  :: WidgetEnv AppModel AppEvent
+  :: Bool
+  -> WidgetEnv AppModel AppEvent
   -> AppModel
   -> File
   -> Text
   -> WidgetNode AppModel AppEvent
-renderProofTab _wenv model file _heading = cached where
+renderProofTab isMac _wenv model file _heading = cached where
+  ctrl = if isMac then "Cmd" else "Ctrl"
+
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def
   dividerColor = selTheme ^. L.userColorMap . at "dividerColor" . non def
@@ -183,7 +186,7 @@ renderProofTab _wenv model file _heading = cached where
           h2 "Premises",
           vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
           widgetIf (null $ _premises sequent) (span "No premises"),
-          hstack [button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
+          hstack [fastTooltip "Add premise" $ button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
         ]
         where
           hasChanged _wenv old new = oldPremises /= newPremises
@@ -199,12 +202,12 @@ renderProofTab _wenv model file _heading = cached where
             ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
             ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
             ("Delete", RemovePremise idx, True),
-            ("Ctrl-Enter", AddPremise idx, True)
+            (ctrl <> "-Enter", AddPremise idx, True)
           ] (symbolStyle $ textFieldV_ premise (EditPremise idx) [placeholder "Enter premise"]
             `nodeKey` ("premise.input." <> showt idx)
             `styleBasic` [styleIf isPremiseError (border 1 red)]),
           spacer,
-          fastTooltip "Remove line" $ trashButton (RemovePremise idx),
+          fastTooltip "Remove premise" $ trashButton (RemovePremise idx),
           spacer
         ]
           `nodeKey` ("premise.line." <> showt idx)
@@ -272,8 +275,8 @@ renderProofTab _wenv model file _heading = cached where
           ui,
           spacer,
           hstack_ [childSpacing] [
-            button "+ New line" AddLine,
-            button "+☐ New sub proof" AddSubProof
+            fastTooltip "Insert new line below last line" $ button "+ New line" AddLine,
+            fastTooltip "Insert sub proof below last line" $ button "+☐ New sub proof" AddSubProof
           ]
         ]
         where
@@ -354,12 +357,12 @@ renderProofTab _wenv model file _heading = cached where
                     ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
                     -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
-                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
+                    (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+                    (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
                     ("Delete", RemoveLine False path, trashActive),
                     ("Backspace", RemoveLine False path, canBackspaceToDelete),
-                    ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                    ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
+                    (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                    (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
                     ("Enter", NextFocus 1, True)
                   ] (symbolStyle $ textFieldV_ statement (EditFormula path)
                       [onKeyDown handleFormulaKey, placeholder "Empty statement", textFieldPutCursorAtFirstMissmatch]
@@ -403,12 +406,12 @@ renderProofTab _wenv model file _heading = cached where
 
               -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
-              ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-              ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
+              (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+              (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
               ("Delete", RemoveLine False path, trashActive),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-              ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-              ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
+              (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+              (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
               ("Enter", NextFocus 1, usedArguments > 0),
               ("Enter", InsertLineAfter False path, usedArguments == 0)
             ] w
@@ -427,13 +430,13 @@ renderProofTab _wenv model file _heading = cached where
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
-                ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-                ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
                 ("Delete", RemoveLine False path, trashActive),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),
-                ("Ctrl-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-                ("Ctrl-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
+                (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
+                (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
               ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx)
