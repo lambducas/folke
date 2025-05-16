@@ -1,4 +1,14 @@
 {
+    "_fedUserDefinedRules": [
+        {
+            "_udrInput": [
+                "¬(p → q)"
+            ],
+            "_udrName": "\"1a\"",
+            "_udrOutput": "p ∨ ¬q",
+            "_udrPath": "exam_240828_1a_alt1.json"
+        }
+    ],
     "_sequent": {
         "_conclusion": "((p → q) → p) → ((q → p) ∨ p)",
         "_premises": [],
@@ -60,10 +70,12 @@
                                 "tag": "Line"
                             },
                             {
-                                "_arguments": [],
-                                "_rule": "\"1a\" [6]",
+                                "_arguments": [
+                                    "6"
+                                ],
+                                "_rule": "\"1a\"",
                                 "_statement": "p ∨ ¬q",
-                                "_usedArguments": 0,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             },
                             {

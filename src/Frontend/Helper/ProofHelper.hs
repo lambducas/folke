@@ -14,6 +14,7 @@ import Control.Lens
 import TextShow (showt)
 import Data.Text (Text, unpack, pack)
 import Data.List (findIndex)
+import qualified Data.List
 import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
 import System.FilePath.Posix (equalFilePath)
@@ -83,6 +84,20 @@ applyOnCurrentProofAndRecordHistory model f = applyOnCurrentFile model updateFil
           forkHistory index state = take (index + 1) state ++ [snd fApplied]
           fApplied = f $ _sequent doc
 
+applyOnCurrentFEDocumentAndRecordHistory :: AppModel -> (FEDocument -> (FEDocument, HistoryEvent)) -> [EventResponse AppModel AppEvent sp ep]
+applyOnCurrentFEDocumentAndRecordHistory model f = applyOnCurrentFile model updateFile
+  where
+    updateFile file = case _parsedDocument file of
+      Nothing -> file
+      Just doc -> file
+        & isEdited .~ True
+        & parsedDocument . _Just .~ fst fApplied
+        & history . hIndex %~ (+1)
+        & history . hState %~ forkHistory (_hIndex (_history file))
+        where
+          forkHistory index state = take (index + 1) state ++ [snd fApplied]
+          fApplied = f doc
+
 {-|
 Applies a function on the proof of the currently opened file-tab and
 records a general sequent-change event.
@@ -128,9 +143,10 @@ editConclusionInProof newText sequent = FESequent { _premises = premises, _concl
     steps = _steps sequent
 
 -- | Updates the formula on line at given path
-editFormulaInProof :: AppModel -> FormulaPath -> Text -> FESequent -> FESequent
-editFormulaInProof model path newText seq = replaceSteps f seq
+editFormulaInProof :: AppModel -> FormulaPath -> Text -> FEDocument -> FEDocument
+editFormulaInProof model path newText doc = doc & sequent .~ replaceSteps f seq
   where
+    seq = _sequent doc
     oldText = case evalPath path seq of
       SubProof _ -> ""
       Line statement _ _ _  -> statement
@@ -173,14 +189,17 @@ firstMissmatch a b = tw (unpack a) (unpack b) 0
     tw _ [] i = i
 
 -- | Updates the rule on line at given path
-editRuleNameInProof :: FormulaPath -> Text -> FESequent -> FESequent
-editRuleNameInProof path newRule = replaceSteps f
+editRuleNameInProof :: FormulaPath -> Text -> FEDocument -> FEDocument
+editRuleNameInProof path newRule doc = doc & sequent .~ replaceSteps f (_sequent doc)
   where
     f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
     el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
     el editPath currentPath f@(Line statement _rule usedArguments arguments)
-      | editPath == currentPath = case Data.Map.lookup (parseRule newRule) ruleMetaDataMap of
-        Nothing -> Line statement (replaceSpecialSymbols newRule) usedArguments arguments
+      | editPath == currentPath = case Data.Map.lookup newRuleParsed ruleMetaDataMap of
+        Nothing -> case getUDR newRuleParsed of
+          Nothing -> Line statement (replaceSpecialSymbols newRule) usedArguments arguments
+          Just udr -> Line statement (replaceSpecialSymbols newRule) nrArgs (fillList (fromIntegral nrArgs) arguments)
+            where nrArgs = length $ _udrInput udr
         Just (RuleMetaData nrArguments _) -> Line statement (replaceSpecialSymbols newRule) (fromIntegral nrArguments) (fillList nrArguments arguments)
       | otherwise = f
 
@@ -190,9 +209,15 @@ editRuleNameInProof path newRule = replaceSteps f
       | otherwise = arr
       where currLen = toInteger (length arr)
 
+    getUDR name = case _fedUserDefinedRules doc of
+      Nothing -> Nothing
+      Just rules -> Data.List.find (\r -> _udrName r == name) rules
+
+    newRuleParsed = parseRule newRule
+
 -- | Updates the n:th argument on line at given path with new text
-editRuleArgumentInProof :: FormulaPath -> Int -> Text -> FESequent -> FESequent
-editRuleArgumentInProof path idx newText = replaceSteps f
+editRuleArgumentInProof :: FormulaPath -> Int -> Text -> FEDocument -> FEDocument
+editRuleArgumentInProof path idx newText doc = doc & sequent .~ replaceSteps f (_sequent doc)
   where
     f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
     el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
@@ -201,14 +226,14 @@ editRuleArgumentInProof path idx newText = replaceSteps f
       | otherwise = f
 
 -- | Apply function to sequent and record history
-editLineAndRecordHistory :: AppModel -> FormulaPath -> (FESequent -> FESequent) -> [EventResponse AppModel AppEvent sp ep]
-editLineAndRecordHistory model path f = applyOnCurrentProofAndRecordHistory model helperF
+editLineAndRecordHistory :: AppModel -> FormulaPath -> (FEDocument -> FEDocument) -> [EventResponse AppModel AppEvent sp ep]
+editLineAndRecordHistory model path f = applyOnCurrentFEDocumentAndRecordHistory model helperF
   where
-    helperF seq = (newSeq, HEditStep path oldStep newStep)
+    helperF doc = (newDoc, HEditStep path oldStep newStep)
       where
-        oldStep = evalPath path seq
-        newStep = evalPath path newSeq
-        newSeq = f seq
+        oldStep = evalPath path (_sequent doc)
+        newStep = evalPath path (_sequent newDoc)
+        newDoc = f doc
 
 -- | Applies a given function to the step at path
 replaceInProof :: FormulaPath -> (FEStep -> FEStep) -> FESequent -> FESequent
