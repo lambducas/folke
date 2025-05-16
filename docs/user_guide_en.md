@@ -1,4 +1,4 @@
-# Proof Editor User Guide
+# Folke User Guide
 A quick guide to get you started.
 
 ## Create new proof
@@ -8,14 +8,22 @@ Press `Ctrl+N` or go to `File > New Proof` to [create an empty proof](runinterna
 Press `Ctrl+O` or go to `File > Open File`. Then select the proof you want to open.
 
 ## Save proof
-When a proof is edited a dot appears next to the name in its tab. Press `Ctrl+S` or go to `File > Save File` to save the current file. The dot will disappear indicating that the file has been saved.
+When a proof is edited a dot appears next to the name in its tab. Press `Ctrl+S` or
+
+go to `File > Save File` to save the current file. The dot will disappear indicating
+
+that the file has been saved.
 
 ## Write a proof
 1. Open or create a new proof
 2. **Premises:** Enter each premise on a seperate line by pressing `+ Premise`.
 3. **Conclusion:** Enter the conclusion in the conclusion-field
 4. **Proof:** Enter each statement and rule on seperate lines. Below is a list of helpful actions.
-5. **Validate proof:** Enable `Auto-check proof` using the checkbox or press `Check proof` or `Ctrl+R` to check if your proof is correct.
+
+## Validate proof
+Enable `Auto-check proof` using the checkbox or press `Check proof` or
+
+`Ctrl+R` to check if your proof is correct.
 
 ## Helpful actions and shortcuts
 * **Insert new line below:** Press `↓+` or `Enter` when the last argument-field is selected to insert a line below the current line.
@@ -26,7 +34,9 @@ When a proof is edited a dot appears next to the name in its tab. Press `Ctrl+S`
 * **Other actions:** Right-click a line to see all available actions.
 
 ## Quick-type characters
-Open the rule sidebar from `View > Toggle Rules Dictionary` to get a keypad with a special characters. It is also possible to use a keyboard to write the characters for:
+Open the rule sidebar from `View > Toggle Rules Dictionary` to get a keypad with
+
+a special characters. It is also possible to use a keyboard to write the characters for:
 * **Negate**: ¬, !  ~
 * **Implies**: → -> >
 * **Conjunction**: ∧ & ^ * and con
@@ -39,10 +49,14 @@ Open the rule sidebar from `View > Toggle Rules Dictionary` to get a keypad with
 Extra shortcuts can be enabled in preferences.
 
 ## Export proof to Latex
-Navigate to `File` in the menu bar and press `Export to LaTeX` or `Export to LaTeX and PDF` to export your proof as LaTeX code or as a ready-to-use PDF.
+Navigate to `File` in the menu bar and press `Export to LaTeX` or `Export to LaTeX and PDF`
+
+to export your proof as LaTeX code or as a ready-to-use PDF.
 
 ### Export to LaTeX with PDF compilation
-Automatically compiles the LaTeX source code into a PDF document. Creates both .tex source file and .pdf file at your chosen location.
+Automatically compiles the LaTeX source code into a PDF document. Creates both
+
+.tex source file and .pdf file at your chosen location.
 
 Make sure you have pdflatex installed on your system:
   - On Ubuntu/Debian: `sudo apt-get install texlive-latex-base`
@@ -59,7 +73,9 @@ Press `View > Toggle Rules Dictionary` to toggle the rules dictionary.
 Press `Open folder` in the File Explorer or `File > Set Working Directory` and select a folder.
 
 ## Find file
-Press `Ctrl+P` or `View > Search for File` and enter a search query to find a file in the current working directory. Note that nothing will happen if no working directory is set.
+Press `Ctrl+P` or `View > Search for File` and enter a search query to find a file in
+
+the current working directory. Note that nothing will happen if no working directory is set.
 
 ## Open settings/preferences
 Press `Ctrl+Shift+P`, `View > Open preferences` or press the cog icon in the left sidebar.

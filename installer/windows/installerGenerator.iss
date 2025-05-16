@@ -1,6 +1,6 @@
 ; Generates an installer for the proof editor
 
-#define AppName "Proof Editor"
+#define AppName "Folke"
 #define EXEName "bsc"
 ; #define AppVersion GetVersionNumbersString(AddBackslash(SourcePath) + "\releaseFiles\{#EXEName}.exe")
 #define AppVersion "0.0.1"

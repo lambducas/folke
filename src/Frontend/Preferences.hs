@@ -10,7 +10,7 @@ import System.Directory (doesFileExist, XdgDirectory (..), getXdgDirectory, crea
 import System.FilePath.Posix ((</>), takeDirectory)
 
 appName :: String
-appName = "Proof Editor"
+appName = "Folke"
 
 getPreferencePath :: IO FilePath
 getPreferencePath = do

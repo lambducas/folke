@@ -383,7 +383,7 @@ buildUI isMac wenv model = widgetTree where
     ] `styleBasic` [padding u]
 
   renderMarkdownTab :: Text -> WidgetNode AppModel AppEvent
-  renderMarkdownTab content = fastVScroll (renderMarkdown wenv model content `styleBasic` [padding u, maxWidth 300]) `nodeKey` "markdownScroll"
+  renderMarkdownTab content = fastVScroll (renderMarkdown wenv model content `styleBasic` [padding (1.25*u), maxWidth 300]) `nodeKey` "markdownScroll"
 
   renderPreferenceTab :: WidgetNode AppModel AppEvent
   renderPreferenceTab = fastVScroll $ hstack [

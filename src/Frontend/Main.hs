@@ -51,7 +51,7 @@ main = do
   where
     -- Application configuration
     config assetBasePath isMac prefs state = [
-      appWindowTitle "Folke - Proof Editor",
+      appWindowTitle "Folke - A Proof Editor",
       appWindowIcon (pack (assetBasePath </> "assets/images/icon.png")),
       appScaleFactor (_appScale prefs),
       appWindowState (_windowMode state),

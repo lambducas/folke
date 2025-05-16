@@ -1,4 +1,4 @@
-# Welcome to Proof Editor
+# Welcome to Folke
 A quick guide to get you started
 
 ## Create your first proof
