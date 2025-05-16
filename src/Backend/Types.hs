@@ -238,11 +238,12 @@ instance Show Ref where
 
 instance Show Warning where
   show w = "[" ++ show (warnSeverity w) ++ "] " ++
-           warnMessage w ++
-           (case warnLocation w of
-              Just loc -> " at " ++ show loc
-              Nothing -> "") ++
-           maybe "" ("\nSuggestion: " ++) (warnSuggestion w)
+          warnMessage w ++
+          -- GUI already shows location
+          --  (case warnLocation w of
+          --     Just loc -> " at " ++ show loc
+          --     Nothing -> "") ++
+          maybe "" ("\nSuggestion: " ++) (warnSuggestion w)
 
 instance Show Error where
   show e = show (errKind e) ++

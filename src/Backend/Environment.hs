@@ -935,8 +935,8 @@ createRuleArgError :: Env -> Integer -> String -> Error
 createRuleArgError env argNum message = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleArgError argNum message,
-  errMessage = message,
-  errContext = Just $ "Problem with argument #" ++ show argNum,
+  errMessage = "Problem with argument #" ++ show argNum,
+  errContext = Just message,
   errSuggestions = ["Check that you're using the correct formula type"]
 }
 -- | Create an error for incorrect number of arguments to a rule
@@ -944,7 +944,7 @@ createArgCountError :: Env -> Integer -> Integer -> Error
 createArgCountError env actual expected = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleArgCountError actual expected,
-  errMessage = "Incorrect number of arguments: ",
+  errMessage = "Incorrect number of arguments",
   errContext = Just $ "Expected " ++ show expected ++ " arguments, got " ++ show actual,
   errSuggestions = ["Check that you're using the correct rule for your situation"]
 }
@@ -954,7 +954,7 @@ createRuleConcError :: Env -> String -> Error
 createRuleConcError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleConcError message,
-  errMessage = "Invalid conclusion for rule application: " ++ message,
+  errMessage = "Invalid conclusion for rule application",
   errContext = Just message,
   errSuggestions = ["Check that your conclusion matches what the rule is expected to produce"]
 }
@@ -964,7 +964,7 @@ createTypeError :: Env -> String -> Error
 createTypeError env message = Error {
   errLocation = listToMaybe (pos env),
   errKind = TypeError message,
-  errMessage = "Type mismatch in proof: ",
+  errMessage = "Type mismatch in proof",
   errContext = Just message,
   errSuggestions = ["Ensure you're using the correct type of expressions"]
 }
@@ -975,7 +975,7 @@ createReferenceError env ref message = Error {
   errLocation = Just ref,  -- Use the reference itself as the location
   errKind = ReferenceError ref message,
   errMessage = "Invalid reference in proof: " ++ message,
-  errContext = Just $ "Problem with reference " ++ show ref,
+  errContext = Nothing, --Just $ "Problem with reference " ++ show ref,
   errSuggestions = ["Check that the reference exists and is accessible"]
 }
 
@@ -984,7 +984,7 @@ createRuleNotFoundError :: Env -> String -> Error
 createRuleNotFoundError env ruleName = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleNotFoundError ruleName,
-  errMessage = "Rule not found: ",
+  errMessage = "Rule not found",
   errContext = Just $ "The rule '" ++ ruleName ++ "' is not defined",
   errSuggestions = [
     "Check for typos in the rule name",
@@ -1037,7 +1037,7 @@ createEmptyLineWarning env = Warning {
       warnLocation = listToMaybe $ pos env,
       warnSeverity = Low,
       warnKind = StyleIssue "Empty line in proof",
-      warnMessage = "Empty formula line detected in proof",
+      warnMessage = "Empty formula line",
       warnSuggestion = Just "Consider removing empty lines to improve proof clarity"
 }
 

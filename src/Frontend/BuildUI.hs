@@ -111,14 +111,15 @@ buildUI isMac wenv model = widgetTree where
   bold = Frontend.Components.GeneralUIComponents.bold model
   normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
   -- symbolStyle = Frontend.Components.GeneralUIComponents.symbolStyle model
-  u = model ^. preferences . fontSize
-
   button = Frontend.Components.GeneralUIComponents.button model
   fastTooltip = Frontend.Components.GeneralUIComponents.fastTooltip model
   -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
   fastVScroll_ = Frontend.Components.GeneralUIComponents.fastVScroll_
   fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
+  boxShadow = Frontend.Components.GeneralUIComponents.boxShadow
+
+  u = model ^. preferences . fontSize
 
   globalKeybinds = filter (\(b, _, _) -> b /= "") $ map (\(_, b, e) -> (convertBind b, e, True)) $ concatMap snd (menuBarCategories isMac)
     where
@@ -305,9 +306,6 @@ buildUI isMac wenv model = widgetTree where
               box_ [expandContent] (hstack [
                   bold (span "File Explorer"),
                   filler,
-                  fastTooltip "Create new proof" $ iconButton remixFileAddLine CreateEmptyProof
-                    `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
-                    `styleHover` [bgColor hoverColor],
                   fastTooltip "Refresh files" $ iconButton remixRestartLine RefreshExplorer
                     `styleBasic` [bgColor transparent, border 1 transparent, padding 4, textSize u]
                     `styleHover` [bgColor hoverColor],

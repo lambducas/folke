@@ -145,6 +145,9 @@ fastVScroll_ cfg = vscroll_ (wheelRate 50 : cfg)
 -- | `hscroll` but with more reasonable scroll rate
 fastHScroll = hscroll_ [wheelRate 50]
 
+boxShadow :: WidgetNode s e -> WidgetNode s e
+boxShadow = boxShadow_ [radius 24]
+
 {-|
 Will handle keystrokes from start to end of list and stop when a
 key-combination matches currently presssed keys (if it is enabled).

@@ -41,7 +41,7 @@ customLightTheme = baseTheme lightThemeColors {
   -- btnMainText = rgbHex "#FF0000"
 }
   & L.userColorMap . at "accent" ?~ rgb 255 65 43
-  & L.userColorMap . at "popupBackground" ?~ rgb 230 230 230
+  & L.userColorMap . at "popupBackground" ?~ rgb 255 255 255
   & L.userColorMap . at "backgroundColor" ?~ rgb 255 255 255
   & L.userColorMap . at "hoverColor" ?~ rgba 0 0 0 0.05
   & L.userColorMap . at "selectedFileBg" ?~ rgba 0 0 0 0.1

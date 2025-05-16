@@ -154,22 +154,22 @@ getConclusion (Proof _ _ conc) = conc
 -- | Convert a Result to a frontend-friendly error format
 convertToFEError :: Result t -> FEResult
 convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Err warns _env err) = feError
+convertToFEError (Err warns env err) = feError
   where
     baseMsg = errMessage err ++
               maybe "" (\ctx -> ": " ++ ctx) (errContext err)
 
     suggestionText = case errSuggestions err of
       [] -> ""
-      [s] -> " Suggestion: " ++ s
-      ss -> " Suggestions: " ++ List.intercalate "; " ss
+      [s] -> "\nSuggestion: " ++ s
+      ss -> "\nSuggestions: " ++ List.intercalate "; " ss
 
     errorText = baseMsg ++ suggestionText
 
     convWarns = map convertWarning warns
-    feError = case errLocation err of
-      Nothing -> FEError convWarns (FEGlobal errorText)
-      Just l -> FEError convWarns (FELocal l errorText)
+    feError = case pos env of
+      [] -> FEError convWarns (FEGlobal errorText)
+      l:_ -> FEError convWarns (FELocal l errorText)
 
 -- | Convert a warning to a frontend-friendly format
 convertWarning :: Warning -> FEErrorWhere
