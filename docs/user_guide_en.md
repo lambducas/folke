@@ -1,11 +1,14 @@
-# Folke User Guide
-A quick guide to get you started.
+# User Guide
+A user guide for Folke. 
 
 ## Create new proof
 Press `Ctrl+N` or go to `File > New Proof` to [create an empty proof](runinternalevent://CreateEmptyProof)
 
 ## Open proof
 Press `Ctrl+O` or go to `File > Open File`. Then select the proof you want to open.
+
+## Open example proof
+Go to `File > Open Example`. Then select the example you want to open.
 
 ## Save proof
 When a proof is edited a dot appears next to the name in its tab. Press `Ctrl+S` or
@@ -21,7 +24,7 @@ that the file has been saved.
 4. **Proof:** Enter each statement and rule on seperate lines. Below is a list of helpful actions.
 
 ## Validate proof
-Enable `Auto-check proof` using the checkbox or press `Check proof` or
+Enable `Auto-validate proof` using the checkbox or press `Validate proof` or
 
 `Ctrl+R` to check if your proof is correct.
 
@@ -63,20 +66,22 @@ Make sure you have pdflatex installed on your system:
   - On macOS with Homebrew: `brew install basictex`
   - On Windows: Install MiKTeX or TeX Live
 
-## Open File Explorer
-Press `Ctrl+B` or `View > Toggle File Explorer` to toggle the file explorer sidebar.
-
-## Open rules dictionary
-Press `View > Toggle Rules Dictionary` to toggle the rules dictionary.
-
-## Set working directory
-Press `Open folder` in the File Explorer or `File > Set Working Directory` and select a folder.
-
-## Find file
-Press `Ctrl+P` or `View > Search for File` and enter a search query to find a file in
-
-the current working directory. Note that nothing will happen if no working directory is set.
-
 ## Open settings/preferences
 Press `Ctrl+Shift+P`, `View > Open preferences` or press the cog icon in the left sidebar.
 
+## Advanced file management
+It is possible to work with multiple files at the same time by opening a folder as working directory.
+
+### Open File Explorer
+Press `Ctrl+B` or `View > Toggle File Explorer` to toggle the file explorer sidebar.
+
+### Open rules dictionary
+Press `View > Toggle Rules Dictionary` to toggle the rules dictionary.
+
+### Set working directory
+Press `Open folder` in the File Explorer or `File > Set Working Directory` and select a folder.
+
+### Find file
+Press `Ctrl+P` or `View > Search for File` and enter a search query to find a file in
+
+the current working directory. Note that nothing will happen if no working directory is set.

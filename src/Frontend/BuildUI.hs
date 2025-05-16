@@ -211,7 +211,7 @@ buildUI isMac wenv model = widgetTree where
 
       separatorLine,
 
-      fastTooltip "Validate proof" $ iconButton remixListCheck2 CheckCurrentProof,
+      fastTooltip "Validate proof" $ iconButton remixCheckboxMultipleLine CheckCurrentProof,
       fastTooltip "Auto-validate proof" autoCheckCheck,
       fastTooltip "User defined rules" $ iconButton remixUserSettingsLine OpenUDR,
 
@@ -250,8 +250,8 @@ buildUI isMac wenv model = widgetTree where
 
   actionSidebar :: WidgetNode AppModel AppEvent
   actionSidebar = vstack (map actionButton [
-      ("Toggle File Explorer", remixFileSearchLine, ToggleFileExplorer, model ^. persistentState . fileExplorerOpen),
-      ("Toggle Rule Explorer", remixRuler2Line, ToggleRulesSidebar, model ^. persistentState . rulesSidebarOpen),
+      ("Toggle File Explorer", remixFoldersLine, ToggleFileExplorer, model ^. persistentState . fileExplorerOpen),
+      ("Toggle Rule Explorer", remixGitRepositoryLine, ToggleRulesSidebar, model ^. persistentState . rulesSidebarOpen),
       ("Open Preferences", remixSettings4Line, OpenPreferences, False),
       ("Open Guide", remixQuestionLine, OpenGuide, False)
     ]) `styleBasic` [width 50, borderR 1 dividerColor]
@@ -348,7 +348,9 @@ buildUI isMac wenv model = widgetTree where
           `styleBasic` [borderR 1 dividerColor, styleIf isCurrent (bgColor backgroundColor), cursorHand, paddingH 4]
           `styleHover` [styleIf (not isCurrent) (bgColor hoverColor)]
           where
-            displayName = if isTmpFile filePath then "New proof" else pack $ takeFileName filePath
+            displayName = case file >>= _tabDisplay of
+              Nothing -> pack $ takeFileName filePath
+              Just d -> d
             closeText = if isFileEdited file then "●" else "⨯"
             file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
             isCurrent = (model ^. persistentState . currentFile) == Just filePath
@@ -369,11 +371,11 @@ buildUI isMac wenv model = widgetTree where
   tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
   tabWindow (Just fileName) = case file of
     Nothing -> span ("Filepath \"" <> pack fileName <> "\" not loaded in: " <> pack (show (model ^. persistentState . tmpLoadedFiles)))
-    Just (PreferenceFile _ _) -> renderPreferenceTab
+    Just (PreferenceFile {}) -> renderPreferenceTab
     Just file@(ProofFile {}) -> renderProofTab isMac wenv model file ((pack . takeBaseName . _path) file)
     Just file@(TemporaryProofFile {}) -> renderProofTab isMac wenv model file "New proof"
-    Just (MarkdownFile _p content) -> renderMarkdownTab content
-    Just (OtherFile p content) -> renderOtherTab p content
+    Just (MarkdownFile _p _ content) -> renderMarkdownTab content
+    Just (OtherFile p _ content) -> renderOtherTab p content
     where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName
 
   renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent

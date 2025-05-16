@@ -57,18 +57,22 @@ data History = History {
 data File
   = OtherFile {
     _path :: FilePath,
+    _tabDisplay :: Maybe Text,
     _content :: Text
   }
   | PreferenceFile {
     _path :: FilePath,
+    _tabDisplay :: Maybe Text,
     _isEdited :: Bool
   }
   | MarkdownFile {
     _path :: FilePath,
+    _tabDisplay :: Maybe Text,
     _content :: Text
   }
   | ProofFile {
     _path :: FilePath,
+    _tabDisplay :: Maybe Text,
     _content :: Text,
     _parsedDocument :: Maybe FEDocument,
     _isEdited :: Bool,
@@ -76,6 +80,7 @@ data File
   }
   | TemporaryProofFile {
     _path :: FilePath,
+    _tabDisplay :: Maybe Text,
     _parsedDocument :: Maybe FEDocument,
     _isEdited :: Bool,
     _history :: History
@@ -254,7 +259,7 @@ data AppEvent
   | OpenFileFromFileSystem
   | OpenFileExample
   | OpenFile FilePath
-  | OpenFile_ FilePath FilePath
+  | OpenFile_ FilePath FilePath (Maybe Text)
   | OpenFileSuccess File
   | OpenFileSuccess_ File
   | CloseFile FilePath

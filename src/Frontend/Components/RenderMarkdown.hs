@@ -47,7 +47,7 @@ renderMarkdown wenv model markdown = widgetTree
     convert (Node _ (TEXT t) _) = paragraph model t
 
     -- Inline code block
-    convert (Node _ (CODE t) _) = symbolSpan model t `styleBasic` [bgColor hoverColor, paddingV (0.25 * u model), paddingH (0.5 * u model), radius 8]
+    convert (Node _ (CODE t) _) = symbolSpan model t `styleBasic` [bgColor hoverColor, paddingV (0.1 * u model), paddingH (0.5 * u model), radius 8]
 
     -- Blocks
     convert (Node _ BLOCK_QUOTE children) = vstack_ [childSpacing] (map convert children) `styleBasic` [paddingH (u model), paddingV (0.5*u model), bgColor hoverColor, border 1 dividerColor, radius 8]

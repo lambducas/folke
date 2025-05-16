@@ -113,7 +113,7 @@ main = do
 
     -- Default preferences for new users
     defaultPrefs = Preferences {
-      _selectedTheme = Dark,
+      _selectedTheme = Light,
       _selectNormalFont = ["Regular", "Medium", "Bold"],
       _normalFont = "Regular",
       _logicFont = "Symbol_Regular",
@@ -132,7 +132,7 @@ main = do
       _currentFile = Nothing,
       _openFiles = [],
       _tmpLoadedFiles = [],
-      _fileExplorerOpen = True,
+      _fileExplorerOpen = False,
       _fileExplorerWidth = 0.27,
       _rulesSidebarOpen = True,
       _rulesSidebarWidth = 0.82

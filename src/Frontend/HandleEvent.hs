@@ -398,16 +398,6 @@ handleEvent env wenv node model evt = case evt of
           Left e -> print e
           Right _ -> do
             let emptySeq = FESequent [] "" [Line "" "" 0 []]
-            -- let deMorgan1 = FEUserDefinedRule {
-            --   _udrName = "deMo1",
-            --   _udrInput = ["¬(P ∧ Q)"],
-            --   _udrOutput = "¬P ∨ ¬Q"
-            -- }
-            -- let deMorgan2 = FEUserDefinedRule {
-            --   _udrName = "deMo2",
-            --   _udrInput = ["¬(P ∨ Q)"],
-            --   _udrOutput = "¬P ∧ ¬Q"
-            -- }
             let emptyDoc = Just $ FEDocument {
               _fedUserDefinedRules = Nothing,
               _sequent = emptySeq
@@ -416,7 +406,7 @@ handleEvent env wenv node model evt = case evt of
               _hState = [],
               _hIndex = -1
             }
-            let file = TemporaryProofFile randomPath emptyDoc False emptyHistory
+            let file = TemporaryProofFile randomPath (Just "New proof") emptyDoc False emptyHistory
             sendMsg (OpenFileSuccess file)
             sendMsg (FocusOnKey "addPremiseButton")
       )
@@ -437,25 +427,25 @@ handleEvent env wenv node model evt = case evt of
 
   OpenPreferences -> [ Producer (\sendMsg -> do
       preferencePath <- getPreferencePath
-      sendMsg (OpenFile_ preferencePath "")
+      sendMsg (OpenFile_ preferencePath "" (Just "Preferences"))
     )]
 
   OpenGuide -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
       let docsPath = basePath </> "docs"
-      sendMsg $ OpenFile_ "user_guide_en.md" docsPath
+      sendMsg $ OpenFile_ "user_guide_en.md" docsPath (Just "Guide")
     ) ]
 
   OpenWelcome -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
       let docsPath = basePath </> "docs"
-      sendMsg $ OpenFile_ "welcome.md" docsPath
+      sendMsg $ OpenFile_ "welcome.md" docsPath (Just "Welcome")
     ) ]
 
   OpenAbout -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
       let docsPath = basePath </> "docs"
-      sendMsg $ OpenFile_ "about.md" docsPath
+      sendMsg $ OpenFile_ "about.md" docsPath (Just "About")
     ) ]
 
   OpenFileFromFileSystem -> [ SyncTask openDiag ]
@@ -464,7 +454,7 @@ handleEvent env wenv node model evt = case evt of
         path <- openDialog (head feFileExts) Nothing
         case path of
           Nothing -> return NoEvent
-          Just path -> return $ OpenFile_ path ""
+          Just path -> return $ OpenFile_ path "" Nothing
 
   OpenFileExample -> [ SyncTask openDiag ]
     where
@@ -474,12 +464,12 @@ handleEvent env wenv node model evt = case evt of
         path <- openDialog (head feFileExts) (Just defaultPath)
         case path of
           Nothing -> return NoEvent
-          Just path -> return $ OpenFile_ path ""
+          Just path -> return $ OpenFile_ path "" Nothing
 
-  OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd)
+  OpenFile filePath -> handleEvent env wenv node model (OpenFile_ filePath wd Nothing)
     where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
-  OpenFile_ filePath folderPath -> [
+  OpenFile_ filePath folderPath tabDisp -> [
       Producer (\sendMsg -> do
         preferencePath <- getPreferencePath
         let fullPath = folderPath FPP.</> filePath
@@ -495,15 +485,15 @@ handleEvent env wenv node model evt = case evt of
             }
 
             if takeExtension fullPath == ".md" then
-              sendMsg (OpenFileSuccess $ MarkdownFile fullPath pContentText)
+              sendMsg (OpenFileSuccess $ MarkdownFile fullPath tabDisp pContentText)
             else if fullPath == preferencePath && folderPath == "" then
-              sendMsg (OpenFileSuccess $ PreferenceFile fullPath pIsEdited)
+              sendMsg (OpenFileSuccess $ PreferenceFile fullPath tabDisp pIsEdited)
             else if takeExtension fullPath `elem` map ("." <>) feFileExts then
               do
                 let doc = parseProofFromJSON pContentText
-                sendMsg (OpenFileSuccess $ ProofFile fullPath pContentText doc pIsEdited pHistory)
+                sendMsg (OpenFileSuccess $ ProofFile fullPath tabDisp pContentText doc pIsEdited pHistory)
             else
-              sendMsg (OpenFileSuccess $ OtherFile fullPath pContentText)
+              sendMsg (OpenFileSuccess $ OtherFile fullPath tabDisp pContentText)
       )
     ]
 
@@ -600,7 +590,7 @@ handleEvent env wenv node model evt = case evt of
                     sendMsg (SaveFileSuccess f)
                     sendMsg (CloseFileSuccess tmpPath)
                     sendMsg RefreshExplorer
-                    sendMsg (OpenFile_ newPath "")
+                    sendMsg (OpenFile_ newPath "" Nothing)
             )
         ]
     f -> error $ "Cannot save file of type " ++ show f
