@@ -2,31 +2,31 @@
     "_fedUserDefinedRules": [
         {
             "_udrInput": [
-                "¬(P ∧ Q)"
-            ],
-            "_udrName": "deMo1",
-            "_udrOutput": "¬P ∨ ¬Q"
-        },
-        {
-            "_udrInput": [
-                "¬(P ∨ Q)"
+                "¬(p ∨ q)"
             ],
             "_udrName": "deMo2",
-            "_udrOutput": "¬P ∧ ¬Q"
+            "_udrOutput": "¬p ∧ ¬q",
+            "_udrPath": "./deMorgan2.folke"
+        },
+        {
+            "_udrInput": null,
+            "_udrName": "deMo2_inv",
+            "_udrOutput": null,
+            "_udrPath": "./deMorgan2_incorrect.folke"
         }
     ],
     "_sequent": {
-        "_conclusion": "¬A ∨ ¬B",
+        "_conclusion": "¬A ∧ ¬B",
         "_premises": [
-            "¬(((A ∧ B)))"
+            "¬(((A ∨ B)))"
         ],
         "_steps": [
             {
                 "_arguments": [
                     "1"
                 ],
-                "_rule": "deMo1",
-                "_statement": "¬A ∨ ¬B",
+                "_rule": "deMo2",
+                "_statement": "¬A ∧ ¬B",
                 "_usedArguments": 1,
                 "tag": "Line"
             }

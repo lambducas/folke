@@ -15,6 +15,8 @@ import Frontend.Preferences
 import Frontend.Export (convertToLatex, compileLatexToPDF)
 import Frontend.History ( applyRedo, applyUndo )
 import Shared.Messages
+import Backend.Types (Result(..))
+import Backend.TypeChecker (checkFE)
 
 import Monomer
 import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
@@ -42,6 +44,7 @@ import Foreign.C (castCharToCChar)
 import qualified Data.ByteString.Char8 as C8
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text.Encoding as TE
+import System.FilePath.Posix (isRelative, takeDirectory)
 
 handleEvent
   :: AppEnv
@@ -55,19 +58,13 @@ handleEvent env wenv node model evt = case evt of
 
   AppRunProducer prod -> [ Producer prod ]
 
-  Undo -> applyOnCurrentFile model applyUndo
+  Undo -> if model ^. udrPopup
+    then []
+    else applyOnCurrentFile model applyUndo
 
-  Redo -> applyOnCurrentFile model applyRedo
-
-  -- Undo ->
-  --  if model ^. historyIndex > 0 && not (null $ model ^. stateHistory) then
-  --   let prevModel = (model ^. stateHistory) !! (model ^. historyIndex - 1)
-  --       newModel = prevModel
-  --         & stateHistory .~ model ^. stateHistory
-  --         & historyIndex .~ model ^. historyIndex - 1
-  --         & ignoreHistoryOnce .~ True
-  --   in [Model newModel]
-  -- else []
+  Redo -> if model ^. udrPopup
+    then []
+    else applyOnCurrentFile model applyRedo
 
   AppInit -> [
       Producer (startDebouncer initialWait env),
@@ -99,6 +96,58 @@ handleEvent env wenv node model evt = case evt of
   CopyToClipboard t -> [ Producer (\_ -> SDL.setClipboardText t) ]
 
   SimulateTextInput t -> [ Producer (const (simulateTextInput t)) ]
+
+  OpenUDR -> case model ^. persistentState . currentFile of
+    Nothing -> []
+    Just filePath -> case currentFile of
+      Just ProofFile {} -> open
+      Just TemporaryProofFile {} -> open
+      _ -> []
+      where
+        currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
+        open = [ Model $ model & udrPopup .~ True ]
+
+  AddUDR -> applyOnCurrentFEDocument model (addUDRToDocument newUDR)
+    where newUDR = FEUserDefinedRule "" "" Nothing Nothing
+
+  RemoveUDR idx -> applyOnCurrentFEDocument model (removeUDRFromDocument idx)
+
+  EditUDRPath idx newPath -> Producer (\sendMsg -> do
+      let parentPath = fromMaybe "" (model ^. persistentState . currentFile)
+      let fullPath = if isRelative newPath
+          then takeDirectory parentPath </> newPath
+          else newPath
+
+      pContent <- try (readFile fullPath) :: IO (Either SomeException String)
+      case pContent of
+        Left e -> do
+          print e
+          sendMsg invalidEvent
+        Right pContent -> do
+          let pContentText = pack pContent
+          if takeExtension fullPath `elem` map ("." <>) feFileExts then do
+            let doc = parseProofFromJSON pContentText
+            case doc of
+              Nothing -> do
+                putStrLn "No document"
+                sendMsg invalidEvent
+              Just doc -> do
+                case checkFE doc of
+                  Err {} -> sendMsg invalidEvent
+                  Ok {} -> do
+                    let input = Just $ (_premises . _sequent) doc
+                    let output = Just $ (_conclusion . _sequent) doc
+                    sendMsg (EditUDRIO idx input output)
+          else do
+            putStrLn "Not a proof"
+            sendMsg invalidEvent
+    ) : applyOnCurrentFEDocument model (editUDRInDocument idx (editPathInUDR newPath))
+    where invalidEvent = EditUDRIO idx Nothing Nothing
+
+  EditUDRIO idx input output -> applyOnCurrentFEDocument model f
+    where f = editUDRInDocument idx (editIOInUDR input output)
+
+  EditUDR idx newUDR -> applyOnCurrentFEDocument model (editUDRInDocument idx (const newUDR))
 
   OpenRuleGuide i -> [ Model $ model & ruleGuidePopup .~ i ]
 
@@ -349,19 +398,18 @@ handleEvent env wenv node model evt = case evt of
           Left e -> print e
           Right _ -> do
             let emptySeq = FESequent [] "" [Line "" "" 0 []]
-            let deMorgan1 = FEUserDefinedRule {
-              _udrName = "deMo1",
-              _udrInput = ["¬(P ∧ Q)"],
-              _udrOutput = "¬P ∨ ¬Q"
-            }
-            let deMorgan2 = FEUserDefinedRule {
-              _udrName = "deMo2",
-              _udrInput = ["¬(P ∨ Q)"],
-              _udrOutput = "¬P ∧ ¬Q"
-            }
+            -- let deMorgan1 = FEUserDefinedRule {
+            --   _udrName = "deMo1",
+            --   _udrInput = ["¬(P ∧ Q)"],
+            --   _udrOutput = "¬P ∨ ¬Q"
+            -- }
+            -- let deMorgan2 = FEUserDefinedRule {
+            --   _udrName = "deMo2",
+            --   _udrInput = ["¬(P ∨ Q)"],
+            --   _udrOutput = "¬P ∧ ¬Q"
+            -- }
             let emptyDoc = Just $ FEDocument {
-              -- Temporarily use hardcoded user def rules
-              _fedUserDefinedRules = Just [ deMorgan1, deMorgan2 ],
+              _fedUserDefinedRules = Nothing,
               _sequent = emptySeq
             }
             let emptyHistory = History {

@@ -4,6 +4,7 @@
 module Backend.TypeChecker (
     -- * Main API functions
     checkJson,
+    checkFE,
     handleFrontendMessage,
     parseForm,
     parseArgs
@@ -20,7 +21,7 @@ import Frontend.Parse (parseProofFromJSON)
 import qualified Data.List as List
 import qualified Data.Map as Map
 
-import Data.Maybe (listToMaybe, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Control.Exception (SomeException, try)
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -71,7 +72,7 @@ checkFE doc = do
     -- Extract sequent from document
     let seq = _sequent doc
 
-    rules <- checkFEUserDefinedRules (fromMaybe [] $ _fedUserDefinedRules doc)
+    rules <- checkFEUserDefinedRules newEnv (fromMaybe [] $ _fedUserDefinedRules doc)
 
     let env = newEnv { user_rules = rules}
 
@@ -79,19 +80,22 @@ checkFE doc = do
     sendWarns finalEnv
     return ()
 
-checkFEUserDefinedRules :: [FE.FEUserDefinedRule] -> Result (Map.Map String UDefRule)
-checkFEUserDefinedRules [] = Ok [] Map.empty
-checkFEUserDefinedRules [x] = checkFEUserDefinedRule x
-checkFEUserDefinedRules (x:xs) = do
-    rs <- checkFEUserDefinedRules xs
-    r  <- checkFEUserDefinedRule  x
+checkFEUserDefinedRules :: Env -> [FE.FEUserDefinedRule] -> Result (Map.Map String UDefRule)
+checkFEUserDefinedRules _ [] = Ok [] Map.empty
+checkFEUserDefinedRules env [x] = checkFEUserDefinedRule env x
+checkFEUserDefinedRules env (x:xs) = do
+    rs <- checkFEUserDefinedRules env xs
+    r  <- checkFEUserDefinedRule env  x
     Ok [] (Map.union r rs)
 
-checkFEUserDefinedRule :: FE.FEUserDefinedRule -> Result (Map.Map String UDefRule)
-checkFEUserDefinedRule (FE.FEUserDefinedRule name ins out) = do
-    ins_t <- checkPremsFE newEnv ins
-    out_t <- checkFormFE newEnv out
-    Ok [] (Map.singleton (unpack name) (UDefRule ins_t out_t))
+checkFEUserDefinedRule :: Env -> FE.FEUserDefinedRule -> Result (Map.Map String UDefRule)
+checkFEUserDefinedRule env (FE.FEUserDefinedRule name path ins out) = do
+    case (ins, out) of
+        (Just ins, Just out) -> do
+            ins_t <- checkPremsFE newEnv ins
+            out_t <- checkFormFE newEnv out
+            Ok [] (Map.singleton (unpack name) (UDefRule ins_t out_t))
+        _ -> Err [] env (createUnknownError env ("Invalid user defined rule from " ++ path))
 
 -- | Check a FE (frontend) sequent
 checkSequentFE :: Env -> FE.FESequent -> Result (Proof, Env)

@@ -17,7 +17,7 @@ import Frontend.Components.Details
 import Monomer
 import qualified Monomer.Lens as L
 import Control.Lens
-import Data.Text (Text, pack, intercalate, splitOn, toLower, isInfixOf)
+import Data.Text (Text, pack, intercalate, splitOn, toLower, isInfixOf, unpack)
 import qualified Data.Text (length)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
@@ -25,6 +25,8 @@ import System.FilePath (takeFileName, takeBaseName)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import qualified Data.Map
 import TextShow (showt)
+import Frontend.Helper.ProofHelper (getCurrentFEDocument, editNameInUDR, editPathInUDR)
+import System.FilePath.Posix (makeRelative)
 
 menuBarCategories :: [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories = [
@@ -103,7 +105,7 @@ buildUI wenv model = widgetTree where
   iconButton = Frontend.Components.GeneralUIComponents.iconButton model
   -- iconToggleButton = Frontend.Components.GeneralUIComponents.iconToggleButton model
   iconToggleButton_ = Frontend.Components.GeneralUIComponents.iconToggleButton_ model
-  -- trashButton = Frontend.Components.GeneralUIComponents.trashButton model
+  trashButton = Frontend.Components.GeneralUIComponents.trashButton model
   bold = Frontend.Components.GeneralUIComponents.bold model
   normalStyle = Frontend.Components.GeneralUIComponents.normalStyle model
   -- symbolStyle = Frontend.Components.GeneralUIComponents.symbolStyle model
@@ -135,6 +137,7 @@ buildUI wenv model = widgetTree where
               toolbar,
               mainContent
             ],
+            userDefinedRuleUI,
             ruleGuideUI,
             fileSearcherUI,
             contextMenuUI,
@@ -193,9 +196,10 @@ buildUI wenv model = widgetTree where
           `styleHover` [bgColor hoverColor]
 
   toolbar = hstack_ [childSpacing] [
-      fastTooltip "New proof" $ iconButton remixFileAddFill CreateEmptyProof,
-      fastTooltip "Open proof" $ iconButton remixFolderOpenFill OpenFileFromFileSystem,
-      fastTooltip "Save proof" $ iconButton remixSave3Fill SaveCurrentFile,
+      fastTooltip "New proof" $ iconButton remixFileAddLine CreateEmptyProof,
+      fastTooltip "Open proof" $ iconButton remixFolderOpenLine OpenFileFromFileSystem,
+      fastTooltip "Save proof" $ iconButton remixSave3Line SaveCurrentFile,
+      fastTooltip "Export to PDF" $ iconButton remixFilePdfLine ExportToPDF,
 
       separatorLine,
 
@@ -204,9 +208,13 @@ buildUI wenv model = widgetTree where
 
       separatorLine,
 
-      fastTooltip "Warning severity" warningSeverity,
       fastTooltip "Validate proof" $ iconButton remixListCheck2 CheckCurrentProof,
-      fastTooltip "Auto-validate proof" autoCheckCheck
+      fastTooltip "Auto-validate proof" autoCheckCheck,
+      fastTooltip "User defined rules" $ iconButton remixUserSettingsLine OpenUDR,
+
+      filler,
+
+      fastTooltip "Warning severity" warningSeverity
     ]
       `styleBasic` [padding 10, borderB 1 dividerColor]
     where
@@ -328,7 +336,7 @@ buildUI wenv model = widgetTree where
   fileNavBar filePaths = fastHScroll (hstack (zipWith renderTabHandle filePaths [0..]))
     `styleBasic` [bgColor selectedColor, maxHeight 40, minHeight 40, height 40]
     where
-      renderTabHandle filePath idx = dt $ dg $ box_ [expandContent, onClick (SetCurrentFile filePath)] $ hstack [
+      renderTabHandle filePath idx = dt $ dg $ box_ [expandContent, onClick (SetCurrentFile filePath), onBtnReleased handleBtn] $ hstack [
           spacer,
           fastTooltip (pack filePath) $ span displayName,
           spacer,
@@ -350,6 +358,12 @@ buildUI wenv model = widgetTree where
 
             dg = draggable_ idx [draggableStyle dragStyle]
             dragStyle = [bgColor hoverColor]
+
+            relativePath = case model ^. persistentState . workingDir of
+              Nothing -> filePath
+              Just wd -> makeRelative wd filePath
+            handleBtn BtnRight _ = OpenContextMenu (ctxFileExplorer filePath relativePath)
+            handleBtn _ _ = NoEvent
 
   tabWindow :: Maybe FilePath -> WidgetNode AppModel AppEvent
   tabWindow Nothing = vstack [] `styleBasic` [expandWidth 1000] -- Don't know how expandWith works, but it works
@@ -593,6 +607,56 @@ buildUI wenv model = widgetTree where
       sPM i f = hstack [s i, box (box (hstack [s f, filler]) `styleBasic` [padding 10, border 2 proofBoxColor, borderT 2 popupBackground, borderB 2 popupBackground])]
       dot = s "  ..."
 
+  userDefinedRuleUI = popup_ udrPopup [popupAlignToWindow, alignCenter, alignMiddle] $
+    widgetMaybe doc ui
+    where
+      doc = getCurrentFEDocument model
+      ui doc = boxShadow $
+        vstack_ [childSpacing] [
+          h2 "User defined rules for this proof",
+          udrHeader,
+          vstack_ [childSpacing] (zipWith udrItem rules [0..]),
+          button "+ Rule" AddUDR
+        ] `styleBasic` [bgColor popupBackground, border 1 dividerColor, padding 20, radius 4, width 800, height 550]
+        where
+          rules = fromMaybe [] (_fedUserDefinedRules doc)
+
+      udrHeader = hstack_ [childSpacing] [
+          span "Name"
+            `styleBasic` [width 125],
+          span "Proof location"
+            `styleBasic` [width 300],
+
+          hgrid [
+            span "Inputs",
+            span "Output"
+          ]
+            `styleBasic` [expandWidth 1],
+
+          span ""
+            `styleBasic` [width 25]
+        ]
+          `styleBasic` [paddingT 10]
+
+      udrItem rule idx = hstack_ [childSpacing] [
+          textFieldV_ (_udrName rule) (\t -> EditUDR idx (editNameInUDR t rule)) [placeholder "Rule name"]
+            `styleBasic` [width 125],
+          textFieldV_ (pack $ _udrPath rule) (EditUDRPath idx . unpack) [placeholder "Relative or absolute path"]
+            `styleBasic` [width 300],
+
+          hgrid [
+            input,
+            output
+          ]
+            `styleBasic` [expandWidth 1],
+
+          trashButton (RemoveUDR idx)
+        ]
+        where
+          input = maybe invalid (span . intercalate "") (_udrInput rule)
+          output = maybe invalid span (_udrOutput rule)
+          invalid = span "Invalid" `styleBasic` [textColor red]
+
 -- | Converts a list of font styles for a given font to a readable name
 fontListToText :: [String] -> Text
 fontListToText fontList | head fontList == "Regular" = "Default"
@@ -600,13 +664,3 @@ fontListToText fontList | head fontList == "Regular" = "Default"
                         | head fontList == "Comic_Sans_Thin" = "Comic Sans"
                         | head fontList == "Dyslexic" = "Dyslexic"
                         | otherwise = "forgor_to_label"
-
-ruleDdStyle :: StyleState -> StyleState -> Style
-ruleDdStyle s0 s1 = Style {
-                    _styleBasic = Just $ s0 <> s1,
-                    _styleHover = Just $ s0 <> s1,
-                    _styleFocus = Just $ s0 <> s1,
-                    _styleFocusHover = Just $ s0 <> s1,
-                    _styleActive = Just $ s0 <> s1,
-                    _styleDisabled = Just $ s0 <> s1
-                  }

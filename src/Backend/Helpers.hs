@@ -19,8 +19,6 @@ module Backend.Helpers
     getConclusion,
     convertToFEError,
     convertWarning,
-    getErrorLine,
-    maybeHead,
     sequentSteps,
     countSteps,
     findLastFormula,
@@ -32,7 +30,6 @@ module Backend.Helpers
   ) where
 
 import Data.Text hiding (length, map, null)
-import Data.Maybe (fromMaybe)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Logic.Abs as Abs
@@ -121,10 +118,6 @@ isPremiseRef _ _ = False
 dups :: [Formula] -> Bool
 dups xs = List.length (List.nub xs) /= length xs
 
--- | Show this show that
-showRef :: Ref -> String
-showRef = show
-
 -- | Find the last formula in the environment
 findLastFormula :: Env -> Formula
 findLastFormula env =
@@ -161,8 +154,8 @@ getConclusion (Proof _ _ conc) = conc
 -- | Convert a Result to a frontend-friendly error format
 convertToFEError :: Result t -> FEResult
 convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Err warns env err) =
-  let
+convertToFEError (Err warns _env err) = feError
+  where
     baseMsg = errMessage err ++
               maybe "" (\ctx -> ": " ++ ctx) (errContext err)
 
@@ -172,23 +165,17 @@ convertToFEError (Err warns env err) =
       ss -> " Suggestions: " ++ List.intercalate "; " ss
 
     errorText = baseMsg ++ suggestionText
-  in
-    FEError (map convertWarning warns) (FELocal (getErrorLine env) errorText)
+
+    convWarns = map convertWarning warns
+    feError = case errLocation err of
+      Nothing -> FEError convWarns (FEGlobal errorText)
+      Just l -> FEError convWarns (FELocal l errorText)
 
 -- | Convert a warning to a frontend-friendly format
 convertWarning :: Warning -> FEErrorWhere
 convertWarning w = case warnLocation w of
   Nothing -> FEGlobal (show w)
   Just l -> FELocal l (show w)
-
--- | Get the current line number from the environment
-getErrorLine :: Env -> Ref
-getErrorLine env = fromMaybe (RefLine (-1)) (maybeHead (pos env))
-
--- | Get the first element of a list safely
-maybeHead :: [a] -> Maybe a
-maybeHead [] = Nothing
-maybeHead (h:_) = Just h
 
 severity :: Int -> Severity
 severity i | i>=3=High

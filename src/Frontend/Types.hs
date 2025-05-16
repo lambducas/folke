@@ -145,6 +145,7 @@ data AppModel = AppModel {
   _confirmActionPopup :: Maybe ConfirmActionData,
   _fileSearcher :: FileSearcher,
   _ruleGuidePopup :: Maybe Text,
+  _udrPopup :: Bool,
 
   _filesInDirectory :: Maybe LoadedFiles,
 
@@ -180,6 +181,14 @@ data AppEvent
   | CopyToClipboard Text
   | SimulateTextInput Text
   | Print String
+
+  -- User defined rules
+  | OpenUDR
+  | AddUDR
+  | RemoveUDR Int
+  | EditUDRIO Int (Maybe [FEFormula]) (Maybe FEFormula)
+  | EditUDRPath Int FilePath
+  | EditUDR Int FEUserDefinedRule
 
   -- Rule guide
   | OpenRuleGuide (Maybe Text)

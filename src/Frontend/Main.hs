@@ -97,6 +97,7 @@ main = do
         _fsAllFiles = []
       },
       _ruleGuidePopup = Nothing,
+      _udrPopup = False,
 
       _filesInDirectory = Just $ LoadedFiles [] [],
       _confirmActionPopup = Nothing,

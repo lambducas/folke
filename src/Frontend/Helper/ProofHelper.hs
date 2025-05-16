@@ -52,6 +52,17 @@ applyOnCurrentProof model f = actions
     maybeF (Just d) = Just $ d & sequent %~ f
     maybeF Nothing = Nothing
 
+applyOnCurrentFEDocument :: AppModel -> (FEDocument -> FEDocument) -> [EventResponse AppModel AppEvent sp ep]
+applyOnCurrentFEDocument model f = actions
+  where
+    actions = applyOnCurrentFile model updateSequent
+    updateSequent file =
+      file
+        & parsedDocument %~ maybeF
+        & isEdited .~ True
+    maybeF (Just d) = Just $ f d
+    maybeF Nothing = Nothing
+
 {-|
 Applies a function on the proof of the currently opened file-tab.
 The function should return the new sequent and an event describing the change.
@@ -349,6 +360,29 @@ replaceSteps f sequent = FESequent premises conclusion steps
     conclusion = _conclusion sequent
     steps = f $ _steps sequent
 
+getCurrentFile :: AppModel -> Maybe File
+getCurrentFile model = file
+  where
+    file = currentPath >>= getProofFileByPath (model ^. persistentState . tmpLoadedFiles)
+    currentPath = model ^. persistentState . currentFile
+
+{-|
+Extracts the FEDocument from the currently opened tab.
+Will return `Nothing` when no file is opened or the
+opened filed isn't a proof
+-}
+getCurrentFEDocument :: AppModel -> Maybe FEDocument
+getCurrentFEDocument model = document
+  where
+    document = fileIndex >>= getDocument
+    fileIndex = cf >>= getProofFileIndexByPath (model ^. persistentState . tmpLoadedFiles)
+    cf = model ^. persistentState . currentFile
+
+    getDocument fileIndex = case model ^. persistentState . tmpLoadedFiles . singular (ix fileIndex) of
+      f@ProofFile {} -> _parsedDocument f
+      f@TemporaryProofFile {} -> _parsedDocument f
+      _ -> Nothing
+
 {-|
 Extracts the sequent from the currently opened tab.
 Will return `Nothing` when no file is opened or the
@@ -440,3 +474,32 @@ applyOnLineNumberRef f refText = case pArg (myLexer (unpack refText)) of
   Right arg@(Abs.ArgRange a b) -> f arg 0 a <> "-" <> f arg 1 b
   Right arg@(Abs.ArgLine l) -> f arg 0 l
   Right _ -> refText
+
+addUDRToDocument :: FEUserDefinedRule -> FEDocument -> FEDocument
+addUDRToDocument newUDR doc = doc & fedUserDefinedRules %~ f
+  where
+    f Nothing = Just [newUDR]
+    f (Just udrs) = Just $ udrs ++ [newUDR]
+
+removeUDRFromDocument :: Int -> FEDocument -> FEDocument
+removeUDRFromDocument idx doc = doc & fedUserDefinedRules %~ f
+  where
+    f Nothing = Nothing
+    f (Just udrs) = Just $ udrs ^.. folded . ifiltered (\i _ -> i /= idx)
+
+editUDRInDocument :: Int -> (FEUserDefinedRule -> FEUserDefinedRule) -> FEDocument -> FEDocument
+editUDRInDocument idx updateUDR doc = doc & fedUserDefinedRules %~ f
+  where
+    f Nothing = Nothing
+    f (Just udrs) = Just $ udrs & element idx %~ updateUDR
+
+editNameInUDR :: Text -> FEUserDefinedRule -> FEUserDefinedRule
+editNameInUDR newName udr = udr & udrName .~ newName
+
+editPathInUDR :: FilePath -> FEUserDefinedRule -> FEUserDefinedRule
+editPathInUDR newPath udr = udr & udrPath .~ newPath
+
+editIOInUDR :: Maybe [FEFormula] -> Maybe FEFormula -> FEUserDefinedRule -> FEUserDefinedRule
+editIOInUDR input output udr = udr
+  & udrInput .~ input
+  & udrOutput .~ output

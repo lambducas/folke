@@ -14,8 +14,9 @@ data FEDocument = FEDocument {
 
 data FEUserDefinedRule = FEUserDefinedRule {
   _udrName :: Text,
-  _udrInput :: [FEFormula],
-  _udrOutput :: FEFormula
+  _udrPath :: FilePath,
+  _udrInput :: Maybe [FEFormula],
+  _udrOutput :: Maybe FEFormula
 } deriving (Show, Eq)
 
 data FESequent = FESequent {
@@ -36,6 +37,7 @@ data FEStep
   | SubProof [FEStep]
   deriving (Eq, Show)
 
+makeLenses 'FEUserDefinedRule
 makeLenses 'FESequent
 makeLenses 'FEDocument
 

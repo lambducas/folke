@@ -78,6 +78,7 @@ renderProofTab _wenv model file _heading = cached where
       oldProofStatus /= newProofStatus ||
       -- oldHovered /= newHovered ||
       oldSeq /= newSeq ||
+      (old ^. udrPopup && not (new ^. udrPopup)) ||
       old ^. persistentState . currentFile /= new ^. persistentState . currentFile ||
       old ^. preferences . warningMessageSeverity /= new ^. preferences . warningMessageSeverity
     where
