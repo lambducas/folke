@@ -357,8 +357,8 @@ renderProofTab isMac _wenv model file _heading = cached where
                     ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
                     -- ("Right", FocusOnKey $ WidgetKey (showt index <> ".rule"), True),
 
-                    (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
-                    (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
+                    ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement"), True),
+                    ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement"), True),
                     ("Delete", RemoveLine False path, trashActive),
                     ("Backspace", RemoveLine False path, canBackspaceToDelete),
                     (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
@@ -406,8 +406,8 @@ renderProofTab isMac _wenv model file _heading = cached where
 
               -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
-              (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
-              (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
+              ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
+              ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
               ("Delete", RemoveLine False path, trashActive),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
               (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
@@ -430,8 +430,8 @@ renderProofTab isMac _wenv model file _heading = cached where
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
-                (ctrl <> "-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
-                (ctrl <> "-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
+                ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".ruleArg." <> showt idx), True),
                 ("Delete", RemoveLine False path, trashActive),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".rule")), isFirstArg && argument == ""),
                 ("Backspace", FocusOnKey (WidgetKey (showt index <> ".ruleArg." <> showt (idx - 1))), not isFirstArg && argument == ""),

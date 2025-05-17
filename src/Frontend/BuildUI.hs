@@ -35,7 +35,7 @@ menuBarCategories isMac = [
       ("Save Proof", ctrl <> "+S", SaveCurrentFile),
       ("Open Proof", ctrl <> "+O", OpenFileFromFileSystem),
       ("Open Example", "", OpenFileExample),
-      ("Close Tab", ctrl <> "+W", CloseCurrentFile),
+      ("Close Tab", "Ctrl+W", CloseCurrentFile),
       ("Export to LaTeX", "", ExportToLaTeX),
       ("Export to PDF", "", ExportToPDF),
       ("Set Working Directory", "", OpenSetWorkingDir),

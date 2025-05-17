@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BundleIsRelocatable</key>
+	<false/>
+
+	<key>CFBundleName</key>
+    <string>Folke</string>
+
+	<key>CFBundleDisplayName</key>
+    <string>Folke</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>se.jlaaa.pkg.folke</string>
+
+    <key>CFBundleVersion</key>
+    <string>0.0.1</string>
+
+	<key>CFBundlePackageType</key>
+    <string>APPL</string>
+	
+    <key>CFBundleSignature</key>
+    <string>ttxt</string>
+
+	<key>CFBundleExecutable</key>
+    <string>folke</string>
+	
+	<key>CFBundleGetInfoString</key>
+    <string>Folke, version 0.0.1, copyright JLAAA</string>
+ 
+    <key>CFBundleIconFile</key>
+    <string>appIcon.icns</string>
+
+	<key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+
+	<key>CFBundleShortVersionString</key>
+    <string>0.0.1</string>
+
+</dict>
+</plist>

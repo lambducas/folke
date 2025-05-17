@@ -1,4 +1,4 @@
-## Gitinore file, add files/patterns that should be ignored by git 
+**/.DS_Store
 
 # Ignore all object files
 **/*.o
@@ -24,3 +24,5 @@ _tmp/
 # Ignore generated installer
 installer/windows/Setup output
 installer/windows/releaseFiles
+
+installer/macos/output
