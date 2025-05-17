@@ -3,8 +3,8 @@
 # Source:
 # https://blog.rubenwardy.com/2018/05/07/mingw-copy-dlls/
 
-BINDIR="./"
-EXE="$BINDIR/bsc.exe"
+BINDIR="./output/releaseFiles"
+EXE="$BINDIR/folke.exe"
 PREFIX="x86_64-w64-mingw32"
 OBJDUMP_EXE="C:\ghcup\msys64\mingw64\bin\objdump.exe"
 
@@ -88,4 +88,4 @@ copyForOBJ $EXE
 # done <<< "$dlls"
 
 echo -e "\033[46mDone!\033[0m"
-read -p "Press enter to continue"
+# read -p "Press enter to continue"

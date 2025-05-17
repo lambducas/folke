@@ -22,7 +22,5 @@ Settings.json
 _tmp/
 
 # Ignore generated installer
-installer/windows/Setup output
-installer/windows/releaseFiles
-
+installer/windows/output
 installer/macos/output

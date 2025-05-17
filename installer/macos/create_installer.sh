@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Build
+cd ../..
+cabal build
+cd ./installer/macos
+
 # Create clean output directory
 rm -rf ./output
 mkdir ./output

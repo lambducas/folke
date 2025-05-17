@@ -1,7 +1,7 @@
 ; Generates an installer for the proof editor
 
 #define AppName "Folke"
-#define EXEName "bsc"
+#define EXEName "folke"
 ; #define AppVersion GetVersionNumbersString(AddBackslash(SourcePath) + "\releaseFiles\{#EXEName}.exe")
 #define AppVersion "0.0.1"
 
@@ -17,10 +17,11 @@ DefaultGroupName={#AppName}
 UninstallDisplayIcon={app}\{#EXEName}.exe
 Compression=lzma2
 SolidCompression=yes
-OutputDir=Setup output
+OutputDir=output\installer
+OutputBaseFilename=folke_installer
 
 DisableWelcomePage=no
-LicenseFile=license.txt
+; LicenseFile=license.txt
 
 [Types]
 Name: "full"; Description: "Full installation"
@@ -33,7 +34,7 @@ Name: "desktopIcon"; Description: "Create Desktop Shortcut"; Types: full
 
 [Files]
 ; Source: "Readme.txt"; DestDir: "{app}"; Flags: isreadme
-Source: "releaseFiles\*"; DestDir: "{app}"
+Source: "output\releaseFiles\*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#EXEName}.exe"
