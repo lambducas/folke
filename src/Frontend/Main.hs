@@ -41,7 +41,7 @@ main = do
   let env = AppEnv channel
 
   let createModel = model prefs state currentFrontendChan currentBackendChan
-  let createHandleEvent = handleEvent env
+  let createHandleEvent = handleEvent isMac env
   let createBuildUI = buildUI isMac
   let createConfig = config assetBasePath isMac prefs state
 
@@ -52,7 +52,6 @@ main = do
     -- Application configuration
     config assetBasePath isMac prefs state = [
       appWindowTitle "Folke - A Proof Editor",
-      appWindowIcon (pack (assetBasePath </> "assets/images/icon.png")),
       appScaleFactor (_appScale prefs),
       appWindowState (_windowMode state),
       appTheme customLightTheme,
