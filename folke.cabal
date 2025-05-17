@@ -116,7 +116,10 @@ executable folke
                 , Shared.Messages
                 , Shared.FESequent
     default-language: Haskell2010
-    ghc-options: -fwarn-incomplete-patterns -threaded
+    if os(windows)
+        ghc-options: Icon.o -fwarn-incomplete-patterns -threaded
+    else
+        ghc-options: -fwarn-incomplete-patterns -threaded
     default-extensions: OverloadedStrings
 
 test-suite folke-test

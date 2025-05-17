@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Create icon
+ghcup run --mingw-path -- windres -i Icon.rc ../../Icon.o
+
 # Build
 cd ../..
 ghcup run --mingw-path -- cabal build
