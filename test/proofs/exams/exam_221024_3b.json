@@ -1,0 +1,118 @@
+{
+    "_sequent": {
+        "_conclusion": "∃ x ¬P(x)",
+        "_premises": [
+            "∃ x Q(x) ∧ ∀ x (P(x) → ¬Q(x))"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧EL",
+                "_statement": "∃ x Q(x)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧ER",
+                "_statement": "∀ x (P(x) → ¬Q(x))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "Q(x₀)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "x₀"
+                        ],
+                        "_rule": "∀E",
+                        "_statement": "P(x₀) → ¬Q(x₀)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(x₀)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "6",
+                                    "7"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "¬Q(x₀)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "8",
+                                    "5"
+                                ],
+                                "_rule": "¬E",
+                                "_statement": "⊥",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "7-9"
+                        ],
+                        "_rule": "¬I",
+                        "_statement": "¬P(x₀)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            ""
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ x ¬P(x)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2",
+                    "4-11"
+                ],
+                "_rule": "∃E",
+                "_statement": "∃ x ¬P(x)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

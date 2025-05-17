@@ -1,0 +1,122 @@
+{
+    "_sequent": {
+        "_conclusion": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
+        "_premises": [
+            "P(a)",
+            "Q(b)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "LEM",
+                "_statement": "a = b ∨ ¬(a = b)",
+                "_usedArguments": 0,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "a = b",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "1",
+                            "u:=P(u)"
+                        ],
+                        "_rule": "=E",
+                        "_statement": "P(b)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "2"
+                        ],
+                        "_rule": "∧I",
+                        "_statement": "P(b) ∧ Q(b)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            ""
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ x (P(x) ∧ Q(x))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7"
+                        ],
+                        "_rule": "∨IL",
+                        "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "¬(a = b)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            ""
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ y ¬(a = y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            ""
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ x ∃ y ¬(x = y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "11"
+                        ],
+                        "_rule": "∨IR",
+                        "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4-8",
+                    "9-12"
+                ],
+                "_rule": "∨E",
+                "_statement": "∃ x (P(x) ∧ Q(x)) ∨ ∃ x ∃ y ¬(x = y)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

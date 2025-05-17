@@ -1,0 +1,82 @@
+{
+    "_sequent": {
+        "_conclusion": "r",
+        "_premises": [
+            "¬r → (s ∧ p)",
+            "s → q",
+            "¬q"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "2",
+                    "3"
+                ],
+                "_rule": "MT",
+                "_statement": "¬s",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "s ∧ p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5"
+                        ],
+                        "_rule": "∧EL",
+                        "_statement": "s",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "6"
+                        ],
+                        "_rule": "¬E",
+                        "_statement": "⊥",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "5-7",
+                    ""
+                ],
+                "_rule": "¬I",
+                "_statement": "¬(s ∧ p)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "8"
+                ],
+                "_rule": "MT",
+                "_statement": "¬¬r",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "9"
+                ],
+                "_rule": "¬¬E",
+                "_statement": "r",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

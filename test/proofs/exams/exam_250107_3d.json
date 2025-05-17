@@ -1,0 +1,218 @@
+{
+    "_sequent": {
+        "_conclusion": "∀ x (P(x) → Q(x))",
+        "_premises": [
+            "∃ x (P(x) ∧ Q(x))",
+            "∃ x (P(x) ∧ ∀ y (P(y) → x=y))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(x₀)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "x₁",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "P(x₁) ∧ Q(x₁)",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "6"
+                                        ],
+                                        "_rule": "∧EL",
+                                        "_statement": "P(x₁)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "6"
+                                        ],
+                                        "_rule": "∧ER",
+                                        "_statement": "Q(x₁)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "fresh",
+                                                "_statement": "x₂",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "P(x₂) ∧ ∀ y (P(y) → x₂=y)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "10"
+                                                ],
+                                                "_rule": "∧ER",
+                                                "_statement": "∀ y (P(y) → x₂=y)",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "11",
+                                                    "x₀"
+                                                ],
+                                                "_rule": "∀E",
+                                                "_statement": "P(x₀) → x₂=x₀",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "12",
+                                                    "4"
+                                                ],
+                                                "_rule": "→E",
+                                                "_statement": "x₂=x₀",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "11",
+                                                    "x₁"
+                                                ],
+                                                "_rule": "∀E",
+                                                "_statement": "P(x₁) → x₂=x₁",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "14",
+                                                    "7"
+                                                ],
+                                                "_rule": "→E",
+                                                "_statement": "x₂=x₁",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "=I",
+                                                "_statement": "x₂=x₂",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "15",
+                                                    "16",
+                                                    "u:=u=x₂"
+                                                ],
+                                                "_rule": "=E",
+                                                "_statement": "x₁=x₂",
+                                                "_usedArguments": 3,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "13",
+                                                    "17",
+                                                    "u:=x₁=u"
+                                                ],
+                                                "_rule": "=E",
+                                                "_statement": "x₁=x₀",
+                                                "_usedArguments": 3,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "18",
+                                                    "8",
+                                                    "u:=Q(u)"
+                                                ],
+                                                "_rule": "=E",
+                                                "_statement": "Q(x₀)",
+                                                "_usedArguments": 3,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "2",
+                                            "9-19"
+                                        ],
+                                        "_rule": "∃E",
+                                        "_statement": "Q(x₀)",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "1",
+                                    "5-20"
+                                ],
+                                "_rule": "∃E",
+                                "_statement": "Q(x₀)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "4-21"
+                        ],
+                        "_rule": "→I",
+                        "_statement": "P(x₀) → Q(x₀)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3-22"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀ x (P(x) → Q(x))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

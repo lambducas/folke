@@ -1,0 +1,32 @@
+{
+    "_sequent": {
+        "_conclusion": "¬p",
+        "_premises": [
+            "q → (p → r)",
+            "¬r",
+            "q"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "3",
+                    "1"
+                ],
+                "_rule": "→E",
+                "_statement": "p → r",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "4",
+                    "2"
+                ],
+                "_rule": "MT",
+                "_statement": "¬p",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

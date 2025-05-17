@@ -1,0 +1,60 @@
+{
+    "_sequent": {
+        "_conclusion": "Q(a)",
+        "_premises": [
+            "P(b) ∧ Q(b)",
+            "∀ x (P(x) → x = a)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "2",
+                    "b"
+                ],
+                "_rule": "∀E",
+                "_statement": "P(b) → b = a",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧EL",
+                "_statement": "P(b)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4"
+                ],
+                "_rule": "→E",
+                "_statement": "b = a",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧ER",
+                "_statement": "Q(b)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "5",
+                    "6",
+                    "u:=Q(u)"
+                ],
+                "_rule": "=E",
+                "_statement": "Q(a)",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

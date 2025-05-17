@@ -1,0 +1,73 @@
+{
+    "_sequent": {
+        "_conclusion": "p",
+        "_premises": [
+            "(p ∨ (q → p)) ∧ q"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧ER",
+                "_statement": "q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧EL",
+                "_statement": "p ∨ (q → p)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q → p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "5"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "p",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4-4",
+                    "5-6"
+                ],
+                "_rule": "∨E",
+                "_statement": "p",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

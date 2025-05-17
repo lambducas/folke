@@ -20,7 +20,6 @@ cp ../../dist-newstyle/build/x86_64-windows/ghc-9.4.8/folke-0.1.0.0/x/folke/buil
 
 # Copy assets
 cp -R ../../assets ./output/releaseFiles
-cp -R ../../docs ./output/releaseFiles
 
 # Copy DLLs
 source ./copyAllDLLsHere.sh

@@ -1,0 +1,129 @@
+{
+    "_sequent": {
+        "_conclusion": "∃ z (S(z) ∧ ¬M(z))",
+        "_premises": [
+            "∀ x (M(x) → ¬P(x))",
+            "∃ y (P(y) ∧ S(y))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "y₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "P(y₀) ∧ S(y₀)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "M(y₀)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "1",
+                                    "y₀"
+                                ],
+                                "_rule": "∀E",
+                                "_statement": "M(y₀) → ¬P(y₀)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "6",
+                                    "5"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "¬P(y₀)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "4"
+                                ],
+                                "_rule": "∧EL",
+                                "_statement": "P(y₀)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "7",
+                                    "8"
+                                ],
+                                "_rule": "¬E",
+                                "_statement": "⊥",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "5-9"
+                        ],
+                        "_rule": "¬I",
+                        "_statement": "¬M(y₀)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4"
+                        ],
+                        "_rule": "∧ER",
+                        "_statement": "S(y₀)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "11",
+                            "10"
+                        ],
+                        "_rule": "∧I",
+                        "_statement": "S(y₀) ∧ ¬M(y₀)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "12",
+                            ""
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ z (S(z) ∧ ¬M(z))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2",
+                    "3-13"
+                ],
+                "_rule": "∃E",
+                "_statement": "∃ z (S(z) ∧ ¬M(z))",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

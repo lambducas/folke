@@ -1,0 +1,155 @@
+{
+    "_sequent": {
+        "_conclusion": "r",
+        "_premises": [
+            "p ∨ ¬q",
+            "r ∨ ¬p",
+            "r ∨ q"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "r",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "r",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "¬p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "6",
+                                            "8"
+                                        ],
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "9"
+                                        ],
+                                        "_rule": "⊥E",
+                                        "_statement": "r",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "2",
+                                    "7-7",
+                                    "8-10"
+                                ],
+                                "_rule": "∨E",
+                                "_statement": "r",
+                                "_usedArguments": 3,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "¬q",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "5",
+                                    "12"
+                                ],
+                                "_rule": "¬E",
+                                "_statement": "⊥",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "13"
+                                ],
+                                "_rule": "⊥E",
+                                "_statement": "r",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "6-11",
+                            "12-14"
+                        ],
+                        "_rule": "∨E",
+                        "_statement": "r",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "4-4",
+                    "5-15"
+                ],
+                "_rule": "∨E",
+                "_statement": "r",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}

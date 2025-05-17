@@ -1,0 +1,177 @@
+{
+    "_sequent": {
+        "_conclusion": "∀ x ∀ y ∀ z ∀ w (x = z → y = w → R(x, y) → R(z, w))",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "y₀",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "z₀",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "fresh",
+                                                "_statement": "w₀",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "x₀ = z₀",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "contents": [
+                                                            {
+                                                                "_arguments": [],
+                                                                "_rule": "assume",
+                                                                "_statement": "y₀ = w₀",
+                                                                "_usedArguments": 0,
+                                                                "tag": "Line"
+                                                            },
+                                                            {
+                                                                "contents": [
+                                                                    {
+                                                                        "_arguments": [],
+                                                                        "_rule": "assume",
+                                                                        "_statement": "R(x₀, y₀)",
+                                                                        "_usedArguments": 0,
+                                                                        "tag": "Line"
+                                                                    },
+                                                                    {
+                                                                        "_arguments": [
+                                                                            "6",
+                                                                            "7",
+                                                                            "u:=R(x₀,u)"
+                                                                        ],
+                                                                        "_rule": "=E",
+                                                                        "_statement": "R(x₀, w₀)",
+                                                                        "_usedArguments": 3,
+                                                                        "tag": "Line"
+                                                                    },
+                                                                    {
+                                                                        "_arguments": [
+                                                                            "5",
+                                                                            "8",
+                                                                            "u:=R(u,w₀)"
+                                                                        ],
+                                                                        "_rule": "=E",
+                                                                        "_statement": "R(z₀, w₀)",
+                                                                        "_usedArguments": 3,
+                                                                        "tag": "Line"
+                                                                    }
+                                                                ],
+                                                                "tag": "SubProof"
+                                                            },
+                                                            {
+                                                                "_arguments": [
+                                                                    "7-9"
+                                                                ],
+                                                                "_rule": "→I",
+                                                                "_statement": "R(x₀, y₀) → R(z₀, w₀)",
+                                                                "_usedArguments": 1,
+                                                                "tag": "Line"
+                                                            }
+                                                        ],
+                                                        "tag": "SubProof"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "6-10"
+                                                        ],
+                                                        "_rule": "→I",
+                                                        "_statement": "y₀ = w₀ → R(x₀, y₀) → R(z₀, w₀)",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5-11"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "x₀ = z₀ → y₀ = w₀ → R(x₀, y₀) → R(z₀, w₀)",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-12"
+                                        ],
+                                        "_rule": "∀I",
+                                        "_statement": "∀ w (x₀ = z₀ → y₀ = w → R(x₀, y₀) → R(z₀, w))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-13"
+                                ],
+                                "_rule": "∀I",
+                                "_statement": "∀ z ∀ w (x₀ = z → y₀ = w → R(x₀, y₀) → R(z, w))",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-14"
+                        ],
+                        "_rule": "∀I",
+                        "_statement": "∀ y ∀ z ∀ w (x₀ = z → y = w → R(x₀, y) → R(z, w))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-15"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀ x ∀ y ∀ z ∀ w (x = z → y = w → R(x, y) → R(z, w))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -432,19 +432,19 @@ handleEvent env wenv node model evt = case evt of
 
   OpenGuide -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "docs"
+      let docsPath = basePath </> "assets/docs"
       sendMsg $ OpenFile_ "user_guide_en.md" docsPath (Just "Guide")
     ) ]
 
   OpenWelcome -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "docs"
+      let docsPath = basePath </> "assets/docs"
       sendMsg $ OpenFile_ "welcome.md" docsPath (Just "Welcome")
     ) ]
 
   OpenAbout -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "docs"
+      let docsPath = basePath </> "assets/docs"
       sendMsg $ OpenFile_ "about.md" docsPath (Just "About")
     ) ]
 
@@ -460,7 +460,7 @@ handleEvent env wenv node model evt = case evt of
     where
       openDiag = do
         basePath <- getAssetBasePath
-        let defaultPath = basePath </> "docs/examples"
+        let defaultPath = basePath </> "assets/examples"
         path <- openDialog (head feFileExts) (Just defaultPath)
         case path of
           Nothing -> return NoEvent

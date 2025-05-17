@@ -1,0 +1,209 @@
+{
+    "_sequent": {
+        "_conclusion": "∃ x (P(x) → S)",
+        "_premises": [
+            "∀ x P(x) → S"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "¬(∃ x (P(x) → S))",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "x₀",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "¬P(x₀)",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "P(x₀)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5",
+                                                    "4"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "6"
+                                                ],
+                                                "_rule": "⊥E",
+                                                "_statement": "S",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "5-7"
+                                        ],
+                                        "_rule": "→I",
+                                        "_statement": "P(x₀) → S",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "8"
+                                        ],
+                                        "_rule": "∃I",
+                                        "_statement": "∃ x (P(x) → S)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "9",
+                                            "2"
+                                        ],
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "4-10"
+                                ],
+                                "_rule": "¬I",
+                                "_statement": "¬¬P(x₀)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "11"
+                                ],
+                                "_rule": "¬¬E",
+                                "_statement": "P(x₀)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "3-12"
+                        ],
+                        "_rule": "∀I",
+                        "_statement": "∀ x P(x)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "13"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "S",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(t)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "14"
+                                ],
+                                "_rule": "copy",
+                                "_statement": "S",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "15-16"
+                        ],
+                        "_rule": "→I",
+                        "_statement": "P(t) → S",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "17"
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ x (P(x) → S)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "18",
+                            "2"
+                        ],
+                        "_rule": "¬E",
+                        "_statement": "⊥",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-19"
+                ],
+                "_rule": "¬I",
+                "_statement": "¬¬(∃ x (P(x) → S))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "20"
+                ],
+                "_rule": "¬¬E",
+                "_statement": "∃ x (P(x) → S)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

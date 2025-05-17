@@ -1,0 +1,101 @@
+{
+    "_sequent": {
+        "_conclusion": "S(a)",
+        "_premises": [
+            "∃ x S(x)",
+            "∀ x (S(x) → Q(x))",
+            "Q(a) ∧ ∀ x (Q(x) → x = a)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "S(x₀)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "x₀"
+                        ],
+                        "_rule": "∀E",
+                        "_statement": "S(x₀) → Q(x₀)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "5"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "Q(x₀)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "∧ER",
+                        "_statement": "∀ x (Q(x) → x = a)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "8",
+                            "x₀"
+                        ],
+                        "_rule": "∀E",
+                        "_statement": "Q(x₀) → x₀ = a",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "7"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "x₀ = a",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "10",
+                            "5",
+                            "u:=S(u)"
+                        ],
+                        "_rule": "=E",
+                        "_statement": "S(a)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "4-11"
+                ],
+                "_rule": "∃E",
+                "_statement": "S(a)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

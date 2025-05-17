@@ -1,0 +1,112 @@
+{
+    "_sequent": {
+        "_conclusion": "¬(a = b)",
+        "_premises": [
+            "∀ x ∀ y (P(x, y) → ¬P(y, x))",
+            "P(a, b)"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1",
+                    "a"
+                ],
+                "_rule": "∀E",
+                "_statement": "∀ y (P(a, y) → ¬P(y, a))",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "b"
+                ],
+                "_rule": "∀E",
+                "_statement": "P(a, b) → ¬P(b, a)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "4",
+                    "2"
+                ],
+                "_rule": "→E",
+                "_statement": "¬P(b, a)",
+                "_usedArguments": 2,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "a = b",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "2",
+                            "u:=P(u,b)"
+                        ],
+                        "_rule": "=E",
+                        "_statement": "P(b, b)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "=I",
+                        "_statement": "a = a",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6",
+                            "8",
+                            "u:=u=a"
+                        ],
+                        "_rule": "=E",
+                        "_statement": "b = a",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "9",
+                            "7",
+                            "u:=P(b, u)"
+                        ],
+                        "_rule": "=E",
+                        "_statement": "P(b, a)",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "10"
+                        ],
+                        "_rule": "¬E",
+                        "_statement": "⊥",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "6-11"
+                ],
+                "_rule": "¬I",
+                "_statement": "¬(a = b)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

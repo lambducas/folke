@@ -21,7 +21,6 @@ cp ../../dist-newstyle/build/x86_64-osx/ghc-9.4.8/folke-0.1.0.0/x/folke/build/fo
 
 # Copy assets
 cp -R ../../assets ./output/app_template/Contents/Resources/
-cp -R ../../docs ./output/app_template/Contents/Resources/
 
 # Create icon
 mkdir ./output/icon.iconset

@@ -1,0 +1,79 @@
+{
+    "_sequent": {
+        "_conclusion": "S → ∃ x Q(x)",
+        "_premises": [
+            "∃ x (S → Q(x))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "S",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "x₀",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "S → Q(x₀)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "4",
+                                    "2"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "Q(x₀)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "5"
+                                ],
+                                "_rule": "∃I",
+                                "_statement": "∃ x Q(x)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "3-6"
+                        ],
+                        "_rule": "∃E",
+                        "_statement": "∃ x Q(x)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-7"
+                ],
+                "_rule": "→I",
+                "_statement": "S → ∃ x Q(x)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

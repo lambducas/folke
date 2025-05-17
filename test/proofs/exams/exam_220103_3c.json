@@ -1,0 +1,142 @@
+{
+    "_sequent": {
+        "_conclusion": "∀ x ∀ y ∀ z (x = z → y = z → x = y)",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "fresh",
+                                "_statement": "y₀",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "z₀",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "x₀ = z₀",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "y₀ = z₀",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "=I",
+                                                        "_statement": "y₀ = y₀",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "5",
+                                                            "6",
+                                                            "u:=u=y₀"
+                                                        ],
+                                                        "_rule": "=E",
+                                                        "_statement": "z₀ = y₀",
+                                                        "_usedArguments": 3,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "7",
+                                                            "4",
+                                                            "u:=x₀=u"
+                                                        ],
+                                                        "_rule": "=E",
+                                                        "_statement": "x₀ = y₀",
+                                                        "_usedArguments": 3,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5-8"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "y₀ = z₀ → x₀ = y₀",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-9"
+                                        ],
+                                        "_rule": "→I",
+                                        "_statement": "x₀ = z₀ → y₀ = z₀ → x₀ = y₀",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-10"
+                                ],
+                                "_rule": "∀I",
+                                "_statement": "∀ z (x₀ = z → y₀ = z → x₀ = y₀)",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-11"
+                        ],
+                        "_rule": "∀I",
+                        "_statement": "∀ y ∀ z (x₀ = z → y = z → x₀ = y)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-12"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀ x ∀ y ∀ z (x = z → y = z → x = y)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

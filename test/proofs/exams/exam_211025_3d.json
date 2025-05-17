@@ -1,0 +1,75 @@
+{
+    "_sequent": {
+        "_conclusion": "∀ x ∃ y ∃ z (f(x, y) = f(x, z) → y = z)",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x₀",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "f(x₀, t) = f(x₀, t)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "=I",
+                                "_statement": "t = t",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-3"
+                        ],
+                        "_rule": "→I",
+                        "_statement": "f(x₀, t) = f(x₀, t) → t = t",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4"
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ z (f(x₀, t) = f(x₀, z) → t = z)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "5"
+                        ],
+                        "_rule": "∃I",
+                        "_statement": "∃ y ∃ z (f(x₀, y) = f(x₀, z) → y = z)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-6"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀ x ∃ y ∃ z (f(x, y) = f(x, z) → y = z)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -1,0 +1,98 @@
+{
+    "_sequent": {
+        "_conclusion": "p → s",
+        "_premises": [
+            "p → (q ∨ r)",
+            "q → s",
+            "r → s"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "4",
+                            "1"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "q ∨ r",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "q",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "6",
+                                    "2"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "s",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "r",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "8",
+                                    "3"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "s",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "5",
+                            "6-7",
+                            "8-9"
+                        ],
+                        "_rule": "∨E",
+                        "_statement": "s",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "4-10"
+                ],
+                "_rule": "→I",
+                "_statement": "p → s",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

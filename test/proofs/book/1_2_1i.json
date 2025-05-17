@@ -1,0 +1,59 @@
+{
+    "_sequent": {
+        "_conclusion": "p ∧ q → r",
+        "_premises": [
+            "(p → r) ∧ (q → r)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p ∧ q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "∧EL",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1"
+                        ],
+                        "_rule": "∧EL",
+                        "_statement": "p → r",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "4"
+                        ],
+                        "_rule": "→E",
+                        "_statement": "r",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-5"
+                ],
+                "_rule": "→I",
+                "_statement": "p ∧ q → r",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

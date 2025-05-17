@@ -1,0 +1,29 @@
+{
+    "_fedUserDefinedRules": [
+        {
+            "_udrInput": [
+                "¬(p ∨ q)"
+            ],
+            "_udrName": "deMo2",
+            "_udrOutput": "¬p ∧ ¬q",
+            "_udrPath": "./deMorgan2.folke"
+        }
+    ],
+    "_sequent": {
+        "_conclusion": "¬A ∧ ¬B",
+        "_premises": [
+            "¬(((A ∨ B)))"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "deMo2",
+                "_statement": "¬A ∧ ¬B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "_sequent": {
+        "_conclusion": "q ∧ s",
+        "_premises": [
+            "(p ∧ q) ∧ r",
+            "s ∧ t"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧EL",
+                "_statement": "p ∧ q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3"
+                ],
+                "_rule": "∧ER",
+                "_statement": "q",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "2"
+                ],
+                "_rule": "∧EL",
+                "_statement": "s",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "4",
+                    "5"
+                ],
+                "_rule": "∧I",
+                "_statement": "q ∧ s",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

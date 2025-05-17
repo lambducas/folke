@@ -1,0 +1,133 @@
+{
+    "_sequent": {
+        "_conclusion": "∀ x (P(x) → Q(x))",
+        "_premises": [
+            "∀ x (P(x) → ∃ y R(x, y))",
+            "∀ x ∀ y (R(x, y) → Q(x))"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "a",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1",
+                            "a"
+                        ],
+                        "_rule": "∀E",
+                        "_statement": "P(a) → ∃ y R(a, y)",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2",
+                            "a"
+                        ],
+                        "_rule": "∀E",
+                        "_statement": "∀ y (R(a, y) → Q(a))",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "P(a)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "4",
+                                    "6"
+                                ],
+                                "_rule": "→E",
+                                "_statement": "∃ y R(a, y)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "fresh",
+                                        "_statement": "w",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "R(a, w)",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "5",
+                                            "w"
+                                        ],
+                                        "_rule": "∀E",
+                                        "_statement": "R(a, w) → Q(a)",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "10",
+                                            "9"
+                                        ],
+                                        "_rule": "→E",
+                                        "_statement": "Q(a)",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "7",
+                                    "8-11"
+                                ],
+                                "_rule": "∃E",
+                                "_statement": "Q(a)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "6-12"
+                        ],
+                        "_rule": "→I",
+                        "_statement": "P(a) → Q(a)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "3-13",
+                    "a"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀ x (P(x) → Q(x))",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

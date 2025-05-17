@@ -1,0 +1,141 @@
+{
+    "_sequent": {
+        "_conclusion": "((p → q) → q) → (q → p) → p",
+        "_premises": [],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "(p → q) → q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "q → p",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "¬p",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "p",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "3",
+                                                    "4"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "5"
+                                                ],
+                                                "_rule": "⊥E",
+                                                "_statement": "q",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "4-6"
+                                        ],
+                                        "_rule": "→I",
+                                        "_statement": "p → q",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "1",
+                                            "7"
+                                        ],
+                                        "_rule": "→E",
+                                        "_statement": "q",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "2",
+                                            "8"
+                                        ],
+                                        "_rule": "→E",
+                                        "_statement": "p",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "3",
+                                            "9"
+                                        ],
+                                        "_rule": "¬E",
+                                        "_statement": "⊥",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "3-10"
+                                ],
+                                "_rule": "PBC",
+                                "_statement": "p",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "2-11"
+                        ],
+                        "_rule": "→I",
+                        "_statement": "(q → p) → p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1-12"
+                ],
+                "_rule": "→I",
+                "_statement": "((p → q) → q) → (q → p) → p",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

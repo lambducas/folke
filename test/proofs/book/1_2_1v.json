@@ -1,0 +1,54 @@
+{
+    "_sequent": {
+        "_conclusion": "p",
+        "_premises": [
+            "p ∨ (p ∧ q)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "p ∧ q",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3"
+                        ],
+                        "_rule": "∧EL",
+                        "_statement": "p",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "2-2",
+                    "3-4"
+                ],
+                "_rule": "∨E",
+                "_statement": "p",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}
