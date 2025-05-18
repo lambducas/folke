@@ -16,6 +16,7 @@ symbolLookup = [
   -- Negate
   ("!", "¬"),
   ("~", "¬"),
+  ("not", "¬"),
 
   -- Implies
   (">", "→"),
