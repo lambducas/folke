@@ -1,7 +1,7 @@
-![](6fullproof3-MadewithClipchamp-ezgif.com-video-to-gif-converter.gif)
-
 # Folke
 Folke is a proof editor for propositional and first order logic.
+
+![](folke.gif)
 
 ## Download
 It will soon be possible to download the editor under [Releases](https://github.com/lambducas/folke/releases).
