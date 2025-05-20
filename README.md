@@ -1,7 +1,9 @@
 # Folke
-Folke is a proof editor for propositional and first order logic.
 
-![](folke.gif)
+Folke is an interactive proof editor for propositional and first-order logic
+
+![Folke Editor Demo](folke.gif)
+
 
 ## Download
 It will soon be possible to download the editor under [Releases](https://github.com/lambducas/folke/releases).
@@ -86,17 +88,26 @@ If sdl2 fails with `error: ld.lld: error: undefined symbol: __stack_chk_fail` (f
     ```
 1. Run `ghcup run --mingw-path -- cabal build` again and it should work.
 
-## Run program
-To run the executable, run the following command:
+#### macOS
+Coming soon.
+
+## Usage
+To run Folke after building:
+
 ```bash
 cabal run
 ```
 
-## Run tests
-To run tests, use the following command:
+## Testing
+To run the test suite:
+
 ```bash
 cabal test
 ```
 
+## Contributing
+Contributions are welcome!
+
 ## License
-This project is licensed under the [BSD-3 license](LICENSE)
+This project is licensed under the [BSD-3 License](LICENSE).
+
