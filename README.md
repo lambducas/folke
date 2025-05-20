@@ -1,3 +1,5 @@
+![](6fullproof3-MadewithClipchamp-ezgif.com-video-to-gif-converter.gif)
+
 # Folke
 Folke is a proof editor for propositional and first order logic.
 
