@@ -20,8 +20,6 @@ import Data.Text (pack)
 main :: IO ()
 main = do
   os <- getPlatform
-  let isMac = os == "Mac OS X"
-
   assetBasePath <- getAssetBasePath
 
   -- Read preferences from file or use default on error/first time opening app
@@ -42,15 +40,15 @@ main = do
 
   let createModel = model prefs state currentFrontendChan currentBackendChan
   let createHandleEvent = handleEvent os env
-  let createBuildUI = buildUI isMac
-  let createConfig = config assetBasePath isMac prefs state
+  let createBuildUI = buildUI os
+  let createConfig = config assetBasePath prefs state
 
   -- Start Monomer application
   startApp createModel createHandleEvent createBuildUI createConfig
 
   where
     -- Application configuration
-    config assetBasePath isMac prefs state = [
+    config assetBasePath prefs state = [
       appWindowTitle "Folke - A Proof Editor",
       appScaleFactor (_appScale prefs),
       appWindowState (_windowMode state),

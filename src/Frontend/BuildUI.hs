@@ -79,11 +79,13 @@ ctxFileExplorer filePath relativePath = [
   ]
 
 buildUI
-  :: Bool
+  :: Text
   -> WidgetEnv AppModel AppEvent
   -> AppModel
   -> WidgetNode AppModel AppEvent
-buildUI isMac wenv model = widgetTree where
+buildUI os wenv model = widgetTree where
+  isMac = os == "Mac OS X"
+
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   clearColor = selTheme ^. L.clearColor
   accentColor = selTheme ^. L.userColorMap . at "accent" . non def

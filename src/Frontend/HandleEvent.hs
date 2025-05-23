@@ -451,7 +451,7 @@ handleEvent os env wenv node model evt = case evt of
       sendMsg $ OpenFile_ "about.md" docsPath (Just "About")
     ) ]
 
-  OpenFileFromFileSystem -> [ needSyncTask os openDiag ]
+  OpenFileFromFileSystem -> [ Task openDiag ]
     where
       openDiag = do
         path <- osOpenFileDialog
@@ -466,7 +466,7 @@ handleEvent os env wenv node model evt = case evt of
           Nothing -> return NoEvent
           Just path -> return $ OpenFile_ path "" Nothing
 
-  OpenFileExample -> [ needSyncTask os openDiag ]
+  OpenFileExample -> [ Task openDiag ]
     where
       openDiag = do
         basePath <- getAssetBasePath
@@ -594,7 +594,7 @@ handleEvent os env wenv node model evt = case evt of
     f@TemporaryProofFile {} -> case _parsedDocument f of
       Nothing -> []
       Just doc -> [
-        needSyncTask os $ do
+        Task $ do
           mNewPath <- osSaveFileDialog
             os
             "Save proof"
@@ -683,7 +683,7 @@ handleEvent os env wenv node model evt = case evt of
   BackendResponse (FEDocumentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
 
-  OpenSetWorkingDir -> [ needSyncTask os openDiag ]
+  OpenSetWorkingDir -> [ Task openDiag ]
     where
       openDiag = do
         path <- osSelectFolderDialog
@@ -796,7 +796,7 @@ simulateTextInput t = do
   _ <- liftIO . alloca $ \eventPtr -> do
     poke eventPtr rawEvent
     SDL.Raw.pushEvent eventPtr
-  
+
   return ()
 
 -- From https://stackoverflow.com/a/51713361
@@ -815,7 +815,7 @@ exportToLatex :: Text -> AppModel -> File -> [EventResponse s AppEvent sp ep]
 exportToLatex os model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
-    [ needSyncTask os $ do
+    [ Task $ do
         -- Open a save dialog to let the user choose where to save the LaTeX file
         mSavePath <- osSaveFileDialog
           os
@@ -847,7 +847,7 @@ exportToPDF :: Text -> AppModel -> File -> [EventResponse s AppEvent sp ep]
 exportToPDF os model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
-    [ needSyncTask os $ do
+    [ Task $ do
         -- Open a save dialog to let the user choose where to save the file
         mSavePath <- osSaveFileDialog
           os
@@ -879,14 +879,10 @@ exportToPDF os model file = case _parsedDocument file of
           )
     ]
 
-needSyncTask :: Text -> TaskHandler e -> EventResponse s e sp ep
--- needSyncTask "Mac OS X" = SyncTask
-needSyncTask _ = Task
-
+osOpenFileDialog :: Text -> Text -> FilePath -> [String] -> Text -> Bool -> IO (Maybe String)
 osOpenFileDialog os title defaultPath ext extName multiple
   | os == "Linux" = do
-    path <- openDialog (head ext) (Just defaultPath)
-    return path
+    openDialog (head ext) (Just defaultPath)
   | otherwise = do
     path <- openFileDialog
       title
@@ -898,10 +894,10 @@ osOpenFileDialog os title defaultPath ext extName multiple
       Nothing -> return Nothing
       Just path -> return (Just (unpack $ head path))
 
+osSaveFileDialog :: Text -> Text -> String -> [String] -> Text -> IO (Maybe String)
 osSaveFileDialog os title defaultPath ext extName
   | os == "Linux" = do
-    path <- openSaveDialog (head ext)
-    return path
+    openSaveDialog (head ext)
   | otherwise = do
     path <- saveFileDialog
       title
@@ -912,10 +908,10 @@ osSaveFileDialog os title defaultPath ext extName
       Nothing -> return Nothing
       Just path -> return (Just (unpack path))
 
+osSelectFolderDialog :: Text -> Text -> String -> IO (Maybe String)
 osSelectFolderDialog os title defaultPath
   | os == "Linux" = do
-    path <- openFolderDialog
-    return path
+    openFolderDialog
   | otherwise = do
     path <- selectFolderDialog
       title
