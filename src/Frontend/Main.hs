@@ -81,7 +81,7 @@ main = do
       appFontDef "Symbol_Bold" (pack (assetBasePath </> "assets/fonts/JuliaMono/JuliaMono-Bold.ttf")),
 
       appFontDef "Remix" (pack (assetBasePath </> "assets/fonts/remixicon.ttf"))
-      ] ++ [appRenderOnMainThread | isMac]
+      ]
       
     -- Initial states
     model prefs state currentFrontendChan currentBackendChan = AppModel {

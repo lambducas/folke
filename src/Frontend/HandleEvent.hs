@@ -880,7 +880,7 @@ exportToPDF os model file = case _parsedDocument file of
     ]
 
 needSyncTask :: Text -> TaskHandler e -> EventResponse s e sp ep
-needSyncTask "Mac OS X" = SyncTask
+-- needSyncTask "Mac OS X" = SyncTask
 needSyncTask _ = Task
 
 osOpenFileDialog os title defaultPath ext extName multiple
