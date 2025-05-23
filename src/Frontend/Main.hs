@@ -41,7 +41,7 @@ main = do
   let env = AppEnv channel
 
   let createModel = model prefs state currentFrontendChan currentBackendChan
-  let createHandleEvent = handleEvent isMac env
+  let createHandleEvent = handleEvent os env
   let createBuildUI = buildUI isMac
   let createConfig = config assetBasePath isMac prefs state
 

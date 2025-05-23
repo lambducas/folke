@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (unpack, pack, Text)
 import Data.List (sort)
 import TextShow ( TextShow(showt) )
-import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist )
+import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist, makeAbsolute )
 import System.FilePath (takeExtension, dropExtension, (</>))
 import qualified System.FilePath.Posix as FPP
 
@@ -46,15 +46,17 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text.Encoding as TE
 import System.FilePath.Posix (isRelative, takeDirectory)
 
+import Graphics.UI.TinyFileDialogs (openFileDialog, saveFileDialog, selectFolderDialog)
+
 handleEvent
-  :: Bool
+  :: Text
   -> AppEnv
   -> WidgetEnv AppModel AppEvent
   -> WidgetNode AppModel AppEvent
   -> AppModel
   -> AppEvent
   -> [AppEventResponse AppModel AppEvent]
-handleEvent isMac env wenv node model evt = case evt of
+handleEvent os env wenv node model evt = case evt of
   NoEvent -> []
 
   AppRunProducer prod -> [ Producer prod ]
@@ -449,25 +451,41 @@ handleEvent isMac env wenv node model evt = case evt of
       sendMsg $ OpenFile_ "about.md" docsPath (Just "About")
     ) ]
 
-  OpenFileFromFileSystem -> [ needSyncTask isMac openDiag ]
+  OpenFileFromFileSystem -> [ needSyncTask os openDiag ]
     where
       openDiag = do
-        path <- openDialog (head feFileExts) Nothing
+        path <- osOpenFileDialog
+          os
+          "Open proof"
+          ""
+          feFileExts
+          feFileExtName
+          False
+
         case path of
           Nothing -> return NoEvent
           Just path -> return $ OpenFile_ path "" Nothing
 
-  OpenFileExample -> [ needSyncTask isMac openDiag ]
+  OpenFileExample -> [ needSyncTask os openDiag ]
     where
       openDiag = do
         basePath <- getAssetBasePath
-        let defaultPath = basePath </> "assets/examples"
-        path <- openDialog (head feFileExts) (Just defaultPath)
+        let defaultPath = basePath </> "assets/examples/"
+        absDefPath <- makeAbsolute defaultPath
+
+        path <- osOpenFileDialog
+          os
+          "Open example"
+          absDefPath
+          feFileExts
+          feFileExtName
+          False
+
         case path of
           Nothing -> return NoEvent
           Just path -> return $ OpenFile_ path "" Nothing
 
-  OpenFile filePath -> handleEvent isMac env wenv node model (OpenFile_ filePath wd Nothing)
+  OpenFile filePath -> handleEvent os env wenv node model (OpenFile_ filePath wd Nothing)
     where wd = fromMaybe "" (model ^. persistentState . workingDir)
 
   OpenFile_ filePath folderPath tabDisp -> [
@@ -504,7 +522,7 @@ handleEvent isMac env wenv node model evt = case evt of
         sendMsg CheckCurrentProof
     ) ]
 
-  OpenFileSuccess_ file -> Model newModel : handleEvent isMac env wenv node newModel (SetCurrentFile filePath)
+  OpenFileSuccess_ file -> Model newModel : handleEvent os env wenv node newModel (SetCurrentFile filePath)
     where
       newModel = model
         & persistentState . openFiles %~ doOpenFile
@@ -518,17 +536,17 @@ handleEvent isMac env wenv node model evt = case evt of
 
   CloseCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
-    Just filePath -> handleEvent isMac env wenv node model (CloseFile filePath)
+    Just filePath -> handleEvent os env wenv node model (CloseFile filePath)
 
   CloseFile filePath -> case file of
     Nothing -> []
     Just file -> (if isFileEdited (Just file)
-      then handleEvent isMac env wenv node model (OpenConfirmAction (ConfirmActionData {
+      then handleEvent os env wenv node model (OpenConfirmAction (ConfirmActionData {
         _cadTitle = "Close without saving?",
         _cadBody = "Are you sure you want to close\n" <> displayedPath <> "\nwithout saving? All changes will be lost!",
         _cadAction = CloseFileSuccess filePath
       }))
-      else handleEvent isMac env wenv node model (CloseFileSuccess filePath))
+      else handleEvent os env wenv node model (CloseFileSuccess filePath))
       where
         displayedPath
           | isTmpFile filePath = "Unsaved proof"
@@ -552,14 +570,14 @@ handleEvent isMac env wenv node model evt = case evt of
   SaveCurrentFile -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent isMac env wenv node model (SaveFile file)
-      Just file@TemporaryProofFile {} -> handleEvent isMac env wenv node model (SaveFile file)
-      Just file@PreferenceFile {} -> handleEvent isMac env wenv node model (SaveFile file)
+      Just file@ProofFile {} -> handleEvent os env wenv node model (SaveFile file)
+      Just file@TemporaryProofFile {} -> handleEvent os env wenv node model (SaveFile file)
+      Just file@PreferenceFile {} -> handleEvent os env wenv node model (SaveFile file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   SaveFile f -> case f of
-    PreferenceFile {} -> handleEvent isMac env wenv node model SavePreferences
+    PreferenceFile {} -> handleEvent os env wenv node model SavePreferences
     f@ProofFile {} -> case _parsedDocument f of
       Nothing -> []
       Just doc -> [
@@ -576,8 +594,14 @@ handleEvent isMac env wenv node model evt = case evt of
     f@TemporaryProofFile {} -> case _parsedDocument f of
       Nothing -> []
       Just doc -> [
-        needSyncTask isMac $ do
-          mNewPath <- openSaveDialog (head feFileExts)
+        needSyncTask os $ do
+          mNewPath <- osSaveFileDialog
+            os
+            "Save proof"
+            ""
+            feFileExts
+            feFileExtName
+
           return $ AppRunProducer (\sendMsg -> do
             case mNewPath of
               Nothing -> return ()
@@ -640,8 +664,8 @@ handleEvent isMac env wenv node model evt = case evt of
   CheckCurrentProof -> case model ^. persistentState . currentFile of
     Nothing -> []
     Just filePath -> case currentFile of
-      Just file@ProofFile {} -> handleEvent isMac env wenv node model (CheckProof file)
-      Just file@TemporaryProofFile {} -> handleEvent isMac env wenv node model (CheckProof file)
+      Just file@ProofFile {} -> handleEvent os env wenv node model (CheckProof file)
+      Just file@TemporaryProofFile {} -> handleEvent os env wenv node model (CheckProof file)
       _ -> []
       where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
@@ -659,10 +683,13 @@ handleEvent isMac env wenv node model evt = case evt of
   BackendResponse (FEDocumentChecked result) -> [ Model $ model & proofStatus ?~ result ]
   BackendResponse (OtherBackendMessage message) -> [ Producer (\_ -> print $ "From backend: " ++ message) ]
 
-  OpenSetWorkingDir -> [ needSyncTask isMac openDiag ]
+  OpenSetWorkingDir -> [ needSyncTask os openDiag ]
     where
       openDiag = do
-        path <- openFolderDialog
+        path <- osSelectFolderDialog
+          os
+          "Set working directory"
+          ""
         case path of
           Nothing -> return NoEvent
           Just path -> return $ SetWorkingDir path
@@ -677,16 +704,16 @@ handleEvent isMac env wenv node model evt = case evt of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
-      Just file@ProofFile{} -> exportToLatex isMac model file
-      Just file@TemporaryProofFile{} -> exportToLatex isMac model file
+      Just file@ProofFile{} -> exportToLatex os model file
+      Just file@TemporaryProofFile{} -> exportToLatex os model file
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
   ExportToPDF -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
     Just filePath -> case getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath of
-      Just file@ProofFile{} -> exportToPDF isMac model file
-      Just file@TemporaryProofFile{} -> exportToPDF isMac model file
+      Just file@ProofFile{} -> exportToPDF os model file
+      Just file@TemporaryProofFile{} -> exportToPDF os model file
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
   ExportSuccess msg -> [Message (WidgetKey "ExportSuccess") msg]
@@ -784,13 +811,19 @@ traverseDir validDir transition =
                foldM go state' (filter validDir dirPaths) -- process subdirs
      in go
 
-exportToLatex :: Bool -> AppModel -> File -> [EventResponse s AppEvent sp ep]
-exportToLatex isMac model file = case _parsedDocument file of
+exportToLatex :: Text -> AppModel -> File -> [EventResponse s AppEvent sp ep]
+exportToLatex os model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
-    [ needSyncTask isMac $ do
+    [ needSyncTask os $ do
         -- Open a save dialog to let the user choose where to save the LaTeX file
-        mSavePath <- openSaveDialog "tex"
+        mSavePath <- osSaveFileDialog
+          os
+          "Export .tex file"
+          ""
+          ["tex"]
+          "TeX files (.tex)"
+
         return $ AppRunProducer (\sendMsg -> do
           case mSavePath of
             Nothing ->
@@ -810,13 +843,18 @@ exportToLatex isMac model file = case _parsedDocument file of
           )
     ]
 
-exportToPDF :: Bool -> AppModel -> File -> [EventResponse s AppEvent sp ep]
-exportToPDF isMac model file = case _parsedDocument file of
+exportToPDF :: Text -> AppModel -> File -> [EventResponse s AppEvent sp ep]
+exportToPDF os model file = case _parsedDocument file of
   Nothing -> [Message (WidgetKey "ExportError") (pack "Cannot export invalid proof")]
   Just _ ->
-    [ needSyncTask isMac $ do
+    [ needSyncTask os $ do
         -- Open a save dialog to let the user choose where to save the file
-        mSavePath <- openSaveDialog "pdf"
+        mSavePath <- osSaveFileDialog
+          os
+          "Export PDF"
+          ""
+          ["pdf"]
+          "PDF (.pdf)"
         return $ AppRunProducer (\sendMsg -> do
           case mSavePath of
             Nothing -> return ()
@@ -841,6 +879,47 @@ exportToPDF isMac model file = case _parsedDocument file of
           )
     ]
 
-needSyncTask :: Bool -> TaskHandler e -> EventResponse s e sp ep
-needSyncTask True = SyncTask
-needSyncTask False = Task
+needSyncTask :: Text -> TaskHandler e -> EventResponse s e sp ep
+needSyncTask "Mac OS X" = SyncTask
+needSyncTask _ = Task
+
+osOpenFileDialog os title defaultPath ext extName multiple
+  | os == "Linux" = do
+    path <- openDialog (head ext) (Just defaultPath)
+    return path
+  | otherwise = do
+    path <- openFileDialog
+      title
+      (pack defaultPath)
+      (map (\f -> pack $ "*." ++ f) ext)
+      extName
+      multiple
+    case path of
+      Nothing -> return Nothing
+      Just path -> return (Just (unpack $ head path))
+
+osSaveFileDialog os title defaultPath ext extName
+  | os == "Linux" = do
+    path <- openSaveDialog (head ext)
+    return path
+  | otherwise = do
+    path <- saveFileDialog
+      title
+      (pack defaultPath)
+      (map (\f -> pack $ "*." ++ f) ext)
+      extName
+    case path of
+      Nothing -> return Nothing
+      Just path -> return (Just (unpack path))
+
+osSelectFolderDialog os title defaultPath
+  | os == "Linux" = do
+    path <- openFolderDialog
+    return path
+  | otherwise = do
+    path <- selectFolderDialog
+      title
+      (pack defaultPath)
+    case path of
+      Nothing -> return Nothing
+      Just path -> return (Just (unpack path))

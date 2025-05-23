@@ -24,11 +24,11 @@
 
 ## Frontend
 - [ ] Fix full Markdown support
-- [ ] Windows file dialog does not show allowed files as ".folke" but random unicode characters
-- [ ] Opening examples is not possible in windows build
 - [ ] `Open in file explorer` does not work in windows or mac build
-- [ ] Window freezes when opening dialog on windows
 
+- [x] ~~Windows file dialog does not show allowed files as ".folke" but random unicode characters~~
+- [x] ~~Opening examples is not possible in windows build~~
+- [x] ~~Window freezes when opening dialog on windows~~
 - [x] ~~Line numbers become missaligned when there are errors/warnings taking up 2 or more lines~~
 - [x] ~~Support user defined rules (derived rule from proof)~~
 - [ ] ~~Toolbar instead of sidebar for symbol keypad??~~

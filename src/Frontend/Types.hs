@@ -319,6 +319,9 @@ makeLenses 'AppEnv
 feFileExts :: [String]
 feFileExts = ["folke", "ndp", "json"]
 
+feFileExtName :: Text
+feFileExtName = "Proof files (.folke)"
+
 $(deriveJSON defaultOptions ''SelectableTheme)
 $(deriveJSON defaultOptions ''HistoryEvent)
 $(deriveJSON defaultOptions ''History)
