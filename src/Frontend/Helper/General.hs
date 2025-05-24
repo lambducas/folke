@@ -250,8 +250,9 @@ openInExplorer :: WidgetEnv s e -> FilePath -> IO ()
 openInExplorer wenv path = catchIgnore (callCommand command) where
   os = wenv ^. L.os
   command
-    | os == "Windows" = "start %windir%\\explorer.exe \"" ++ path ++ "\""
-    | os == "Mac OS X" = "cd \"" ++ path ++ "\"; open -R ."
+    | os == "Windows" = "start %windir%\\explorer.exe /select,\"" ++ path ++ "\""
+    | os == "Mac OS X" = "open -R \"" ++ path ++ "\""
+    -- | os == "Mac OS X" = "cd \"" ++ takeDirectory path ++ "\"; open -R ."
     | os == "Linux" = "xdg-open \"" ++ takeDirectory path ++ "\""
     | otherwise = "ls"
 

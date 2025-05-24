@@ -24,8 +24,8 @@
 
 ## Frontend
 - [ ] Fix full Markdown support
-- [ ] `Open in file explorer` does not work in windows or mac build
 
+- [x] ~~`Open in file explorer` does not work in windows or mac build~~
 - [x] ~~Windows file dialog does not show allowed files as ".folke" but random unicode characters~~
 - [x] ~~Opening examples is not possible in windows build~~
 - [x] ~~Window freezes when opening dialog on windows~~
