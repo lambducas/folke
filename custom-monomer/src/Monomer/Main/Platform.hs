@@ -97,7 +97,8 @@ initSDLWindow config = do
         SDL.windowHighDPI = True,
         SDL.windowResizable = windowResizable,
         SDL.windowBorder = windowBorder,
-        SDL.windowGraphicsContext = SDL.OpenGLContext customOpenGL
+        SDL.windowGraphicsContext = SDL.OpenGLContext customOpenGL,
+        SDL.windowMode = if windowMaximized then SDL.Maximized else SDL.Windowed
       }
 
   -- Get device pixel rate
