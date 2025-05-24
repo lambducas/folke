@@ -43,6 +43,7 @@ cd ./output
 install_name_tool -change /usr/local/opt/glew/lib/libGLEW.2.2.dylib @rpath/libGLEW.2.2.dylib Folke.app/Contents/MacOS/folke
 install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @rpath/libSDL2-2.0.0.dylib Folke.app/Contents/MacOS/folke
 install_name_tool -change /usr/local/opt/freetype/lib/libfreetype.6.dylib @rpath/libfreetype.6.dylib Folke.app/Contents/MacOS/folke
+install_name_tool -change /usr/local/opt/libpng/lib/libpng16.16.dylib @loader_path/libpng16.16.dylib Folke.app/Contents/Frameworks/libfreetype.6.dylib
 install_name_tool -add_rpath @executable_path/../Frameworks Folke.app/Contents/MacOS/folke
 cd ..
 
@@ -74,4 +75,4 @@ $CREATE_DMG \
 cd ..
 
 # Remove app
-rm -rf ./output/dmg_source
+# rm -rf ./output/dmg_source
