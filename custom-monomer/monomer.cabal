@@ -146,6 +146,8 @@ library
       Monomer.Widgets.Util.Theme
       Monomer.Widgets.Util.Types
       Monomer.Widgets.Util.Widget
+
+      CreateMenu
   other-modules:
       Paths_monomer
   hs-source-dirs:
@@ -162,6 +164,10 @@ library
       cbits/dpi.c
       cbits/fontmanager.c
       cbits/glew.c
+
+  if os(osx)
+    c-sources: cbits/macos_menu.m
+
   pkgconfig-depends:
       glew
   build-tools:
