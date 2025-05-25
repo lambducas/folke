@@ -87,7 +87,8 @@ initSDLWindow config = do
   let factor
         | disableAutoScale = 1
         | otherwise = baseFactor
-  let (winW, winH) = (factor * fromIntegral baseW, factor * fromIntegral baseH)
+  -- let (winW, winH) = (factor * fromIntegral baseW, factor * fromIntegral baseH)
+  let (winW, winH) = (fromIntegral baseW, fromIntegral baseH)
 
   window <-
     SDL.createWindow
