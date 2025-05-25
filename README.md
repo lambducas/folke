@@ -111,3 +111,5 @@ Contributions are welcome!
 ## License
 This project is licensed under the [BSD-3 License](LICENSE).
 
+## Bachelor thesis
+Read our bachelor thesis in Swedish [here](folke.pdf)
