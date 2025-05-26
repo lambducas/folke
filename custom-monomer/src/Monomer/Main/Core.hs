@@ -57,6 +57,8 @@ import Monomer.Widgets.Composite
 
 import qualified Monomer.Lens as L
 
+import CreateMenu (createMenu)
+
 {-|
 Type of response an App event handler can return, with __s__ being the model and
 __e__ the user's event type.
@@ -302,6 +304,8 @@ runAppLoop window glCtx channel mRootOld newRoot config = do
   }
 
   L.mainModel .= _weModel newWenv
+
+  _ <- liftIO createMenu
 
   mainLoop window fontManager config loopArgs
 

@@ -282,7 +282,7 @@ getAssetBasePath = do
   os <- getPlatform
   let isMac = os == "Mac OS X"
 
-  if isMac
+  if isMac && False
     then do
       exePath <- getExecutablePath
       return $ takeDirectory exePath </> "../Resources/"
