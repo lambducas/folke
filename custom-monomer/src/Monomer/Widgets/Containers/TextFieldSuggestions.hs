@@ -373,8 +373,49 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
       | not (isKeyReturn code) && isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
       | isKeyEscape code && isOpen -> Just $ closeDropdown wenv node
       where
-        activationKeys = [isKeyReturn, isKeyTab]
-        isKeyOpenDropdown = not $ or (fmap ($ code) activationKeys)
+        -- activationKeys = [isKeyReturn, isKeyTab, isKeyLCtrl, isKeyRCtrl]
+        activationKeys = [
+            isKeyA,
+            isKeyB,
+            isKeyC,
+            isKeyD,
+            isKeyE,
+            isKeyF,
+            isKeyG,
+            isKeyH,
+            isKeyI,
+            isKeyJ,
+            isKeyK,
+            isKeyL,
+            isKeyM,
+            isKeyN,
+            isKeyO,
+            isKeyP,
+            isKeyQ,
+            isKeyR,
+            isKeyS,
+            isKeyT,
+            isKeyU,
+            isKeyV,
+            isKeyW,
+            isKeyX,
+            isKeyY,
+            isKeyZ,
+
+            isKey0,
+            isKey1,
+            isKey2,
+            isKey3,
+            isKey4,
+            isKey5,
+            isKey6,
+            isKey7,
+            isKey8,
+            isKey9,
+            
+            isKeySpace
+          ]
+        isKeyOpenDropdown = or (fmap ($ code) activationKeys)
 
         listNodeId = node ^?! L.children . ix listIdx . L.children . ix 0 . L.info . L.widgetId
 
