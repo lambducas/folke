@@ -396,8 +396,7 @@ buildUI os wenv model = widgetTree where
 
   renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent
   renderOtherTab path content = fastVScroll $ vstack_ [childSpacing] [
-      label $ pack path <> ": This file type is not supported",
-      paragraph content
+      label $ pack path <> ": This file type is not supported"
     ] `styleBasic` [padding u]
 
   renderMarkdownTab :: Text -> WidgetNode AppModel AppEvent
