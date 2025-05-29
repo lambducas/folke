@@ -637,8 +637,10 @@ handleEvent os env wenv node model evt = case evt of
               _ -> return ()
             )
           )
-    ]
-    where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
+    ] ++ [Event CheckCurrentProof | shouldCheck]
+    where
+      file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
+      shouldCheck = model ^. preferences . autoCheckProofTracker . acpEnabled
 
   MoveTab fromIdx toIdx
     | fromIdx < toIdx -> [ Model $ model & persistentState . openFiles %~ removeIdx fromIdx . insertAt (model ^. persistentState . openFiles . element fromIdx) (toIdx + 1) ]
@@ -670,7 +672,7 @@ handleEvent os env wenv node model evt = case evt of
       where currentFile = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) filePath
 
   CheckProof file -> [
-      Model $ model & proofStatus .~ Nothing,
+      -- Model $ model & proofStatus .~ Nothing,
       Producer (evaluateCurrentProof model file acpFlag wrngSensetivity)
     ]
     where acpFlag = model ^. preferences . autoCheckProofTracker . acpEnabled

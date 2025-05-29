@@ -31,8 +31,8 @@ applyOnCurrentFile model f = actions
     cf = model ^. persistentState . currentFile
     getActions fileIndex = [
         Model $ model
-          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ f
-          & proofStatus .~ Nothing,
+          & persistentState . tmpLoadedFiles . singular (ix fileIndex) %~ f,
+          -- & proofStatus .~ Nothing,
 
         Event AutoCheckProof
       ]
