@@ -48,7 +48,7 @@ validateRule document rule = parsedRule == "" || isJust (Data.Map.lookup parsedR
 
     isCustomRule = case _fedUserDefinedRules document of
       Nothing -> False
-      Just rules -> isJust $ Data.List.find (\r -> _udrName r == parsedRule) rules
+      Just rules -> isJust $ Data.List.find (\r -> _udrName r == rule) rules
 
 -- | Check if the provided string is a valid way to write a rule argument
 validateRuleArgument :: T.Text -> Bool
