@@ -519,7 +519,8 @@ editUDRInDocument idx updateUDR doc = doc & fedUserDefinedRules %~ f
     f (Just udrs) = Just $ udrs & element idx %~ updateUDR
 
 editNameInUDR :: Text -> FEUserDefinedRule -> FEUserDefinedRule
-editNameInUDR newName udr = udr & udrName .~ newName
+editNameInUDR newName udr = udr & udrName .~ parsedName
+  where parsedName = replaceSpecialSymbols newName
 
 editPathInUDR :: FilePath -> FEUserDefinedRule -> FEUserDefinedRule
 editPathInUDR newPath udr = udr & udrPath .~ newPath
