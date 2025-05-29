@@ -25,6 +25,7 @@
 ## Frontend
 - [ ] Fix full Markdown support
 
+- [x] Pasting text on windows crashes the program (known problem with Haskell-version of SDL2)
 - [x] ~~`Open in file explorer` does not work in windows or mac build~~
 - [x] ~~Windows file dialog does not show allowed files as ".folke" but random unicode characters~~
 - [x] ~~Opening examples is not possible in windows build~~

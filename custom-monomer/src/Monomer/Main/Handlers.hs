@@ -58,6 +58,10 @@ import Monomer.Main.Util
 
 import qualified Monomer.Lens as L
 
+import System.Hclip
+import qualified Data.Text
+import Monomer.Main.Platform (getPlatform)
+
 {-|
 Tuple representing the current widget environment, widget root and accumulated
 WidgetRequests. These requests have already been processed, they are collected
@@ -363,10 +367,18 @@ handleGetClipboard
   :: MonomerM s e m => WidgetId -> HandlerStep s e -> m (HandlerStep s e)
 handleGetClipboard widgetId (wenv, root, reqs) = do
   path <- getWidgetIdPath widgetId
-  hasText <- SDL.hasClipboardText
-  contents <- fmap Clipboard $ if hasText
-                then fmap ClipboardText SDL.getClipboardText
-                else return ClipboardEmpty
+
+  os <- liftIO getPlatform
+  contents <- case os of
+    "Windows" -> do
+      getClip <- liftIO getClipboard
+      let clipData = ClipboardText (Data.Text.pack getClip)
+      fmap Clipboard $ return clipData
+    _ -> do
+      hasText <- SDL.hasClipboardText
+      fmap Clipboard $ if hasText
+                        then fmap ClipboardText SDL.getClipboardText
+                        else return ClipboardEmpty
 
   (wenv2, root2, reqs2) <- handleSystemEvent wenv root contents path
   return (wenv2, root2, reqs <> reqs2)
