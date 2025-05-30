@@ -49,7 +49,8 @@ menuBarCategories isMac = [
       -- ("Goto Next Input", "Return", NoEvent),
       -- ("Insert Line Below", ctrl <> "+Enter", NoEvent),
       -- ("Close Subproof", ctrl <> "+Enter", NoEvent),
-      ("Validate Proof", ctrl <> "+R", CheckCurrentProof)
+      ("Validate Proof", ctrl <> "+R", CheckCurrentProof),
+      ("User Defined Rules", "", OpenUDR)
     ]),
     ("View", [
       ("Toggle File Explorer", ctrl <> "+B", ToggleFileExplorer),
