@@ -102,6 +102,8 @@ initSDLWindow config = do
         SDL.windowMode = if windowMaximized then SDL.Maximized else SDL.Windowed
       }
 
+  setBooleanHintSDL "SDL_MOUSE_FOCUS_CLICKTHROUGH" True
+
   -- Get device pixel rate
   Size dw _ <- getDrawableSize window
   Size ww _ <- getWindowSize window
