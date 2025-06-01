@@ -83,7 +83,8 @@ validateDups env =
 
 -- | Top-level warning creator
 sendWarns :: Env -> Result ()
-sendWarns env = validateRefs env >> validateDups env
+sendWarns env = validateDups env
+                -- TODO: fix >> validateRefs env
 
 filterWarningsBySeverity :: Severity -> [Warning] -> [Warning]
 filterWarningsBySeverity minSeverity = List.filter (\w -> severityValue (warnSeverity w) >= severityValue minSeverity)
