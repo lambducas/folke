@@ -31,7 +31,7 @@ import Data.Text (unpack, pack, Text)
 import Data.List (sort)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist, makeAbsolute )
-import System.FilePath (takeExtension, dropExtension, (</>), (<.>), isRelative, takeDirectory, makeRelative)
+import System.FilePath (takeExtension, dropExtension, (</>), (<.>), isRelative, takeDirectory, makeRelative, equalFilePath)
 
 import qualified SDL
 import Control.Concurrent.STM (atomically)
@@ -526,7 +526,7 @@ handleEvent os env wenv node model evt = case evt of
         & persistentState . openFiles %~ doOpenFile
         & persistentState . tmpLoadedFiles %~ createNew file
 
-      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | filePath `notElem` model ^. persistentState . openFiles]
+      doOpenFile currentlyOpenFiles = currentlyOpenFiles ++ [filePath | all (\f -> not (equalFilePath filePath f)) (model ^. persistentState . openFiles)]
       createNew newFile oldFiles = if _path newFile `elem` (model ^. persistentState . openFiles) then
           oldFiles else
           filter (\f -> _path newFile /= _path f) oldFiles ++ [newFile]
