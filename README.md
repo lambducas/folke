@@ -89,7 +89,27 @@ If sdl2 fails with `error: ld.lld: error: undefined symbol: __stack_chk_fail` (f
 1. Run `ghcup run --mingw-path -- cabal build` again and it should work.
 
 #### macOS
-Coming soon.
+The following dependencies are required:
+```bash
+brew install sdl2
+brew install glew
+brew install freetype
+brew install gtk+3
+
+cabal install BNFC
+cabal install alex
+cabal install happy
+```
+
+Set up BNFC
+```bash
+make
+```
+
+To build the library, run the following command:
+```bash
+cabal build
+```
 
 ## Usage
 To run Folke after building:
