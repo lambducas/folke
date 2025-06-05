@@ -18,7 +18,7 @@ import System.Directory (listDirectory, doesFileExist)
 import Control.Monad (unless)
 
 import System.Exit (ExitCode(..))
-import System.FilePath (takeDirectory, takeExtension, dropExtension, (</>), takeFileName)
+import System.FilePath (takeDirectory, takeExtension, dropExtension, (</>), (<.>), takeFileName)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
@@ -32,7 +32,7 @@ compileLatexToPDF savePath latexContent = do
   withSystemTempDirectory "latex-temp" $ \tmpDir -> do
     let texName = "source.tex"
     let texPath = tmpDir </> texName
-    let finalPdfPath = savePath
+    let finalPdfPath = savePath <.> "pdf"
 
     -- Write the LaTeX content to the file
     writeFile texPath (unpack latexContent)
