@@ -148,7 +148,7 @@ fastVScroll_ cfg = vscroll_ (wheelRate 50 : cfg)
 fastHScroll = hscroll_ [wheelRate 50]
 
 boxShadow :: WidgetNode s e -> WidgetNode s e
-boxShadow = boxShadow_ [radius 24]
+boxShadow = boxShadow_ [radius 8]
 
 internalLink :: WidgetEnv AppModel AppEvent -> AppModel -> Text -> AppEvent -> WidgetNode AppModel AppEvent
 internalLink wenv model t event = box_ [onClick event] textWidget

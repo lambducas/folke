@@ -164,13 +164,13 @@ buildUI os wenv model = widgetTree where
         vstack [
           categoryUI `styleBasic` [bgColor clearColor],
           box (
-            box (
+            box_ [onClickEmpty (SetOpenMenuBarItem Nothing)] (
               boxShadow $ vstack (map dropdownButton actions)
                 `styleBasic` [width 300, bgColor popupBackground, border 1 dividerColor, padding 4, radius 4, textSize $ u -2]
             )
               `styleBasic` [paddingL offset]
           )
-            `styleBasic` [paddingT (-36), paddingL (-35)]
+            `styleBasic` [paddingT (-20), paddingL (-19)]
         ]
         where
           actions = fromMaybe [] $ (model ^. openMenuBarItem) >>= \idx -> Just $ snd $ menuBarCategories isMac !! fromInteger idx

@@ -25,8 +25,8 @@
 ## Frontend
 - [ ] Fix full Markdown support
 - [ ] Fix PDF export on Windows
-- [ ] Pressing left side of menubar dropdown does not close it
 
+- [x] ~~Pressing left side of menubar dropdown does not close it~~
 - [x] ~~It is possible to open the same file in seperate tabs if the working directory changes~~
 - [x] Pasting text on windows crashes the program (known problem with Haskell-version of SDL2)
 - [x] ~~`Open in file explorer` does not work in windows or mac build~~
