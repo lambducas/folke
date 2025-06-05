@@ -35,8 +35,7 @@ menuBarCategories isMac = [
       ("Open Proof", ctrl <> "+O", OpenFileFromFileSystem),
       ("Open Example", "", OpenFileExample),
       ("Close Tab", "Ctrl+W", CloseCurrentFile),
-      ("Export to LaTeX", "", ExportToLaTeX),
-      ("Export to PDF", "", ExportToPDF),
+      ("Export proof", "", SetExportOpen True),
       ("Set Working Directory", "", OpenSetWorkingDir),
       ("Exit", "", ExitApp)
     ]),
@@ -145,6 +144,7 @@ buildUI os wenv model = widgetTree where
             userDefinedRuleUI,
             ruleGuideUI,
             fileSearcherUI,
+            exportOptionsUI,
             contextMenuUI,
             confirmActionUI
           ]
@@ -204,7 +204,7 @@ buildUI os wenv model = widgetTree where
       fastTooltip "New proof" $ iconButton remixFileAddLine CreateEmptyProof,
       fastTooltip "Open proof" $ iconButton remixFolderOpenLine OpenFileFromFileSystem,
       fastTooltip "Save proof" $ iconButton remixSave3Line SaveCurrentFile,
-      fastTooltip "Export to PDF" $ iconButton remixFilePdfLine ExportToPDF,
+      fastTooltip "Export" $ iconButton remixFilePdfLine (SetExportOpen True),
 
       separatorLine,
 
@@ -395,7 +395,7 @@ buildUI os wenv model = widgetTree where
           where file = getProofFileByPath (model ^. persistentState . tmpLoadedFiles) fileName
 
   renderOtherTab :: FilePath -> Text -> WidgetNode AppModel AppEvent
-  renderOtherTab path content = fastVScroll $ vstack_ [childSpacing] [
+  renderOtherTab path _content = fastVScroll $ vstack_ [childSpacing] [
       label $ pack path <> ": This file type is not supported"
     ] `styleBasic` [padding u]
 
@@ -583,6 +583,25 @@ buildUI os wenv model = widgetTree where
       emptyItem text = box_ [alignLeft] (span (pack text))
         `styleBasic` [paddingH u, paddingV (0.75 * u), radius 4, cursorHand]
         `styleHover` [bgColor hoverColor]
+
+  exportOptionsUI = popup_ (exportOptionsPopup . eoOpen) [popupAlignToWindow, alignCenter, alignMiddle] $
+    boxShadow $ vstack_ [childSpacing] [
+      h2 "Export proof",
+      textField_ (exportOptionsPopup . eoTitle) [placeholder "No title"],
+      filler,
+      statusLabel (model ^. exportOptionsPopup . eoStatus),
+      hstack_ [childSpacing] [
+        button "Cancel" (SetExportOpen False),
+        mainButton "Export PDF" ExportToPDF,
+        mainButton "Export LaTeX" ExportToLaTeX
+      ]
+    ]
+      `styleBasic` [bgColor popupBackground, border 1 dividerColor, radius 4, padding 16, width 600, height 450]
+    where
+      statusLabel ExportIdle = span ""
+      statusLabel ExportWaiting = span "Generating file..."
+      statusLabel ExportSuccess = span "Success" `styleBasic` [textColor green]
+      statusLabel (ExportError t) = paragraph ("Export error: " <> t) `styleBasic` [textColor red]
 
   ruleGuideUI = popupV_ (isJust rg) (\s -> if s then NoEvent else OpenRuleGuide Nothing) [popupAlignToWindow, alignCenter, alignMiddle]
     (boxShadow $ vstack_ [childSpacing] [

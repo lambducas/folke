@@ -99,6 +99,11 @@ main = do
 
       _filesInDirectory = Just $ LoadedFiles [] [],
       _confirmActionPopup = Nothing,
+      _exportOptionsPopup = ExportOptions {
+        _eoOpen = False,
+        _eoTitle = "",
+        _eoStatus = ExportIdle
+      },
 
       _frontendChan = currentFrontendChan,
       _backendChan = currentBackendChan,

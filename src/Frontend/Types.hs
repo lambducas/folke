@@ -144,6 +144,19 @@ data FileSearcher = FileSearcher {
   _fsAllFiles :: [FilePath]
 } deriving (Show, Eq)
 
+data ExportStatus
+  = ExportIdle
+  | ExportWaiting
+  | ExportError Text
+  | ExportSuccess
+  deriving (Show, Eq)
+
+data ExportOptions = ExportOptions {
+  _eoOpen :: Bool,
+  _eoTitle :: Text,
+  _eoStatus :: ExportStatus
+} deriving (Show, Eq)
+
 data AppModel = AppModel {
   _openMenuBarItem :: Maybe Integer,
   _contextMenu :: ContextMenu,
@@ -151,6 +164,7 @@ data AppModel = AppModel {
   _fileSearcher :: FileSearcher,
   _ruleGuidePopup :: Maybe Text,
   _udrPopup :: Bool,
+  _exportOptionsPopup :: ExportOptions,
 
   _filesInDirectory :: Maybe LoadedFiles,
 
@@ -292,10 +306,10 @@ data AppEvent
   | ResetAppScale
 
   -- Export to LaTeX
+  | SetExportOpen Bool
   | ExportToLaTeX
   | ExportToPDF
-  | ExportSuccess Text
-  | ExportError Text
+  | SetExportStatus ExportStatus
   deriving (Eq, Show)
 
 makeLenses 'PersistentState
@@ -308,6 +322,7 @@ makeLenses 'AppModel
 makeLenses 'AutoCheckProofTracker
 makeLenses 'FileSearcher
 makeLenses 'LoadedFiles
+makeLenses 'ExportOptions
 
 newtype AppEnv = AppEnv {
   _envChannel :: TChan ()

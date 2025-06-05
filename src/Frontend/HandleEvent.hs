@@ -31,7 +31,7 @@ import Data.Text (unpack, pack, Text)
 import Data.List (sort)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist, makeAbsolute )
-import System.FilePath (takeExtension, dropExtension, (</>), (<.>), isRelative, takeDirectory, makeRelative, equalFilePath)
+import System.FilePath (takeExtension, (</>), (<.>), isRelative, takeDirectory, equalFilePath)
 
 import qualified SDL
 import Control.Concurrent.STM (atomically)
@@ -700,6 +700,12 @@ handleEvent os env wenv node model evt = case evt of
     ]
     where newWd = Just path
 
+  SetExportOpen open -> [
+      Model $ model
+        & exportOptionsPopup . eoOpen .~ open
+        & exportOptionsPopup . eoStatus .~ ExportIdle
+    ]
+
   ExportToLaTeX -> case model ^. persistentState . currentFile of
     Nothing ->
       [Message (WidgetKey "ExportError") (pack "Please save your proof first")]
@@ -716,8 +722,7 @@ handleEvent os env wenv node model evt = case evt of
       Just file@TemporaryProofFile{} -> exportToPDF os model file
       _ -> [Message (WidgetKey "ExportError") (pack "Only proof files can be exported")]
 
-  ExportSuccess msg -> [Message (WidgetKey "ExportSuccess") msg]
-  ExportError msg -> [Message (WidgetKey "ExportError") msg]
+  SetExportStatus status -> [ Model $ model & exportOptionsPopup . eoStatus .~ status]
 
   Print s -> [ Producer (\_ -> print s) ]
   -- f -> [ Producer (\_ -> print f) ]
@@ -825,10 +830,11 @@ exportToLatex os model file = case _parsedDocument file of
           "TeX files (.tex)"
 
         return $ AppRunProducer (\sendMsg -> do
+          sendMsg (SetExportStatus ExportWaiting)
           case mSavePath of
             Nothing ->
-              -- User cancelled the dialog
-              sendMsg (ExportError "Export cancelled")
+              -- User canceled the dialog
+              sendMsg (SetExportStatus (ExportError "Export canceled"))
             Just savePath -> do
               -- Generate proper LaTeX content using our export module
               let texPath = if takeExtension savePath == ".tex"
@@ -839,7 +845,8 @@ exportToLatex os model file = case _parsedDocument file of
               -- Write the full LaTeX content to the file
               writeFile texPath (unpack latexContent)
               putStrLn $ "Exported LaTeX file to: " ++ texPath
-              sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
+              sendMsg (SetExportStatus ExportSuccess)
+              -- sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
           )
     ]
 
@@ -856,8 +863,10 @@ exportToPDF os model file = case _parsedDocument file of
           ["pdf"]
           "PDF (.pdf)"
         return $ AppRunProducer (\sendMsg -> do
+          sendMsg (SetExportStatus ExportWaiting)
           case mSavePath of
-            Nothing -> return ()
+            Nothing -> do
+              sendMsg (SetExportStatus (ExportError "Export canceled"))
             Just savePath -> do
               -- Generate LaTeX content
               let latexContent = convertToLatex model
@@ -865,10 +874,12 @@ exportToPDF os model file = case _parsedDocument file of
               -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
               result <- compileLatexToPDF savePath latexContent
               case result of
-                Right pdfPath -> do
-                  sendMsg (ExportSuccess (pack $ "PDF created: " ++ pdfPath))
+                Right _pdfPath -> do
+                  sendMsg (SetExportStatus ExportSuccess)
+                  -- sendMsg (ExportSuccess (pack $ "PDF created: " ++ pdfPath))
                 Left err -> do
-                  sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
+                  sendMsg (SetExportStatus (ExportError (pack $ "PDF compilation failed: " ++ err)))
+                  -- sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
           )
     ]
 

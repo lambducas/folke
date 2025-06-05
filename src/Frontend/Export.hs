@@ -8,19 +8,17 @@ module Frontend.Export (
 import Data.Char (isAlphaNum, isDigit)
 import Data.Text (Text, unpack)
 import qualified Data.Text as T
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.List (isPrefixOf)
 import Frontend.Types
 import Shared.SpecialCharacters (replaceSpecialSymbols)
 import Frontend.Helper.General (getProofFileByPath)
 import Control.Lens ((^.))
-import qualified Data.Text.IO as T
-import System.Directory (listDirectory, doesFileExist)
+import System.Directory (copyFile, doesFileExist)
 import Control.Monad (unless)
 
 import System.Exit (ExitCode(..))
-import System.FilePath (takeDirectory, takeExtension, dropExtension, (</>), (<.>), takeFileName)
+import System.FilePath ((</>), (<.>))
 import System.IO.Temp (withSystemTempDirectory)
-import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
 import Control.Exception (try, SomeException)
 
@@ -46,7 +44,7 @@ compileLatexToPDF savePath latexContent = do
         putStrLn ("process failed: " ++ show ex)
         return $ Left (show ex)
 
-      Right (exitCode, stdout, stderr) -> do
+      Right (_exitCode, _stdout, stderr) -> do
         unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
 
         let tmpPdfPath = tmpDir </> "source.pdf"
@@ -64,10 +62,6 @@ compileLatexToPDF savePath latexContent = do
               else return $ Left "Failed to copy PDF to final destination"
           else 
             return $ Left $ "PDF was not generated: " ++ stderr
-
-ensureFileExtension :: String -> FilePath -> FilePath
-ensureFileExtension ext path =
-  if ext `isSuffixOf` path then path else path ++ ext
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: AppModel -> Text
