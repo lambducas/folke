@@ -840,7 +840,8 @@ exportToLatex os model file = case _parsedDocument file of
               let texPath = if takeExtension savePath == ".tex"
                             then savePath
                             else savePath <> ".tex"
-                  latexContent = convertToLatex model
+                  title = model ^. exportOptionsPopup . eoTitle
+                  latexContent = convertToLatex title model
 
               -- Write the full LaTeX content to the file
               writeFile texPath (unpack latexContent)
@@ -868,11 +869,9 @@ exportToPDF os model file = case _parsedDocument file of
             Nothing -> do
               sendMsg (SetExportStatus (ExportError "Export canceled"))
             Just savePath -> do
-              -- Generate LaTeX content
-              let latexContent = convertToLatex model
-
               -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
-              result <- compileLatexToPDF savePath latexContent
+              let title = model ^. exportOptionsPopup . eoTitle
+              result <- compileLatexToPDF savePath title model
               case result of
                 Right _pdfPath -> do
                   sendMsg (SetExportStatus ExportSuccess)

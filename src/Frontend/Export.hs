@@ -25,9 +25,10 @@ import Control.Exception (try, SomeException)
 -- | Should we add pdflatex --version proc to check if pdflatex is installed?
 
 -- | Compile a LaTeX file to PDF format
-compileLatexToPDF :: FilePath -> Text -> IO (Either String FilePath)
-compileLatexToPDF savePath latexContent = do
+compileLatexToPDF :: FilePath -> Text -> AppModel -> IO (Either String FilePath)
+compileLatexToPDF savePath title model = do
   withSystemTempDirectory "latex-temp" $ \tmpDir -> do
+    let latexContent = convertToLatex title model
     let texName = "source.tex"
     let texPath = tmpDir </> texName
     let finalPdfPath = savePath <.> "pdf"
@@ -64,8 +65,8 @@ compileLatexToPDF savePath latexContent = do
             return $ Left $ "PDF was not generated: " ++ stderr
 
 -- | Convert the proof model to LaTeX format
-convertToLatex :: AppModel -> Text
-convertToLatex model = T.unlines
+convertToLatex :: Text -> AppModel -> Text
+convertToLatex title model = T.unlines
   [ "\\documentclass{article}"
   , "\\usepackage{amsmath}"
   , "\\usepackage{amssymb}"
@@ -74,7 +75,7 @@ convertToLatex model = T.unlines
   , "\\begin{document}"
   , ""
   , "\\begin{center}"
-  , "\\section*{" <> sectionTitle <> "}"
+  , section
   , "\\end{center}"
   , ""
   , formatProof model
@@ -82,9 +83,9 @@ convertToLatex model = T.unlines
   , "\\end{document}"
   ]
   where
-    sectionTitle = case model ^. persistentState . currentFile of
-      Nothing -> "Formal Proof"
-      Just _filePath -> "Some submission"
+    section
+      | title == "" = ""
+      | otherwise = "\\section*{" <> title <> "}"
 
 -- | Format the proof as LaTeX
 formatProof :: AppModel -> Text
