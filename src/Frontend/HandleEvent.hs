@@ -862,20 +862,13 @@ exportToPDF os model file = case _parsedDocument file of
             Nothing -> return ()
             Just savePath -> do
               -- Generate LaTeX content
-              let basePath = if takeExtension savePath == ".pdf"
-                            then dropExtension savePath
-                            else savePath
-                  texPath = basePath <> ".tex"
-                  latexContent = convertToLatex model
-
-              -- Write the LaTeX content to the file
-              writeFile texPath (unpack latexContent)
+              let latexContent = convertToLatex model
 
               -- Compile the LaTeX to PDF (aux/log files will be in temp dir)
-              result <- compileLatexToPDF texPath
+              result <- compileLatexToPDF savePath latexContent
               case result of
                 Right pdfPath -> do
-                  sendMsg (ExportSuccess (pack $ "Files created: " ++ texPath ++ " and " ++ pdfPath))
+                  sendMsg (ExportSuccess (pack $ "PDF created: " ++ pdfPath))
                 Left err -> do
                   sendMsg (ExportError (pack $ "PDF compilation failed: " ++ err))
           )

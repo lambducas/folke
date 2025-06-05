@@ -6,7 +6,7 @@ module Frontend.Export (
 ) where
 
 import Data.Char (isAlphaNum, isDigit)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 import qualified Data.Text as T
 import Data.List (isPrefixOf, isSuffixOf)
 import Frontend.Types
@@ -22,69 +22,53 @@ import System.FilePath (takeDirectory, dropExtension, (</>), takeFileName)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
+import Control.Exception (try, SomeException)
+import System.FilePath.Posix (takeExtension)
 
 -- | Should we add pdflatex --version proc to check if pdflatex is installed?
 
 -- | Compile a LaTeX file to PDF format
-compileLatexToPDF :: FilePath -> IO (Either String FilePath)
-compileLatexToPDF texPath = do
-  putStrLn $ "Starting LaTeX compilation for: " ++ texPath
-  
-  let texPathWithExt = ensureFileExtension ".tex" texPath
-  putStrLn $ "Path with .tex extension: " ++ texPathWithExt
-  
-  let texDir = takeDirectory texPathWithExt
-      texName = takeFileName texPathWithExt
-      baseName = dropExtension texName
-      finalPdfPath = texDir </> baseName <> ".pdf"
-  
-  
+compileLatexToPDF :: FilePath -> Text -> IO (Either String FilePath)
+compileLatexToPDF savePath latexContent = do
   withSystemTempDirectory "latex-temp" $ \tmpDir -> do
-    let tmpTexPath = tmpDir </> texName
-    copyFile texPathWithExt tmpTexPath
-    
-    originalDir <- getCurrentDirectory
-    
-    setCurrentDirectory tmpDir
-    
-    (exitCode, stdout, stderr) <- readCreateProcessWithExitCode (proc "pdflatex" 
-        ["-interaction=nonstopmode", "-file-line-error", texName]) ""
-    
-    unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
-    
-    setCurrentDirectory originalDir
-    
-    let tmpPdfPath = tmpDir </> baseName <> ".pdf"
-    putStrLn $ "Looking for PDF at: " ++ tmpPdfPath
-    
-    tempFiles <- listDirectory tmpDir
-    
-    pdfExists <- doesFileExist tmpPdfPath
-    
-    if pdfExists
-      then do
-        putStrLn $ "Copying PDF from: " ++ tmpPdfPath ++ " to: " ++ finalPdfPath
-        copyFile tmpPdfPath finalPdfPath
-        finalExists <- doesFileExist finalPdfPath
-        if finalExists
-          then return $ Right finalPdfPath
-          else return $ Left "Failed to copy PDF to final destination"
-      else 
-        return $ Left $ "PDF was not generated: " ++ stderr
+    let texName = "source.tex"
+    let texPath = tmpDir </> texName
+    let finalPdfPath = savePath
+
+    -- Write the LaTeX content to the file
+    writeFile texPath (unpack latexContent)
+
+    putStrLn $ "Starting LaTeX compilation for: " ++ texPath
+    result <- try (
+        readCreateProcessWithExitCode (proc "pdflatex" ["-interaction=nonstopmode", "-file-line-error", "-output-directory", tmpDir, texName]) ""
+      ) :: IO (Either SomeException (ExitCode, String, String))
+    case result of
+      Left ex -> do
+        putStrLn ("process failed: " ++ show ex)
+        return $ Left (show ex)
+
+      Right (exitCode, stdout, stderr) -> do
+        unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
+
+        let tmpPdfPath = tmpDir </> "source.pdf"
+        putStrLn $ "Looking for PDF at: " ++ tmpPdfPath
+        
+        pdfExists <- doesFileExist tmpPdfPath
+        
+        if pdfExists
+          then do
+            putStrLn $ "Copying PDF from: " ++ tmpPdfPath ++ " to: " ++ finalPdfPath
+            copyFile tmpPdfPath finalPdfPath
+            finalExists <- doesFileExist finalPdfPath
+            if finalExists
+              then return $ Right finalPdfPath
+              else return $ Left "Failed to copy PDF to final destination"
+          else 
+            return $ Left $ "PDF was not generated: " ++ stderr
 
 ensureFileExtension :: String -> FilePath -> FilePath
 ensureFileExtension ext path =
   if ext `isSuffixOf` path then path else path ++ ext
-
-saveLatexFile :: AppModel -> FilePath -> IO ()
-saveLatexFile model path = do
-  let texPath = ensureFileExtension ".tex" path
-  let latexContent = convertToLatex model
-  T.writeFile texPath latexContent
-  compileResult <- compileLatexToPDF texPath
-  case compileResult of
-    Right pdfPath -> putStrLn $ "PDF generated successfully: " ++ pdfPath
-    Left err -> putStrLn $ "PDF generation failed: " ++ err
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: AppModel -> Text
