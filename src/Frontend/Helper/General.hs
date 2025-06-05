@@ -17,7 +17,7 @@ import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, isInfixOf)
 import Text.Printf
 import System.Random
-import System.FilePath.Posix (equalFilePath, takeDirectory, (</>))
+import System.FilePath (equalFilePath, takeDirectory, (</>))
 import System.Process (callCommand)
 import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
 import System.Environment (getExecutablePath)
@@ -263,18 +263,6 @@ catchIgnore task = catchAny task (const $ return ())
 -- | Type to catch any exception
 catchAny :: IO a -> (SomeException -> IO a) -> IO a
 catchAny = catch
-
--- | Recursively gets all `FilePath`s in directory and subdirectories
-listDirectoryRecursive :: FilePath -> IO [FilePath]
-listDirectoryRecursive directory = do
-  content <- listDirectory directory
-  onlyFiles <- filterM doesFileExist (map appendTop content)
-  onlyDirs <- filterM doesDirectoryExist (map appendTop content)
-  extraFiles <- fmap concat (mapM listDirectoryRecursive onlyDirs)
-  return $ onlyFiles ++ extraFiles
-    where
-      appendTop :: FilePath -> FilePath
-      appendTop = ((directory ++ "/") ++)
 
 -- | Find directory where assets are placed
 getAssetBasePath :: IO FilePath

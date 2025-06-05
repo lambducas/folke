@@ -17,7 +17,7 @@ import Data.List (findIndex)
 import qualified Data.List
 import Data.Maybe (fromMaybe, catMaybes)
 import qualified Data.Map
-import System.FilePath.Posix (equalFilePath)
+import System.FilePath (equalFilePath)
 import Shared.SpecialCharacters (replaceSpecialSymbols)
 
 {-|

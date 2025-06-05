@@ -14,7 +14,7 @@ import Monomer.Main.Platform (getPlatform)
 import Control.Concurrent (newChan)
 import Data.Maybe (fromMaybe)
 import Control.Concurrent.STM (newTChanIO)
-import System.FilePath.Posix ((</>))
+import System.FilePath ((</>))
 import Data.Text (pack)
 
 main :: IO ()

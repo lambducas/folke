@@ -18,12 +18,11 @@ import System.Directory (listDirectory, doesFileExist)
 import Control.Monad (unless)
 
 import System.Exit (ExitCode(..))
-import System.FilePath (takeDirectory, dropExtension, (</>), takeFileName)
+import System.FilePath (takeDirectory, takeExtension, dropExtension, (</>), takeFileName)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Directory (copyFile, doesFileExist, getCurrentDirectory, setCurrentDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
 import Control.Exception (try, SomeException)
-import System.FilePath.Posix (takeExtension)
 
 -- | Should we add pdflatex --version proc to check if pdflatex is installed?
 

@@ -7,7 +7,7 @@ import Data.Aeson (decode)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import System.Directory (doesFileExist, XdgDirectory (..), getXdgDirectory, createDirectoryIfMissing)
-import System.FilePath.Posix ((</>), takeDirectory)
+import System.FilePath ((</>), takeDirectory)
 
 appName :: String
 appName = "Folke"

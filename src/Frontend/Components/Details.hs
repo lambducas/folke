@@ -30,7 +30,7 @@ import Frontend.Components.GeneralUIComponents ( iconLabel, span_ )
 import Monomer
 import Frontend.Types
 import Frontend.Themes ( getActualTheme )
-import System.FilePath.Posix ((</>), takeExtension, takeFileName, splitDirectories, makeRelative)
+import System.FilePath ((</>), takeExtension, takeFileName, splitDirectories, makeRelative)
 import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
 import Control.Monad (filterM)
 
@@ -211,7 +211,7 @@ handleEvent parentDirPath cfg _wenv _node model evt = case evt of
 
       where
         appendTop :: FilePath -> FilePath
-        appendTop = ((parentDirPath ++ "/") ++)
+        appendTop = (parentDirPath </>)
 
 fileItem :: AppModel -> Double -> FilePath -> WidgetNode DetailsModel DetailsEvt
 fileItem appModel indent filePath = box_ [expandContent, onBtnReleased handleBtn] $ hstack_ [childSpacing] [

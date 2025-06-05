@@ -5,7 +5,7 @@ import Frontend.Parse
 import Frontend.Types
 import Data.Text (pack, intercalate, unpack)
 import TextShow (showt)
-import System.FilePath.Posix ((</>), takeBaseName, (<.>))
+import System.FilePath ((</>), takeBaseName, (<.>))
 
 main :: IO ()
 main = do

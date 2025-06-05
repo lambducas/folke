@@ -21,12 +21,11 @@ import Data.Text (Text, pack, intercalate, splitOn, toLower, isInfixOf, unpack)
 import qualified Data.Text (length)
 import Data.Default ( Default(def) )
 import Data.String (fromString)
-import System.FilePath (takeFileName, takeBaseName)
+import System.FilePath (takeFileName, takeBaseName, makeRelative)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import qualified Data.Map
 import TextShow (showt)
 import Frontend.Helper.ProofHelper (getCurrentFEDocument, editNameInUDR)
-import System.FilePath.Posix (makeRelative)
 
 menuBarCategories :: Bool -> [(Text, [(Text, Text, AppEvent)])]
 menuBarCategories isMac = [

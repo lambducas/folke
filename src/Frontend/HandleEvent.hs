@@ -20,7 +20,7 @@ import Backend.TypeChecker (checkFE)
 
 import Monomer
 import NativeFileDialog ( openFolderDialog, openSaveDialog, openDialog )
-import Control.Lens
+import Control.Lens hiding ((<.>))
 import Control.Exception (try, SomeException)
 import Control.Concurrent ( newChan, threadDelay )
 import Control.Concurrent.STM.TChan
@@ -31,8 +31,7 @@ import Data.Text (unpack, pack, Text)
 import Data.List (sort)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist, makeAbsolute )
-import System.FilePath (takeExtension, dropExtension, (</>))
-import qualified System.FilePath.Posix as FPP
+import System.FilePath (takeExtension, dropExtension, (</>), (<.>), isRelative, takeDirectory, makeRelative)
 
 import qualified SDL
 import Control.Concurrent.STM (atomically)
@@ -44,7 +43,6 @@ import Foreign.C (castCharToCChar)
 import qualified Data.ByteString.Char8 as C8
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text.Encoding as TE
-import System.FilePath.Posix (isRelative, takeDirectory)
 
 import Graphics.UI.TinyFileDialogs (openFileDialog, saveFileDialog, selectFolderDialog)
 
@@ -394,7 +392,7 @@ handleEvent os env wenv node model evt = case evt of
         randomFileName <- getTmpFileName
         tmpBasePath <- getTmpBasePath
         createDirectoryIfMissing False tmpBasePath
-        let randomPath = (tmpBasePath </> randomFileName) FPP.<.> "tmp"
+        let randomPath = (tmpBasePath </> randomFileName) <.> "tmp"
 
         result <- try (writeFile randomPath "") :: IO (Either SomeException ())
         case result of
@@ -435,19 +433,19 @@ handleEvent os env wenv node model evt = case evt of
 
   OpenGuide -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "assets/docs"
+      let docsPath = basePath </> "assets" </> "docs"
       sendMsg $ OpenFile_ "user_guide_en.md" docsPath (Just "Guide")
     ) ]
 
   OpenWelcome -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "assets/docs"
+      let docsPath = basePath </> "assets" </> "docs"
       sendMsg $ OpenFile_ "welcome.md" docsPath (Just "Welcome")
     ) ]
 
   OpenAbout -> [ Producer (\sendMsg -> do
       basePath <- getAssetBasePath
-      let docsPath = basePath </> "assets/docs"
+      let docsPath = basePath </> "assets" </> "docs"
       sendMsg $ OpenFile_ "about.md" docsPath (Just "About")
     ) ]
 
@@ -491,7 +489,7 @@ handleEvent os env wenv node model evt = case evt of
   OpenFile_ filePath folderPath tabDisp -> [
       Producer (\sendMsg -> do
         preferencePath <- getPreferencePath
-        let fullPath = folderPath FPP.</> filePath
+        let fullPath = folderPath </> filePath
         pContent <- try (readFile fullPath) :: IO (Either SomeException String)
         case pContent of
           Left e -> print e
@@ -749,7 +747,7 @@ directoryFilesProducer workingDir sendMsg = do
           sendMsg (SetFilesInDirectory (Just loadedFiles))
       where
         appendTop :: FilePath -> FilePath
-        appendTop = ((wd ++ "/") ++)
+        appendTop = (wd </>)
 
 {-|
 "Debounce" changes in current proof and only check the proof
