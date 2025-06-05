@@ -105,7 +105,11 @@ isFileEdited _ = False
 
 -- | Check if FilePath is new, unsaved file
 isTmpFile :: FilePath -> Bool
-isTmpFile filePath = "/_tmp/" `isInfixOf` filePath
+isTmpFile filePath =
+  ("/_tmp/" `isInfixOf` filePath) ||
+  ("\\_tmp\\" `isInfixOf` filePath) ||
+  ("/_tmp\\" `isInfixOf` filePath) ||
+  ("\\_tmp/" `isInfixOf` filePath)
 
 -- | Gets a `File` by it's (hopefully) unique `FilePath` in a given list of files
 getProofFileByPath :: [File] -> FilePath -> Maybe File
