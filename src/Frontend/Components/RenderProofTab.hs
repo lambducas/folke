@@ -186,7 +186,7 @@ renderProofTab isMac _wenv model file _heading = cached where
           h2 "Premises",
           vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
           widgetIf (null $ _premises sequent) (span "No premises"),
-          hstack [fastTooltip "Add premise" $ button "+ Premise" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
+          hstack [fastTooltip "Add premise" $ button "Add premise (Enter)" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
         ]
         where
           hasChanged _wenv old new = oldPremises /= newPremises
@@ -202,7 +202,7 @@ renderProofTab isMac _wenv model file _heading = cached where
             ("Down", FocusOnKey $ WidgetKey ("premise.input." <> showt (idx + 1)), idx < nrPremises - 1),
             ("Down", FocusOnKey $ WidgetKey "conclusion.input", idx >= nrPremises - 1),
             ("Delete", RemovePremise idx, True),
-            (ctrl <> "-Enter", AddPremise idx, True)
+            ("Enter", AddPremise idx, True)
           ] (symbolStyle $ textFieldV_ premise (EditPremise idx) [placeholder "Enter premise"]
             `nodeKey` ("premise.input." <> showt idx)
             `styleBasic` [styleIf isPremiseError (border 1 red)]),

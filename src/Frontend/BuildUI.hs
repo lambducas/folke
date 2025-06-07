@@ -84,6 +84,7 @@ buildUI
   -> WidgetNode AppModel AppEvent
 buildUI os wenv model = widgetTree where
   isMac = os == "Mac OS X"
+  ctrl = if isMac then "Cmd" else "Ctrl"
 
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
   clearColor = selTheme ^. L.clearColor
@@ -201,19 +202,19 @@ buildUI os wenv model = widgetTree where
           `styleHover` [bgColor hoverColor]
 
   toolbar = hstack_ [childSpacing] [
-      fastTooltip "New proof" $ iconButton remixFileAddLine CreateEmptyProof,
-      fastTooltip "Open proof" $ iconButton remixFolderOpenLine OpenFileFromFileSystem,
-      fastTooltip "Save proof" $ iconButton remixSave3Line SaveCurrentFile,
+      fastTooltip ("New proof (" <> ctrl <> "+N") $ iconButton remixFileAddLine CreateEmptyProof,
+      fastTooltip ("Open proof (" <> ctrl <> "+O") $ iconButton remixFolderOpenLine OpenFileFromFileSystem,
+      fastTooltip ("Save proof (" <> ctrl <> "+S") $ iconButton remixSave3Line SaveCurrentFile,
       fastTooltip "Export" $ iconButton remixFilePdfLine (SetExportOpen True),
 
       separatorLine,
 
-      fastTooltip "Undo" $ iconButton remixArrowGoBackFill Undo,
-      fastTooltip "Redo" $ iconButton remixArrowGoForwardFill Redo,
+      fastTooltip ("Undo (" <> ctrl <> "+Z") $ iconButton remixArrowGoBackFill Undo,
+      fastTooltip ("Redo (" <> ctrl <> "+Y") $ iconButton remixArrowGoForwardFill Redo,
 
       separatorLine,
 
-      fastTooltip "Validate proof" $ iconButton remixCheckboxMultipleLine CheckCurrentProof,
+      fastTooltip ("Validate proof (" <> ctrl <> "+R") $ iconButton remixCheckboxMultipleLine CheckCurrentProof,
       fastTooltip "Auto-validate proof" autoCheckCheck,
       fastTooltip "User defined rules" $ iconButton remixUserSettingsLine OpenUDR,
 

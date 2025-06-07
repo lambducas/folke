@@ -563,6 +563,7 @@ handleEvent os env wenv node model evt = case evt of
         & persistentState . currentFile .~ (if cf == Just filePath then maybeHead (modelWithClosedFile ^. persistentState . openFiles) else cf)
       modelWithClosedFile = model
         & persistentState . openFiles %~ filter (filePath/=)
+        & proofStatus .~ Nothing
       cf = model ^. persistentState . currentFile
 
   SaveCurrentFile -> case model ^. persistentState . currentFile of
