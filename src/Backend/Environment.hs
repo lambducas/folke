@@ -297,17 +297,13 @@ applyRule e name args res =
                 Err warns env_e err -> Err warns env_e err
                 Ok warns res_t ->
                     if cmp env res_t res then Ok warns res_t
-                    else Err warns env (createRuleConcError env 
-                         ("Wrong conclusion when using rule, expected " ++ 
-                          show res ++ ", got " ++ show res_t))
+                    else Err warns env (createRuleConcError env (name ++ " gives " ++ show res_t ++ " not " ++ show res))
         Nothing -> case Map.lookup name (user_rules env) of
             Just rule_s -> case applyUDefRule env rule_s (zip [1..] args) of 
                 Err warns env_e err -> Err warns env_e err
                 Ok warns res_t ->
                     if cmp env res_t res then Ok warns res_t
-                    else Err warns env (createRuleConcError env 
-                         ("Wrong conclusion when using rule, expected " ++ 
-                          show res ++ ", got " ++ show res_t))
+                    else Err warns env (createRuleConcError env (name ++ " gives " ++ show res_t ++ " not " ++ show res))
             Nothing -> 
                 let
                     prefixMatches = filter (List.isPrefixOf name) availableRules
@@ -766,11 +762,9 @@ ruleNotNotE env forms _ = Err [] env (createArgCountError env
 
 -- | Modus tollens
 ruleMT :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
-ruleMT env [(i, ArgForm (Impl a b)), (j, ArgForm (Not c))] _ = 
+ruleMT env [(_i, ArgForm (Impl a b)), (_j, ArgForm (Not c))] _ = 
     if cmp env b c then Ok [] (Not a) 
-    else Err [] env (createRuleConcError env 
-         ("Conclusion in argument " ++ show i ++ 
-          " did not match argument " ++ show j ++ "."))
+    else Err [] env (createRuleConcError env (show (Not c) ++ " is not the negation of " ++ show b))
 ruleMT env [b@(_, ArgForm (Not _)), a@(_, ArgForm (Impl _ _))] r = 
     ruleMT env [a, b] r
 ruleMT env [(_, ArgForm (Impl _ _)), (j, _)] _ = 
@@ -876,7 +870,7 @@ ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) =
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = 
     Err [] env (createRuleConcError env "The conclusion must be a for all formula.")
 ruleAllI env [(i, _)] _ = 
-    Err [] env (createRuleArgError env i "Must be a box.")
+    Err [] env (createRuleArgError env i "Must be a proof.")
 ruleAllI env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 1)
 
@@ -894,7 +888,7 @@ ruleSomeE env [(_, ArgForm (Some _ _)), (j, b)] _ =
     Err [] env (createRuleArgError env j ("Must be a proof not " ++ show b ++ "."))
 ruleSomeE env [(i, a), (_, _)] _ = 
     Err [] env (createRuleArgError env i 
-         ("Must be an Exists formula not " ++ show a ++ "."))
+         ("Must be an exists formula not " ++ show a ++ "."))
 ruleSomeE env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
 
@@ -1008,8 +1002,8 @@ createMismatchedFormulaError :: Env -> Formula -> Formula -> Error
 createMismatchedFormulaError env expected actual = Error {
   errLocation = listToMaybe (pos env),
   errKind = MismatchedFormula expected actual,
-  errMessage = "Formulas don't match",
-  errContext = Just $ "Expected: " ++ show expected ++ "\nActual: " ++ show actual,
+  errMessage = "Conclusion not reached",
+  errContext = Just $ "Expected: " ++ show expected ++ ". Actual: " ++ show actual,
   errSuggestions = ["Verify that your formula matches the required pattern for this rule"]
 }
 

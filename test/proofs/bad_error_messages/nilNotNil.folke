@@ -1,0 +1,18 @@
+{
+    "_fedUserDefinedRules": null,
+    "_sequent": {
+        "_conclusion": "",
+        "_premises": [
+            ""
+        ],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "",
+                "_statement": "",
+                "_usedArguments": 0,
+                "tag": "Line"
+            }
+        ]
+    }
+}

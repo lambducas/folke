@@ -2,6 +2,7 @@ ArgRange. Arg   ::= Integer "-" Integer;
 ArgLine.  Arg   ::= Integer;
 ArgTerm.  Arg   ::= Term;
 ArgForm.  Arg   ::= Term ":=" Form;
+ArgNil.   Arg   ::= "";
 separator Arg   ",";
 
 FormPar.    Form5 ::= "(" Form ")";

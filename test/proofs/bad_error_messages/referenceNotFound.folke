@@ -1,0 +1,75 @@
+{
+    "_fedUserDefinedRules": null,
+    "_sequent": {
+        "_conclusion": "A ∧ C",
+        "_premises": [
+            "A ∧ B",
+            "C ∧ D"
+        ],
+        "_steps": [
+            {
+                "_arguments": [
+                    "1"
+                ],
+                "_rule": "∧EL",
+                "_statement": "A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "E",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "",
+                        "_statement": "",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [],
+                        "_rule": "",
+                        "_statement": "",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "4-6"
+                ],
+                "_rule": "→I",
+                "_statement": "E → E",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "2"
+                ],
+                "_rule": "∧EL",
+                "_statement": "C",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "3",
+                    "5"
+                ],
+                "_rule": "∧I",
+                "_statement": "A ∧ C",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

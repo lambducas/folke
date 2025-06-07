@@ -32,7 +32,6 @@ module Backend.Types (
 
 import qualified Data.Map as Map
 import qualified Data.List as List
-import Data.Maybe (listToMaybe)
 
 ----------------------------------------------------------------------
 -- Type aliases

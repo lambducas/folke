@@ -270,6 +270,8 @@ checkArg env (Abs.ArgForm (Abs.Term0 x ) form) = do
     Ok [] (new_env, ArgFormWith term_t form_t)
 checkArg env (Abs.ArgForm _ _) =
     Err [] env (createTypeError env "A formula cannot be over a function.")
+checkArg env Abs.ArgNil =
+    Err [] env (createTypeError env "Argument cannot be empty")
 
 -- | Check a formula
 checkForm :: Env -> Abs.Form -> Result Formula
