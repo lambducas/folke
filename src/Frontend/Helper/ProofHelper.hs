@@ -200,7 +200,7 @@ editRuleNameInProof path newRule doc = doc & sequent .~ replaceSteps f (_sequent
           Nothing -> Line statement (replaceSpecialSymbols newRule) usedArguments arguments
           Just udr -> Line statement (replaceSpecialSymbols newRule) nrArgs (fillList (fromIntegral nrArgs) arguments)
             where nrArgs = length $ _udrInput udr
-        Just (RuleMetaData nrArguments _) -> Line statement (replaceSpecialSymbols newRule) (fromIntegral nrArguments) (fillList nrArguments arguments)
+        Just (RuleMetaData {_nrArguments=nrArgs}) -> Line statement (replaceSpecialSymbols newRule) (fromIntegral nrArgs) (fillList nrArgs arguments)
       | otherwise = f
 
     fillList :: Integer -> [Text] -> [Text]
@@ -222,7 +222,21 @@ editRuleArgumentInProof path idx newText doc = doc & sequent .~ replaceSteps f (
     f steps = zipWith (\p idx -> el path [idx] p) steps [0..]
     el editPath currentPath (SubProof p) = SubProof $ zipWith (\p idx -> el editPath (currentPath ++ [idx]) p) p [0..]
     el editPath currentPath f@(Line statement rule usedArguments arguments)
-      | editPath == currentPath = Line statement rule usedArguments (arguments & element idx .~ replaceSpecialSymbols newText)
+      -- Only =E requires phi function
+      | editPath == currentPath && rule == "=E"
+        = Line {
+          _statement = statement,
+          _rule = rule,
+          _usedArguments = usedArguments,
+          _arguments = arguments & element idx .~ ("u:=" <> replaceSpecialSymbols newText)
+        }
+      | editPath == currentPath
+        = Line {
+          _statement = statement,
+          _rule = rule,
+          _usedArguments = usedArguments,
+          _arguments = arguments & element idx .~ replaceSpecialSymbols newText
+        }
       | otherwise = f
 
 -- | Apply function to sequent and record history

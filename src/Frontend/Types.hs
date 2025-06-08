@@ -23,7 +23,8 @@ import qualified Data.Map as Map
 
 data RuleMetaData = RuleMetaData {
   _nrArguments :: Integer,
-  _argumentLabels :: [Text]
+  _argumentLabels :: [Text],
+  _argLengths :: Maybe [Maybe Double]
 }
 
 data RuleInfo = RuleInfo {
@@ -348,32 +349,32 @@ $(deriveJSON defaultOptions ''PersistentState)
 
 ruleMetaDataMap :: Map.Map Text RuleMetaData
 ruleMetaDataMap = Map.fromList [
-    ("assume", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("fresh", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("copy", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("AndI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("AndEL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("AndER", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("OrIL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("OrIR", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("OrE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", ""]}),
-    ("ImplI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("ImplE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("NotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("NotE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("BotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("NotNotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("NotNotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("MT", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("PBC", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("LEM", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("EqI", RuleMetaData {_nrArguments = 0, _argumentLabels = []}),
-    ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", ""]}),
-    -- ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", "𝝓(u)≡"]}),
-    ("AllE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]}),
-    ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""]}),
-    ("SomeI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""]})
+    ("assume", RuleMetaData {_nrArguments = 0, _argumentLabels = [], _argLengths = Nothing}),
+    ("fresh", RuleMetaData {_nrArguments = 0, _argumentLabels = [], _argLengths = Nothing}),
+    ("copy", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("AndI", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("AndEL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("AndER", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("OrIL", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("OrIR", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("OrE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", ""], _argLengths = Nothing}),
+    ("ImplI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("ImplE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("NotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("NotE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("BotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("NotNotI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("NotNotE", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("MT", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("PBC", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("LEM", RuleMetaData {_nrArguments = 0, _argumentLabels = [], _argLengths = Nothing}),
+    ("EqI", RuleMetaData {_nrArguments = 0, _argumentLabels = [], _argLengths = Nothing}),
+    ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", "𝝓(u)≡"], _argLengths = Just [Just 45, Just 45, Just 150]}),
+    -- ("EqE", RuleMetaData {_nrArguments = 3, _argumentLabels = ["", "", "𝝓(u)≡"], _argLengths = Nothing}),
+    ("AllE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("AllI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing}),
+    ("SomeE", RuleMetaData {_nrArguments = 2, _argumentLabels = ["", ""], _argLengths = Nothing}),
+    ("SomeI", RuleMetaData {_nrArguments = 1, _argumentLabels = [""], _argLengths = Nothing})
   ]
 
 ruleDescriptions :: Map.Map Text RuleInfo

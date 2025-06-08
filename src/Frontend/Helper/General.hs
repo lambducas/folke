@@ -11,7 +11,6 @@ import Monomer.Main.Platform (getPlatform)
 import qualified Monomer.Lens as L
 import Control.Lens
 import Control.Exception (SomeException, catch)
-import Control.Monad (filterM)
 import Data.Char (isSpace)
 import Data.Text (Text, pack, unpack, intercalate, splitOn)
 import Data.List (find, dropWhileEnd, isInfixOf)
@@ -19,7 +18,6 @@ import Text.Printf
 import System.Random
 import System.FilePath (equalFilePath, takeDirectory, (</>))
 import System.Process (callCommand)
-import System.Directory (listDirectory, doesFileExist, doesDirectoryExist)
 import System.Environment (getExecutablePath)
 
 -- https://www.youtube.com/watch?v=aS8O-F0ICxw
@@ -69,14 +67,14 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
 trimText :: Text -> Text
 trimText = pack . trim . unpack
 
--- | Trims end of text only if it matches the given extension 
-trimExtension :: Text -> Text -> Text
-trimExtension ext text
-  | hasExt = intercalate ext (init split)
+-- | Trims beginning of text only if it matches the given text
+trimBeginning :: Text -> Text -> Text
+trimBeginning match text
+  | hasBeg = intercalate match (tail split)
   | otherwise = text
   where
-    hasExt = length split >= 2 && last split == ""
-    split = splitOn ext (trimText text)
+    hasBeg = length split >= 2 && head split == ""
+    split = splitOn match text
 
 -- | Round value to a given number of decimal places
 showDecimals :: (PrintfArg t2) => Integer -> t2 -> Text

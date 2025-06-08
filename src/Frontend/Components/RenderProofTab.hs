@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use if" #-}
 {-# HLINT ignore "Use let" #-}
+{-# HLINT ignore "Move brackets to avoid $" #-}
 
 module Frontend.Components.RenderProofTab (
   renderProofTab
@@ -12,7 +13,7 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex, evalPathSafe)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex, evalPathSafe, trimBeginning)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
@@ -31,8 +32,8 @@ import qualified Data.Map
 import Control.Lens
 import TextShow (showt)
 
-import Monomer.Widgets.Containers.TextFieldSuggestions
-import Frontend.Helper.ProofHelper (getCurrentSequent, getCurrentFEDocument)
+import Monomer.Widgets.Containers.TextFieldSuggestions (textFieldSuggestionsV)
+import Frontend.Helper.ProofHelper (getCurrentSequent)
 -- import Frontend.Components.ProofRow
 
 renderProofTab
@@ -43,6 +44,8 @@ renderProofTab
   -> Text
   -> WidgetNode AppModel AppEvent
 renderProofTab isMac _wenv model file _heading = cached where
+  ruleAndArgWidth = 400
+
   ctrl = if isMac then "Cmd" else "Ctrl"
 
   selTheme = getActualTheme $ model ^. preferences . selectedTheme
@@ -74,6 +77,15 @@ renderProofTab isMac _wenv model file _heading = cached where
   -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
   -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
+
+  -- textFieldStyle = [border 0 transparent]
+  -- textFieldFocusStyle = [border 1 accentColor]
+  -- textFieldV_ a b c = Monomer.textFieldV_ a b c
+  --   `styleBasic` textFieldStyle
+  --   `styleFocus` textFieldFocusStyle
+  -- textFieldSuggestionsV a b c d e = Monomer.Widgets.Containers.TextFieldSuggestions.textFieldSuggestionsV a b c d e
+  --   `styleBasic` textFieldStyle
+  --   `styleFocus` textFieldFocusStyle
 
   cached = box_ [mergeRequired hasChanged, alignLeft] updated
   updated = renderProofTab'
@@ -137,7 +149,7 @@ renderProofTab isMac _wenv model file _heading = cached where
     fastScroll $
       box_ [alignLeft] $
         proofBodyContent document
-          `styleBasic` [paddingT 20, paddingL 20, minWidth 850]
+          `styleBasic` [paddingT 20, paddingL 20, minWidth 950]
 
   proofFooter = hstack [
       proofStatusLabel
@@ -190,7 +202,7 @@ renderProofTab isMac _wenv model file _heading = cached where
           h2 "Premises",
           vstack_ [childSpacing] $ zipWith premiseLine (_premises sequent) [0..],
           widgetIf (null $ _premises sequent) (span "No premises"),
-          hstack [fastTooltip "Add premise" $ button "Add premise (Enter)" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
+          hstack [button "Add premise (Enter)" (AddPremise (nrPremises - 1)) `nodeKey` "addPremiseButton"]
         ]
         where
           hasChanged _wenv old new = oldPremises /= newPremises
@@ -280,7 +292,7 @@ renderProofTab isMac _wenv model file _heading = cached where
           spacer,
           hstack_ [childSpacing] [
             fastTooltip "Insert new line below last line" $ button "+ New line" AddLine,
-            fastTooltip "Insert sub proof below last line" $ button "+☐ New sub proof" AddSubProof
+            fastTooltip "Insert subproof below last line" $ button "+☐ New subproof" AddSubProof
           ]
         ]
         where
@@ -291,7 +303,7 @@ renderProofTab isMac _wenv model file _heading = cached where
           ghostPremise premise = hstack [
               symbolSpan premise,
               filler,
-              symbolSpan "premise" `styleBasic` [width 300, paddingH 10],
+              symbolSpan "premise" `styleBasic` [width ruleAndArgWidth, paddingH 10],
               spacer,
               vstack [] `styleBasic` [width 250]
             ] `styleBasic` [height 34]
@@ -332,7 +344,7 @@ renderProofTab isMac _wenv model file _heading = cached where
               oldNrPremises /= newNrPremises ||
               oldStep /= newStep
             where
-              l = fromIntegral lineNumber
+              -- l = fromIntegral lineNumber
 
               oldProofStatus = old ^. proofStatus
               -- oldHovered = old ^. hoveredProofLine
@@ -384,13 +396,13 @@ renderProofTab isMac _wenv model file _heading = cached where
                   hstack_ [childSpacing] [
                     -- ruleKeystrokes ruleField
 
-                    ruleKeystrokes $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const ruleField) label
+                    ruleKeystrokes $ symbolStyle $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const ruleField) label
                       `styleBasic` [styleIf isWarning (border 1 orange)]
                       `styleBasic` [styleIf isRuleError (border 1 red)],
 
                     argInputs
                   ]
-                    `styleBasic` [width 300]
+                    `styleBasic` [width ruleAndArgWidth]
                 ],
                 spacer,
                 b -- `nodeVisible` (model ^. hoveredProofLine == fromIntegral lineNumber),
@@ -447,21 +459,34 @@ renderProofTab isMac _wenv model file _heading = cached where
                 (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastArg && isLastLine),
                 ("Enter", InsertLineAfter False path, isLastArg),
                 ("Enter", NextFocus 1, not isLastArg)
-              ] (symbolStyle $ textFieldV_ argument (EditRuleArgument path idx)
+              ] (symbolStyle $ textFieldV_ trimmedArgument (EditRuleArgument path idx)
                 [onKeyDown (handleRuleArgKey idx), placeholder ("Arg. " <> showt (index + 1)), selectOnFocus]
                   `nodeKey` (showt index <> ".ruleArg." <> showt idx)
-                  `styleBasic` [width 70]
+                  `styleBasic` [width currentWidth]
                   `styleBasic` [styleIf isWarning (border 1 orange)]
                   `styleBasic` [styleIf isRuleArgError (border 1 red)])
             ]
             where
+              trimmedArgument
+                | parseRule rule == "EqE" = trimBeginning "u:=" argument
+                | otherwise = argument
+
               isFirstArg = idx == 0
               isLastArg = idx + 1 == usedArguments
               isRuleArgError = isError || not (validateRuleArgument argument)
+
               currentLabel = fromMaybe "" $ maybeIndex labels idx
-              labels = case Data.Map.lookup (parseRule rule) ruleMetaDataMap of
+              labels = case md of
                 Nothing -> repeat ""
-                Just (RuleMetaData _ l) -> l
+                Just (RuleMetaData {_argumentLabels=l}) -> l
+
+              currentWidth = fromMaybe 70 $ maybeIndex widths idx
+              widths = case md of
+                Nothing -> repeat 70
+                Just (RuleMetaData _ _ Nothing) -> repeat 70
+                Just (RuleMetaData _ _ (Just ws)) -> map (fromMaybe 70) ws
+
+              md = Data.Map.lookup (parseRule rule) ruleMetaDataMap
 
           b = box $ hstack_ [childSpacing] [
                 fastTooltip "Remove line" $
