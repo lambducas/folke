@@ -138,14 +138,18 @@ fastScroll, fastVScroll, fastHScroll :: WidgetNode s e -> WidgetNode s e
 fastScroll = scroll_ [wheelRate 50]
 
 -- | `vscroll` but with more reasonable scroll rate
-fastVScroll = vscroll_ [wheelRate 50]
+fastVScroll = fastVScroll_ []
 
 -- | `vscroll_` but with more reasonable scroll rate
 fastVScroll_ :: [ScrollCfg s e] -> WidgetNode s e -> WidgetNode s e
 fastVScroll_ cfg = vscroll_ (wheelRate 50 : cfg)
 
 -- | `hscroll` but with more reasonable scroll rate
-fastHScroll = hscroll_ [wheelRate 50]
+fastHScroll = fastHScroll_ []
+
+-- | `hscroll_` but with more reasonable scroll rate
+fastHScroll_ :: [ScrollCfg s e] -> WidgetNode s e -> WidgetNode s e
+fastHScroll_ cfg = hscroll_ (wheelRate 50 : cfg)
 
 boxShadow :: WidgetNode s e -> WidgetNode s e
 boxShadow = boxShadow_ [radius 8]

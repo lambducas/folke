@@ -118,7 +118,8 @@ buildUI os wenv model = widgetTree where
   -- fastScroll = Frontend.Components.GeneralUIComponents.fastScroll
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
   fastVScroll_ = Frontend.Components.GeneralUIComponents.fastVScroll_
-  fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
+  -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
+  fastHScroll_ = Frontend.Components.GeneralUIComponents.fastHScroll_
   boxShadow = Frontend.Components.GeneralUIComponents.boxShadow
 
   u = model ^. preferences . fontSize
@@ -338,7 +339,7 @@ buildUI os wenv model = widgetTree where
     ]
 
   fileNavBar filePaths = widgetIf (not $ null filePaths) $
-    fastHScroll (hstack (zipWith renderTabHandle filePaths [0..]))
+    fastHScroll_ [scrollOverlay, thumbWidth 4, barWidth 4, barColor transparent] (hstack (zipWith renderTabHandle filePaths [0..]))
       `styleBasic` [bgColor selectedColor, maxHeight 40, minHeight 40, height 40]
     where
       renderTabHandle filePath idx = dt $ dg $ box_ [expandContent, onClick (SetCurrentFile filePath), onBtnReleased handleBtn] $ hstack [

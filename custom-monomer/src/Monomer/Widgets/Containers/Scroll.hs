@@ -593,7 +593,7 @@ makeScroll config state = widget where
 
     WheelScroll _ (Point wx wy) wheelDirection -> result where
       changedX = wx /= 0 && childWidth > cw
-      changedY = wy /= 0 && childHeight > ch
+      changedY = wy /= 0 && (childHeight > ch || scrollType == ScrollH)
 
       needsUpdate = changedX || changedY
       makeWidget state = rebuildWidget wenv node state
@@ -604,6 +604,7 @@ makeScroll config state = widget where
         | needsUpdate = Just $ makeResult newState
         | otherwise = Nothing
       stepX
+        | scrollType == ScrollH = wheelRate * wy
         | shiftPressed && changedY = wheelRate * wy
         | otherwise = wheelRate * wx
       stepY
