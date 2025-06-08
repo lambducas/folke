@@ -52,6 +52,12 @@ customLightTheme = baseTheme lightThemeColors {
   & L.userColorMap . at "proofBoxColor" ?~ rgba 0 0 0 0.4
   & L.userColorMap . at "rSCproofBoxColor" ?~ rgba 0 0 0 0.6
 
+  -- Make dropdowns visible on white background
+  & L.basic . L.dropdownListStyle . L.border ?~ border 1 (rgb 230 230 230)
+  & L.hover . L.dropdownListStyle . L.border ?~ border 1 (rgb 230 230 230)
+  & L.focus . L.dropdownListStyle . L.border ?~ border 1 (rgb 230 230 230)
+  & L.active . L.dropdownListStyle . L.border ?~ border 1 (rgb 230 230 230)
+
 customDarkTheme :: Theme
 customDarkTheme = baseTheme darkThemeColors {
   clearColor = rgb 30 30 30,
@@ -82,6 +88,12 @@ customDarkTheme = baseTheme darkThemeColors {
   & L.userColorMap . at "dividerColor" ?~ rgba 255 255 255 0.1
   & L.userColorMap . at "proofBoxColor" ?~ rgba 255 255 255 0.4
   & L.userColorMap . at "rSCproofBoxColor" ?~ rgba 255 255 255 0.6
+
+  -- Make dropdowns visible on white background
+  & L.basic . L.dropdownListStyle . L.border ?~ border 1 (rgb 53 53 53)
+  & L.hover . L.dropdownListStyle . L.border ?~ border 1 (rgb 53 53 53)
+  & L.focus . L.dropdownListStyle . L.border ?~ border 1 (rgb 53 53 53)
+  & L.active . L.dropdownListStyle . L.border ?~ border 1 (rgb 53 53 53)
 
 
 getActualTheme :: SelectableTheme -> Theme
