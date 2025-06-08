@@ -12,7 +12,7 @@ import Prelude hiding (span)
 import Frontend.Types
 import Frontend.Themes (getActualTheme)
 import Frontend.Components.GeneralUIComponents
-import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex)
+import Frontend.Helper.General (trimText, extractErrorMsg, getWarningsInSubProof, isErrorSubProof, isErrorLine, getWarningsOnLine, evalPath, maybeIndex, evalPathSafe)
 import Frontend.Parse (validateRuleArgument, parseRule, validateStatement, validateRule)
 import Shared.Messages
 import Shared.SpecialCharacters (replaceSpecialSymbolsInverse)
@@ -32,7 +32,7 @@ import Control.Lens
 import TextShow (showt)
 
 import Monomer.Widgets.Containers.TextFieldSuggestions
-import Frontend.Helper.ProofHelper (getCurrentSequent)
+import Frontend.Helper.ProofHelper (getCurrentSequent, getCurrentFEDocument)
 -- import Frontend.Components.ProofRow
 
 renderProofTab
@@ -325,30 +325,34 @@ renderProofTab isMac _wenv model file _heading = cached where
 
       pf (Line statement rule usedArguments arguments) index path = (ui, lastIndex)
         where
-          -- hasChanged _wenv old new = True
-          --     -- oldHovered == l || newHovered == l ||
-          --     -- oldProofStatus /= newProofStatus ||
-          --     -- old ^. persistentState . currentFile /= new ^. persistentState . currentFile ||
-          --     -- oldNrPremises /= newNrPremises ||
-          --     -- oldStep /= newStep
-          --   where
-          --     l = fromIntegral lineNumber
+          hasChanged _wenv old new =
+              -- oldHovered == l || newHovered == l ||
+              oldProofStatus /= newProofStatus ||
+              old ^. persistentState . currentFile /= new ^. persistentState . currentFile ||
+              oldNrPremises /= newNrPremises ||
+              oldStep /= newStep
+            where
+              l = fromIntegral lineNumber
 
-          --     oldProofStatus = old ^. proofStatus
-          --     -- oldHovered = old ^. hoveredProofLine
-          --     oldSeq = getCurrentSequent old
-          --     oldPremises = oldSeq >>= Just . _premises
-          --     oldNrPremises = fromMaybe (-1) (oldPremises >>= Just . length)
-          --     oldStep = oldSeq >>= evalPathSafe path
+              oldProofStatus = old ^. proofStatus
+              -- oldHovered = old ^. hoveredProofLine
+              oldSeq = getCurrentSequent old
+              oldPremises = oldSeq >>= Just . _premises
+              oldNrPremises = fromMaybe (-1) (oldPremises >>= Just . length)
+              oldStep = oldSeq >>= evalPathSafe path
 
-          --     newProofStatus = new ^. proofStatus
-          --     -- newHovered = new ^. hoveredProofLine
-          --     newSeq = getCurrentSequent new
-          --     newPremises = newSeq >>= Just . _premises
-          --     newNrPremises = fromMaybe (-1) (newPremises >>= Just . length)
-          --     newStep = newSeq >>= evalPathSafe path
+              newProofStatus = new ^. proofStatus
+              -- newHovered = new ^. hoveredProofLine
+              newSeq = getCurrentSequent new
+              newPremises = newSeq >>= Just . _premises
+              newNrPremises = fromMaybe (-1) (newPremises >>= Just . length)
+              newStep = newSeq >>= evalPathSafe path
 
-          ui = pfDropTarget path $ draggable_ path [transparency 0.3] $ box_ [onBtnReleased handleBtn, expandContent] $ vstack [
+          ui = (box_ [mergeRequired hasChanged] $
+            pfDropTarget path $
+              draggable_ path [transparency 0.3] $
+                box_ [onBtnReleased handleBtn, expandContent] $
+                  vstack [
               -- box_ [
               --       onEnter (SetHoveredProofLine (fromIntegral lineNumber))
               --       -- onLeave (SetHoveredProofLine (-1))
@@ -401,7 +405,7 @@ renderProofTab isMac _wenv model file _heading = cached where
 
               vstack (map warningLabel warnings)
             ]
-              `nodeKey` showt index
+              `nodeKey` showt index) `nodeKey` (showt index <> pack (show path) <> ".mergeBox")
 
           ruleKeystrokes w = someKeystrokes [
               -- ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
