@@ -155,7 +155,8 @@ data ExportStatus
 data ExportOptions = ExportOptions {
   _eoOpen :: Bool,
   _eoTitle :: Text,
-  _eoStatus :: ExportStatus
+  _eoStatus :: ExportStatus,
+  _eoLatexCompiler :: Either String ()
 } deriving (Show, Eq)
 
 data AppModel = AppModel {
@@ -311,6 +312,7 @@ data AppEvent
   | ExportToLaTeX
   | ExportToPDF
   | SetExportStatus ExportStatus
+  | SetExportLatexCompiler (Either String ())
   deriving (Eq, Show)
 
 makeLenses 'PersistentState

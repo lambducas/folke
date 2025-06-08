@@ -12,7 +12,7 @@ import Frontend.Helper.ProofHelper
 import Frontend.Communication (startCommunication)
 import Frontend.Parse
 import Frontend.Preferences
-import Frontend.Export (convertToLatex, compileLatexToPDF)
+import Frontend.Export (convertToLatex, compileLatexToPDF, latexCompilerAvailable)
 import Frontend.History ( applyRedo, applyUndo, canUndoRedo )
 import Shared.Messages
 import Backend.Types (Result(..))
@@ -705,7 +705,14 @@ handleEvent os env wenv node model evt = case evt of
       Model $ model
         & exportOptionsPopup . eoOpen .~ open
         & exportOptionsPopup . eoStatus .~ ExportIdle
+        & exportOptionsPopup . eoLatexCompiler .~ Right (),
+      Producer (\sendMsg -> do
+          canCompile <- latexCompilerAvailable
+          sendMsg (SetExportLatexCompiler canCompile)
+        )
     ]
+
+  SetExportLatexCompiler s -> [ Model $ model & exportOptionsPopup . eoLatexCompiler .~ s ]
 
   ExportToLaTeX -> case model ^. persistentState . currentFile of
     Nothing ->

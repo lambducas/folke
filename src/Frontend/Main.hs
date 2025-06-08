@@ -102,7 +102,8 @@ main = do
       _exportOptionsPopup = ExportOptions {
         _eoOpen = False,
         _eoTitle = "",
-        _eoStatus = ExportIdle
+        _eoStatus = ExportIdle,
+        _eoLatexCompiler = Right ()
       },
 
       _frontendChan = currentFrontendChan,

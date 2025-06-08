@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Frontend.Export (
+  latexCompilerAvailable,
   convertToLatex,
   compileLatexToPDF
 ) where
@@ -22,7 +23,15 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.Process (readCreateProcessWithExitCode, proc)
 import Control.Exception (try, SomeException)
 
--- | Should we add pdflatex --version proc to check if pdflatex is installed?
+-- | Check if pdflatex is installed
+latexCompilerAvailable :: IO (Either String ())
+latexCompilerAvailable = do
+  result <- try (
+      readCreateProcessWithExitCode (proc "pdflatex" ["-version"]) ""
+    ) :: IO (Either SomeException (ExitCode, String, String))
+  case result of
+    Left ex -> return (Left (show ex))
+    Right _ -> return (Right ())
 
 -- | Compile a LaTeX file to PDF format
 compileLatexToPDF :: FilePath -> Text -> AppModel -> IO (Either String FilePath)

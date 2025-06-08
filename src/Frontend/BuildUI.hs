@@ -589,8 +589,12 @@ buildUI os wenv model = widgetTree where
   exportOptionsUI = popup_ (exportOptionsPopup . eoOpen) [popupAlignToWindow, alignCenter, alignMiddle] $
     boxShadow $ vstack_ [childSpacing] [
       h2 "Export proof",
+      paragraph "Proofs can be exported as either .tex source or rendered to pdf",
+      spacer,
+      bold $ span "Title",
       textField_ (exportOptionsPopup . eoTitle) [placeholder "No title"],
       filler,
+      latexCompilerLabel (model ^. exportOptionsPopup . eoLatexCompiler),
       statusLabel (model ^. exportOptionsPopup . eoStatus),
       hstack_ [childSpacing] [
         button "Cancel" (SetExportOpen False),
@@ -600,6 +604,9 @@ buildUI os wenv model = widgetTree where
     ]
       `styleBasic` [bgColor popupBackground, border 1 dividerColor, radius 4, padding 16, width 600, height 450]
     where
+      latexCompilerLabel (Right _) = span ""
+      latexCompilerLabel (Left ex) = paragraph ("Export PDF not available\n" <> pack ex) `styleBasic` [textColor red]
+
       statusLabel ExportIdle = span ""
       statusLabel ExportWaiting = span "Generating file..."
       statusLabel ExportSuccess = span "Success" `styleBasic` [textColor green]
@@ -640,8 +647,8 @@ buildUI os wenv model = widgetTree where
 
       ("fresh", [box (box (aR "1. x₀" "fresh") `styleBasic` [padding 10, border 2 proofBoxColor])]),
       ("EqI", [aR "1. t = t" "=I"]),
-      ("EqE", [s "1. t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w.ɸ≡P(x))"]),
-      ("AllE", [s "1. ∀x.P(x)", aR "2. P[t/x]" "∀E 1 w.t"]),
+      ("EqE", [s "1. t₁ = t₂", s "P[t₁/x]", aR "P[t₂/x]" "=E (1,2 w. ɸ≡P(x))"]),
+      ("AllE", [s "1. ∀x.P(x)", aR "2. P[t/x]" "∀E 1 w. t"]),
       ("AllI", [sP "1. " "x₀" borderB, dot, sP "i. " "P[x₀/x]" borderT, aR "j. ∀x.P(x)" "∀I (1-i)"]),
       ("SomeE", [s "1. ∃x.P(x)", sP "2. " "x₀" borderB, sPM "3. " "P[x₀/x]", dot, sP "i. " "q" borderT, aR "j. q" "∃E (1,2-i)"]),
       ("SomeI", [s "1. P[t/x]", aR "2. ∃x.P(x)" "∃I 1"])
