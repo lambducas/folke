@@ -1,4 +1,5 @@
 {
+    "_fedUserDefinedRules": null,
     "_sequent": {
         "_conclusion": "∀ x ∀ y ∀ z (y = z → f(x, z) = f(x, y))",
         "_premises": [],
@@ -40,9 +41,16 @@
                                                 "tag": "Line"
                                             },
                                             {
+                                                "_arguments": [],
+                                                "_rule": "=I",
+                                                "_statement": "f(x₀, y₀) = f(x₀, y₀)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
                                                 "_arguments": [
+                                                    "4",
                                                     "5",
-                                                    "",
                                                     "u:=f(x₀,u)=f(x₀,y₀)"
                                                 ],
                                                 "_rule": "=E",
@@ -55,10 +63,10 @@
                                     },
                                     {
                                         "_arguments": [
-                                            "4-5"
+                                            "4-6"
                                         ],
                                         "_rule": "→I",
-                                        "_statement": "y₀ = z₀ → f(x₀, z) = f(x₀, y₀)",
+                                        "_statement": "y₀ = z₀ → f(x₀, z₀) = f(x₀, y₀)",
                                         "_usedArguments": 1,
                                         "tag": "Line"
                                     }
@@ -67,7 +75,7 @@
                             },
                             {
                                 "_arguments": [
-                                    "3-6"
+                                    "3-7"
                                 ],
                                 "_rule": "∀I",
                                 "_statement": "∀ z (y₀ = z → f(x₀, z) = f(x₀, y₀))",
@@ -79,10 +87,10 @@
                     },
                     {
                         "_arguments": [
-                            "2-7"
+                            "2-8"
                         ],
                         "_rule": "∀I",
-                        "_statement": "∀ y ∀ z (y = z → f(x₀, x) = f(x₀, y))",
+                        "_statement": "∀ y ∀ z (y = z → f(x₀, z) = f(x₀, y))",
                         "_usedArguments": 1,
                         "tag": "Line"
                     }
@@ -91,7 +99,7 @@
             },
             {
                 "_arguments": [
-                    "1-8"
+                    "1-9"
                 ],
                 "_rule": "∀I",
                 "_statement": "∀ x ∀ y ∀ z (y = z → f(x, z) = f(x, y))",
