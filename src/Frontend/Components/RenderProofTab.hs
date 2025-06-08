@@ -75,7 +75,7 @@ renderProofTab isMac _wenv model file _heading = cached where
   fastVScroll = Frontend.Components.GeneralUIComponents.fastVScroll
   -- fastHScroll = Frontend.Components.GeneralUIComponents.fastHScroll
 
-  cached = box_ [mergeRequired hasChanged] updated
+  cached = box_ [mergeRequired hasChanged, alignLeft] updated
   updated = renderProofTab'
   hasChanged _wenv old new =
       oldProofStatus /= newProofStatus ||
@@ -133,7 +133,11 @@ renderProofTab isMac _wenv model file _heading = cached where
       premises = _premises parsedSequent
       parsedSequent = _sequent parsedDocument
 
-  proofBody document = fastVScroll (proofBodyContent document `styleBasic` [paddingT 20, paddingL 20])
+  proofBody document = box_ [alignLeft] $
+    fastScroll $
+      box_ [alignLeft] $
+        proofBodyContent document
+          `styleBasic` [paddingT 20, paddingL 20, minWidth 850]
 
   proofFooter = hstack [
       proofStatusLabel
@@ -351,7 +355,7 @@ renderProofTab isMac _wenv model file _heading = cached where
               --     ] $
                   hstack [
                 hstack [
-                  someKeystrokes [
+                  firstKeystroke [
                     ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".statement"), prevIndexExists),
                     ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                     ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".statement"), nextIndexExists),
@@ -411,7 +415,7 @@ renderProofTab isMac _wenv model file _heading = cached where
               ("Delete", RemoveLine False path, trashActive),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
               (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-              (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
+              (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine && nextIndexExists),
               ("Enter", NextFocus 1, usedArguments > 0),
               ("Enter", InsertLineAfter False path, usedArguments == 0)
             ] w
@@ -426,7 +430,7 @@ renderProofTab isMac _wenv model file _heading = cached where
           argInputs = widgetIf (usedArguments /= 0) $ hstack_ [childSpacing] (zipWith argInput (take usedArguments arguments) [0..])
           argInput argument idx = hstack [
               symbolSpan currentLabel,
-              someKeystrokes [
+              firstKeystroke [
                 ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".ruleArg." <> showt idx), prevIndexExists),
                 ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
                 ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".ruleArg." <> showt idx), nextIndexExists),
