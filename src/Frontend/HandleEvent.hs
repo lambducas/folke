@@ -13,7 +13,7 @@ import Frontend.Communication (startCommunication)
 import Frontend.Parse
 import Frontend.Preferences
 import Frontend.Export (convertToLatex, compileLatexToPDF)
-import Frontend.History ( applyRedo, applyUndo )
+import Frontend.History ( applyRedo, applyUndo, canUndoRedo )
 import Shared.Messages
 import Backend.Types (Result(..))
 import Backend.TypeChecker (checkFE)
@@ -59,13 +59,13 @@ handleEvent os env wenv node model evt = case evt of
 
   AppRunProducer prod -> [ Producer prod ]
 
-  Undo -> if model ^. udrPopup
-    then []
-    else applyOnCurrentFile model applyUndo
+  Undo -> if canUndoRedo model
+    then applyOnCurrentFile model applyUndo
+    else []
 
-  Redo -> if model ^. udrPopup
-    then []
-    else applyOnCurrentFile model applyRedo
+  Redo -> if canUndoRedo model
+    then applyOnCurrentFile model applyRedo
+    else []
 
   AppInit -> [
       Producer (startDebouncer initialWait env),

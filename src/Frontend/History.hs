@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Frontend.History (
+  canUndoRedo,
   applyUndo,
   applyRedo
 ) where
@@ -8,6 +9,10 @@ module Frontend.History (
 import Frontend.Types
 import Frontend.Helper.ProofHelper
 import Control.Lens
+
+-- | Check if undo/redo can be applied
+canUndoRedo :: AppModel -> Bool
+canUndoRedo model = not (model ^. udrPopup) && not (model ^. exportOptionsPopup . eoOpen) 
 
 -- | Checks if file supports undo and undoes the most recent change
 applyUndo :: File -> File
