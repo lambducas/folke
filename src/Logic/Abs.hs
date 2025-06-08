@@ -15,6 +15,7 @@ data Arg
     | ArgLine Integer
     | ArgTerm Term
     | ArgForm Term Form
+    | ArgNil
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Form
