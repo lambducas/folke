@@ -205,7 +205,7 @@ buildUI os wenv model = widgetTree where
       fastTooltip ("New proof (" <> ctrl <> "+N)") $ iconButton remixFileAddLine CreateEmptyProof,
       fastTooltip ("Open proof (" <> ctrl <> "+O)") $ iconButton remixFolderOpenLine OpenFileFromFileSystem,
       fastTooltip ("Save proof (" <> ctrl <> "+S)") $ iconButton remixSave3Line SaveCurrentFile,
-      fastTooltip "Export" $ iconButton remixFilePdfLine (SetExportOpen True),
+      fastTooltip "Export" $ iconButton remixUpload2Fill (SetExportOpen True),
 
       separatorLine,
 
