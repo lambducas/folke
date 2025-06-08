@@ -34,7 +34,7 @@ To build the library, run the following command:
 cabal build
 ```
 
-#### macOS
+### Mac OS
 The following dependencies are required:
 ```bash
 brew install sdl2
