@@ -102,7 +102,7 @@ checkSequentFE :: Env -> FE.FESequent -> Result (Proof, Env)
 checkSequentFE env sequent = do
     -- Checking and validation
     prems_t <- checkPremsFE env (_premises sequent)
-    conc_t <- checkFormFE env (_conclusion sequent)
+    conc_t <- checkConcFE env (_conclusion sequent)
     (proof_t, finalEnv) <- checkProofFE env (sequentSteps sequent) 1
 
     -- Check expected vs actual
@@ -114,10 +114,25 @@ checkSequentFE env sequent = do
 -- | Check frontend formulas in premises
 checkPremsFE :: Env -> [FE.FEFormula] -> Result [Formula]
 checkPremsFE _ [] = Ok [] []
-checkPremsFE env (form:forms) = do
-    form_t <- checkFormFE env form
-    forms_t <- checkPremsFE env forms
-    Ok [] (form_t : forms_t)
+checkPremsFE env forms = checkPremsFEWithIndex env forms 0
+    where
+        checkPremsFEWithIndex _ [] _ = Ok [] []
+        checkPremsFEWithIndex env (form:forms) idx = do
+            f <- parseForm env form
+            form_t <- case f of
+                Abs.FormNil -> Err [] env (createEmptyPremiseError env idx)
+                _ -> checkForm env f
+
+            forms_t <- checkPremsFEWithIndex env forms (idx + 1)
+            Ok [] (form_t : forms_t)
+
+-- | Check frontend conclusion
+checkConcFE :: Env -> FE.FEFormula -> Result Formula
+checkConcFE env f = do
+    f <- parseForm env f
+    case f of
+        Abs.FormNil -> Err [] env (createEmptyConcError env)
+        _ -> checkForm env f
 
 -- | Check a frontend formula
 checkFormFE :: Env -> FE.FEFormula -> Result Formula
@@ -148,6 +163,7 @@ checkProofFE env [step] i
     | FE.Line {} <- step = do
         (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
         case step_t of
+            ArgProof {} -> Err [] env (createTypeError env "Check step could not return a proof.")
             ArgTerm _ -> Err [] env (createTypeError env "Check step could not return a term.")
             ArgFormWith _ _ -> Err [] env (createTypeError env "Check step could not return a form with.")
             ArgForm Nil ->
@@ -185,13 +201,18 @@ checkStepFE env step = case step of
         
     FE.Line form rule numofargs args -> do
         let currentRef = head (pos env)
+        let formIsEmpty = strip form == pack ""
+        let ruleIsEmpty = strip rule == pack ""
         
-        if strip form == pack "" then 
+        if formIsEmpty && ruleIsEmpty then 
             let env_with_ref = addRefs env [currentRef] (ArgForm Nil)
             in Ok [createEmptyLineWarning env_with_ref] (env_with_ref, ArgForm Nil)
             
-        else if strip rule == pack "" then 
-            Err [] env (createNoRuleProvidedError env "No rule provided.")
+        else if ruleIsEmpty then 
+            Err [] env (createNoRuleProvidedError env)
+
+        else if formIsEmpty then 
+            Err [] env (createNoFormulaProvidedError env)
             
         else case unpack rule of
             "prem" -> if depth env == 0

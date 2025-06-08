@@ -3,7 +3,8 @@
     "_sequent": {
         "_conclusion": "",
         "_premises": [
-            ""
+            "A",
+            "B"
         ],
         "_steps": [
             {

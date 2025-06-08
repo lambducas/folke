@@ -128,6 +128,9 @@ data ErrorKind =
   | RuleApplicationError String Formula -- ^ Error applying a rule to a formula
   | MalformedProof String             -- ^ Structurally invalid proof
   | IncompleteProofError Formula      -- ^ Proof doesn't reach required conclusion
+  | EmptyFormula String               -- ^ Rule is provided, but the formula is empty
+  | EmptyPremise Integer String       -- ^ Premise is empty
+  | EmptyConclusion String            -- ^ Conclusion is empty
   | UnknownError String               -- ^ Unclassified error
   deriving (Show)
 

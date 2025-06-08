@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+
 module Backend.Helpers
   (
     ---------------------------------------
@@ -102,7 +105,7 @@ filterResultWarnings (Err warnings env err) f = Err (f warnings) env err
 
 -- | Count steps for a sequent
 sequentSteps :: FE.FESequent -> [FEStep]
-sequentSteps sequent = map premToStep (_premises sequent) ++ _steps sequent
+sequentSteps s = map premToStep (_premises s) ++ _steps s
 
 -- | Count the number of steps in a subproof (for reference numbering)
 countSteps :: FEStep -> Integer
@@ -155,7 +158,7 @@ getConclusion (Proof _ _ conc) = conc
 -- | Convert a Result to a frontend-friendly error format
 convertToFEError :: Result t -> FEResult
 convertToFEError (Ok warns _) = FEOk (map convertWarning warns)
-convertToFEError (Err warns env err) = feError
+convertToFEError (Err warns _env err) = feError
   where
     baseMsg = errMessage err ++
               maybe "" (\ctx -> ": " ++ ctx) (errContext err)
@@ -168,9 +171,9 @@ convertToFEError (Err warns env err) = feError
     errorText = baseMsg ++ suggestionText
 
     convWarns = map convertWarning warns
-    feError = case pos env of
-      [] -> FEError convWarns (FEGlobal errorText)
-      l:_ -> FEError convWarns (FELocal l errorText)
+    feError = case errLocation err of
+      Nothing -> FEError convWarns (FEGlobal errorText)
+      Just l -> FEError convWarns (FELocal l errorText)
 
 -- | Convert a warning to a frontend-friendly format
 convertWarning :: Warning -> FEErrorWhere

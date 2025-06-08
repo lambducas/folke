@@ -1,9 +1,7 @@
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Backend.Environment (
     -- * Environment creation and manipulation
-    Env,
     newEnv,
     push,
     showPos,
@@ -74,6 +72,7 @@ module Backend.Environment (
     
     -- | Error creation
     createNoRuleProvidedError,
+    createNoFormulaProvidedError,
     createRuleArgError,
     createArgCountError,
     createRuleConcError,
@@ -83,6 +82,8 @@ module Backend.Environment (
     createUnknownError,
     createMismatchedFormulaError,
     createSyntaxError,
+    createEmptyConcError,
+    createEmptyPremiseError,
 
    -- | Warning creation
    createEmptyLineWarning,
@@ -101,8 +102,6 @@ import Data.Maybe (listToMaybe)
 import Data.Char (toLower)
 
 import Data.Map as Map (Map)
-import Data.Maybe (listToMaybe)
-import System.Process (CreateProcess(env))
 
 ----------------------------------------------------------------------
 -- Environment Creation and Manipulation
@@ -201,11 +200,11 @@ isFreeVar env (Term x []) = if Map.notMember x (bound env)
 isFreeVar env _ = Err [] env (createUnknownError env "A function cannot be a free variable.")
 
 -- | Check if a term is a bound variable in the current environment
-isBoundVar :: Env -> Term -> Result Bool
-isBoundVar env (Term x []) = if Map.member x (bound env) 
+_isBoundVar :: Env -> Term -> Result Bool
+_isBoundVar env (Term x []) = if Map.member x (bound env) 
     then Ok [] True 
     else Ok [] False
-isBoundVar env _ = Err [] env (createUnknownError env "A function cannot be a bound variable.")
+_isBoundVar env _ = Err [] env (createUnknownError env "A function cannot be a bound variable.")
 
 -- | Register a term in the environment
 regTerm :: Env -> Term -> Result Env
@@ -346,7 +345,7 @@ applyUDefRule env (UDefRule ins out) args =
 findPlaceholdersInArgs :: Env -> [Formula] -> [(Integer, Arg)] -> 
                          Map.Map Predicate Formula -> 
                          Result (Map.Map Predicate Formula)
-findPlaceholdersInArgs env [] [] ph = Ok [] ph
+findPlaceholdersInArgs _env [] [] ph = Ok [] ph
 findPlaceholdersInArgs env [a] [(i, b)] ph = case b of
     ArgForm b_f -> findPlaceholdersInArg env i a b_f ph
     _ -> Err [] env (createRuleArgError env i 
@@ -395,7 +394,7 @@ findPlaceholdersInArg env i (Some x a) (Some y b) ph = if x == y
     else do
         phi <- replaceInFormula env y x b
         findPlaceholdersInArg env i a phi ph
-findPlaceholdersInArg env i _ _ ph = Err [] env (createUnknownError env "Unimplemented.")
+findPlaceholdersInArg env _i _ _ _ph = Err [] env (createUnknownError env "Unimplemented.")
 
 -- | Replace placeholders in a formula
 replacePlaceholders :: Env -> Formula -> Map.Map Predicate Formula -> Result Formula
@@ -563,7 +562,7 @@ replaceInFormula env x@(Term _ []) t (Not a) = do
     Ok [] (Not a_new)
 replaceInFormula env (Term _ []) _ Nil = Err [] env 
     (createUnknownError env "Trying to do a replace on nil formula.")
-replaceInFormula env x t phi = Err [] env 
+replaceInFormula env x _t _phi = Err [] env 
     (createUnknownError env (show x ++ " must be an function and not a function."))
 
 -- | Compare two formulas with environment
@@ -572,7 +571,7 @@ cmp _ (Pred a) (Pred b) = a == b
 cmp env (And a1 a2) (And b1 b2) = cmp env a1 b1 && cmp env a2 b2
 cmp env (Or a1 a2) (Or b1 b2) = cmp env a1 b1 && cmp env a2 b2
 cmp env (Impl a1 a2) (Impl b1 b2) = cmp env a1 b1 && cmp env a2 b2
-cmp env (Eq a1 a2) (Eq b1 b2) = a1 == b1 && a2 == b2
+cmp _env (Eq a1 a2) (Eq b1 b2) = a1 == b1 && a2 == b2
 
 cmp env (All x a) (All y b) =
     (x == y && cmp env a b) ||
@@ -916,14 +915,26 @@ forVarsruleSomeI env i a phi x (t: vars) = case replaceInFormula env x t phi of
 -- Error creation functions
 ----------------------------------------------------------------------
 
-createNoRuleProvidedError :: Env -> String -> Error
-createNoRuleProvidedError env message = Error {
+createNoRuleProvidedError :: Env -> Error
+createNoRuleProvidedError env = Error {
   errLocation = listToMaybe (pos env),
   errKind = RuleNotFoundError message,
-  errMessage = "Something went wrong with the rule application",
-  errContext = Just message,
-  errSuggestions = ["Check that the rule is defined and accessible"]
+  errMessage = message,
+  errContext = Nothing,
+  errSuggestions = ["Enter a rule"]
 }
+    where message = "No rule provided."
+
+createNoFormulaProvidedError :: Env -> Error
+createNoFormulaProvidedError env = Error {
+  errLocation = listToMaybe (pos env),
+  errKind = EmptyFormula message,
+  errMessage = message,
+  errContext = Nothing,
+  errSuggestions = ["Enter a formula"]
+}
+    where message = "No formula provided."
+
 -- | Create an error for an invalid rule argument
 createRuleArgError :: Env -> Integer -> String -> Error
 createRuleArgError env argNum message = Error {
@@ -966,7 +977,8 @@ createTypeError env message = Error {
 -- | Create an error for an invalid reference
 createReferenceError :: Env -> Ref -> String -> Error
 createReferenceError env ref message = Error {
-  errLocation = Just ref,  -- Use the reference itself as the location
+  -- errLocation = Just ref,  -- Use the reference itself as the location
+  errLocation = listToMaybe (pos env),
   errKind = ReferenceError ref message,
   errMessage = "Invalid reference in proof: " ++ message,
   errContext = Nothing, --Just $ "Problem with reference " ++ show ref,
@@ -999,8 +1011,8 @@ createUnknownError env message = Error {
 
 -- | Create an error for formulas that don't match
 createMismatchedFormulaError :: Env -> Formula -> Formula -> Error
-createMismatchedFormulaError env expected actual = Error {
-  errLocation = listToMaybe (pos env),
+createMismatchedFormulaError _env expected actual = Error {
+  errLocation = Nothing,
   errKind = MismatchedFormula expected actual,
   errMessage = "Conclusion not reached",
   errContext = Just $ "Expected: " ++ show expected ++ ". Actual: " ++ show actual,
@@ -1018,6 +1030,32 @@ createSyntaxError env message = Error {
         "Check for missing parentheses or brackets",
         "Ensure all formulas are properly terminated",
         "Look for typos in predicate or variable names"
+    ]
+}
+
+-- | Create an error for syntax problems in the proof
+createEmptyPremiseError :: Env -> Integer -> Error
+createEmptyPremiseError env idx = Error {
+    errLocation = listToMaybe (pos env),
+    errKind = EmptyPremise idx message,
+    errMessage = message,
+    errContext = Nothing,
+    errSuggestions = [
+        "Enter a premise",
+        "Remove the empty premise"
+    ]
+}
+    where message = "Premise #" ++ show (idx + 1) ++ " is empty"
+
+-- | Create an error for syntax problems in the proof
+createEmptyConcError :: Env -> Error
+createEmptyConcError env = Error {
+    errLocation = listToMaybe (pos env),
+    errKind = EmptyConclusion "Conclusion is empty",
+    errMessage = "Conclusion is empty",
+    errContext = Nothing,
+    errSuggestions = [
+        "Enter a conclusion"
     ]
 }
 
@@ -1048,7 +1086,7 @@ createUnusedRefsWarning unusedRefs = Warning {
 }
 
 createDupWarning :: Env -> Warning
-createDupWarning env = Warning {
+createDupWarning _env = Warning {
     warnLocation = Nothing,
     warnSeverity = Medium,
     warnKind = StyleIssue "Duplicate variable",
