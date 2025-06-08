@@ -240,7 +240,7 @@ checkStepFE env step = case step of
                     -- Register the reference for this line
                     let env_with_ref = addRefs new_env [currentRef] (ArgForm form_t)
                     Ok [] (env_with_ref, ArgForm form_t)
-                else Err [] env (createTypeError env "An assumption is not allowed in a proof.")
+                else Err [] env (createTypeError env "Assumptions are only allowed in subproofs.")
 
             -- Handle general rule applications
             _ -> do

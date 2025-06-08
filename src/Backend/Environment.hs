@@ -563,7 +563,7 @@ replaceInFormula env x@(Term _ []) t (Not a) = do
 replaceInFormula env (Term _ []) _ Nil = Err [] env 
     (createUnknownError env "Trying to do a replace on nil formula.")
 replaceInFormula env x _t _phi = Err [] env 
-    (createUnknownError env (show x ++ " must be an function and not a function."))
+    (createUnknownError env (show x ++ " must be an function and not a function.")) -- TODO: huh!?
 
 -- | Compare two formulas with environment
 cmp :: Env -> Formula -> Formula -> Bool
@@ -617,7 +617,7 @@ ruleAndI env forms _ = Err [] env (createArgCountError env
 ruleAndEL :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAndEL _ [(_, ArgForm (And l _))] _ = Ok [] l
 ruleAndEL env [_] _ = Err [] env (createRuleArgError env 1 
-                      "Needs to be an and formula.")
+                      "Needs to be an ∧ formula.")
 ruleAndEL env forms _ = Err [] env (createArgCountError env 
                         (toInteger $ List.length forms) 1)
 
@@ -625,7 +625,7 @@ ruleAndEL env forms _ = Err [] env (createArgCountError env
 ruleAndER :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleAndER _ [(_, ArgForm (And _ r))] _ = Ok [] r
 ruleAndER env [_] _ = Err [] env (createRuleArgError env 1 
-                      "Needs to be an and formula.")
+                      "Needs to be an ∧ formula.")
 ruleAndER env forms _ = Err [] env (createArgCountError env 
                         (toInteger $ List.length forms) 1)
 
@@ -636,7 +636,7 @@ ruleOrIL env [(_, ArgForm a)] r@(Or b _) =
     else Err [] env (createRuleArgError env 1 
          "Did not match left hand side of conclusion.")
 ruleOrIL env [(_, ArgForm _)] _ = Err [] env (createRuleConcError env 
-                                  "Conclusion needs to be an or formula.")
+                                  "Conclusion needs to be an ∨ formula.")
 ruleOrIL env [_] (Or _ _) = Err [] env (createRuleArgError env 1 
                             "Needs to be a formula.")
 ruleOrIL env forms _ = Err [] env (createArgCountError env 
@@ -649,7 +649,7 @@ ruleOrIR env [(_, ArgForm a)] r@(Or _ b) =
     else Err [] env (createRuleArgError env 1 
          "Did not match right hand side of conclusion.")
 ruleOrIR env [(_, ArgForm _)] _ = Err [] env (createRuleConcError env 
-                                  "Conclusion needs to be an or formula.")
+                                  "Conclusion needs to be an ∨ formula.")
 ruleOrIR env [_] (Or _ _) = Err [] env (createRuleArgError env 1 
                             "Needs to be a formula.")
 ruleOrIR env forms _ = Err [] env (createArgCountError env 
@@ -665,9 +665,9 @@ ruleOrE env [(_, ArgForm (Or a b)), (j, ArgProof (Proof _ [p1] c1)),
             else Err [] env (createRuleConcError env 
                  "The conclusions of the two proofs did not match.")
         else Err [] env (createRuleArgError env k 
-             "The premise of the proof did not match the right hand side of the or statement.")
+             "The premise of the proof did not match the right hand side of the ∨ statement.")
     else Err [] env (createRuleArgError env j 
-         "The premise of the proof did not match the left hand side of the or statement.")
+         "The premise of the proof did not match the left hand side of the ∨ statement.")
 ruleOrE env [b@(_, ArgProof _), a@(_, ArgForm _), c@(_, ArgProof _)] r = 
     ruleOrE env [a, b, c] r
 ruleOrE env [b@(_, ArgProof _), c@(_, ArgProof _), a@(_, ArgForm _)] r = 
@@ -677,7 +677,7 @@ ruleOrE env [(_, ArgForm (Or _ _)), (_, ArgProof _), (k, _)] _ =
 ruleOrE env [(_, ArgForm (Or _ _)), (j, _), _] _ = 
     Err [] env (createRuleArgError env j "Needs to be a proof.")
 ruleOrE env [(i, _), _, _] _ = 
-    Err [] env (createRuleArgError env i "Needs to be an or formula.")
+    Err [] env (createRuleArgError env i "Needs to be an ∨ formula.")
 ruleOrE env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 3)
 
@@ -702,7 +702,7 @@ ruleImplE env [(i, ArgForm a), (j, ArgForm (Impl b c))] _ =
 ruleImplE env [b@(_, ArgForm (Impl _ _)), a@(_, ArgForm _)] r = 
     ruleImplE env [a,b] r
 ruleImplE env [(_, ArgForm _), (j, _)] _ = 
-    Err [] env (createRuleArgError env j "Needs to be an implication formula")
+    Err [] env (createRuleArgError env j "Needs to be an → formula")
 ruleImplE env [(i, _), _] _ = 
     Err [] env (createRuleArgError env i "Needs to be a formula")
 ruleImplE env forms _ = 
@@ -712,7 +712,7 @@ ruleImplE env forms _ =
 ruleNotI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleNotI _ [(_, ArgProof (Proof _ [a] Bot))] _ = Ok [] (Not a)
 ruleNotI env [_] _ = Err [] env (createRuleArgError env 1 
-                     "Needs to be a proof with the conclusion of bot")
+                     "Needs to be a proof with the conclusion of ⊥")
 ruleNotI env forms _ = Err [] env (createArgCountError env 
                         (toInteger $ List.length forms) 1)
 
@@ -729,7 +729,7 @@ ruleNotE env [(i, ArgForm a), (j, ArgForm (Not b))] _ =
 ruleNotE env [b@(_, ArgForm (Not _)), a@(_, ArgForm _)] r = 
     ruleNotE env [a, b] r
 ruleNotE env [(_, ArgForm _), (j, _)] _ = 
-    Err [] env (createRuleArgError env j "Needs to be a not formula.")
+    Err [] env (createRuleArgError env j "Needs to be a ¬ formula.")
 ruleNotE env [(i, _), _] _ = 
     Err [] env (createRuleArgError env i "Needs to be a formula.")
 ruleNotE env forms _ = 
@@ -739,7 +739,7 @@ ruleNotE env forms _ =
 ruleBottomE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleBottomE _ [(_, ArgForm Bot)] r = Ok [] r
 ruleBottomE env [_] _ = Err [] env (createRuleArgError env 1 
-                        "Needs to be a bottom formula.")
+                        "Needs to be a ⊥ formula.")
 ruleBottomE env forms _ = Err [] env (createArgCountError env 
                           (toInteger $ List.length forms) 1)
 
@@ -755,7 +755,7 @@ ruleNotNotI env forms _ = Err [] env (createArgCountError env
 ruleNotNotE :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleNotNotE _ [(_, ArgForm (Not (Not a)))] _ = Ok [] a
 ruleNotNotE env [_] _ = Err [] env (createRuleArgError env 1 
-                        "Needs to be a not not formula.")
+                        "Needs to be a ¬¬ formula.")
 ruleNotNotE env forms _ = Err [] env (createArgCountError env 
                           (toInteger $ List.length forms) 1)
 
@@ -767,9 +767,9 @@ ruleMT env [(_i, ArgForm (Impl a b)), (_j, ArgForm (Not c))] _ =
 ruleMT env [b@(_, ArgForm (Not _)), a@(_, ArgForm (Impl _ _))] r = 
     ruleMT env [a, b] r
 ruleMT env [(_, ArgForm (Impl _ _)), (j, _)] _ = 
-    Err [] env (createRuleArgError env j "Needs to be a not formula.")
+    Err [] env (createRuleArgError env j "Needs to be a ¬ formula.")
 ruleMT env [(i, _), _] _ = 
-    Err [] env (createRuleArgError env i "Needs to be an implication formula.")
+    Err [] env (createRuleArgError env i "Needs to be an → formula.")
 ruleMT env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
 
@@ -779,7 +779,7 @@ rulePBC _ [(_, ArgProof (Proof _ [Not a] Bot))] _ = Ok [] a
 rulePBC env [(_, ArgProof (Proof _ [Not _] _))] _ = 
     Err [] env (createRuleArgError env 1 "Conclusion needs to be a bot formula.")
 rulePBC env [(_, ArgProof (Proof [_] _ _))] _ = 
-    Err [] env (createRuleArgError env 1 "Premise needs to be a not formula.")
+    Err [] env (createRuleArgError env 1 "Premise needs to be a ¬ formula.")
 rulePBC env [_] _ = Err [] env (createRuleArgError env 1 "Needs to be a proof.")
 rulePBC env forms _ = Err [] env (createArgCountError env 
                       (toInteger $ List.length forms) 1)
@@ -790,8 +790,15 @@ ruleLEM env [] r@(Or a (Not b)) =
     if cmp env a b then Ok [] r 
     else Err [] env (createRuleConcError env 
          "Right hand side is not the negation of the left hand side.")
+ruleLEM env [] (Or (Not a) b) = 
+    if cmp env a b then Err [] env (createRuleConcError env 
+         "Swap the arguments of ∨")
+    else Err [] env (createRuleConcError env 
+         "Right hand side is not the negation of the left hand side.")
+ruleLEM env [] (Or {}) = Err [] env (createRuleConcError env 
+                    "Right hand side is not the negation of the left hand side.")
 ruleLEM env [] _ = Err [] env (createRuleConcError env 
-                   "The conclusion must be an or statement.")
+                   "The conclusion must be an ∨ statement.")
 ruleLEM env forms _ = Err [] env (createArgCountError env 
                       (toInteger $ List.length forms) 0)
 
@@ -854,7 +861,7 @@ ruleAllE env [(_, ArgForm (All x phi)), (j, ArgTerm t)] _ =
 ruleAllE env [(_, ArgForm (All _ _)), (j, _)] _ = 
     Err [] env (createRuleArgError env j "Must be a free variable.")
 ruleAllE env [(i, _), (_, _)] _ = 
-    Err [] env (createRuleArgError env i "Must be a for all formula.")
+    Err [] env (createRuleArgError env i "Must be a ∀ formula.")
 ruleAllE env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
 
@@ -867,7 +874,7 @@ ruleAllI env [(_, ArgProof (Proof [t] [] a))] (All x b) =
                      else Err [] env (createRuleConcError env 
                           "The given formula did not match the conclusion.")
 ruleAllI env [(_, ArgProof (Proof [_] [] _))] _ = 
-    Err [] env (createRuleConcError env "The conclusion must be a for all formula.")
+    Err [] env (createRuleConcError env "The conclusion must be a ∀ formula.")
 ruleAllI env [(i, _)] _ = 
     Err [] env (createRuleArgError env i "Must be a proof.")
 ruleAllI env forms _ = 
@@ -887,18 +894,18 @@ ruleSomeE env [(_, ArgForm (Some _ _)), (j, b)] _ =
     Err [] env (createRuleArgError env j ("Must be a proof not " ++ show b ++ "."))
 ruleSomeE env [(i, a), (_, _)] _ = 
     Err [] env (createRuleArgError env i 
-         ("Must be an exists formula not " ++ show a ++ "."))
+         ("Must be an ∃ formula not " ++ show a ++ "."))
 ruleSomeE env forms _ = 
     Err [] env (createArgCountError env (toInteger $ List.length forms) 2)
 
 -- | Introduction of existential quantifier
 ruleSomeI :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 ruleSomeI env [(i, ArgForm a)] (Some x phi) = case Set.toList (termsInForm a) of
-    [] -> Err [] env ( createRuleArgError env i " did not contain any variabels.")
+    [] -> Err [] env ( createRuleArgError env i " did not contain any variables.")
     vars -> forVarsruleSomeI env i a phi x vars
 ruleSomeI env [(_, ArgForm _)] r = 
     Err [] env (createRuleConcError env 
-         ("The conclusion must be an exist formula not " ++ show r ++ "."))
+         ("The conclusion must be an ∃ formula not " ++ show r ++ "."))
 ruleSomeI env [(i, _)] _ = 
     Err [] env (createRuleArgError env i "Must be a formula.")
 ruleSomeI env forms _ = 
@@ -1016,7 +1023,7 @@ createMismatchedFormulaError _env expected actual = Error {
   errKind = MismatchedFormula expected actual,
   errMessage = "Conclusion not reached",
   errContext = Just $ "Expected: " ++ show expected ++ ". Actual: " ++ show actual,
-  errSuggestions = ["Verify that your formula matches the required pattern for this rule"]
+  errSuggestions = ["The last row in the proof must match the conclusion"]
 }
 
 -- | Create an error for syntax problems in the proof

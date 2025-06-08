@@ -1,8 +1,10 @@
 {
     "_fedUserDefinedRules": null,
     "_sequent": {
-        "_conclusion": "",
-        "_premises": [],
+        "_conclusion": "A",
+        "_premises": [
+            "A"
+        ],
         "_steps": [
             {
                 "_arguments": [],
