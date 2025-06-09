@@ -5,21 +5,23 @@ ArgForm.  Arg   ::= Term ":=" Form;
 ArgNil.   Arg   ::= "";
 separator Arg   ",";
 
-FormPar.    Form5 ::= "(" Form ")";
-FormBot.    Form4 ::= "bot";
-FormEq.     Form4 ::= Term "=" Term;
-FormPred.   Form4 ::= Pred;
+FormPar.     Form5 ::= "(" Form ")";
+FormBot.     Form4 ::= "bot";
+FormEq.      Form4 ::= Term "=" Term;
+FormPred.    Form4 ::= Pred;
 
-FormAll.    Form3 ::= "all" Ident Form3;
-FormSome.   Form3 ::= "some" Ident Form3;
-FormNot.    Form3 ::= "!" Form3;
+FormAll.     Form3 ::= "∀" Ident Form3;
+FormAllDot.  Form3 ::= "∀" Ident "." Form3;
+FormSome.    Form3 ::= "∃" Ident Form3;
+FormSomeDot. Form3 ::= "∃" Ident "." Form3;
+FormNot.     Form3 ::= "!" Form3;
 
-FormAnd.    Form2 ::= Form2 "&" Form3; --left-associative(c convention)
-FormOr.     Form2 ::= Form2 "|" Form3; --left-associative(c convention)
+FormAnd.     Form2 ::= Form2 "&" Form3; --left-associative(c convention)
+FormOr.      Form2 ::= Form2 "|" Form3; --left-associative(c convention)
 
-FormImpl.   Form1 ::= Form2 "->" Form1; --right-associative(book)
+FormImpl.    Form1 ::= Form2 "->" Form1; --right-associative(book)
 
-FormNil.    Form ::= "";
+FormNil.     Form ::= "";
 
 _. Form4 ::= Form5;
 _. Form3 ::= Form4;

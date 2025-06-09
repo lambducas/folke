@@ -7,7 +7,7 @@ parser:
 			make ALEX=C:\\cabal\\bin\\alex.exe HAPPY=C:\\cabal\\bin\\happy.exe GHC_OPTS='-package array' all
 else # Linux
 parser:
-	cd  ./src && bnfc -d -m logic.cf && make
+	cd  ./src && bnfc -d -m logic.cf && make GHC_OPTS='-package array' all
 endif
 
 clean: 

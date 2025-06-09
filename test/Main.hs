@@ -1,15 +1,17 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+
 module Main (main) where
 
 import Test.HUnit
 import System.Directory
 import System.FilePath (takeFileName, (</>), takeExtension)
 import Control.Monad (unless, filterM)
-import System.Environment (getArgs)
 
 import Backend.TypeChecker
 import Backend.Environment
 import qualified Data.List as List
-import Data.Text (Text, unpack, pack, intercalate, strip)
+import Data.Text (Text, unpack)
 
 testProof :: FilePath -> Test
 testProof proofPath = TestCase $ do
@@ -105,7 +107,7 @@ testReplace = do
 testUDefRule :: Env -> String -> [Formula] -> Formula -> Test
 testUDefRule env name args res = TestCase(case applyRule env name [ArgForm arg | arg <- args] res of 
     Err _ _ err -> assertBool (show err) False
-    Ok _ res -> assertBool "Dummy msg" True)
+    Ok _ _res -> assertBool "Dummy msg" True)
 
 testUDefRules :: Test
 testUDefRules = do
@@ -146,8 +148,8 @@ testParser = TestList [
             testParseForm "A&B",
             testParseForm "A|B",
             testParseForm "A->B",
-            testParseForm "some x A",
-            testParseForm "all x A",
+            testParseForm "∃x A",
+            testParseForm "∀x A",
             testParseForm "x=y",
             testParseForm "bot"
         ]

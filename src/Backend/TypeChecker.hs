@@ -317,20 +317,12 @@ checkForm env f = case f of
         Ok [] (Pred p_t)
 
     -- Handle universal quantification
-    Abs.FormAll ident form -> do
-        let x = Term (idToString ident) []
-        env1 <- regTerm env x
-        env2 <- bindVar env1 x
-        a_t <- checkForm env2 form
-        Ok [] (All x a_t)
+    Abs.FormAll ident form -> checkAll ident form
+    Abs.FormAllDot ident form -> checkAll ident form
 
     -- Handle existential quantification
-    Abs.FormSome ident form -> do
-        let x = Term (idToString ident) []
-        env1 <- regTerm env x
-        env2 <- bindVar env1 x
-        a_t <- checkForm env2 form
-        Ok [] (Some x a_t)
+    Abs.FormSome ident form -> checkSome ident form
+    Abs.FormSomeDot ident form -> checkSome ident form
 
     -- Handle negation
     Abs.FormNot form -> do
@@ -358,6 +350,21 @@ checkForm env f = case f of
     -- Handle empty formulas
     Abs.FormNil ->
         return Nil
+
+    where
+        checkAll ident form = do
+            let x = Term (idToString ident) []
+            env1 <- regTerm env x
+            env2 <- bindVar env1 x
+            a_t <- checkForm env2 form
+            Ok [] (All x a_t)
+
+        checkSome ident form = do
+            let x = Term (idToString ident) []
+            env1 <- regTerm env x
+            env2 <- bindVar env1 x
+            a_t <- checkForm env2 form
+            Ok [] (Some x a_t)
 
 
 -- | Check a term
