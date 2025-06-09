@@ -194,16 +194,37 @@ instance Eq Predicate where
     Predicate a as == Predicate b bs = a == b && as == bs
 
 instance Show Formula where
-    show (Pred a) = show a
-    show (And a b) = show a ++ " ∧ " ++ show b
-    show (Or a b) = show a ++ " ∨ " ++ show b
-    show (Impl a b) = show a ++ " → " ++ show b
-    show (Eq a b) = show a ++ " = " ++ show b
-    show (All x a) = "∀" ++ show x ++ " " ++ show a
-    show (Some x a) = "∃" ++ show x ++ " " ++ show a
-    show (Not a) = "¬" ++ show a
-    show Bot = "⊥"
-    show Nil = "Nil"
+  show :: Formula -> String
+  show (Pred a) = show a
+  show (Not a) = "¬" <> getOutput a
+        where
+          getOutput form = case form of
+            Pred _ -> c
+            Not _ -> c
+            Bot -> c
+            _ -> p
+            where c = show form; p = "(" <> c <> ")"
+
+  show (And a b) = getOutput a <> " ∧ " <> getOutput b
+    where
+      getOutput form = case form of
+        Impl _ _ -> p
+        _ -> c
+        where c = show form; p = "(" <> c <> ")"
+
+  show (Or a b) = getOutput a <> " ∨ " <> getOutput b
+    where
+      getOutput form = case form of
+        Impl _ _ -> p
+        _ -> c
+        where c = show form; p = "(" <> c <> ")"
+
+  show (Impl a b) = show a <> " → " <> show b
+  show (Eq a b) = show a <> "=" <> show b
+  show (All i a) = "∀" <> show i <> " " <> show a
+  show (Some i a) = "∃" <> show i <> " " <> show a
+  show Bot = "⊥"
+  show Nil = "nothing"
 
 -- | Deprecated
 instance Eq Formula where
