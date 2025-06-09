@@ -158,8 +158,9 @@ checkProofFE env [] _ = Ok [] (Proof [] (getPrems env) Nil, env)
 checkProofFE env [step] i
     | FE.SubProof steps <- step = do
             let refs_t = [RefRange i (i - 1 + countSteps (FE.SubProof steps))]
-            _ <- checkProofFE (push (pushPos env refs_t)) steps i
-            Err [] env (createTypeError env "Last step in proof was another proof.")
+            let newEnv = push (pushPos env refs_t)
+            _ <- checkProofFE newEnv steps i
+            Err [] newEnv (createTypeError newEnv "Last step in proof was another proof.")
     | FE.Line {} <- step = do
         (new_env, step_t) <- checkStepFE (pushPos env [RefLine i]) step
         case step_t of
