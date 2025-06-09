@@ -26,6 +26,7 @@
 - [ ] Fix full Markdown support
 - [ ] Fix PDF export on Windows
 - [ ] Fix better keyboard shortcuts
+- [ ] Ability to rename proof-files
 
 - [x] ~~Pressing left side of menubar dropdown does not close it~~
 - [x] ~~It is possible to open the same file in seperate tabs if the working directory changes~~
