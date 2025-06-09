@@ -396,7 +396,11 @@ renderProofTab isMac _wenv model file _heading = cached where
                   hstack_ [childSpacing] [
                     -- ruleKeystrokes ruleField
 
-                    ruleKeystrokes $ symbolStyle $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const ruleField) label
+                    -- ruleKeystrokes $ symbolStyle $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const ruleField) label
+                    --   `styleBasic` [styleIf isWarning (border 1 orange)]
+                    --   `styleBasic` [styleIf isRuleError (border 1 red)],
+
+                    symbolStyle $ textFieldSuggestionsV rule (\_i t -> EditRuleName path t) (allRules rule) (const (ruleKeystrokes ruleField)) label
                       `styleBasic` [styleIf isWarning (border 1 orange)]
                       `styleBasic` [styleIf isRuleError (border 1 red)],
 
@@ -419,19 +423,18 @@ renderProofTab isMac _wenv model file _heading = cached where
             ]
               `nodeKey` showt index) `nodeKey` (showt index <> pack (show path) <> ".mergeBox")
 
-          ruleKeystrokes w = someKeystrokes [
+          ruleKeystrokes w = firstKeystroke [
               -- ("Up", FocusOnKey $ WidgetKey (showt (index - 1) <> ".rule"), prevIndexExists),
               -- ("Up", FocusOnKey $ WidgetKey "conclusion.input", not prevIndexExists),
               -- ("Down", FocusOnKey $ WidgetKey (showt (index + 1) <> ".rule"), nextIndexExists),
-
               -- ("Left", FocusOnKey $ WidgetKey (showt index <> ".statement"), True),
 
               ("Ctrl-Tab", SwitchLineToSubProof path (WidgetKey $ showt index <> ".rule"), True),
               ("Ctrl-Shift-Tab", SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".rule"), True),
               ("Delete", RemoveLine False path, trashActive),
               ("Backspace", FocusOnKey (WidgetKey (showt index <> ".statement")), rule == ""),
-              (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine || not nextIndexExists),
-              (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine && nextIndexExists),
+              (ctrl <> "-Enter", InsertLineAfter False path, not isLastLine),
+              (ctrl <> "-Enter", InsertLineAfter False pathToParentSubProof, isLastLine),
               ("Enter", NextFocus 1, usedArguments > 0),
               ("Enter", InsertLineAfter False path, usedArguments == 0)
             ] w
@@ -489,29 +492,29 @@ renderProofTab isMac _wenv model file _heading = cached where
               md = Data.Map.lookup (parseRule rule) ruleMetaDataMap
 
           b = box $ hstack_ [childSpacing] [
-                fastTooltip "Remove line" $
+                fastTooltip "Remove line (Delete)" $
                   trashButton (RemoveLine False path)
                     `nodeEnabled` trashActive,
 
                 vstack [
                   fastTooltip "Insert line above" $
                     button "↑+" (InsertLineBefore False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusBL 0, radiusBR 0],
-                  fastTooltip "Insert line below" $
+                  fastTooltip "Insert line below (Enter)" $
                     button "↓+" (InsertLineAfter False path) `styleBasic` [textSize (0.75*u), width 50, height 17, padding 0, radiusTL 0, radiusTR 0, borderT 1 dividerColor]
                 ] `styleBasic` [height 34],
 
                 -- fastTooltip "Insert subproof below" $
                 --   button "↓☐+" (InsertSubProofAfter path),
 
-                fastTooltip "Convert line to subproof" $
+                fastTooltip ("Convert line to subproof (" <> ctrl <> "+Tab)") $
                   button "→☐" (SwitchLineToSubProof path (WidgetKey $ showt index <> ".statement")),
 
                 widgetIf isSubProofSingleton $
-                  fastTooltip "Undo subproof" $
+                  fastTooltip ("Undo subproof (" <> ctrl <> "+Shift+Tab)") $
                     button "☒" (SwitchSubProofToLine pathToParentSubProof (WidgetKey $ showt index <> ".statement")),
 
                 widgetIf (isLastLine && nextIndexExists) $
-                  fastTooltip "Close subproof" $
+                  fastTooltip ("Close subproof (" <> ctrl <> "+Enter)") $
                     button "⏎" (InsertLineAfter False pathToParentSubProof)
 
                 -- widgetIf isLastLine (button "/[]+" (InsertSubProofAfter pathToParentSubProof))

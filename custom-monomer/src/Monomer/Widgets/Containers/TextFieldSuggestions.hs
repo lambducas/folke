@@ -369,7 +369,7 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     KeyAction mode code KeyPressed
       | isKeyUp code -> Just $ resultReqs node [SendMessage listNodeId SelectListPrev]
       | isKeyDown code -> Just $ resultReqs node [SendMessage listNodeId SelectListNext]
-      | isKeyReturn code && isOpen -> Just $ resultReqs node [IgnoreParentEvents, SendMessage listNodeId SelectListClickHighlighted]
+      | isKeyReturn code && isOpen -> Just $ resultReqs node [IgnoreParentEvents, IgnoreChildrenEvents, SendMessage listNodeId SelectListClickHighlighted]
       | not (isKeyReturn code) && isKeyOpenDropdown && not isOpen -> Just $ openDropdown wenv node
       | isKeyEscape code && isOpen -> Just $ closeDropdown wenv node
       where
@@ -413,7 +413,9 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
             isKey8,
             isKey9,
             
-            isKeySpace
+            isKeySpace,
+            isKeyUp,
+            isKeyDown
           ]
         isKeyOpenDropdown = or (fmap ($ code) activationKeys)
 
@@ -455,8 +457,16 @@ makeDropdown widgetData items makeMain makeRow config state = widget where
     scrollMsg = SendMessage listWid SelectListShowSelected
     -- requests = [scrollMsg]
     -- requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg]
-    requests = [SetFocus (node ^?! L.children . ix mainIdx . L.info . L.widgetId), scrollMsg, SetOverlay slWid slPath]
+    -- Assume deepest nested child is textField (since the textField might be wrapped in multiple keystrokes)
+    requests = [SetFocus (lastChild (node ^?! L.children . ix mainIdx) ^. L.info . L.widgetId), scrollMsg, SetOverlay slWid slPath]
     -- requests = [SetOverlay slWid slPath, SetFocus listWid, scrollMsg]
+
+  lastChild :: WidgetNode s e -> WidgetNode s e
+  lastChild node
+    | nrChildren == 0 = node
+    | otherwise = lastChild (node ^?! L.children . ix (nrChildren - 1))
+    where
+      nrChildren = length $ node ^?! L.children
 
   closeDropdown wenv node = resultReqs newNode requests where
     widgetId = node ^. L.info . L.widgetId
