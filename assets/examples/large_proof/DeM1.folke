@@ -1,0 +1,105 @@
+{
+    "_fedUserDefinedRules": null,
+    "_sequent": {
+        "_conclusion": "¬A ∧ ¬B",
+        "_premises": [
+            "¬(A ∨ B)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "assume",
+                        "_statement": "A",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "∨IL",
+                        "_statement": "A ∨ B",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "3",
+                            "1"
+                        ],
+                        "_rule": "¬E",
+                        "_statement": "⊥",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-4"
+                ],
+                "_rule": "¬I",
+                "_statement": "¬A",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [
+                            "7"
+                        ],
+                        "_rule": "assume",
+                        "_statement": "B",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "6"
+                        ],
+                        "_rule": "∨IR",
+                        "_statement": "A ∨ B",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "7",
+                            "1"
+                        ],
+                        "_rule": "¬E",
+                        "_statement": "⊥",
+                        "_usedArguments": 2,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "6-8"
+                ],
+                "_rule": "¬I",
+                "_statement": "¬B",
+                "_usedArguments": 1,
+                "tag": "Line"
+            },
+            {
+                "_arguments": [
+                    "5",
+                    "9"
+                ],
+                "_rule": "∧I",
+                "_statement": "¬A ∧ ¬B",
+                "_usedArguments": 2,
+                "tag": "Line"
+            }
+        ]
+    }
+}

@@ -1,0 +1,1149 @@
+{
+    "_fedUserDefinedRules": [
+        {
+            "_udrInput": [
+                "A ∨ B",
+                "¬A"
+            ],
+            "_udrName": "DS1",
+            "_udrOutput": "B",
+            "_udrPath": "./DS1.folke"
+        },
+        {
+            "_udrInput": [
+                "A ∨ B",
+                "¬B"
+            ],
+            "_udrName": "DS2",
+            "_udrOutput": "A",
+            "_udrPath": "./DS2.folke"
+        },
+        {
+            "_udrInput": [
+                "¬(A ∨ B)"
+            ],
+            "_udrName": "DeM1",
+            "_udrOutput": "¬A ∧ ¬B",
+            "_udrPath": "./DeM1.folke"
+        },
+        {
+            "_udrInput": [
+                "¬(A ∧ B)"
+            ],
+            "_udrName": "DeM3",
+            "_udrOutput": "¬A ∨ ¬B",
+            "_udrPath": "./DeM3.folke"
+        }
+    ],
+    "_sequent": {
+        "_conclusion": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+        "_premises": [],
+        "_steps": [
+            {
+                "_arguments": [],
+                "_rule": "LEM",
+                "_statement": "((A→B)∧(B→A)) ∨ ¬((A→B)∧(B→A))",
+                "_usedArguments": 0,
+                "tag": "Line"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "(A→B)∧(B→A)",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "2"
+                        ],
+                        "_rule": "∨IL",
+                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "assume",
+                        "_statement": "¬((A→B)∧(B→A))",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "(¬A ∨ B) ∧ (A ∨ ¬B)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "5"
+                                ],
+                                "_rule": "∧EL",
+                                "_statement": "¬A ∨ B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "5"
+                                ],
+                                "_rule": "∧ER",
+                                "_statement": "A ∨ ¬B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "A",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "8"
+                                        ],
+                                        "_rule": "¬¬I",
+                                        "_statement": "¬¬A",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "6",
+                                            "9"
+                                        ],
+                                        "_rule": "DS1",
+                                        "_statement": "B",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "8-10"
+                                ],
+                                "_rule": "→I",
+                                "_statement": "A → B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "B",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "12"
+                                        ],
+                                        "_rule": "¬¬I",
+                                        "_statement": "¬¬B",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "7",
+                                            "13"
+                                        ],
+                                        "_rule": "DS2",
+                                        "_statement": "A",
+                                        "_usedArguments": 2,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [
+                                    "12-14"
+                                ],
+                                "_rule": "→I",
+                                "_statement": "B → A",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "11",
+                                    "15"
+                                ],
+                                "_rule": "∧I",
+                                "_statement": "(A→B)∧(B→A)",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "16",
+                                    "4"
+                                ],
+                                "_rule": "¬E",
+                                "_statement": "⊥",
+                                "_usedArguments": 2,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "5-17"
+                        ],
+                        "_rule": "¬I",
+                        "_statement": "¬((¬A ∨ B) ∧ (A ∨ ¬B))",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "18"
+                        ],
+                        "_rule": "DeM3",
+                        "_statement": "¬(¬A ∨ B) ∨ ¬(A ∨ ¬B)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "¬(¬A ∨ B)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "20"
+                                ],
+                                "_rule": "DeM1",
+                                "_statement": "¬¬A ∧ ¬B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "21"
+                                ],
+                                "_rule": "∧EL",
+                                "_statement": "¬¬A",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "22"
+                                ],
+                                "_rule": "¬¬E",
+                                "_statement": "A",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "21"
+                                ],
+                                "_rule": "∧ER",
+                                "_statement": "¬B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "(B→C)∧(C→B)",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "25"
+                                        ],
+                                        "_rule": "∨IR",
+                                        "_statement": "((A→C)∧(C→A)) ∨ ((B→C)∧(C→B))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "26"
+                                        ],
+                                        "_rule": "∨IR",
+                                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "¬((B→C)∧(C→B))",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "(¬B ∨ C) ∧ (B ∨ ¬C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "29"
+                                                ],
+                                                "_rule": "∧EL",
+                                                "_statement": "¬B ∨ C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "29"
+                                                ],
+                                                "_rule": "∧ER",
+                                                "_statement": "B ∨ ¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "B",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "32"
+                                                        ],
+                                                        "_rule": "¬¬I",
+                                                        "_statement": "¬¬B",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "30",
+                                                            "33"
+                                                        ],
+                                                        "_rule": "DS1",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 2,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "32-34"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "B → C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "36"
+                                                        ],
+                                                        "_rule": "¬¬I",
+                                                        "_statement": "¬¬C",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "31",
+                                                            "37"
+                                                        ],
+                                                        "_rule": "DS2",
+                                                        "_statement": "B",
+                                                        "_usedArguments": 2,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "36-38"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "C → B",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "35",
+                                                    "39"
+                                                ],
+                                                "_rule": "∧I",
+                                                "_statement": "(B→C)∧(C→B)",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "40",
+                                                    "28"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "29-41"
+                                        ],
+                                        "_rule": "¬I",
+                                        "_statement": "¬((¬B ∨C) ∧ (B ∨ ¬C))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "42"
+                                        ],
+                                        "_rule": "DeM3",
+                                        "_statement": "¬(¬B ∨ C) ∨ ¬(B ∨ ¬C)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "¬(¬B ∨ C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "44"
+                                                ],
+                                                "_rule": "DeM1",
+                                                "_statement": "¬¬B ∧ ¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "45"
+                                                ],
+                                                "_rule": "∧EL",
+                                                "_statement": "¬¬B",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "24",
+                                                    "46"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "47"
+                                                ],
+                                                "_rule": "⊥E",
+                                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "¬(B ∨ ¬C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "49"
+                                                ],
+                                                "_rule": "DeM1",
+                                                "_statement": "¬B ∧ ¬¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "50"
+                                                ],
+                                                "_rule": "∧EL",
+                                                "_statement": "¬B",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "50"
+                                                ],
+                                                "_rule": "∧ER",
+                                                "_statement": "¬¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "52"
+                                                ],
+                                                "_rule": "¬¬E",
+                                                "_statement": "C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "A",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "53"
+                                                        ],
+                                                        "_rule": "copy",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "54-55"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "A → C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "23"
+                                                        ],
+                                                        "_rule": "copy",
+                                                        "_statement": "A",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "57-58"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "C → A",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "56",
+                                                    "59"
+                                                ],
+                                                "_rule": "∧I",
+                                                "_statement": "(A→C)∧(C→A)",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "60"
+                                                ],
+                                                "_rule": "∨IL",
+                                                "_statement": "((A→C)∧(C→A)) ∨ ((B→C)∧(C→B))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "61"
+                                                ],
+                                                "_rule": "∨IR",
+                                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "43",
+                                            "44-48",
+                                            "49-62"
+                                        ],
+                                        "_rule": "∨E",
+                                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                        "_usedArguments": 3,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "LEM",
+                                "_statement": "(B→C)∧(C→B) ∨ ¬((B→C)∧(C→B))",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "64",
+                                    "25-27",
+                                    "28-63"
+                                ],
+                                "_rule": "∨E",
+                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                "_usedArguments": 3,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "contents": [
+                            {
+                                "_arguments": [],
+                                "_rule": "assume",
+                                "_statement": "¬(A ∨ ¬B)",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "66"
+                                ],
+                                "_rule": "DeM1",
+                                "_statement": "¬A ∧ ¬¬B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "67"
+                                ],
+                                "_rule": "∧EL",
+                                "_statement": "¬A",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "67"
+                                ],
+                                "_rule": "∧ER",
+                                "_statement": "¬¬B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "69"
+                                ],
+                                "_rule": "¬¬E",
+                                "_statement": "B",
+                                "_usedArguments": 1,
+                                "tag": "Line"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "(A→C)∧(C→A)",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "71"
+                                        ],
+                                        "_rule": "∨IL",
+                                        "_statement": "((A→C)∧(C→A)) ∨ ((B→C)∧(C→B))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "72"
+                                        ],
+                                        "_rule": "∨IR",
+                                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "contents": [
+                                    {
+                                        "_arguments": [],
+                                        "_rule": "assume",
+                                        "_statement": "¬((A→C)∧(C→A))",
+                                        "_usedArguments": 0,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "(¬A ∨ C) ∧ (A ∨ ¬C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "75"
+                                                ],
+                                                "_rule": "∧EL",
+                                                "_statement": "¬A ∨ C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "75"
+                                                ],
+                                                "_rule": "∧ER",
+                                                "_statement": "A ∨ ¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "A",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "78"
+                                                        ],
+                                                        "_rule": "¬¬I",
+                                                        "_statement": "¬¬A",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "76",
+                                                            "79"
+                                                        ],
+                                                        "_rule": "DS1",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 2,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "78-80"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "A → C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "82"
+                                                        ],
+                                                        "_rule": "¬¬I",
+                                                        "_statement": "¬¬C",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "77",
+                                                            "83"
+                                                        ],
+                                                        "_rule": "DS2",
+                                                        "_statement": "A",
+                                                        "_usedArguments": 2,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "82-84"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "C → A",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "81",
+                                                    "85"
+                                                ],
+                                                "_rule": "∧I",
+                                                "_statement": "(A→C)∧(C→A)",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "86",
+                                                    "74"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "75-87"
+                                        ],
+                                        "_rule": "¬I",
+                                        "_statement": "¬((¬A ∨ C) ∧ (A ∨ ¬C))",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "88"
+                                        ],
+                                        "_rule": "DeM3",
+                                        "_statement": "¬(¬A ∨ C) ∨ ¬(A ∨ ¬C)",
+                                        "_usedArguments": 1,
+                                        "tag": "Line"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "¬(¬A ∨ C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "90"
+                                                ],
+                                                "_rule": "DeM1",
+                                                "_statement": "¬¬A ∧ ¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "91"
+                                                ],
+                                                "_rule": "∧EL",
+                                                "_statement": "¬¬A",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "68",
+                                                    "92"
+                                                ],
+                                                "_rule": "¬E",
+                                                "_statement": "⊥",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "93"
+                                                ],
+                                                "_rule": "⊥E",
+                                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "contents": [
+                                            {
+                                                "_arguments": [],
+                                                "_rule": "assume",
+                                                "_statement": "¬(A ∨ ¬C)",
+                                                "_usedArguments": 0,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "95"
+                                                ],
+                                                "_rule": "DeM1",
+                                                "_statement": "¬A ∧ ¬¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "96"
+                                                ],
+                                                "_rule": "∧ER",
+                                                "_statement": "¬¬C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "97"
+                                                ],
+                                                "_rule": "¬¬E",
+                                                "_statement": "C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "B",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "98"
+                                                        ],
+                                                        "_rule": "copy",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "99-100"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "B → C",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "contents": [
+                                                    {
+                                                        "_arguments": [],
+                                                        "_rule": "assume",
+                                                        "_statement": "C",
+                                                        "_usedArguments": 0,
+                                                        "tag": "Line"
+                                                    },
+                                                    {
+                                                        "_arguments": [
+                                                            "70"
+                                                        ],
+                                                        "_rule": "copy",
+                                                        "_statement": "B",
+                                                        "_usedArguments": 1,
+                                                        "tag": "Line"
+                                                    }
+                                                ],
+                                                "tag": "SubProof"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "102-103"
+                                                ],
+                                                "_rule": "→I",
+                                                "_statement": "C → B",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "101",
+                                                    "104"
+                                                ],
+                                                "_rule": "∧I",
+                                                "_statement": "(B→C)∧(C→B)",
+                                                "_usedArguments": 2,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "105"
+                                                ],
+                                                "_rule": "∨IR",
+                                                "_statement": "((A→C)∧(C→A)) ∨ ((B→C)∧(C→B))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            },
+                                            {
+                                                "_arguments": [
+                                                    "106"
+                                                ],
+                                                "_rule": "∨IR",
+                                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                                "_usedArguments": 1,
+                                                "tag": "Line"
+                                            }
+                                        ],
+                                        "tag": "SubProof"
+                                    },
+                                    {
+                                        "_arguments": [
+                                            "89",
+                                            "90-94",
+                                            "95-107"
+                                        ],
+                                        "_rule": "∨E",
+                                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                        "_usedArguments": 3,
+                                        "tag": "Line"
+                                    }
+                                ],
+                                "tag": "SubProof"
+                            },
+                            {
+                                "_arguments": [],
+                                "_rule": "LEM",
+                                "_statement": "((A→C)∧(C→A)) ∨ ¬((A→C)∧(C→A))",
+                                "_usedArguments": 0,
+                                "tag": "Line"
+                            },
+                            {
+                                "_arguments": [
+                                    "109",
+                                    "71-73",
+                                    "74-108"
+                                ],
+                                "_rule": "∨E",
+                                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                                "_usedArguments": 3,
+                                "tag": "Line"
+                            }
+                        ],
+                        "tag": "SubProof"
+                    },
+                    {
+                        "_arguments": [
+                            "19",
+                            "20-65",
+                            "66-110"
+                        ],
+                        "_rule": "∨E",
+                        "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                        "_usedArguments": 3,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "1",
+                    "2-3",
+                    "4-111"
+                ],
+                "_rule": "∨E",
+                "_statement": "((A→B)∧(B→A)) ∨ (((A→C)∧(C→A)) ∨ ((B→C)∧(C→B)))",
+                "_usedArguments": 3,
+                "tag": "Line"
+            }
+        ]
+    }
+}
