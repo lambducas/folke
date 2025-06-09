@@ -44,12 +44,11 @@
                     },
                     {
                         "_arguments": [
-                            "5",
-                            ""
+                            "5"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y (x₀ = f(y))",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     }
                 ],

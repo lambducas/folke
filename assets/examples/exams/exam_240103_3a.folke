@@ -82,12 +82,11 @@
                             },
                             {
                                 "_arguments": [
-                                    "11",
-                                    ""
+                                    "11"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x (R(x) ∧ S(x))",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             },
                             {
@@ -124,12 +123,11 @@
                     },
                     {
                         "_arguments": [
-                            "15",
-                            ""
+                            "15"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) ∧ ¬S(x))",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     }
                 ],

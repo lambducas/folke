@@ -21,12 +21,11 @@
                     },
                     {
                         "_arguments": [
-                            "2",
-                            ""
+                            "2"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y x₀ = y",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     }
                 ],

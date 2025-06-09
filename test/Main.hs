@@ -45,9 +45,12 @@ collectJsonFiles dir = do
     let fullPaths = map (dir </>) contents
     directories <- filterM doesDirectoryExist fullPaths
     files <- filterM doesFileExist fullPaths
-    let jsonFiles = filter (\f -> takeExtension f == ".json") files
+    let jsonFiles = filter isProofFile files
     subdirsFiles <- mapM collectJsonFiles directories
     return $ jsonFiles ++ concat subdirsFiles
+
+isProofFile :: FilePath -> Bool
+isProofFile f = takeExtension f `elem` [".folke", ".json"]
 
 testProofs :: (FilePath -> Test) -> [FilePath] -> [Test]
 testProofs testFun paths = 
@@ -156,9 +159,12 @@ testParser = TestList [
 main :: IO ()
 main = do
     -- Collect files
-    jsonFiles <- collectJsonFiles "test/proofs"
+    exams <- collectJsonFiles "assets/examples/exams"
+    book <- collectJsonFiles "assets/examples/book"
+    simple <- collectJsonFiles "test/proofs/simple_tests"
     
     -- Create tests for all proof files
+    let jsonFiles = exams ++ book ++ simple
     let allProofTests = TestList (testProofs testProof jsonFiles)
     
     -- Run all test including replace tests

@@ -95,12 +95,11 @@
                                     },
                                     {
                                         "_arguments": [
-                                            "11",
-                                            ""
+                                            "11"
                                         ],
                                         "_rule": "∃I",
                                         "_statement": "∃ x P(x, x)",
-                                        "_usedArguments": 2,
+                                        "_usedArguments": 1,
                                         "tag": "Line"
                                     },
                                     {
@@ -127,22 +126,20 @@
                             },
                             {
                                 "_arguments": [
-                                    "14",
-                                    ""
+                                    "14"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y ¬(x₀ = y)",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             },
                             {
                                 "_arguments": [
-                                    "15",
-                                    ""
+                                    "15"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ x ∃ y ¬(x = y)",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             }
                         ],

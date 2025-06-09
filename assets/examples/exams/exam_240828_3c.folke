@@ -85,12 +85,11 @@
                     },
                     {
                         "_arguments": [
-                            "11",
-                            ""
+                            "11"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ u u = f(u)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     }
                 ],

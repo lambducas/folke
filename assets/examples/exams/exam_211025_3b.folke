@@ -45,12 +45,11 @@
                     },
                     {
                         "_arguments": [
-                            "6",
-                            ""
+                            "6"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x (P(x) ∧ Q(x))",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {
@@ -76,22 +75,20 @@
                     },
                     {
                         "_arguments": [
-                            "9",
-                            ""
+                            "9"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ y ¬(a = y)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {
                         "_arguments": [
-                            "10",
-                            ""
+                            "10"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x ∃ y ¬(x = y)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {

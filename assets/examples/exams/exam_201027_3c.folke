@@ -61,12 +61,11 @@
                             },
                             {
                                 "_arguments": [
-                                    "7",
-                                    ""
+                                    "7"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             }
                         ],
@@ -109,12 +108,11 @@
                             },
                             {
                                 "_arguments": [
-                                    "12",
-                                    ""
+                                    "12"
                                 ],
                                 "_rule": "∃I",
                                 "_statement": "∃ y (P(x₀, y) ∨ Q(x₀, y))",
-                                "_usedArguments": 2,
+                                "_usedArguments": 1,
                                 "tag": "Line"
                             }
                         ],

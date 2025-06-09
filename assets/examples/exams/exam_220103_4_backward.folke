@@ -53,22 +53,20 @@
                                             },
                                             {
                                                 "_arguments": [
-                                                    "6",
-                                                    ""
+                                                    "6"
                                                 ],
                                                 "_rule": "∃I",
                                                 "_statement": "∃ y (P(x₀) ∧ T(y, x₀))",
-                                                "_usedArguments": 2,
+                                                "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
                                             {
                                                 "_arguments": [
-                                                    "7",
-                                                    ""
+                                                    "7"
                                                 ],
                                                 "_rule": "∃I",
                                                 "_statement": "∃ x ∃ y (P(x) ∧ T(y, x))",
-                                                "_usedArguments": 2,
+                                                "_usedArguments": 1,
                                                 "tag": "Line"
                                             },
                                             {

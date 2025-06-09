@@ -16,12 +16,11 @@
                     },
                     {
                         "_arguments": [
-                            "2",
-                            ""
+                            "2"
                         ],
                         "_rule": "∃I",
                         "_statement": "∃ x P(x)",
-                        "_usedArguments": 2,
+                        "_usedArguments": 1,
                         "tag": "Line"
                     },
                     {
@@ -58,12 +57,11 @@
             },
             {
                 "_arguments": [
-                    "6",
-                    ""
+                    "6"
                 ],
                 "_rule": "∃I",
                 "_statement": "∃ x (P(x) → Q(x))",
-                "_usedArguments": 2,
+                "_usedArguments": 1,
                 "tag": "Line"
             }
         ]
