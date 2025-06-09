@@ -199,7 +199,7 @@ editRuleNameInProof path newRule doc = doc & sequent .~ replaceSteps f (_sequent
         Nothing -> case getUDR newRuleParsed of
           Nothing -> Line statement (replaceSpecialSymbols newRule) usedArguments arguments
           Just udr -> Line statement (replaceSpecialSymbols newRule) nrArgs (fillList (fromIntegral nrArgs) arguments)
-            where nrArgs = length $ _udrInput udr
+            where nrArgs = maybe 0 length (_udrInput udr)
         Just (RuleMetaData {_nrArguments=nrArgs}) -> Line statement (replaceSpecialSymbols newRule) (fromIntegral nrArgs) (fillList nrArgs arguments)
       | otherwise = f
 

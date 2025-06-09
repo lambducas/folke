@@ -706,10 +706,12 @@ buildUI os wenv model = widgetTree where
           ]
             `styleBasic` [expandWidth 1],
 
-          trashButton (RemoveUDR idx)
+          trashButton (RemoveUDR idx),
+          fastTooltip "Refresh" $
+            iconButton remixRestartLine (EditUDRPath idx (_udrPath rule))
         ]
         where
-          input = maybe invalid (span . intercalate "") (_udrInput rule)
+          input = maybe invalid (span . intercalate ",") (_udrInput rule)
           output = maybe invalid span (_udrOutput rule)
           invalid = span "Invalid" `styleBasic` [textColor red]
 
