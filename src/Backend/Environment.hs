@@ -777,7 +777,7 @@ ruleMT env forms _ =
 rulePBC :: Env -> [(Integer, Arg)] -> Formula -> Result Formula
 rulePBC _ [(_, ArgProof (Proof _ [Not a] Bot))] _ = Ok [] a
 rulePBC env [(_, ArgProof (Proof _ [Not _] _))] _ = 
-    Err [] env (createRuleArgError env 1 "Conclusion needs to be a bot formula.")
+    Err [] env (createRuleArgError env 1 "Conclusion needs to be a ⊥ formula.")
 rulePBC env [(_, ArgProof (Proof [_] _ _))] _ = 
     Err [] env (createRuleArgError env 1 "Premise needs to be a ¬ formula.")
 rulePBC env [_] _ = Err [] env (createRuleArgError env 1 "Needs to be a proof.")
