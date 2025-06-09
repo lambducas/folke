@@ -1,4 +1,5 @@
 {
+    "_fedUserDefinedRules": null,
     "_sequent": {
         "_conclusion": "p ∨ (p → q)",
         "_premises": [],
@@ -8,7 +9,7 @@
                     {
                         "_arguments": [],
                         "_rule": "assume",
-                        "_statement": "¬(p ∨(p → q))",
+                        "_statement": "¬(p ∨ (p → q))",
                         "_usedArguments": 0,
                         "tag": "Line"
                     },
