@@ -605,8 +605,11 @@ handleEvent os env wenv node model evt = case evt of
             case mNewPath of
               Nothing -> return ()
               Just newPath -> do
+                let fixedPath = if takeExtension newPath == ""
+                    then newPath <.> head feFileExts
+                    else newPath
                 let content = (unpack . parseProofToJSON) doc
-                result <- try (writeFile newPath content) :: IO (Either SomeException ())
+                result <- try (writeFile fixedPath content) :: IO (Either SomeException ())
                 case result of
                   Left e -> print e
                   Right _ -> do
@@ -614,7 +617,7 @@ handleEvent os env wenv node model evt = case evt of
                     sendMsg (SaveFileSuccess f)
                     sendMsg (CloseFileSuccess tmpPath)
                     sendMsg RefreshExplorer
-                    sendMsg (OpenFile_ newPath "" Nothing)
+                    sendMsg (OpenFile_ fixedPath "" Nothing)
             )
         ]
     f -> error $ "Cannot save file of type " ++ show f
