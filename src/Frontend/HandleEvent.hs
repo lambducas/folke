@@ -32,6 +32,7 @@ import Data.List (sort)
 import TextShow ( TextShow(showt) )
 import System.Directory ( removeFile, createDirectoryIfMissing, listDirectory, doesFileExist, doesDirectoryExist, makeAbsolute )
 import System.FilePath (takeExtension, (</>), (<.>), isRelative, takeDirectory, equalFilePath)
+import System.IO (readFile')
 
 import qualified SDL
 import Control.Concurrent.STM (atomically)
@@ -119,7 +120,7 @@ handleEvent os env wenv node model evt = case evt of
           then takeDirectory parentPath </> newPath
           else newPath
 
-      pContent <- try (readFile fullPath) :: IO (Either SomeException String)
+      pContent <- try (readFile' fullPath) :: IO (Either SomeException String)
       case pContent of
         Left e -> do
           print e
@@ -490,7 +491,7 @@ handleEvent os env wenv node model evt = case evt of
       Producer (\sendMsg -> do
         preferencePath <- getPreferencePath
         let fullPath = folderPath </> filePath
-        pContent <- try (readFile fullPath) :: IO (Either SomeException String)
+        pContent <- try (readFile' fullPath) :: IO (Either SomeException String)
         case pContent of
           Left e -> print e
           Right pContent -> do
@@ -855,10 +856,12 @@ exportToLatex os model file = case _parsedDocument file of
                   latexContent = convertToLatex title model
 
               -- Write the full LaTeX content to the file
-              writeFile texPath (unpack latexContent)
-              putStrLn $ "Exported LaTeX file to: " ++ texPath
-              sendMsg (SetExportStatus ExportSuccess)
-              -- sendMsg (ExportSuccess (pack ("LaTeX file created at: " ++ texPath)))
+              writeResult <- try (writeFile texPath (unpack latexContent)) :: IO (Either SomeException ())
+              case writeResult of
+                Left ex -> print ex
+                Right () -> do
+                  putStrLn $ "Exported LaTeX file to: " ++ texPath
+                  sendMsg (SetExportStatus ExportSuccess)
           )
     ]
 

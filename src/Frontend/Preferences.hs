@@ -8,6 +8,7 @@ import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import System.Directory (doesFileExist, XdgDirectory (..), getXdgDirectory, createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
+import System.IO (readFile')
 
 appName :: String
 appName = "Folke"
@@ -35,12 +36,17 @@ readPreferences = do
   exists <- doesFileExist preferencePath
   if exists then
     do
-      c <- readFile preferencePath
-      return (decode (BL.pack c) :: Maybe Preferences)
+      tryC <- try (readFile' preferencePath) :: IO (Either SomeException String)
+      case tryC of
+        Left e -> do
+          print e
+          return Nothing
+        Right c -> do
+          return (decode (BL.pack c) :: Maybe Preferences)
   else
     do
       createDirectoryIfMissing True (takeDirectory preferencePath)
-      writeFile preferencePath ""
+      _ <- try (writeFile preferencePath "") :: IO (Either SomeException ())
       return Nothing
 
 readAndApplyPreferences :: (AppEvent -> IO ()) -> IO ()
@@ -68,12 +74,17 @@ readPersistentState = do
   exists <- doesFileExist persistentStatePath
   if exists then
     do
-      c <- readFile persistentStatePath
-      return (decode (BL.pack c) :: Maybe PersistentState)
+      tryC <- try (readFile' persistentStatePath) :: IO (Either SomeException String)
+      case tryC of
+        Left e -> do
+          print e
+          return Nothing
+        Right c -> do
+          return (decode (BL.pack c) :: Maybe PersistentState)
   else
     do
       createDirectoryIfMissing True (takeDirectory persistentStatePath)
-      writeFile persistentStatePath ""
+      _ <- try (writeFile persistentStatePath "") :: IO (Either SomeException ())
       return Nothing
 
 savePersistentState :: AppModel -> t -> (t -> IO ()) -> IO ()

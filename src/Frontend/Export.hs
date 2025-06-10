@@ -43,35 +43,40 @@ compileLatexToPDF savePath title model = do
     let finalPdfPath = savePath <.> "pdf"
 
     -- Write the LaTeX content to the file
-    writeFile texPath (unpack latexContent)
-
-    putStrLn $ "Starting LaTeX compilation for: " ++ texPath
-    result <- try (
-        readCreateProcessWithExitCode (proc "pdflatex" ["-interaction=nonstopmode", "-file-line-error", "-output-directory", tmpDir, texName]) ""
-      ) :: IO (Either SomeException (ExitCode, String, String))
-    case result of
+    writeResult <- try (writeFile texPath (unpack latexContent)) :: IO (Either SomeException ())
+    case writeResult of
       Left ex -> do
-        putStrLn ("process failed: " ++ show ex)
+        putStrLn ("write failed: " ++ show ex)
         return $ Left (show ex)
 
-      Right (_exitCode, _stdout, stderr) -> do
-        unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
+      Right () -> do
+        putStrLn $ "Starting LaTeX compilation for: " ++ texPath
+        result <- try (
+            readCreateProcessWithExitCode (proc "pdflatex" ["-interaction=nonstopmode", "-file-line-error", "-output-directory", tmpDir, texName]) ""
+          ) :: IO (Either SomeException (ExitCode, String, String))
+        case result of
+          Left ex -> do
+            putStrLn ("process failed: " ++ show ex)
+            return $ Left (show ex)
 
-        let tmpPdfPath = tmpDir </> "source.pdf"
-        putStrLn $ "Looking for PDF at: " ++ tmpPdfPath
-        
-        pdfExists <- doesFileExist tmpPdfPath
-        
-        if pdfExists
-          then do
-            putStrLn $ "Copying PDF from: " ++ tmpPdfPath ++ " to: " ++ finalPdfPath
-            copyFile tmpPdfPath finalPdfPath
-            finalExists <- doesFileExist finalPdfPath
-            if finalExists
-              then return $ Right finalPdfPath
-              else return $ Left "Failed to copy PDF to final destination"
-          else 
-            return $ Left $ "PDF was not generated: " ++ stderr
+          Right (_exitCode, _stdout, stderr) -> do
+            unless (null stderr) $ putStrLn $ "Errors: " ++ stderr
+
+            let tmpPdfPath = tmpDir </> "source.pdf"
+            putStrLn $ "Looking for PDF at: " ++ tmpPdfPath
+            
+            pdfExists <- doesFileExist tmpPdfPath
+            
+            if pdfExists
+              then do
+                putStrLn $ "Copying PDF from: " ++ tmpPdfPath ++ " to: " ++ finalPdfPath
+                copyFile tmpPdfPath finalPdfPath
+                finalExists <- doesFileExist finalPdfPath
+                if finalExists
+                  then return $ Right finalPdfPath
+                  else return $ Left "Failed to copy PDF to final destination"
+              else 
+                return $ Left $ "PDF was not generated: " ++ stderr
 
 -- | Convert the proof model to LaTeX format
 convertToLatex :: Text -> AppModel -> Text
