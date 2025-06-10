@@ -1,0 +1,41 @@
+{
+    "_fedUserDefinedRules": null,
+    "_sequent": {
+        "_conclusion": "∀x P(x)",
+        "_premises": [
+            "P(x)"
+        ],
+        "_steps": [
+            {
+                "contents": [
+                    {
+                        "_arguments": [],
+                        "_rule": "fresh",
+                        "_statement": "x",
+                        "_usedArguments": 0,
+                        "tag": "Line"
+                    },
+                    {
+                        "_arguments": [
+                            "1"
+                        ],
+                        "_rule": "copy",
+                        "_statement": "P(x)",
+                        "_usedArguments": 1,
+                        "tag": "Line"
+                    }
+                ],
+                "tag": "SubProof"
+            },
+            {
+                "_arguments": [
+                    "2-3"
+                ],
+                "_rule": "∀I",
+                "_statement": "∀x P(x)",
+                "_usedArguments": 1,
+                "tag": "Line"
+            }
+        ]
+    }
+}

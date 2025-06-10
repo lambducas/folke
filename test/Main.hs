@@ -13,31 +13,26 @@ import Backend.Environment
 import qualified Data.List as List
 import Data.Text (Text, unpack)
 
-testProof :: FilePath -> Test
-testProof proofPath = TestCase $ do
+testGoodProof :: FilePath -> Test
+testGoodProof proofPath = TestCase $ do
     case checkJson proofPath of
         Err warns env err -> 
-            assertFailure $ "Proof validation failed:\n" ++ 
+            assertFailure $ "Wrong result: Proof is correct but reported as incorrect.\nError:\n" ++ 
                            List.intercalate "\n" [show warn | warn <- warns] ++ 
-                           "\n" ++ showPos env ++ "\n" ++ show err
+                           "\n" ++ showPos env ++ "\n" ++ show err ++ "\n"
         Ok warns _ -> do
             unless (null warns) $ 
                 putStrLn $ "Warnings for " ++ proofPath ++ ":\n" ++ 
                            List.intercalate "\n" (map show warns)
             assertBool ("Proof is valid: " ++ proofPath) True
 
-testBadProofs :: FilePath -> Test
-testBadProofs proofPath = TestCase $ do
+testBadProof :: FilePath -> Test
+testBadProof proofPath = TestCase $ do
     case checkJson proofPath of
-        Err warns env err -> 
-            assertFailure $ "Proof validation failed:\n" ++ 
-                           List.intercalate "\n" [show warn | warn <- warns] ++ 
-                           "\n" ++ showPos env ++ "\n" ++ show err
-        Ok warns _ -> do
-            unless (null warns) $ 
-                putStrLn $ "Warnings for " ++ proofPath ++ ":\n" ++ 
-                           List.intercalate "\n" (map show warns)
-            assertBool ("Proof is valid: " ++ proofPath) True
+        Err _warns _env _err ->
+            assertBool ("Proof is incorrect: " ++ proofPath) True
+        Ok _warns _ -> do
+            assertFailure "Wrong result: Proof is incorrect but reported as correct\n"
 
 collectJsonFiles :: FilePath -> IO [FilePath]
 collectJsonFiles dir = do
@@ -162,15 +157,18 @@ main = do
     exams <- collectJsonFiles "assets/examples/exams"
     book <- collectJsonFiles "assets/examples/book"
     simple <- collectJsonFiles "test/proofs/simple_tests"
+    incorrect <- collectJsonFiles "test/proofs/incorrect"
     
     -- Create tests for all proof files
     let jsonFiles = exams ++ book ++ simple
-    let allProofTests = TestList (testProofs testProof jsonFiles)
+    let correctTests = TestList (testProofs testGoodProof jsonFiles)
+    let incorrectTests = TestList (testProofs testBadProof incorrect)
     
     -- Run all test including replace tests
-    putStrLn "Running tests..."
+    putStrLn "Running tests...\n"
     let tests = TestList [
-            TestLabel "Proofs" allProofTests,
+            TestLabel "Correct proofs" correctTests,
+            TestLabel "Incorrect proofs" incorrectTests,
             TestLabel "Replace" testReplace,
             TestLabel "User Defined rules" testUDefRules,            
             TestLabel "Test parser" testParser
