@@ -121,17 +121,17 @@ main = do
       _normalFont = "Regular",
       _logicFont = "Symbol_Regular",
       _fontSize = 16,
-      _appScale = 1,
+      _appScale = 0.8,
       _replaceAEInFormula = False,
       _autoCheckProofTracker = AutoCheckProofTracker { _acpEnabled = True },
-      _warningMessageSeverity = 3
+      _warningMessageSeverity = 1
     }
 
     -- Default application state for new users
     defaultState = PersistentState {
       _firstTime = True,
       _windowMode = MainWindowNormal (1200, 800),
-      _workingDir = Nothing, --Just "./myProofs",
+      _workingDir = Nothing,
       _currentFile = Nothing,
       _openFiles = [],
       _tmpLoadedFiles = [],
