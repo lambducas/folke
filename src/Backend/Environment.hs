@@ -190,7 +190,15 @@ bindVar :: Env -> Term -> Result Env
 bindVar env (Term x []) = if Map.member x (bound env)
     then Err [] env (createUnknownError env ("Trying to rebind " ++ show x ++ "."))
     else Ok [] env { bound = Map.insert x () (bound env)}
-bindVar env _ = Err [] env (createUnknownError env "Unable to bind a function.")
+bindVar env f = Err [] env (createUnknownError env ("Unable to bind function: " ++ show f))
+
+-- | Bind multiple variables in the current environment
+bindVars :: Env -> [Term] -> Result Env
+bindVars env (x:xs) = do
+    nextEnv <- bindVar env x
+    bindVars nextEnv xs
+bindVars env [] = do
+    Ok [] env
 
 -- | Check if a term is a free variable in the current environment
 isFreeVar :: Env -> Term -> Result Bool
@@ -221,7 +229,11 @@ regTerm env (Term x param) = case Map.lookup x (ids env) of
 
 -- | Add a fresh variable to the environment
 addFresh :: Env -> Term -> Result Env
-addFresh env x@(Term _ []) = Ok [] env { fresh = fresh env ++ [x]}
+addFresh env x@(Term _ [])
+    | x `elem` getFreshs env = Err [] env (createUnknownError env "Fresh variable already exists")
+    | otherwise = do
+        nextEnv <- bindVar env x
+        Ok [] nextEnv { fresh = fresh nextEnv ++ [x]}
 addFresh env x = Err [] env (createUnknownError env 
                   ("Cannot add function " ++ show x ++ " as a fresh variable."))
 
@@ -231,7 +243,12 @@ addFresh env x = Err [] env (createUnknownError env
 
 -- | Add a premise to the current environment
 addPrem :: Env -> Formula -> Result Env
-addPrem env prem = Ok [] (env { prems = prems env ++ [prem] })
+addPrem env prem = do
+    let alreadyBound = Set.fromList (map (\s -> Term s []) (Map.keys (bound env)))
+    let allFree = freeVarForm prem
+    let needBind = Set.toList (Set.difference allFree alreadyBound)
+    nextEnv <- bindVars env needBind
+    Ok [] (nextEnv { prems = prems nextEnv ++ [prem] })
 
 -- | Get all premises from the current environment
 getPrems :: Env -> [Formula]
@@ -458,7 +475,7 @@ isFreeFor env _ _ Nil = Err [] env (createUnknownError env "Nil formula.")
 -- | Get the free variables in a term
 freeVarTerm :: Term -> Set.Set Term
 freeVarTerm (Term s []) = Set.singleton (Term s [])
-freeVarTerm (Term _ [term]) = Set.singleton term
+-- freeVarTerm (Term _ [term]) = Set.singleton term
 freeVarTerm (Term _ terms) = Set.unions [freeVarTerm term | term <- terms]
 
 -- | Get the free variables in a formula
